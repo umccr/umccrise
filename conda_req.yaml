@@ -1,0 +1,7 @@
+bcftools
+tabix
+bedops
+bedtools
+vcfanno
+vcflib
+snakemake

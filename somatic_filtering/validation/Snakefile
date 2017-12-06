@@ -1,0 +1,293 @@
+# Snakemake file for evaluation of a set of VCF files against a truth set. 
+# Handles multiallelic, normalization, inconsistent sample names.
+
+# Usage: 
+# snakemake -p --configfile=config.yaml
+
+import os
+import glob
+import re
+import socket
+import gzip
+import csv
+import pprint
+from collections import defaultdict
+from somatic_filtering.utils import get_ref_path, get_sample_name
+from somatic_filtering.normalization import make_normalize_cmd
+from ngs_utils.file_utils import splitext_plus
+
+# shell.prefix("set -o pipefail; ")
+
+ref_loc = get_ref_path()
+
+rule all:
+    input:
+        'work/eval/report.tsv'
+    output:
+        'report.tsv'
+    shell:
+        'ln -s {input} {output}'
+
+
+def merge_regions():
+    samples_regions = config.get('regions')
+    truth_regions = os.path.join(ref_loc, config['truth_regions']) if 'truth_regions' in config else None
+
+    output = 'work/regions/regions.bed'
+    if samples_regions and truth_regions:
+        shell('bedops -i <(sort-bed {truth_regions}) <(sort-bed {samples_regions}) > {output}')
+        return output
+    elif truth_regions:
+        shell('sort-bed {truth_regions} > {output}')
+        return output
+    elif samples_regions:
+        shell('sort-bed {samples_regions} > {output}')
+        return output
+    else:
+        return None
+
+# def get_regions_input(_):
+#     ret = [f for f in (truth_regions, samples_regions) if f]
+#     print("ret: " + str(ret))
+#     return ret
+
+# rule prep_regions:
+#     input:
+#         get_regions_input
+#     output:
+#         'work/regions/regions.bed'
+#     run:
+#         if samples_regions and truth_regions:
+#             shell('bedops -i <(sort-bed {truth_regions}) <(sort-bed {samples_regions}) > {output}')
+#         elif truth_regions:
+#             shell('sort-bed {truth_regions} > {output}')
+#         elif samples_regions:
+#             shell('sort-bed {samples_regions} > {output}')
+
+rule narrow_samples_to_target:  # Extracts target sample, target regions, and remove rejected calls from the input VCF 
+    input:
+        lambda wildcards: config['samples'][wildcards.sample]
+        # regions = rules.prep_regions.output[0] if (samples_regions or truth_regions) else []
+    output:
+        'work/narrow/{sample}.vcf.gz'
+    run:
+        regions = merge_regions()
+        regions = ('-R ' + regions) if regions else ''
+        sn = get_sample_name(input[0])
+        assert sn
+        shell('bcftools view -s {sn} {input[0]} {regions} -f .,PASS -Oz -o {output[0]} && tabix -p vcf {output[0]}')
+
+rule narrow_truth_to_target:  # Extracts target regions from truth VCF
+    input:
+        truth_variants = os.path.join(ref_loc, config['truth_variants']),
+        # regions = rules.prep_regions.output[0] if (samples_regions or truth_regions) else []
+    output:
+        'work/narrow/truth_variants.vcf.gz'
+    run:
+        regions = merge_regions()
+        regions = ('-R ' + regions) if regions else ''
+        shell('bcftools view {input.truth_variants} {regions} -Oz -o {output[0]} && tabix -p vcf {output[0]}')
+
+# def normalize_cmd():
+#     normalize = "bcftools norm -m '-' {input.vcf} -Ov"
+#     reference_fasta = os.path.join(ref_loc, config['reference_fasta'])
+#     if os.path.isfile(reference_fasta):
+#         normalize += ' -f ' + reference_fasta
+#     normalize += ' | vcfallelicprimitives -t DECOMPOSED --keep-geno | vcfstreamsort | bgzip -c > {output[0]}'
+#     normalize += ' && tabix -p vcf {output[0]}'
+#     return normalize
+
+# reference_fasta = ''
+# if 'reference_fasta' in config:
+#     reference_fasta = os.path.join(ref_loc, config['reference_fasta'])
+#     if not os.path.isfile(reference_fasta):
+#         reference_fasta = ''
+
+rule normalize_sample:
+    input:
+        vcf = rules.narrow_samples_to_target.output[0],
+        ref = os.path.join(ref_loc, config['reference_fasta'])
+    output:
+        'work/normalize/{sample}/{sample}.vcf.gz'
+    shell:
+        make_normalize_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
+
+rule normalize_truth:
+    input:
+        vcf = rules.narrow_truth_to_target.output[0],
+        ref = os.path.join(ref_loc, config['reference_fasta'])
+    output:
+        'work/normalize/truth_variants.vcf.gz'
+    shell:
+        make_normalize_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
+
+rule bcftools_isec:
+    input:
+        sample_vcf = rules.normalize_sample.output,
+        truth_vcf = rules.normalize_truth.output,
+        # regions = rules.prep_regions.output
+    params:
+        output_dir = 'work/eval/{sample}_bcftools_isec'
+    output:
+        fp = 'work/eval/{sample}_bcftools_isec/0000.vcf',
+        fn = 'work/eval/{sample}_bcftools_isec/0001.vcf',
+        tp = 'work/eval/{sample}_bcftools_isec/0002.vcf'
+    run:
+        regions = merge_regions()
+        regions = ('-R ' + regions) if regions else ''
+        shell('bcftools isec {input.sample_vcf} {input.truth_vcf} {regions} -p {params.output_dir}')
+
+def count_variants(vcf):
+    snps = 0
+    indels = 0
+    with (gzip.open(vcf) if vcf.endswith('.gz') else open(vcf)) as f:    
+        for l in [l for l in f if not l.startswith('#')]:
+            _, _, _, ref, alt = l.split('\t')[:5]
+            if len(ref) == len(alt) == 1:
+                snps += 1
+            else:
+                indels += 1
+    return snps, indels
+
+rule eval:
+    input: 
+        fp = rules.bcftools_isec.output.fp,
+        fn = rules.bcftools_isec.output.fn,
+        tp = rules.bcftools_isec.output.tp
+    output:
+        'work/eval/{sample}_stats.tsv'
+    run:
+        fp_snps, fp_inds = count_variants(input.fp)
+        fn_snps, fn_inds = count_variants(input.fn)
+        tp_snps, tp_inds = count_variants(input.tp)
+
+        with open(output[0], 'w') as f:
+            writer = csv.writer(f, delimiter='\t')
+            writer.writerow([
+                '#SNP TP', 'SNP FP', 'SNP FN', 'SNP Precision', 'SNP Recall', 
+                 'IND TP', 'IND FP', 'IND FN', 'IND Precision', 'IND Recall'
+            ])
+            writer.writerow([
+                tp_snps, fp_snps, fn_snps, tp_snps / (tp_snps + fp_snps), tp_snps / (tp_snps + fn_snps),
+                tp_inds, fp_inds, fn_inds, tp_inds / (tp_inds + fp_inds), tp_inds / (tp_inds + fn_inds)
+            ])
+
+rule sompy:
+    input:
+        sample_vcf = rules.normalize_sample.output,
+        truth_vcf = rules.normalize_truth.output,
+        ref = os.path.join(ref_loc, config['reference_fasta'])
+    output:
+        'work/sompy/{sample}'
+    params:
+        output_prefix = 'work/sompy/{sample}'
+    run:
+        regions = merge_regions()
+        regions = ('-f ' + regions) if regions else ''
+        shell('som.py {input.truth_vcf} {input.sample_vcf} {regions} -o {params.output_prefix} -r {input.ref}')
+
+rule report:
+    input:
+        stats_files = expand(rules.eval.output, sample=sorted(config['samples'].keys())),
+        sompy_files = expand(rules.sompy.output, sample=sorted(config['samples'].keys()))
+    output:
+        'work/eval/report.tsv'
+    params:
+        samples = sorted(config['samples'].keys())
+    run:
+        out_lines = []
+        out_lines.append(['Sample', 'File', 'SNP', ''  , ''  , ''         , ''      , 'INDEL', ''  , ''  , ''         , ''       ])
+        out_lines.append([''      , ''    , 'TP' , 'FP', 'FN', 'Precision', 'Recall', 'TP'   , 'FP', 'FN', 'Precision', 'Recall',])
+        for stats_file, sname in zip(input.stats_files, params.samples):
+            print(stats_file, sname)
+            with open(stats_file) as f:
+                out_lines.append([sname, stats_file] + f.readlines()[1].strip().split('\t'))
+
+        with open(output[0], 'w') as out_f:
+            for fields in out_lines:
+                print(fields)
+                out_f.write('\t'.join(map(str, fields)) + '\n')
+
+# rule eval:
+#     input:
+#         rules.index_samples.output,
+#         rules.index_truth.output,
+#         regions = rules.prep_target.output,
+#         truth_vcf = rules.narrow_truth_to_target.output, 
+#         sample_vcf = rules.narrow_samples_to_target.output
+#     output:
+#         '{sample}/{sample}.re.a/weighted_roc.tsv.gz'
+#     shell:
+#         '{rtgeval}/run-eval -s {sdf}'
+#         ' -b {input.regions}'
+#         ' {input.truth_vcf}'
+#         ' {input.sample_vcf}'
+
+# rule count_truth:
+#     input:
+#         truth_variants
+#     output:
+#         snps = 'truth.snps',
+#         indels = 'truth.indels'
+#     run:
+#         snps, indels = count_variants(truth_variants)
+#         with open(output.snps, 'w') as o:
+#             o.write(snps)
+#         with open(output.indels, 'w') as o:
+#             o.write(indels)
+
+# rule report:
+#     input:
+#         stats_files = expand(rules.eval.output, sample=config['samples'].keys()),
+#         truth_snps = rules.count_truth.output.snps,
+#         truth_indels = rules.count_truth.output.indels
+#     output:
+#         'report.tsv'
+#     params:
+#         samples = config['samples']
+#     run:
+#         truth_snps = int(open(input.truth_snps).read())
+#         truth_indels = int(open(input.truth_indels).read())
+
+#         out_lines = []
+#         out_lines.append(['', 'SNP', ''  , ''  , 'INDEL', ''  , ''  ])
+#         out_lines.append(['', 'TP' , 'FP', 'FN', 'TP'   , 'FP', 'FN'])
+
+#         for stats_file, sname in zip(input.stats_files, params.samples):
+#             data = defaultdict(dict)
+#             with open(stats_file) as f:
+#                 for l in f:
+#                     if l:
+#                         event_type, change_type, metric, val = l.strip().split()[:4]
+#                         if event_type == 'allelic':
+#                             try:
+#                                 val = int(val)
+#                             except ValueError:
+#                                 val = float(val)
+#                             data[change_type][metric] = val
+#             pprint.pprint(data)
+#             try:
+#                 out_lines.append([sname, truth_snps   - data['SNP']['FN'],   data['SNP']['FP'],   data['SNP']['FN'], 
+#                                          truth_indels - data['INDEL']['FN'], data['INDEL']['FP'], data['INDEL']['FN']])
+#             except KeyError:
+#                 print('Some of the required data for ' + sname + ' not found in ' + fp)
+
+#         with open(output[0], 'w') as out_f:
+#             for fields in out_lines:
+#                 print(fields)
+#                 out_f.write('\t'.join(map(str, fields)) + '\n')
+
+
+# ensemble.subsample.re.truth.vcf.gz      Truth = 396 = TP + FN
+# ensemble.subsample.re.test.vcf.gz       Call  = 366 + TP + FP
+# fp.vcf.gz                               FP    = 19
+# fn.vcf.gz                               FN    = 49
+# tp.vcf.gz                               TP    = 347
+# bcftools_isec/0000.vcf.gz               FP    = 19     for records private to  ensemble.subsample.re.test.vcf.gz
+# bcftools_isec/0001.vcf.gz               FN    = 49     for records private to  ensemble.subsample.re.truth.vcf.gz
+# bcftools_isec/0002.vcf.gz               TP    = 347    for records from ensemble.subsample.re.test.vcf.gz shared by both       ensemble.subsample.re.test.vcf.gz ensemble.subsample.re.truth.vcf.gz
+
+
+# bcftools_isec/0000.vcf.gz               FP    = 71     for records private to  ensemble.subsample.re.test.vcf.gz
+
+

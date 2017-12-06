@@ -1,0 +1,9 @@
+.snakemake
+__pycache__
+.DS_Store
+.idea
+somatic_filtering/panel_of_normals/hg38ToHg19.over.chain.gz
+build/
+dist/
+*.egg-info/
+work
