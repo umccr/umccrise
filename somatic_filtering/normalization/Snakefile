@@ -4,11 +4,7 @@ from somatic_filtering.normalization import make_normalize_cmd
 from ngs_utils.file_utils import splitext_plus
 
 
-ref_loc = get_ref_path()
-ref = os.path.join(ref_loc, 'GRCh37/seq/GRCh37.fa')
-
-vcf_file = 'test.vcf'
-ref = 'test_ref.fa'
+ref = os.path.join(get_loc().hsapiens, 'GRCh37/seq/GRCh37.fa')
 
 
 rule all:

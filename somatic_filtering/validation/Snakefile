@@ -12,13 +12,18 @@ import gzip
 import csv
 import pprint
 from collections import defaultdict
-from somatic_filtering.utils import get_ref_path, get_sample_name
+from somatic_filtering.utils import get_loc, get_sample_name
 from somatic_filtering.normalization import make_normalize_cmd
 from ngs_utils.file_utils import splitext_plus
 
 # shell.prefix("set -o pipefail; ")
 
-ref_loc = get_ref_path()
+def get_ref(path):
+    """ If path does not exist, search it in bcbio/genome/Hsapiens location
+    """
+    if not os.path.isfile(path):
+        return os.path.join(get_loc().hsapiens, path)
+
 
 rule all:
     input:
@@ -31,7 +36,7 @@ rule all:
 
 def merge_regions():
     samples_regions = config.get('regions')
-    truth_regions = os.path.join(ref_loc, config['truth_regions']) if 'truth_regions' in config else None
+    truth_regions = get_ref(config['truth_regions']) if 'truth_regions' in config else None
 
     output = 'work/regions/regions.bed'
     if samples_regions and truth_regions:
@@ -79,7 +84,7 @@ rule narrow_samples_to_target:  # Extracts target sample, target regions, and re
 
 rule narrow_truth_to_target:  # Extracts target regions from truth VCF
     input:
-        truth_variants = os.path.join(ref_loc, config['truth_variants']),
+        truth_variants = get_ref(config['truth_variants']),
         # regions = rules.prep_regions.output[0] if (samples_regions or truth_regions) else []
     output:
         'work/narrow/truth_variants.vcf.gz'
@@ -106,7 +111,7 @@ rule narrow_truth_to_target:  # Extracts target regions from truth VCF
 rule normalize_sample:
     input:
         vcf = rules.narrow_samples_to_target.output[0],
-        ref = os.path.join(ref_loc, config['reference_fasta'])
+        ref = get_ref(config['reference_fasta'])
     output:
         'work/normalize/{sample}/{sample}.vcf.gz'
     shell:
@@ -115,7 +120,7 @@ rule normalize_sample:
 rule normalize_truth:
     input:
         vcf = rules.narrow_truth_to_target.output[0],
-        ref = os.path.join(ref_loc, config['reference_fasta'])
+        ref = get_ref(config['reference_fasta'])
     output:
         'work/normalize/truth_variants.vcf.gz'
     shell:
@@ -176,7 +181,7 @@ rule sompy:
     input:
         sample_vcf = rules.normalize_sample.output,
         truth_vcf = rules.normalize_truth.output,
-        ref = os.path.join(ref_loc, config['reference_fasta'])
+        ref = get_ref(config['reference_fasta'])
     output:
         'work/sompy/{sample}'
     params:
