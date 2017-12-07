@@ -14,12 +14,13 @@ setup(
     keywords='bioinformatics',
     license='GPLv3',
     packages=[
-        'somatic_filtering'
+        'umccrise',
+        'patient_analysis',
+        'somatic_filtering',
     ],
     scripts=[
         'scripts/normalize.py',
         'somatic_filtering/vardict/proc_vardict_vcf'
     ],
     include_package_data=True,
-    install_requires=[],
 )

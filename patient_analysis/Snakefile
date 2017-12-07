@@ -1,209 +1,193 @@
 """ Patient analysis pipeline
 """
 import os
-from somatic_filtering.utils import get_ref_path, get_sample_name
-from somatic_filtering.normalization import make_normalize_cmd
+from os.path import join
+from umccrise.utils import get_loc, get_sample_name
 from ngs_utils.file_utils import splitext_plus
-from ngs_utils.bcbio import bcbio
+from ngs_utils.bcbio import BcbioProject
+from ngs_utils.file_utils import add_suffix, get_ungz_gz
 
-FINAL_DIRPATH = "/data/cephfs/punim0010/data/Results/Avner/WPT-013/final/"
-DATESTAMP_DIR = "2017-10-19_WPT-013"
-bcbio_run = bcbio.BcbioProject(FINAL_DIRPATH)
-UMCCRIZED = os.path.join(FINAL_DIRPATH, 'umccrized')
+cov_by_phenotype = config.get('cov_by_phenotype', {
+  'tumor': 30,
+  'normal': 10,
+})
 
-# This information should come from the *.csv
-TUMOR_SAMPLE = "WPT-013-organoid"
-NORMAL_SAMPLE = "WPT-013-normal"
-BATCH_NAME = "batch1"
+bb = BcbioProject(config['run_dir'])
+batch_by_name = bb.batch_by_name
+if 'batch' in config:
+    batch_by_name = {k: v for k, v in batch_by_name.items() if k == config['batch']}
+
+loc = get_loc()
+az300 = join(loc.hsapiens, 'GRCh37/coverage/prioritize/cancer/az300.bed.gz')
+ref_fasta = join(loc.hsapiens, 'GRCh37/seq/GRCh37.fa')
+
+threads_max = 32
+
 
 rule all:
     input:
-        pass
+        expand(
+                expand('umccrised/coverage/{{batch}}/{phenotype}.callable.bed', phenotype=['tumor', 'normal']) +
+                expand('umccrised/pcgr/{{batch}}-{caller}.vcf.gz', caller=list(batch_by_name.values())[0].tumor.variantcallers) +
+                ['umccrised/indexcov/{batch}/index.html',
+                 'umccrised/pcgr/{batch}-germline-ensemble-cancer-chroms.vcf.gz',
+                 'umccrised/pcgr/{batch}-cnvkit-pcgr.tsv',
+                 'umccrised/rstudio/{batch}-ensemble-ucsf.vcf',
+                 'umccrised/af/{batch}_af_vardict_tumor.txt',
+                 'umccrised/af/{batch}_af_vardict_tumor_az300.txt',
+                 'umccrised/structural/{batch}_cnvkit_diagram.done'
+                 ],
+            batch=batch_by_name.values()
+        ) + 
+        ['umccrised/qc/multiqc_report.html']
 
-
-## QC
-# Start with the MultiQC results and pull them into the current folder.
 
 rule symlink_multiqc:
     input:
-        os.path.join(FINAL_DIRPATH, 'multiqc/multiqc_report.html')
+        join(bb.date_dir, 'multiqc/multiqc_report.html')
     output:
-        'umccrized/qc/multiqc_report.html'
+        'umccrised/qc/multiqc_report.html'
     shell:
         'ln -s {input} {output}'
+
 
 ## Cancer gene coverage
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability. 
 # Minimum coverage for normal is 10, 30 for cancer.
-
-def coverage_cmd(sample, cov):
-	return ('goleft depth '
-		' --reference {ref_fasta}'
-		' --processes {threads}'
-		' --bed {az300}'
-		' --stats'
-		' --mincov 10'
-		' --prefix ${sample} {input.bam}')
-
-# def coverage_input(sample):
-	# return 
-
-
-rule coverage_tumor:
-	input:
-		bam = '{final_dirpath}/' + TUMOR_SAMPLE + '/' + TUMOR_SAMPLE + '-ready.bam',
-		az300 = os.path.join(get_loc().hsapiens, 'GRCh37/coverage/prioritize/cancer/az300.bed.gz'),
-		ref_fasta = os.path.join(get_loc().hsapiens, 'GRCh37/seq/GRCh37.fa'),
-	output:
-		'coverage'
-	threads: 32
-	shell:
-		coverage_cmd(TUMOR_SAMPLE, 30)
-
-
-rule coverage_normal:
-	input:
-		bam = '{final_dirpath}/' + NORMAL_SAMPLE + '/' + NORMAL_SAMPLE + '-ready.bam',
-		az300 = os.path.join(get_loc().hsapiens, 'GRCh37/coverage/prioritize/cancer/az300.bed.gz'),
-		ref_fasta = os.path.join(get_loc().hsapiens, 'GRCh37/seq/GRCh37.fa'),
-	output:
-		'coverage'
-	threads: 32
-	shell:
-		coverage_cmd(NORMAL_SAMPLE, 10)
+rule coverage:
+    input:
+        bam = lambda wc: {'tumor': batch_by_name[wc.batch].tumor.bam,
+                          'normal': batch_by_name[wc.batch].normal.bam}[wc.phenotype],
+        az300 = az300,
+        ref_fasta = ref_fasta
+    params:
+        prefix = lambda wc, output: output[0].replace('.callable.bed', ''),
+        cutoff = lambda wc: cov_by_phenotype[wc.phenotype]
+    output:
+        'umccrised/coverage/{batch}/{phenotype}.callable.bed'
+    threads: threads_max
+    shell:
+        'goleft depth {input.bam} --reference {ref_fasta} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
 
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
+rule cov_plots:
+    input:
+        bam = lambda wc: batch_by_name[wc.batch].tumor.bam
+    params:
+        directory = 'umccrised/indexcov/{batch}'
+    output:
+        'umccrised/indexcov/{batch}/index.html'
+    shell:
+        'goleft indexcov --directory {params.directory} {input.bam}'
 
-"""
-find ${BCRESULT}/ -name *ready.bam* -exec ln {} . \;
-goleft indexcov --directory indexcov *.bam
-rm *.bam*
-cd ..
-"""
 
 ## Somatic calls
-'''
-Run ensemble and raw calls through PCGR and combine with the cnv calls:
+# Run ensemble and raw calls through PCGR and combine with the cnv calls:
 
-```
-mkdir somatic
-cd somatic
+# PCGR struggles with anything but the basic chromosome setup. It also ignores any variant not marked `PASS` so might as well remove others to save on transfer times:
+rule pcgr_vcf:
+    input:
+        vcf = join(bb.date_dir, '{batch}-{caller}-annotated.vcf.gz')
+    output:
+        'umccrised/pcgr/{batch}-{caller}.vcf.gz'
+    shell:
+        'bcftools view -f .,PASS -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y {input.vcf} -Oz > {output}'
 
-ln ${BCRESULT}/${BCTUMOR}/*.cns .
-ln ${BCRESULT}/${BCFINAL}/${BCBATCH}*vcf* .
-```
+# PCGR also wants a slightly different format for the CNS data:
+rule pcgr_cns:
+    input:
+        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-cnvkit.cns')
+    output:
+        'umccrised/pcgr/{batch}-cnvkit-pcgr.tsv'
+    shell:
+        'echo -e "Chromosome\tStart\tEnd\tSegment_Mean" > {output} && cat {input} | grep -v ^chromosome | cut -f 1,2,3,5 >> {output}'
 
-PCGR struggles with anything but the basic chromosome setup. It also ignores any variant not marked `PASS` so might as well remove others to save on transfer times:
 
-```
-bcftools view -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y ${BCBATCH}-ensemble-annotated.vcf.gz > ${BCBATCH}-ensemble-annotated-subset.vcf
-bcftools view -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -f .,PASS ${BCBATCH}-mutect2-annotated.vcf.gz > ${BCBATCH}-mutect2-annotated-subset.vcf
-bcftools view -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -f .,PASS ${BCBATCH}-vardict-annotated.vcf.gz > ${BCBATCH}-vardict-annotated-subset.vcf
-bcftools view -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -f .,PASS ${BCBATCH}-varscan-annotated.vcf.gz > ${BCBATCH}-varscan-annotated-subset.vcf
-
-mkdir PCGR_Input
-mv *subset* PCGR_Input
-```
-
-PCGR also wants a slightly different format for the CNS data:
-
-```
-echo -e "Chromosome\tStart\tEnd\tSegment_Mean" > PCGR_Input/${BCBATCH}-cnvkit-pcgr.tsv
-cat ${BCBATCH}-cnvkit.cns | grep -v ^chromosome | cut -f 1,2,3,5 >> PCGR_Input/${BCBATCH}-cnvkit-pcgr.tsv
-```
-
-Cleanup: get rid of the original files:
-
-```
-rm *.cns
-```
-
-Ensemble calls to be submitted to CGI. Sharing functionality does not seem to work at this point. Ensemble calls only include variants that `PASS` so no additional filtering required.
-
-Finally, for the local analysis with MutationalPatterns generate UCSC-versions of the ensemble calls:
-
-```
-mkdir rstudio
-
-cat PCGR_Input/${BCBATCH}-ensemble-annotated-subset.vcf | awk '{ if($0 !~ /^#/) print "chr"$0; else if(match($0,/(##contig=<ID=)(.*)/,m)) print m[1]"chr"m[2]; else print $0 }'  | grep -v chrG > rstudio/${BCBATCH}-ensemble-annotated-subset-ucsf.vcf
-
-cd ..
-```
-
-All done; file needs to be submitted to CGI and PCGR manually for now. 
+# Ensemble calls to be submitted to CGI. Sharing functionality does not seem to work at this point. Ensemble calls only include variants that `PASS` so no additional filtering required.
+# Finally, for the local analysis with MutationalPatterns generate UCSC-versions of the ensemble calls:
+rule cgi:
+    input:
+        'umccrised/pcgr/{batch}-ensemble.vcf.gz'
+    output:
+        'umccrised/rstudio/{batch}-ensemble-ucsf.vcf'
+    shell:
+        'cat {input}'
+        ' | awk \'{ if($0 !~ /^#/) print "chr"$0; else if(match($0,/(##contig=<ID=)(.*)/,m)) print m[1]"chr"m[2]; else print $0 }\''
+        ' | grep -v chrG > {output}'
+# All done; file needs to be submitted to CGI and PCGR manually for now. 
 
 
 ## Allelic frequencies
+# AF is not yet integrated into PCGR or CGI. We can extract those from VarDict or FreeBayes for plotting purposes, but still need to look up AF for genes of interest manually. Not entirely ideal but for a rough summary plot but this is going to be sufficient. Can revisit once we've unified AF information across callers:
 
-AF is not yet integrated into PCGR or CGI. We can extract those from VarDict or FreeBayes for plotting purposes, but still need to look up AF for genes of interest manually. Not entirely ideal but for a rough summary plot this is going to be sufficient. Can revisit once we've unified AF information across callers:
-
-```
-# NOTE: The sample name is hardcoded here. For the life of me I
-# cannot get the environmental $BCTUMOR variable injected into
-# the vawk command
-mkdir af
-cd af
-
-## VarDict
-zcat ${BCRESULT}/${BCFINAL}/${BCBATCH}-vardict-annotated.vcf.gz | bcftools view -f .,PASS | vawk '{ print S$WPT-013-organoid$AF }' > af_vardict_tumor.txt
-
-bcftools view -f .,PASS ${BCRESULT}/${BCFINAL}/${BCBATCH}-vardict-annotated.vcf.gz | bedtools intersect -a stdin -b ${BCINSTALL}/genomes/Hsapiens/GRCh37/coverage/prioritize/cancer/az300.bed.gz -header | vawk '{ print $1,$2,$3,$4,$5,S$WPT-013-organoid$AF, INFO$ANN}' > af_vardict_az300_batch1.txt 
-
-cd ..
-```
-
-Generating the plot manually at a later stage.
-
+rule af_freqs:
+    input:
+        vcf = join(bb.date_dir, '{batch}-vardict-annotated.vcf.gz'),
+        az300 = az300
+    params:
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
+    output:
+        af_vardict = 'umccrised/af/{batch}_af_vardict_tumor.txt',
+        af_vardict_az300 = 'umccrised/af/{batch}_af_vardict_tumor_az300.txt'
+    shell:
+        'bcftools view -f .,PASS {input.vcf} | vawk \'{{ print S${params.tumor_name}$AF }}\' > {output.af_vardict}'
+        ' && bcftools view -f .,PASS {input.vcf} | bedtools intersect -a stdin -b {input.az300} -header'
+        ' | vawk \'{{ print $1,$2,$3,$4,$5,S${params.tumor_name}$AF, INFO$ANN}\' > {output.af_vardict_az300}'
+# Generating the plot manually at a later stage.
 
 ## Germline summary
+# Take a single germline call set (or preferably the ensemble best practice calls, if generated) and annotate any events found in Sean's 105/106 cancer predisposition gene set.
+# Note: need to store that cancer gene list somewhere. Happy to add to bcbio directly but then need source information.
 
-Take a single germline call set (or preferably the ensemble best practice calls, if generated) and annotate any events found in Sean's 105/106 cancer predisposition gene set.
-
-Note: need to store that cancer gene list somewhere. Happy to add to bcbio directly but then need source information.
-
-```
-mkdir germline
-cd germline
-
-cp ${EXTRAS}/cancer_genes_HUGO.txt .
-cp ${EXTRAS}/cancer_genes_ENSG.txt .
-
-zgrep ^# ${BCRESULT}/${BCFINAL}/${BCNORMAL}-ensemble-annotated.vcf.gz > ${BCNORMAL}-ensemble-annotated-cancer-only.vcf && zgrep -f cancer_genes_ENSG.txt ${BCRESULT}/${BCFINAL}/${BCNORMAL}-ensemble-annotated.vcf.gz >> ${BCNORMAL}-ensemble-annotated-cancer-only.vcf
-
-# Pack up the subset 
-bgzip ${BCNORMAL}-ensemble-annotated-cancer-only.vcf 
-tabix ${BCNORMAL}-ensemble-annotated-cancer-only.vcf.gz
+rule prep_germline:
+    input:
+        vcf = join(bb.date_dir, '{batch}-ensemble-annotated.vcf.gz'),
+        ensg = join(loc.extras, 'cancer_genes_ENSG.txt')
+    output:
+        'umccrised/germline/{batch}-germline-ensemble-cancer.vcf.gz'
+    params:
+        ungz = lambda wc, output: get_ungz_gz(output[0])[0]
+    shell:
+        'zgrep ^# {input.vcf} > {params.ungz} && '
+        'zgrep -f {input.ensg} {input.vcf} >> {params.ungz} && '
+        'bgzip {params.ungz} && tabix {output}'
 
 # Prepare it for submission to PCGR
-mkdir PCGR_Input
-bcftools view -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -f .,PASS ${BCNORMAL}-ensemble-annotated-cancer-only.vcf.gz > PCGR_Input/${BCNORMAL}-ensemble-annotated-cancer-only-subset.vcf
+rule pcgr_germline:
+    input:
+        vcf = rules.prep_germline.output[0]
+    output:
+        'umccrised/pcgr/{batch}-germline-ensemble-cancer-chroms.vcf.gz',
+    shell:
+        'bcftools view -f .,PASS -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y {input.vcf} -Oz > {output}'
 
-cd ..
-```
-
-Can review the `.txt` file in Excel or submit the VCF to frameworks such as [gene.iobio](http://gene.iobio.io/). 
-
+# Can review the `.txt` file in Excel or submit the VCF to frameworks such as [gene.iobio](http://gene.iobio.io/). 
 
 ## Structural changes
-
-Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
-
-```
-mkdir structural
-cd structural
-cp ${BCRESULT}/${BCTUMOR}/${BCBATCH}-cnvkit.cns .
+# Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 
 # Remove gene labels
-head -n 1 ${BCBATCH}-cnvkit.cns > ${BCBATCH}-cnvkit_noLabels.cns
-grep -v '^chromosome' ${BCBATCH}-cnvkit.cns  | awk -v OFS='\t' '{ print $1, $2, $3, "", $5, $6, $7, $8 }' >> ${BCBATCH}-cnvkit_noLabels.cns
+rule cnvkit_cleanup:
+    input:
+        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-cnvkit.cns')
+    output:
+        'umccrised/structural/{batch}-cnvkit-nolabels.cns'
+    shell:
+        'head -n 1 {input} > {output} && '
+        'grep -v \'^chromosome\' {input} | awk -v OFS=\'\\t\' \'\{ print $1, $2, $3, "", $5, $6, $7, $8 \}\' >> {output}'
 
-cnvkit.py diagram -s ${BCBATCH}-cnvkit_noLabels.cns
-```
+# Plot
+rule cnvkit_plot:
+    input:
+        rules.cnvkit_cleanup.output[0]
+    output:
+        'umccrised/structural/{batch}_cnvkit_diagram.done'
+    shell:
+        'cnvkit.py diagram -s {input}'
 
-Bring in the prioritized SV calls from Manta. This will change with the inclusion of BPI and should also include a basic plot at some stage:
-
-```
+'''
+# Bring in the prioritized SV calls from Manta. This will change with the inclusion of BPI and should also include a basic plot at some stage:
 cp ${BCRESULT}/${BCTUMOR}/*prior* .
 cat ${BCBATCH}-sv-prioritize.tsv | grep manta > ${BCBATCH}-sv-prioritize-manta.tsv
 ```
