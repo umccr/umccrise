@@ -9,7 +9,14 @@ output:
     toc_float: false
     code_folding: hide
   rmdformats::material:
-    highlight: kate    
+    highlight: kate
+params:
+  vcf: 'somatic/rstudio/ensemble-ucsf.vcf'
+  af_freqs: 'af/af_vardict_tumor.txt'
+  af_freqs_az300: 'af/af_vardict_tumor_az300.txt'
+  tumor_name: ''
+
+path: "`r commandArgs(trailingOnly=T)[1]`"
 ---
 
 ```{r custom, echo=FALSE, message=FALSE, warning=FALSE}
@@ -23,32 +30,20 @@ library(BSgenome)
 library(here)
 ```
 
-```{r setup}
-# Set the patient identifier / name of the folder and other variables. These are equivalent
-# to the variables used in the postprocessing script. Could be passed as arguments eventually
-PATIENT <- 'WPT-013'
-TUMOR <- 'WPT-013-organoid'
-BATCH <- 'batch1'
-
-# Set basepath depending on patient data we want to process. Assumes standard
-# `analysis` folder structure
-patientpath <- here(file.path('/Users/vsaveliev/git/umccr/umccrise/patient_analysis/example/umccrised', BATCH))
-```
-
 ## Allelic frequencies
 
 Comparing the allelic frequencies of all somatic mutations vs those present in a subset of ~300 known cancer genes. Frequencies are currently based on [VarDict](https://github.com/AstraZeneca-NGS/VarDict) calls only and limited to 'high confidence' regions as determined by the [Genome in a Botte consortium].
 
 ```{r af}
 # Global AF
-af <- read.table(file.path(patientpath, 'af', 'af_vardict_tumor.txt'),
-                header=FALSE, colClasses='numeric') %>%
+af <- read.table(file.path(params$af_freqs),
+                 header=FALSE, colClasses='numeric') %>%
   mutate(set='wgs') %>%
   select(set, af=V1) 
 
 # AF for AstraZeneca's AZ300 gene set
-af_az300 <- read.table(file.path(patientpath, 'af', 'af_vardict_az300.txt'),
-                header=FALSE) %>%
+af_az300 <- read.table(file.path(params$af_freqs_az300),
+                       header=FALSE) %>%
   mutate(set='cancer_genes') %>%
   select(set, af=V6) 
 
@@ -73,11 +68,8 @@ library(ref_genome, character.only = TRUE)
 #
 # Also needs removal of GL.* chromosomes. Sigh..
 #
-vcf <- read_vcfs_as_granges(file.path(patientpath,
-                                      'somatic',
-                                      'rstudio',
-                                      paste(BATCH, 'ensemble-annotated-subset-ucsf.vcf', sep='-')),
-                            TUMOR, 
+vcf <- read_vcfs_as_granges(file.path(params$vcf),
+                            params$tumor_name,
                             ref_genome)
 ```
 
