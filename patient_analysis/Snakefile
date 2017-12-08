@@ -1,58 +1,55 @@
-""" Patient analysis pipeline
+""" UMCCR post-bcbio patient analysis workflow
 """
 import os
 from os.path import join
-from umccrise.utils import get_loc, get_sample_name
 from ngs_utils.file_utils import splitext_plus
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
+from umccrise.utils import get_loc, get_sample_name
 
-cov_by_phenotype = config.get('cov_by_phenotype', {
-  'tumor': 30,
-  'normal': 10,
-})
+workdir: 'umccrised'
+threads_max = 32
+cov_by_phenotype = config.get('cov_by_phenotype', {'tumor': 30, 'normal': 10})
 
-bb = BcbioProject(config['run_dir'])
-batch_by_name = bb.batch_by_name
+az300 = join(get_loc().hsapiens, 'GRCh37/coverage/prioritize/cancer/az300.bed.gz')
+ref_fa = join(get_loc().hsapiens, 'GRCh37/seq/GRCh37.fa')
+extras = get_loc().extras
+
+run = BcbioProject(config['run_dir'])
+batch_by_name = run.batch_by_name
 if 'batch' in config:
     batch_by_name = {k: v for k, v in batch_by_name.items() if k == config['batch']}
-
-loc = get_loc()
-az300 = join(loc.hsapiens, 'GRCh37/coverage/prioritize/cancer/az300.bed.gz')
-ref_fasta = join(loc.hsapiens, 'GRCh37/seq/GRCh37.fa')
-
-threads_max = 32
 
 
 rule all:
     input:
         expand(
-                expand(['umccrised/coverage-{{batch}}/{phenotype}.callable.bed', 
-                        'umccrised/igv/{{batch}}/{phenotype}_mini.bam'], phenotype=['tumor', 'normal']) +
-                expand('umccrised/somatic/pcgr/{{batch}}-{caller}.vcf.gz', caller=list(batch_by_name.values())[0].tumor.variantcallers) +
-                ['umccrised/indexcov-{batch}/index.html',
-                 'umccrised/somatic/pcgr/{batch}-cnvkit-pcgr.tsv',
-                 'umccrised/somatic/rstudio/{batch}-ensemble-ucsf.vcf',
-                 'umccrised/germline/pcgr/{batch}-germline-ensemble-cancer.vcf.gz',
-                 'umccrised/af/{batch}_af_vardict_tumor.txt',
-                 'umccrised/af/{batch}_af_vardict_tumor_az300.txt',
-                 'umccrised/structural/{batch}-cnvkit-nolabels-diagram.pdf',
-                 'umccrised/structural/{batch}-manta.bed',
-                 'umccrised/structural/{batch}-sv-prioritize-manta.bedpe',
-                 ],
-            batch=batch_by_name.values()
-        ) + 
-        ['umccrised/qc/multiqc_report.html', 
-         'umccrised/log/data_versions.csv',
-         'umccrised/log/programs.txt',
-         'umccrised/log/config']
+         expand(['{{batch}}/coverage/{phenotype}.callable.bed', 
+                 '{{batch}}/igv/{phenotype}_mini.bam',
+                ], phenotype=['tumor', 'normal']) +
+          expand('{{batch}}/somatic/pcgr/{caller}.vcf.gz', 
+                  caller=list(batch_by_name.values())[0].tumor.variantcallers) +
+                ['{batch}/coverage/indexcov/index.html',
+                 '{batch}/somatic/pcgr/cnvkit-pcgr.tsv',
+                 '{batch}/somatic/rstudio/ensemble-ucsf.vcf',
+                 '{batch}/germline/pcgr/ensemble-cancer.vcf.gz',
+                 '{batch}/af/af_vardict_tumor.txt',
+                 '{batch}/af/af_vardict_tumor_az300.txt',
+                 '{batch}/structural/cnvkit-nolabels-diagram.pdf',
+                 '{batch}/structural/manta.bed',
+                 '{batch}/structural/sv-prioritize-manta.bedpe',
+                ], batch=batch_by_name.values()
+        ) + ['qc/multiqc_report.html', 
+             'log/data_versions.csv',
+             'log/programs.txt',
+             'log/config']
 
 
 rule symlink_multiqc:
     input:
-        join(bb.date_dir, 'multiqc/multiqc_report.html')
+        join(run.date_dir, 'multiqc/multiqc_report.html')
     output:
-        'umccrised/qc/multiqc_report.html'
+        'qc/multiqc_report.html'
     shell:
         'ln -s {input} {output}'
 
@@ -64,15 +61,15 @@ rule coverage:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         az300 = az300,
-        ref_fasta = ref_fasta
+        ref_fa = ref_fa
     params:
         prefix = lambda wc, output: output[0].replace('.callable.bed', ''),
         cutoff = lambda wc: cov_by_phenotype[wc.phenotype]
     output:
-        'umccrised/coverage-{batch}/{phenotype}.callable.bed'
+        '{batch}/coverage/{phenotype}.callable.bed'
     threads: threads_max
     shell:
-        'goleft depth {input.bam} --reference {ref_fasta} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
+        'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
 
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
@@ -80,9 +77,9 @@ rule cov_plots:
     input:
         bam = lambda wc: batch_by_name[wc.batch].tumor.bam
     params:
-        directory = 'umccrised/indexcov-{batch}'
+        directory = '{batch}/coverage/indexcov'
     output:
-        'umccrised/indexcov-{batch}/index.html'
+        '{batch}/coverage/indexcov/index.html'
     shell:
         'goleft indexcov --directory {params.directory} {input.bam}'
 
@@ -93,9 +90,9 @@ rule cov_plots:
 # PCGR struggles with anything but the basic chromosome setup. It also ignores any variant not marked `PASS` so might as well remove others to save on transfer times:
 rule pcgr_vcf:
     input:
-        vcf = join(bb.date_dir, '{batch}-{caller}-annotated.vcf.gz')
+        vcf = join(run.date_dir, '{batch}-{caller}-annotated.vcf.gz')
     output:
-        'umccrised/somatic/pcgr/{batch}-{caller}.vcf.gz'
+        '{batch}/somatic/pcgr/{caller}.vcf.gz'
     shell:
         'bcftools view -f .,PASS -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y {input.vcf} -Oz > {output}'
 
@@ -104,7 +101,7 @@ rule pcgr_cns:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-cnvkit.cns')
     output:
-        'umccrised/somatic/pcgr/{batch}-cnvkit-pcgr.tsv'
+        '{batch}/somatic/pcgr/cnvkit-pcgr.tsv'
     shell:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | grep -v ^chromosome | cut -f 1,2,3,5 >> {output}'
 
@@ -113,9 +110,9 @@ rule pcgr_cns:
 # Finally, for the local analysis with MutationalPatterns generate UCSC-versions of the ensemble calls:
 rule cgi:
     input:
-        'umccrised/somatic/pcgr/{batch}-ensemble.vcf.gz'
+        '{batch}/somatic/pcgr/ensemble.vcf.gz'
     output:
-        'umccrised/somatic/rstudio/{batch}-ensemble-ucsf.vcf'
+        '{batch}/somatic/rstudio/ensemble-ucsf.vcf'
     shell:
         'cat {input}'
         ' | awk \'{{ if($0 !~ /^#/) print "chr"$0; else if(match($0,/(##contig=<ID=)(.*)/,m)) print m[1]"chr"m[2]; else print $0 }}\''
@@ -128,23 +125,23 @@ rule cgi:
 
 rule af_freqs:
     input:
-        vcf = join(bb.date_dir, '{batch}-vardict-annotated.vcf.gz')
+        vcf = join(run.date_dir, '{batch}-vardict-annotated.vcf.gz')
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
-        'umccrised/af/{batch}_af_vardict_tumor.txt'
+        '{batch}/af/af_vardict_tumor.txt'
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ou'
         ' | bcftools query -f "[%AF]\\n" > {output}'
 
 rule af_freqs_az300:
     input:
-        vcf = join(bb.date_dir, '{batch}-vardict-annotated.vcf.gz'),
+        vcf = join(run.date_dir, '{batch}-vardict-annotated.vcf.gz'),
         az300 = az300
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
-        'umccrised/af/{batch}_af_vardict_tumor_az300.txt'
+        '{batch}/af/af_vardict_tumor_az300.txt'
     shell:
        'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.az300} -header'
@@ -158,10 +155,10 @@ rule af_freqs_az300:
 
 rule prep_germline:
     input:
-        vcf = join(bb.date_dir, '{batch}-ensemble-annotated.vcf.gz'),
-        ensg = join(loc.extras, 'cancer_genes_ENSG.txt')
+        vcf = join(run.date_dir, '{batch}-ensemble-annotated.vcf.gz'),
+        ensg = join(extras, 'cancer_genes_ENSG.txt')
     output:
-        'umccrised/germline/{batch}-germline-ensemble-cancer.vcf.gz'
+        '{batch}/germline/germline-ensemble-cancer.vcf.gz'
     params:
         ungz = lambda wc, output: get_ungz_gz(output[0])[0]
     shell:
@@ -174,7 +171,7 @@ rule pcgr_germline:
     input:
         vcf = rules.prep_germline.output[0]
     output:
-        'umccrised/germline/pcgr/{batch}-germline-ensemble-cancer.vcf.gz',
+        '{batch}/germline/pcgr/ensemble-cancer.vcf.gz',
     shell:
         'bcftools view -f .,PASS -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y {input.vcf} -Oz > {output}'
 
@@ -188,7 +185,7 @@ rule cnvkit_cleanup:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-cnvkit.cns')
     output:
-        'umccrised/structural/{batch}-cnvkit-nolabels.cns'
+        '{batch}/structural/cnvkit-nolabels.cns'
     shell:
         '{{'
         ' head -n1 {input}'
@@ -202,7 +199,7 @@ rule cnvkit_plot:
     input:
         rules.cnvkit_cleanup.output[0]
     output:
-        'umccrised/structural/{batch}-cnvkit-nolabels-diagram.pdf'
+        '{batch}/structural/cnvkit-nolabels-diagram.pdf'
     shell:
         'cnvkit.py diagram -s {input} -o {output}'
 
@@ -211,19 +208,19 @@ rule get_manta:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize.tsv')
     output:
-        'umccrised/structural/{batch}-sv-prioritize-manta.tsv'
+        '{batch}/structural/sv-prioritize-manta.tsv'
     shell:
         'grep manta {input} > {output}'
 
 # At least for the (most conservative) manta calls generate a file for viewing in Ribbon:
 rule ribbon:
     input:
-        fai = ref_fasta + '.fai',
+        fai = ref_fa + '.fai',
         manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize-manta.vcf.gz')
     output:
-        'umccrised/structural/{batch}-manta.bed'
+        '{batch}/structural/manta.bed'
     params:
-        vcftobedpe = 'python2 ' + join(loc.extras, 'svtools-master/vcfToBedpe')
+        vcftobedpe = 'python2 ' + join(extras, 'svtools-master/vcfToBedpe')
     shell:
         '{{ '
         'bcftools view -f .,PASS {input.manta_vcf}'
@@ -246,13 +243,13 @@ rule bedpe:
     input:
         manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize-manta.vcf.gz')
     output:
-        'umccrised/structural/{batch}-sv-prioritize-manta.bedpe'
+        '{batch}/structural/sv-prioritize-manta.bedpe'
     params:
-        vcftobedpe = 'python2 ' + join(loc.extras, 'svtools-master/vcfToBedpe')
+        vcftobedpe = 'python2 ' + join(extras, 'svtools-master/vcfToBedpe')
     shell:
         'bcftools view -f .,PASS {input.manta_vcf}'
         ' | {params.vcftobedpe}'
-        ' | cut -f 1-7' +
+        ' | cut -f 1-7'
         ' > {output}'
 
 
@@ -261,10 +258,10 @@ rule bedpe:
 rule igv_bed:
     input:
         az300 = az300,
-        vcf = join(bb.date_dir, '{batch}-ensemble-annotated.vcf.gz'),
+        vcf = join(run.date_dir, '{batch}-ensemble-annotated.vcf.gz'),
         manta = rules.ribbon.output[0]
     output:
-        'umccrised/igv/{batch}.bed'
+        '{batch}/igv/roi.bed'
     shell:
         '{{ '
         'gunzip -c {input.az300} | cut -f1-3'
@@ -282,7 +279,7 @@ rule igv_bam:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = rules.igv_bed.output[0]
     output:
-        'umccrised/igv/{batch}/{phenotype}_mini.bam'
+        '{batch}/igv/{phenotype}_mini.bam'
     threads: threads_max
     shell:
         'sambamba view -f bam -L {input.bed} {input.bam} -t {threads} -o {output}'
@@ -292,11 +289,13 @@ rule igv_bam:
 # TODO: link it to MultiQC
 rule log:
     input:
-        join(bb.date_dir, 'data_versions.csv'), join(bb.date_dir, 'programs.txt'), bb.config_dir
+        join(run.date_dir, 'data_versions.csv'), join(run.date_dir, 'programs.txt'), run.config_dir
     output:
-        'umccrised/log/data_versions.csv', 'umccrised/log/programs.txt', 'umccrised/log/config'
+        'log/data_versions.csv', 
+        'log/programs.txt', 
+        'log/config'
     params:
-        log_dir = 'umccrised/log'
+        log_dir = 'log'
     shell:
         'ln -s {input} {params.log_dir}'
 
