@@ -8,15 +8,16 @@ Normalizes VCF:
 """
 import os
 import click
-from somatic_filtering.normalization import make_normalize_cmd
-
+from ngs_utils.file_utils import verify_file
+from os.path import isfile
+from umccrise.utils import get_loc
 
 @click.command()
-@click.argument('input_file', type=click.Path(exists=True))
+@click.argument('bcbio_project', type=click.Path(exists=True))
 @click.option('-o', 'output_file', type=click.Path())
 @click.option('-f', 'reference_fasta', type=click.Path())
 def main(input_file, output_file, reference_fasta=False):
-    cmd = make_normalize_cmd(input_file, output_file, reference_fasta)
+    cmd = make_normalise_cmd(input_file, output_file, reference_fasta)
     print(cmd)
     os.system(cmd)
 

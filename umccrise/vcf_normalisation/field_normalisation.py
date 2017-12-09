@@ -1,9 +1,10 @@
 import sys
 
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
+from cyvcf2 import VCF, Writer
 
 
-def use_pysam(vcf_file):
+def use_pysam(vcf_file, proc_fields):
     """ Working.
         Time:           3:34.04
     """
@@ -17,13 +18,11 @@ def use_pysam(vcf_file):
             rec.filter.add('MSI_FAIL')
         sys.stdout.write(str(rec))
 
-def use_cyvcf2(vcf_file, vcf_out=None):
+def use_cyvcf2(vcf_file, proc_fields, vcf_out=None):
     """ Working.
         File out:       2:17.51
         stdout + bgzip: 2:50.35
     """
-    from cyvcf2 import VCF, Writer
-
     vcf = VCF(vcf_file)
     vcf.add_filter_to_header({'ID': 'MSI_FAIL', 'Description': 'Possible homopolymer artefact'})
     if vcf_out:

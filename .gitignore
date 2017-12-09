@@ -2,8 +2,9 @@
 __pycache__
 .DS_Store
 .idea
-somatic_filtering/panel_of_normals/hg38ToHg19.over.chain.gz
+umccrise/panel_of_normals/hg38ToHg19.over.chain.gz
 build/
 dist/
 *.egg-info/
 work
+umccrise/patient_analysis/WPT-013

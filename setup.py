@@ -15,12 +15,10 @@ setup(
     license='GPLv3',
     packages=[
         'umccrise',
-        'patient_analysis',
-        'somatic_filtering',
     ],
     scripts=[
-        'scripts/normalize.py',
-        'somatic_filtering/vardict/proc_vardict_vcf'
+        'scripts/normalize_vcf',
+        'scripts/umccrise',
     ],
     include_package_data=True,
 )
