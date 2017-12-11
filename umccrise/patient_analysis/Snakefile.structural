@@ -1,0 +1,88 @@
+'''
+Structural changes
+------------------
+Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
+'''
+
+# Remove gene labels
+rule cnvkit_cleanup:
+    input:
+        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-cnvkit.cns')
+    output:
+        'umccrised/{batch}/structural/cnvkit-nolabels.cns'
+    shell:
+        '{{'
+        ' head -n1 {input}'
+        ' ; '
+        'grep -v ^chromosome {input} | awk -v OFS=\'\\t\' \'{{ print $1, $2, $3, "", $5, $6, $7, $8 }}\''
+        ' ; '
+        '}} > {output}'
+
+# Plot
+rule cnvkit_plot:
+    input:
+        rules.cnvkit_cleanup.output[0]
+    output:
+        'umccrised/{batch}/structural/cnvkit-nolabels-diagram.pdf'
+    shell:
+        'cnvkit.py diagram -s {input} -o {output}'
+
+# Bring in the prioritized SV calls from Manta. This will change with the inclusion of BPI and should also include a basic plot at some stage.
+rule get_manta:
+    input:
+        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize.tsv')
+    output:
+        'umccrised/{batch}/structural/sv-prioritize-manta.tsv'
+    shell:
+        'grep manta {input} > {output}'
+
+# At least for the (most conservative) manta calls generate a file for viewing in Ribbon:
+rule ribbon:
+    input:
+        fai = ref_fa + '.fai',
+        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize-manta.vcf.gz')
+    output:
+        'umccrised/{batch}/structural/manta.bed'
+    params:
+        vcftobedpe = 'python2 ' + join(extras, 'svtools-master/vcfToBedpe')
+    shell:
+        '{{ '
+        'bcftools view -f .,PASS {input.manta_vcf}'
+        ' | {params.vcftobedpe}'
+        ' | cut -f 1-3'
+        ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
+        ' ; '
+        'bcftools view -f .,PASS {input.manta_vcf}'
+        ' | {params.vcftobedpe}'
+        ' | cut -f 4-6'
+        ' | grep -v \'CHROM\''
+        ' | bedtools slop -i stdin -g {input.fai} -b 5000'
+        ' ; }}'
+        ' | bedtools sort -i stdin'
+        ' | bedtools merge -i stdin'
+        ' > {output}'
+
+# And one in BEDPE format
+rule bedpe:
+    input:
+        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize-manta.vcf.gz')
+    output:
+        'umccrised/{batch}/structural/sv-prioritize-manta.bedpe'
+    params:
+        vcftobedpe = 'python2 ' + join(extras, 'svtools-master/vcfToBedpe')
+    shell:
+        'bcftools view -f .,PASS {input.manta_vcf}'
+        ' | {params.vcftobedpe}'
+        ' | cut -f 1-7'
+        ' > {output}'
+
+rule structural:
+    input:
+        expand(rules.bedpe.output, batch=batch_by_name.values()),
+        expand(rules.ribbon.output, batch=batch_by_name.values()),
+        expand(rules.get_manta.output, batch=batch_by_name.values()),
+        expand(rules.cnvkit_plot.output, batch=batch_by_name.values())
+    output:
+        'umccrised/.snakemake/structural.done'
+    shell:
+        'touch {output}'

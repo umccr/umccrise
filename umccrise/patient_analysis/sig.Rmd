@@ -11,12 +11,11 @@ output:
   rmdformats::material:
     highlight: kate
 params:
+  workdir: 'WPT-013/final/umccrised/batch1' 
   vcf: 'somatic/rstudio/ensemble-ucsf.vcf'
-  af_freqs: 'af/af_vardict_tumor.txt'
-  af_freqs_az300: 'af/af_vardict_tumor_az300.txt'
+  af_freqs: 'somatic/af/af_vardict_tumor.txt'
+  af_freqs_az300: 'somatic/af/af_vardict_tumor_az300.txt'
   tumor_name: ''
-
-path: "`r commandArgs(trailingOnly=T)[1]`"
 ---
 
 ```{r custom, echo=FALSE, message=FALSE, warning=FALSE}
@@ -27,7 +26,13 @@ library(dplyr)
 library(DT)
 library(MutationalPatterns)
 library(BSgenome)
-library(here)
+library(devtools)
+ref_genome = 'BSgenome.Hsapiens.UCSC.hg19'
+library(ref_genome, character.only=TRUE)
+```
+
+```{r "setup", include=FALSE}
+opts_knit$set(root.dir = params$workdir)
 ```
 
 ## Allelic frequencies
@@ -58,16 +63,10 @@ ggplot(all_af, aes(af)) +
 [PCGR](https://github.com/sigven/pcgr) uses [deconstructSigs](https://cran.r-project.org/web/packages/deconstructSigs/index.html) to generate somatic signatures. From our experience it can miss signatures quite frequently; using [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html) to doublecheck.
 
 ```{r importVCF}
-ref_genome <- "BSgenome.Hsapiens.UCSC.hg19"
-library(ref_genome, character.only = TRUE)
+# Grab ensemble calls from the post-processing stage. These were converted 
+# by adding "chr" prefixes and remiving G* chromosomes.
+#
 
-# Grab ensemble calls from the post-processing stage. These were converted with
-#
-# awk '{ if($0 !~ /^#/) print "chr"$0; else if(match($0,/(##contig=<ID=)(.*)/,m)) 
-# print m[1]"chr"m[2]; else print $0 }' | grep -v chrG
-#
-# Also needs removal of GL.* chromosomes. Sigh..
-#
 vcf <- read_vcfs_as_granges(file.path(params$vcf),
                             params$tumor_name,
                             ref_genome)

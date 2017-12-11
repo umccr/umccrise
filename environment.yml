@@ -1,0 +1,29 @@
+name: umccrise
+channels:
+  - vladsaveliev
+  - bioconda
+  - conda-forge
+dependencies:
+  - python>3.6
+  - bcftools
+  - tabix
+  - bedops
+  - bedtools
+  - vcfanno
+  - vcflib
+  - snakemake
+  # Python libraries
+  - cyvcf
+  - ngs_utils
+  - click
+  - cnvkit
+  - pandas
+  # R libraries
+  - r
+  - r-rmarkdown
+  - r-ggplot2
+  - r-dplyr
+  - r-dt
+  - r-mutationalpatterns
+  - bioconductor-bsgenome.hsapiens.ucsc.hg19
+  - r-devtools

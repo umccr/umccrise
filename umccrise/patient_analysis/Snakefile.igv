@@ -1,0 +1,41 @@
+## IGV
+# Create BAM and VCF files suitable for moving around easily. Right now this only uses the AZ300 gene list. It also needs to include Sean's cancer predisposition list and create proper Mini-BAMs and VCFs that include regions with +/- 1kb around all somatic SNVs, CNVs and SVs.
+rule igv_bed:
+    input:
+        az300 = az300,
+        vcf = join(run.date_dir, '{batch}-ensemble-annotated.vcf.gz'),
+        manta = rules.ribbon.output[0]
+    output:
+        'umccrised/{batch}/igv/roi.bed'
+    shell:
+        '{{ '
+        'gunzip -c {input.az300} | cut -f1-3'
+        ' ; '
+        'bcftools view -H {input.vcf} -Ov | awk -v OFS="\t" \'{{print $1, $2-100, $2+100}}\''
+        ' ; '
+        'cat {input.manta}'
+        ' ; }} '
+        ' | bedtools sort -i stdin'
+        ' | bedtools merge -i stdin'
+        ' > {output}'
+
+
+rule igv_bam:
+    input:
+        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
+        bed = rules.igv_bed.output
+    output:
+        'umccrised/{batch}/igv/{phenotype}_mini.bam'
+    threads: threads_max
+    shell:
+        'sambamba view -f bam -L {input.bed} {input.bam} -t {threads} -o {output}'
+        ' && samtools index {output}'
+
+
+rule igv:
+    input:
+        expand(rules.igv_bam.output, phenotype=phenotypes, batch=batch_by_name.values())
+    output:
+        'umccrised/.snakemake/igv.done'
+    shell:
+        'touch {output}'
