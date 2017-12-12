@@ -7,7 +7,7 @@ from setuptools import setup
 version = '0.1'
 
 setup(
-    name='somatic_filtering',
+    name='umccrise',
     version=version,
     author='Vlad Saveliev',
     description='VCF file normalization, validation and filtering',
