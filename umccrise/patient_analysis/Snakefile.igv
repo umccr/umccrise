@@ -26,9 +26,8 @@ rule igv_bam:
         bed = rules.igv_bed.output
     output:
         'umccrised/{batch}/igv/{phenotype}_mini.bam'
-    threads: threads_max
     shell:
-        'sambamba view -f bam -L {input.bed} {input.bam} -t {threads} -o {output}'
+        'sambamba slice -L {input.bed} {input.bam} > {output}'
         ' && samtools index {output}'
 
 

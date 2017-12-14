@@ -33,23 +33,11 @@ def get_loc():
         Loc(name='vlad',
             host_pattern=r'^5180L-135800-M.local$',
             hsapiens='/Users/vsaveliev/genomes/Hsapiens',
-            extras='/Users/vsaveliev/Analysis/umccrize/',
+            extras='/Users/vsaveliev/Analysis/umccrize',
         ),]:
         if re.match(loc.host_pattern, hostname):
             return loc
     raise Exception('Could not find loc for hostname ' + hostname)
-
-
-def get_sample_name(vcf_path):
-    with open_gzipsafe(vcf_path) as f:
-        for line in f:
-            m = re.match(r'^##SAMPLE=<ID=(?P<name>\S+),Genomes=Tumor>$', line)
-            if m:
-                return m.group('name')
-            m = re.match(r'^#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t(?P<name>\S+)', line)
-            if m:
-                return m.group('name')
-    raise ValueError
 
 
 BCINSTALL = "/data/projects/punim0010/local/share/bcbio/"

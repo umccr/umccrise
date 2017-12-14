@@ -5,7 +5,8 @@ from os.path import join, abspath, dirname
 from ngs_utils.file_utils import splitext_plus
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
-from umccrise.utils import get_loc, get_sample_name
+from ngs_utils.vcf_utils import get_vcf_main_sample_name
+from umccrise.utils import get_loc
 from umccrise.patient_analysis import get_sig_rmd_file
 
 
@@ -28,6 +29,7 @@ include: "Snakefile.somatic"
 include: "Snakefile.germline"
 include: "Snakefile.structural"
 include: "Snakefile.igv"
+include: "Snakefile.sig"
 
 
 rule all:
@@ -61,32 +63,6 @@ rule log:
         'ln -s {input} {params.log_dir}'
 
 
-rule sig_rmd:
-    input:
-        af_freqs = rules.af_freqs.output[0],
-        af_freqs_az300 = rules.af_freqs_az300.output[0],
-        vcf = rules.cgi.output[0]
-    params:
-        sig_rmd = get_sig_rmd_file(),
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
-        workdir = os.getcwd(),
-        output_file = join(os.getcwd(), 'umccrised/{batch}/somatic/rstudio/sig.html')
-    output:
-        'umccrised/{batch}/somatic/rstudio/sig.html'
-    run:
-        os.system("which Rscript")
-        shell('/usr/local/bin/Rscript -e "rmarkdown::render(\'{params.sig_rmd}\', '
-        'output_file=\'{params.output_file}\', '
-        'params=list('
-        'af_freqs=\'{input.af_freqs}\', '
-        'af_freqs_az300=\'{input.af_freqs_az300}\', '
-        'vcf=\'{input.vcf}\', '
-        'tumor_name=\'{params.tumor_name}\', '
-        'workdir=\'{params.workdir}\''
-        '))"'
-        ' && if [ -e x.txt ] ; then exit 1; fi')
-
-
 rule umccrised:
     input:
         rules.symlink_multiqc.output[0],
@@ -96,7 +72,7 @@ rule umccrised:
         rules.structural.output[0],
         rules.igv.output[0],
         rules.log.output[0],
-        expand(rules.sig_rmd.output[0], batch=batch_by_name.values())
+        rules.sig.output[0]
     output:
         'umccrised/done'
     shell:

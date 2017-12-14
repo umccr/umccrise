@@ -1,7 +1,8 @@
 import os
 from ngs_utils.file_utils import splitext_plus
-from umccrise.utils import get_loc, get_sample_name
+from umccrise.utils import get_loc
 from .vcf_normalisation import make_normalise_cmd
+from ngs_utils.vcf_utils import get_vcf_main_sample_name
 
 
 ref = os.path.join(get_loc().hsapiens, 'GRCh37/seq/GRCh37.fa')

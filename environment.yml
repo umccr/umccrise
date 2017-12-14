@@ -1,8 +1,10 @@
 name: umccrise
+
 channels:
   - vladsaveliev
   - bioconda
   - conda-forge
+
 dependencies:
   - python>3.6
   - bcftools
@@ -12,12 +14,18 @@ dependencies:
   - vcfanno
   - vcflib
   - snakemake
+  - pythonpy
+  - goleft
+  - break-point-inspector
+  - pandoc
+  #
   # Python libraries
   - cyvcf
   - ngs_utils
   - click
   - cnvkit
   - pandas
+  #
   # R libraries
   - r
   - r-rmarkdown
