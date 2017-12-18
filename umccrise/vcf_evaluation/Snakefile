@@ -5,17 +5,11 @@
 # snakemake -p --configfile=config.yaml
 
 import os
-import glob
-import re
-import socket
 import gzip
 import csv
-import pprint
-from collections import defaultdict
-from ngs_utils.vcf_utils import get_vcf_main_sample_name
+from ngs_utils.vcf_utils import get_tumor_sample_name
 from umccrise.utils import get_loc
 from umccrise.vcf_normalisation.vcf_normalisation import make_normalise_cmd
-from ngs_utils.file_utils import splitext_plus
 
 # shell.prefix("set -o pipefail; ")
 
@@ -24,6 +18,7 @@ def get_ref(path):
     """
     if not os.path.isfile(path):
         return os.path.join(get_loc().hsapiens, path)
+    return path
 
 
 rule all:
@@ -73,20 +68,18 @@ def merge_regions():
 rule narrow_samples_to_target:  # Extracts target sample, target regions, and remove rejected calls from the input VCF 
     input:
         lambda wildcards: config['samples'][wildcards.sample]
-        # regions = rules.prep_regions.output[0] if (samples_regions or truth_regions) else []
     output:
         'work/narrow/{sample}.vcf.gz'
     run:
         regions = merge_regions()
         regions = ('-R ' + regions) if regions else ''
-        sn = get_vcf_main_sample_name(input[0])
+        sn = get_tumor_sample_name(input[0])
         assert sn
         shell('bcftools view -s {sn} {input[0]} {regions} -f .,PASS -Oz -o {output[0]} && tabix -p vcf {output[0]}')
 
 rule narrow_truth_to_target:  # Extracts target regions from truth VCF
     input:
-        truth_variants = get_ref(config['truth_variants']),
-        # regions = rules.prep_regions.output[0] if (samples_regions or truth_regions) else []
+        truth_variants = get_ref(config['truth_variants'])
     output:
         'work/narrow/truth_variants.vcf.gz'
     run:
@@ -116,7 +109,7 @@ rule normalize_sample:
     output:
         'work/normalize/{sample}/{sample}.vcf.gz'
     shell:
-        make_normalize_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
+        make_normalise_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
 
 rule normalize_truth:
     input:
@@ -125,13 +118,12 @@ rule normalize_truth:
     output:
         'work/normalize/truth_variants.vcf.gz'
     shell:
-        make_normalize_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
+        make_normalise_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
 
 rule bcftools_isec:
     input:
         sample_vcf = rules.normalize_sample.output,
-        truth_vcf = rules.normalize_truth.output,
-        # regions = rules.prep_regions.output
+        truth_vcf = rules.normalize_truth.output
     params:
         output_dir = 'work/eval/{sample}_bcftools_isec'
     output:
@@ -178,24 +170,24 @@ rule eval:
                 tp_inds, fp_inds, fn_inds, tp_inds / (tp_inds + fp_inds), tp_inds / (tp_inds + fn_inds)
             ])
 
-rule sompy:
-    input:
-        sample_vcf = rules.normalize_sample.output,
-        truth_vcf = rules.normalize_truth.output,
-        ref = get_ref(config['reference_fasta'])
-    output:
-        'work/sompy/{sample}'
-    params:
-        output_prefix = 'work/sompy/{sample}'
-    run:
-        regions = merge_regions()
-        regions = ('-f ' + regions) if regions else ''
-        shell('som.py {input.truth_vcf} {input.sample_vcf} {regions} -o {params.output_prefix} -r {input.ref}')
+# rule sompy:
+#     input:
+#         sample_vcf = rules.normalize_sample.output,
+#         truth_vcf = rules.normalize_truth.output,
+#         ref = get_ref(config['reference_fasta'])
+#     output:
+#         'work/sompy/{sample}'
+#     params:
+#         output_prefix = 'work/sompy/{sample}'
+#     run:
+#         regions = merge_regions()
+#         regions = ('-f ' + regions) if regions else ''
+#         shell('som.py {input.truth_vcf} {input.sample_vcf} {regions} -o {params.output_prefix} -r {input.ref}')
 
 rule report:
     input:
-        stats_files = expand(rules.eval.output, sample=sorted(config['samples'].keys())),
-        sompy_files = expand(rules.sompy.output, sample=sorted(config['samples'].keys()))
+        stats_files = expand(rules.eval.output, sample=sorted(config['samples'].keys()))
+        # sompy_files = expand(rules.sompy.output, sample=sorted(config['samples'].keys()))
     output:
         'work/eval/report.tsv'
     params:
