@@ -1,3 +1,5 @@
+from umccrise.patient_analysis import get_sig_rmd_file
+
 
 rule sig_rmd:
     input:
@@ -27,7 +29,7 @@ rule sig_rmd:
 
 rule sig:
     input:
-        expand(rules.sig_rmd.output[0], batch=batch_by_name.values())
+        expand(rules.sig_rmd.output[0], batch=batch_by_name.keys())
     output:
         'umccrised/.snakemake/sig.done'
     shell:

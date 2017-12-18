@@ -1,3 +1,4 @@
+from umccrise.patient_analysis import get_cancer_genes_ensg
 
 '''
 Germline summary
@@ -8,8 +9,8 @@ Germline summary
 
 rule prep_germline:
     input:
-        vcf = lambda wc: join(run.date_dir, batch_by_name[wc.batch].normal.name + '-ensemble-annotated.vcf.gz'),
-        ensg = join(extras, 'cancer_genes_ENSG.txt')
+        vcf = lambda wc: join(run.date_dir,  f'{batch_by_name[wc.batch].normal.name}-ensemble-annotated.vcf.gz'),
+        ensg = get_cancer_genes_ensg()
     output:
         'umccrised/{batch}/germline/germline-ensemble-cancer.vcf.gz'
     params:
@@ -27,17 +28,16 @@ rule pcgr_germline:
         vcf = 'umccrised/{batch}/germline/pcgr/ensemble-cancer.vcf.gz',
         tbi = 'umccrised/{batch}/germline/pcgr/ensemble-cancer.vcf.gz.tbi'
     shell:
-        'bcftools view -f .,PASS -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y {input.vcf} -Oz > {output.vcf}'
+        'pcgr_prep {input.vcf} |'
+        ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
-
 # Can review the `.txt` file in Excel or submit the VCF to frameworks such as [gene.iobio](http://gene.iobio.io/). 
 
 
 rule germline:
     input:
-        expand(rules.pcgr_germline.output, batch=batch_by_name.values())
+        expand(rules.pcgr_germline.output, batch=batch_by_name.keys())
     output:
         'umccrised/.snakemake/germline.done'
     shell:
         'touch {output}'
-

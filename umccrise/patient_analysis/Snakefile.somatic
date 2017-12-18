@@ -7,19 +7,20 @@ Run ensemble and raw calls through PCGR and combine with the cnv calls.
 # PCGR struggles with anything but the basic chromosome setup. It also ignores any variant not marked `PASS` so might as well remove others to save on transfer times:
 rule pcgr_vcf:
     input:
-        vcf = join(run.date_dir, '{batch}-{caller}-annotated.vcf.gz')
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-{wc.caller}-annotated.vcf.gz')
     output:
         vcf = 'umccrised/{batch}/somatic/pcgr/{caller}.vcf.gz',
         tbi = 'umccrised/{batch}/somatic/pcgr/{caller}.vcf.gz.tbi'
     shell:
-        'bcftools view -f .,PASS -r 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y {input.vcf} -Oz > {output.vcf}'
+        'pcgr_prep {input.vcf} |'
+        ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
 
 
 # PCGR also wants a slightly different format for the CNS data:
 rule pcgr_cns:
     input:
-        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-cnvkit.cns')
+        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
         'umccrised/{batch}/somatic/pcgr/cnvkit-pcgr.tsv'
     shell:
@@ -54,6 +55,7 @@ rule cgi:
     shell:
         'gunzip -c {input}'
         " | py -x \"x.replace('##contig=<ID=', '##contig=<ID=chr') if x.startswith('#') else 'chr' + x\""
+        " | py -x \"x.replace('chrMT', 'chrM')\""
         ' | grep -v chrG > {output}'
 # All done; file needs to be submitted to CGI and PCGR manually for now. 
 
@@ -63,7 +65,7 @@ rule cgi:
 
 rule af_freqs:
     input:
-        vcf = join(run.date_dir, '{batch}-vardict-annotated.vcf.gz')
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-vardict-annotated.vcf.gz')
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
@@ -74,7 +76,7 @@ rule af_freqs:
 
 rule af_freqs_az300:
     input:
-        vcf = join(run.date_dir, '{batch}-vardict-annotated.vcf.gz'),
+        vcf = lambda wc: join(run.date_dir, batch_by_name[wc.batch].name + '-vardict-annotated.vcf.gz'),
         az300 = az300
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
@@ -90,11 +92,11 @@ rule af_freqs_az300:
 
 rule somatic:
     input:
-        expand(rules.af_freqs_az300.output, batch=batch_by_name.values()),
-        expand(rules.af_freqs.output, batch=batch_by_name.values()),
-        expand(rules.cgi.output, batch=batch_by_name.values()),
-        expand(rules.pcgr_vcf.output, batch=batch_by_name.values(), caller=list(batch_by_name.values())[0].tumor.variantcallers),
-        expand(rules.upload_to_pcgr.output, batch=batch_by_name.values())
+        expand(rules.af_freqs_az300.output, batch=batch_by_name.keys()),
+        expand(rules.af_freqs.output, batch=batch_by_name.keys()),
+        expand(rules.cgi.output, batch=batch_by_name.keys()),
+        expand(rules.pcgr_vcf.output, batch=batch_by_name.keys(), caller=list(batch_by_name.values())[0].tumor.variantcallers),
+        expand(rules.upload_to_pcgr.output, batch=batch_by_name.keys())
     output:
         'umccrised/.snakemake/somatic.done'
     shell:

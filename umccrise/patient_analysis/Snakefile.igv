@@ -3,17 +3,17 @@
 rule igv_bed:
     input:
         az300 = az300,
-        vcf = join(run.date_dir, '{batch}-ensemble-annotated.vcf.gz'),
-        manta = rules.ribbon.output[0]
+        small_variant_vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-ensemble-annotated.vcf.gz'),
+        structural_bed = rules.ribbon.output[0]
     output:
         'umccrised/{batch}/igv/roi.bed'
     shell:
         '{{ '
         'gunzip -c {input.az300} | cut -f1-3'
         ' ; '
-        'bcftools view -H {input.vcf} -Ov | awk -v OFS="\t" \'{{print $1, $2-100, $2+100}}\''
+        'bcftools view -H {input.small_variant_vcf} -Ov | awk -v OFS="\\t" \'{{print $1, $2, $2}}\''
         ' ; '
-        'cat {input.manta}'
+        'cat {input.structural_bed}'
         ' ; }} '
         ' | bedtools sort -i stdin'
         ' | bedtools merge -i stdin'
@@ -27,13 +27,14 @@ rule igv_bam:
     output:
         'umccrised/{batch}/igv/{phenotype}_mini.bam'
     shell:
-        'sambamba slice -L {input.bed} {input.bam} > {output}'
+        'sambamba view -f bam -L {input.bed} {input.bam} > {output}'
         ' && samtools index {output}'
+#        'samtools view -b -L {input.bed} {input.bam} > {output}'
 
 
 rule igv:
     input:
-        expand(rules.igv_bam.output, phenotype=phenotypes, batch=batch_by_name.values())
+        expand(rules.igv_bam.output, phenotype=phenotypes, batch=batch_by_name.keys())
     output:
         'umccrised/.snakemake/igv.done'
     shell:

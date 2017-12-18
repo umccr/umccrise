@@ -30,8 +30,8 @@ rule goleft_plots:
 
 rule coverage:
     input:
-        expand(rules.goleft_depth.output[0], phenotype=phenotypes, batch=batch_by_name.values()),
-        expand(rules.goleft_plots.output[0], batch=batch_by_name.values())
+        expand(rules.goleft_depth.output[0], phenotype=phenotypes, batch=batch_by_name.keys()),
+        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys())
     output:
         'umccrised/.snakemake/coverage.done'
     shell:

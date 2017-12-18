@@ -3,12 +3,12 @@ Structural changes
 ------------------
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 '''
-vcftobedpe = 'python2 ' + join(extras, 'svtools-master/vcfToBedpe')
+vcftobedpe = 'vcfToBedpe'
 
 # Drop gene labels
 rule cnvkit_cleanup:
     input:
-        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-cnvkit.cns')
+        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
         'umccrised/{batch}/structural/cnvkit-nolabels.cns'
     shell:
@@ -24,14 +24,22 @@ rule cnvkit_plot:
     input:
         rules.cnvkit_cleanup.output[0]
     output:
-        'umccrised/{batch}/structural/cnvkit-nolabels-diagram.pdf'
+        'umccrised/{batch}/structural/cnvkit-diagram.pdf'
     shell:
         'cnvkit.py diagram -s {input} -o {output}'
+
+rule prep_bpi:
+    input:
+        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+    output:
+        vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-pass.vcf'
+    shell:
+        'bcftools view -f.,PASS {input.manta_vcf} > {output}'
 
 # Run break-point-inspector tool to filter out low-quality manta calls. Usually reduces the output by 2-3 times
 rule bpi:
     input:
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize-manta.vcf.gz'),
+        manta_vcf = rules.prep_bpi.output.vcf,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam
     output:
@@ -39,7 +47,7 @@ rule bpi:
         stats = 'umccrised/{batch}/structural/bpi_stats.tsv'
     shell:
         'break-point-inspector'
-        ' -vcf <(bcftools view -f.,PASS {input.manta_vcf})'
+        ' -vcf {input.manta_vcf}'
         ' -ref {input.normal_bam}'
         ' -tumor {input.tumor_bam}'
         ' -output_vcf {output.vcf}'
@@ -48,7 +56,7 @@ rule bpi:
 # Bring in the prioritized SV calls from Manta. This will change with the inclusion of BPI and should also include a basic plot at some stage.
 rule prep_manta:
     input:
-        sv_prio = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize.tsv'),
+        sv_prio = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize.tsv'),
         bpi_vcf = rules.bpi.output.vcf
     output:
         'umccrised/{batch}/structural/sv-prioritize-manta-bpi.tsv'
@@ -59,7 +67,7 @@ rule prep_manta:
 rule ribbon:
     input:
         fai = ref_fa + '.fai',
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize-manta.vcf.gz')
+        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
     output:
         'umccrised/{batch}/structural/manta.bed'
     params:
@@ -84,7 +92,7 @@ rule ribbon:
 # And one in BEDPE format
 rule bedpe:
     input:
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{wc.batch}-sv-prioritize-manta.vcf.gz')
+        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
     output:
         'umccrised/{batch}/structural/sv-prioritize-manta.bedpe'
     params:
@@ -97,10 +105,10 @@ rule bedpe:
 
 rule structural:
     input:
-        # expand(rules.bedpe.output, batch=batch_by_name.values()),
-        # expand(rules.ribbon.output, batch=batch_by_name.values()),
-        expand(rules.prep_manta.output, batch=batch_by_name.values()),
-        expand(rules.cnvkit_plot.output, batch=batch_by_name.values())
+        # expand(rules.bedpe.output, batch=batch_by_name.keys()),
+        # expand(rules.ribbon.output, batch=batch_by_name.keys()),
+        expand(rules.prep_manta.output, batch=batch_by_name.keys()),
+        expand(rules.cnvkit_plot.output, batch=batch_by_name.keys())
     output:
         'umccrised/.snakemake/structural.done'
     shell:

@@ -5,9 +5,7 @@ from os.path import join, abspath, dirname
 from ngs_utils.file_utils import splitext_plus
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
-from ngs_utils.vcf_utils import get_vcf_main_sample_name
 from umccrise.utils import get_loc
-from umccrise.patient_analysis import get_sig_rmd_file
 
 
 threads_max = 32  # Use up to 32 cores at once, if available
@@ -16,12 +14,15 @@ phenotypes = ['tumor', 'normal']
 
 az300 = join(get_loc().hsapiens, 'GRCh37/coverage/prioritize/cancer/az300.bed.gz')
 ref_fa = join(get_loc().hsapiens, 'GRCh37/seq/GRCh37.fa')
-extras = get_loc().extras
 
 run = BcbioProject(config.get('run_dir', abspath(os.getcwd())))  
-batch_by_name = run.batch_by_name
+
+# Batch objects index by tumor sample names
+batch_by_name = {b.tumor.name: b for b in run.batch_by_name.values()}
 if 'batch' in config:
-    batch_by_name = {k: v for k, v in batch_by_name.items() if k == config['batch']}
+    batch_by_name = {k: v for k, v in batch_by_name.items() if b.name == config['batch']}
+if 'sample' in config:
+    batch_by_name = {k: v for k, v in batch_by_name.items() if b.tumor.name == config['sample']}
 
 
 include: "Snakefile.coverage"
