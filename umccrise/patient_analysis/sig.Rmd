@@ -107,13 +107,16 @@ fit_res <- fit_to_signatures(mut_mat, cancer_signatures)
 select <- which(rowSums(fit_res$contribution) > 0)
 
 # plot contribution
-result <- as.data.frame(fit_res$contribution[select, ]) %>%
+result <- as.data.frame(fit_res$contribution[select, ])
+result$Signature <- rownames(result)
+
+result <- result %>%
   mutate(Contribution=fit_res$contribution[select, ]) %>%
-  select(Contribution) %>%
+  select(Signature, Contribution) %>%
   arrange(-Contribution)
 
 # Quick summary of the results; no plotting yet
-datatable(result) %>%
+datatable(result, rownames=FALSE) %>%
   formatRound('Contribution', 1)
 ```
 
