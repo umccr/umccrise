@@ -20,14 +20,26 @@ He evaluated against two validation truth sets:
 
 We are building a panel from normal samples used in UMCCR. Currently, the following are used:
 ```
-MH17B001P004
-MH17B001P013
-VPH52_Blood
-VPH54_Blood
-VPH56_Blood
-VPH58_Blood
-VPH59_Blood
-VPH61_Blood
+MH17B001P004              /data/cephfs/punim0010/data/Results/Avner/MH17T001P004/2017-07-27_final/2017-06-15_MH17T001P004/MH17B001P004-germline-ensemble-annotated.vcf.gz
+MH17B001P013              /data/cephfs/punim0010/data/Results/Avner/MH17T001P013/final/2017-06-15_MH17T001P013/MH17B001P013-germline-ensemble-annotated.vcf.gz           
+VPH52_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH52_Blood-germline-ensemble-annotated.vcf.gz      
+VPH54_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH54_Blood-germline-ensemble-annotated.vcf.gz      
+VPH56_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH56_Blood-germline-ensemble-annotated.vcf.gz      
+VPH58_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH58_Blood-germline-ensemble-annotated.vcf.gz      
+VPH59_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH59_Blood-germline-ensemble-annotated.vcf.gz      
+VPH61_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH61_Blood-germline-ensemble-annotated.vcf.gz      
+NA12878-1VD               /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-GiaB-merged/final/2017-11-13_giab-merged/UtahMormon-1-ensemble-annotated.vcf.gz
+NA24631-1KC               /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-GiaB-merged/final/2017-11-13_giab-merged/HanChinese-4-ensemble-annotated.vcf.gz
+NA24385-1LL               /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-GiaB-merged/final/2017-11-13_giab-merged/AshkenazimJew-1-ensemble-annotated.vcf.gz
+MDx150891                 /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-ALLOCATE-MDx150892-merged/final/2017-07-07_WGS-ALLOCATE-MDx150892-merged/MDx150891-germline-ensemble-annotated.vcf.gz
+COLO829Bld-CCR170091a     /data/cephfs/punim0010/projects/Hofmann_Catchup/catchup_colo829/2017-11-17_Final/2017-11-09_catchup_colo829/COLO829_normal-ensemble-annotated.vcf.gz
+BriGibBld-PRJ170155_S3    /data/cephfs/punim0010/data/Results/Patients/BriGib/final/2017-10-20_brigibFFPE/BriGibBld-ensemble-annotated.vcf.gz
+17MHP031Bld-CCR170089_S1  /data/cephfs/punim0010/data/Results/Avner/MH17B001P031/final/2017-09-19_17MHP031/17MHP031Bld-germline-ensemble-annotated.vcf.gz
+MH17B001P010              /data/cephfs/punim0010/data/Results/Avner/MH17B001P010/final/2017-10-19_MH17B001P010/MH17B001P010-ensemble-annotated.vcf.gz
+17MHP002Bld-CCR170002     /data/cephfs/punim0010/data/Results/Avner/MH17B001P002/final/2017-10-23_MH17B001P002/17MHP002Bld-ensemble-annotated.vcf.gz
+WES013BL                  /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-WES013PF-merged/final/2017-07-17_WGS-WES013PF-merged/WES013PFBL-germline-ensemble-annotated.vcf.gz
+WES012MVBL                /data/projects/punim0010/projects/Hsu_WGS_Validation/WGS-WES012MV-merged/final/2017-07-05_WGS-WES012MV-merged/WES012MVBL-germline-ensemble-annotated.vcf.gz
+WES003KMBL                /data/projects/punim0010/projects/Hsu_WGS_Validation/WGS-WES003KM-merged/final/2017-06-19_AGRF15-00335_H23HJDMXX_WES003KM-merged/WES003KMBL-germline-ensemble-annotated.vcf.gz
 ```
 
 ### Annotating

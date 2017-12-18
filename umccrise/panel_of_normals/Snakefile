@@ -9,69 +9,55 @@ import re
 
 # configfile: 'config.yaml'
 
-def str_to_lua_variable_name(fpath):
-    name = os.path.basename(fpath)
-    name = re.sub('[^0-9a-zA-Z_]', '_', name) # Remove invalid characters
-    name = re.sub('^[^a-zA-Z_]+', '_', name)  # Remove leading characters until we find a letter or underscore
-    return name
-
-VCFANNO_ANNO = '''[[annotation]]
-file="{fname}"
-fields=[""]
-ops=["self"]
-names=["{name}"]
-
-'''
-VCFANNO_POSTANNO = '''[[postannotation]]
-name="PoN_CNT"
-fields=[{fields}]
-op="lua:count_true({vars})"
-type="Integer"
-
-[[postannotation]]
-fields=[{fields}]
-op="delete"
-'''
-
 rule all:
     input:
         expand('work/filter/{sample}-ann-n{ht}.vcf.gz', sample=config['samples'], ht=config['hits_thresholds'])
 
-rule prep_vcfanno:
-    input:
-        normals_dir = config['normals_dir']
-    output:
-        toml = 'work/normals/annotate_normals_vcfanno.toml',
-    run:
-        fpaths = glob.glob(os.path.join(input.normals_dir, '*.vcf.gz'))
-        with open(output[0], 'w') as out:
-            for fp in fpaths:
-                out.write(VCFANNO_ANNO.format(
-                    fname=fp, 
-                    name=str_to_lua_variable_name(fp)))
+# rule prep_vcfanno:
+#     input:
+#         normals_dir = config['normals_dir']
+#     output:
+#         toml = 'work/normals/annotate_normals_vcfanno.toml'
+#     run:
+#         fpaths = glob.glob(os.path.join(input.normals_dir, '*.vcf.gz'))
+#         with open(output[0], 'w') as out:
+#             for fp in fpaths:
+#                 out.write(VCFANNO_ANNO.format(
+#                     fname=fp, 
+#                     name=str_to_lua_variable_name(fp)))
 
-            out.write(VCFANNO_POSTANNO.format(
-                fields=', '.join('"' + str_to_lua_variable_name(fp) + '"' for fp in fpaths), 
-                vars=', '.join(str_to_lua_variable_name(fp) for fp in fpaths)))
+#             out.write(VCFANNO_POSTANNO.format(
+#                 fields=', '.join('"' + str_to_lua_variable_name(fp) + '"' for fp in fpaths), 
+#                 vars=', '.join(str_to_lua_variable_name(fp) for fp in fpaths)))
 
 rule prep_vcf:
     input:
-        lambda wildcards: config['samples'][wildcards.sample],
+        lambda wildcards: config['samples'][wildcards.sample]
     output:
         'work/prep_vcf/{sample}.vcf.gz'
     shell:
-        'bcftools view {input} -f .,PASS -Oz -o {output}'
+        'bcftools view {input} -f.,PASS -Oz -o {output}'
+
+# rule annotate:
+#     input:
+#         vcf = rules.prep_vcf.output,
+#         toml = rules.prep_vcfanno.output.toml
+#     output:
+#         'work/annotate/{sample}-ann.vcf.gz'
+#     params:
+#         lua = os.path.join(config['normals_dir'], 'code.lua')
+#     shell:
+#         'vcfanno -lua {params.lua} {input.toml} {input.vcf} | bgzip -c > {output}'
 
 rule annotate:
     input:
         vcf = rules.prep_vcf.output,
-        toml = rules.prep_vcfanno.output.toml
+        toml = os.path.join(config['normals_dir'], 'annotate_normals_vcfanno.toml'),
+        lua = os.path.join(config['normals_dir'], 'code.lua')
     output:
         'work/annotate/{sample}-ann.vcf.gz'
-    params:
-        lua = os.path.join(config['normals_dir'], 'code.lua')
     shell:
-        'vcfanno -lua {params.lua} {input.toml} {input.vcf} | bgzip -c > {output}'
+        'vcfanno -lua {input.lua} {input.toml} {input.vcf} | bgzip -c > {output}'
 
 rule filter:
     input:
