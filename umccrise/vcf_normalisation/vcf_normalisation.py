@@ -17,15 +17,15 @@ from umccrise.utils import get_loc
 @click.option('-o', 'output_file', type=click.Path())
 @click.option('-f', 'reference_fasta', type=click.Path())
 def main(input_file, output_file, reference_fasta=False):
+    if not isfile(reference_fasta):
+        reference_fasta = os.path.join(get_loc().hsapiens, reference_fasta)
+    verify_file(reference_fasta, is_critical=True)
     cmd = make_normalise_cmd(input_file, output_file, reference_fasta)
     print(cmd)
     os.system(cmd)
 
 
 def make_normalise_cmd(input_file, output_file, reference_fasta):
-    if not isfile(reference_fasta):
-        reference_fasta = os.path.join(get_loc().hsapiens, reference_fasta)
-    verify_file(reference_fasta, is_critical=True)
     return (
         f'bcftools norm -m \'-\' {input_file} -Ov -f {reference_fasta}'
         f' | vcfallelicprimitives -t DECOMPOSED --keep-geno'
