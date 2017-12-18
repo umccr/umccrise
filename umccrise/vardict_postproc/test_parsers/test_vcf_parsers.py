@@ -1,7 +1,5 @@
 import sys
 
-from ngs_utils.file_utils import add_suffix, get_ungz_gz
-
 
 def proc_fields(ref, alt, af, msi):
     # Filter low AF MSI

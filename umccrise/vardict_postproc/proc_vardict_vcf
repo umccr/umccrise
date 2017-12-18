@@ -4,7 +4,7 @@ import sys
 from cyvcf2 import VCF
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
 import click
-from ngs_utils.vcf_utils import get_vcf_main_sample_name
+from ngs_utils.vcf_utils import get_tumor_sample_name
 
 
 @click.group()
@@ -21,7 +21,7 @@ def cli(ctx):
 def fix_fields(ctx, input_file, reference_fasta=None):
     vcf = VCF(input_file)
     sys.stdout.write(vcf.raw_header)
-    main_sample_name = get_vcf_main_sample_name(input_file)
+    main_sample_name = get_tumor_sample_name(input_file)
     main_sample_index = vcf.samples.index(main_sample_name)
     for rec in vcf:
         for key in 'AF', 'DP', 'VD':
