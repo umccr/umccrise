@@ -17,8 +17,10 @@ setup(
         'umccrise',
     ],
     scripts=[
-        'scripts/normalize_vcf',
+        'scripts/normalise_vcf',
         'scripts/umccrise',
+        'scripts/pcgr_prep',
+        'scripts/vcfToBedpe'
     ],
     include_package_data=True,
 )
