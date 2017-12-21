@@ -6,12 +6,28 @@
 import os
 import glob
 import re
+from umccrise.utils import get_loc
 
 # configfile: 'config.yaml'
+normals_dir = config.get('normals_dir', get_loc().panel_of_normals_dir)
+hits_thresholds = config.get('hits_thresholds', [2])
+samples = config.get('samples')
+if isinstance(samples, str):
+    samples = {'sample': samples}
 
 rule all:
     input:
-        expand('work/filter/{sample}-ann-n{ht}.vcf.gz', sample=config['samples'], ht=config['hits_thresholds'])
+        expand('work/filter/{sample}-ann-n{ht}.vcf.gz', sample=samples, ht=hits_thresholds)
+
+rule prep_toml:
+    input:
+        toml = os.path.join(normals_dir, 'annotate_normals_vcfanno.toml')
+    output:
+        'work/annotate/annotate_normals_vcfanno.toml'
+    params:
+        normals_dir = normals_dir
+    shell:
+        'sed s#file=\\\"#file=\\\"{params.normals_dir}/# {input.toml} > {output}'
 
 # rule prep_vcfanno:
 #     input:
@@ -32,7 +48,7 @@ rule all:
 
 rule prep_vcf:
     input:
-        lambda wildcards: config['samples'][wildcards.sample]
+        lambda wildcards: samples[wildcards.sample]
     output:
         'work/prep_vcf/{sample}.vcf.gz'
     shell:
@@ -52,8 +68,8 @@ rule prep_vcf:
 rule annotate:
     input:
         vcf = rules.prep_vcf.output,
-        toml = os.path.join(config['normals_dir'], 'annotate_normals_vcfanno.toml'),
-        lua = os.path.join(config['normals_dir'], 'code.lua')
+        toml = prep_toml.output[0],
+        lua = os.path.join(normals_dir, 'code.lua')
     output:
         'work/annotate/{sample}-ann.vcf.gz'
     shell:

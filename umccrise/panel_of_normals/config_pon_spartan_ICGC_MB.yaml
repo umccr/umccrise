@@ -4,6 +4,4 @@ samples:
     mutect2: ../MB_100vs50-mutect2-annotated.vcf.gz
     strelka: ../MB_100vs50-strelka2-annotated.vcf.gz
 
-normals_dir: /data/cephfs/punim0010/extras/panel_or_normals
-
 hits_thresholds: [1, 2, 3]

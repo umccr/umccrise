@@ -3,6 +3,7 @@
 import os
 import glob
 import re
+from umccrise.utils import get_loc
 
 normal_by_name = dict(l.strip().split() for l in '''
 MH17B001P004              /data/cephfs/punim0010/data/Results/Avner/MH17T001P004/2017-07-27_final/2017-06-15_MH17T001P004/MH17B001P004-germline-ensemble-annotated.vcf.gz
@@ -27,9 +28,12 @@ WES012MVBL                /data/projects/punim0010/projects/Hsu_WGS_Validation/W
 WES003KMBL                /data/projects/punim0010/projects/Hsu_WGS_Validation/WGS-WES003KM-merged/final/2017-06-19_AGRF15-00335_H23HJDMXX_WES003KM-merged/WES003KMBL-germline-ensemble-annotated.vcf.gz
 '''.split('\n') if l.strip())
 
+if get_loc().name == 'vlad':
+    normal_by_name = {'tmp': '/Users/vsaveliev/Analysis/panel_of_normals/GRCh37/normals/MH17B001P004-germline-ensemble-annotated.vcf.gz'}
+     
 def str_to_lua_variable_name(name):
     name = os.path.basename(name)
-    name = name.replace('-ensemble-annotated', '')
+    name = name.replace('.vcf.gz', '')
     name = re.sub('[^0-9a-zA-Z_]', '_', name) # Remove invalid characters
     name = re.sub('^[^a-zA-Z_]+', '_', name)  # Remove leading characters until we find a letter or underscore
     return name
@@ -88,11 +92,11 @@ rule prep_vcfanno:
     output:
         toml = 'annotate_normals_vcfanno.toml'
     run:
-        fpaths = [os.path.abspath(os.path.join(os.getcwd(), i)) for i in input]
+        fpaths = input
         with open(output[0], 'w') as out:
             for fp in fpaths:
                 out.write(VCFANNO_ANNO.format(
-                    fname=fp, 
+                    fname=fp,
                     name=str_to_lua_variable_name(fp)))
 
             out.write(VCFANNO_POSTANNO.format(
