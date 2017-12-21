@@ -17,23 +17,26 @@ def get_loc():
     """ Depending on the machine name, return a dict conatining system-dependant paths 
         to human reference genomes and extras
     """
-    Loc = collections.namedtuple('Loc', 'name host_pattern hsapiens extras')
+    Loc = collections.namedtuple('Loc', 'name host_pattern hsapiens extras panel_of_normals_dir')
     hostname = socket.gethostname()
     for loc in [
         Loc(name='spartan',
             host_pattern=r'spartan.*\.hpc\.unimelb\.edu\.au',
             hsapiens='/home/vlad/bcbio/genomes/Hsapiens',
-            extras='/data/projects/punim0010/local/share/extras',
+            extras='/data/cephfs/punim0010/extras',
+            panel_of_normals_dir='/data/cephfs/punim0010/extras/panel_or_normals',
         ),
         Loc(name='raijin',
             host_pattern=r'^raijin|(r\d\d\d\d$)',
             hsapiens='/home/563/vs2870/g/bcbio/genomes/Hsapiens',
             extras='/g/data3/gx8/extras',
+            panel_of_normals_dir='/g/data3/gx8/extras/panel_or_normals',
         ),
         Loc(name='vlad',
             host_pattern=r'^5180L-135800-M.local$',
             hsapiens='/Users/vsaveliev/genomes/Hsapiens',
             extras='/Users/vsaveliev/Analysis/umccrize',
+            panel_of_normals_dir='/Users/vsaveliev/Analysis/panel_of_normals/GRCh37/normals',
         ),]:
         if re.match(loc.host_pattern, hostname):
             return loc
