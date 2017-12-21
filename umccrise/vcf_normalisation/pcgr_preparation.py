@@ -5,16 +5,14 @@ import click
 from os.path import isfile, join
 from cyvcf2 import VCF, Writer
 from ngs_utils.file_utils import verify_file
-from ngs_utils.vcf_utils import get_tumor_sample_name, get_normal_sample_name
+from ngs_utils.vcf_utils import get_sample_ids
 
 
 @click.command()
 @click.argument('input_file', type=click.Path(exists=True))
 @click.option('-o', 'output_file', type=click.Path())
 def main(input_file, output_file=None):
-    tumor_sample_name = get_tumor_sample_name(input_file)
-    control_sample_name = get_normal_sample_name(input_file)
-    pull_genotype_data(input_file, control_sample_name, tumor_sample_name, output_file)
+    pull_genotype_data(input_file, output_file)
 
 
 TUMOR_AF = 'TVAF'
@@ -23,7 +21,7 @@ TUMOR_DP = 'TDP'
 NORMAL_DP = 'CDP'
 
 
-def pull_genotype_data(query_vcf, control_sample_name, tumor_sample_name, output_vcf=None):
+def pull_genotype_data(query_vcf, output_vcf=None):
     vcf = VCF(query_vcf, gts012=True)
 
     vcf.add_info_to_header({
@@ -58,12 +56,7 @@ def pull_genotype_data(query_vcf, control_sample_name, tumor_sample_name, output
         w = None
         sys.stdout.write(vcf.raw_header)
 
-    try:
-        control_index = vcf.samples.index(control_sample_name)
-        tumor_index = vcf.samples.index(tumor_sample_name)
-    except ValueError as err:
-        print("Sample not found in vcf")
-        raise
+    tumor_index, control_index = get_sample_ids(query_vcf)
 
     # Go through each record
     for rec in vcf:

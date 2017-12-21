@@ -11,11 +11,12 @@ from umccrise.patient_analysis import package_path
 @click.option('-o', 'output_dir', type=click.Path())
 def main(bcbio_project, output_dir=None, rule=list()):
     cmd = (f'snakemake ' +
+           f'{" ".join(rule)} ' +
            f'--snakefile {join(package_path(), "Snakefile")} ' +
            f'--printshellcmds ' +
-          (f'--directory {output_dir} ' if output_dir else '') +
-           f'--config run_dir={bcbio_project} ' +
-           f'{" ".join(rule)}')
+          (f'--directory {output_dir} ' if output_dir else ' ') +
+           f'--config run_dir={bcbio_project} '
+           )
     print(cmd)
     os.system(cmd)
 

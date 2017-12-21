@@ -26,15 +26,16 @@ rule igv_bam:
         bed = rules.igv_bed.output
     output:
         'umccrised/{batch}/igv/{phenotype}_mini.bam'
+    threads: threads_max
     shell:
-        'sambamba view -f bam -L {input.bed} {input.bam} > {output}'
+        'sambamba view -f bam -L {input.bed} {input.bam} -t {threads} > {output}'
         ' && samtools index {output}'
-#        'samtools view -b -L {input.bed} {input.bam} > {output}'
+#        'samtools view -b -L {input.bed} {input.bam} -@ {threads} > {output}'
 
 
 rule igv:
     input:
-        expand(rules.igv_bam.output, phenotype=phenotypes, batch=batch_by_name.keys())
+        expand(rules.igv_bam.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())
     output:
         'umccrised/.snakemake/igv.done'
     shell:

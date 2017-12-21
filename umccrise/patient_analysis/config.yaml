@@ -1,5 +1,0 @@
-#run_dir: '/data/cephfs/punim0010/data/Results/Avner/WPT-013/final/2017-10-19_WPT-013'
-run_dir: '/data/cephfs/punim0010/projects/Saveliev_Ummcrise/WPT-013/final/2017-10-19_WPT-013'
-# tumor_name: 'WPT-013-organoid'
-# normal_name: 'WPT-013-normal'
-batch: 'batch1'
