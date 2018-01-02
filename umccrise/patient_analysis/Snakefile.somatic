@@ -47,21 +47,6 @@ rule pcgr_cns:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | grep -v ^chromosome | cut -f 1,2,3,5 >> {output}'
 
 
-# Ensemble calls to be submitted to CGI. Sharing functionality does not seem to work at this point. Ensemble calls only include variants that `PASS` so no additional filtering required.
-# Finally, for the local analysis with MutationalPatterns generate UCSC-versions of the ensemble calls:
-rule cgi:
-    input:
-        'umccrised/{batch}/somatic/pcgr/ensemble.vcf.gz'
-    output:
-        'umccrised/{batch}/somatic/rstudio/ensemble-ucsf.vcf'
-    shell:
-        'gunzip -c {input}'
-        " | py -x \"x.replace('##contig=<ID=', '##contig=<ID=chr') if x.startswith('#') else 'chr' + x\""
-        " | py -x \"x.replace('chrMT', 'chrM')\""
-        ' | grep -v chrG > {output}'
-# All done; file needs to be submitted to CGI and PCGR manually for now. 
-
-
 ## Allelic frequencies
 # AF is not yet integrated into PCGR or CGI. We can extract those from VarDict or FreeBayes for plotting purposes, but still need to look up AF for genes of interest manually. Not entirely ideal but for a rough summary plot but this is going to be sufficient. Can revisit once we've unified AF information across callers:
 
@@ -97,7 +82,6 @@ rule somatic:
         expand([
             rules.af_freqs_az300.output[0],
             rules.af_freqs.output[0],
-            rules.cgi.output[0],
             rules.pcgr_somatic_vcf.output[0],
             rules.pcgr_cns.output[0]],
         batch=batch_by_name.keys())

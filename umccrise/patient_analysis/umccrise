@@ -2,7 +2,7 @@
 import os
 from os.path import isfile, join, dirname, abspath
 import click
-from umccrise.patient_analysis import package_path
+from umccrise import patient_analysis
 
 
 @click.command()
@@ -12,7 +12,7 @@ from umccrise.patient_analysis import package_path
 def main(bcbio_project, output_dir=None, rule=list()):
     cmd = (f'snakemake ' +
            f'{" ".join(rule)} ' +
-           f'--snakefile {join(package_path(), "Snakefile")} ' +
+           f'--snakefile {join(patient_analysis.package_path(), "Snakefile")} ' +
            f'--printshellcmds ' +
           (f'--directory {output_dir} ' if output_dir else ' ') +
            f'--config run_dir={bcbio_project} '
