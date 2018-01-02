@@ -7,6 +7,7 @@
 import os
 import gzip
 import csv
+import pandas
 from ngs_utils.vcf_utils import get_tumor_sample_name
 from umccrise.utils import get_loc
 from umccrise.vcf_normalisation.vcf_normalisation import make_normalise_cmd
@@ -34,7 +35,7 @@ def merge_regions():
     samples_regions = config.get('regions')
     truth_regions = get_ref(config['truth_regions']) if 'truth_regions' in config else None
 
-    output = 'work/regions/regions.bed'
+    output = 'work/narrow/regions.bed'
     if samples_regions and truth_regions:
         shell('bedops -i <(sort-bed {truth_regions}) <(sort-bed {samples_regions}) > {output}')
         return output
@@ -193,18 +194,19 @@ rule report:
     params:
         samples = sorted(config['samples'].keys())
     run:
-        out_lines = []
-        out_lines.append(['Sample', 'File', 'SNP', ''  , ''  , ''         , ''      , 'INDEL', ''  , ''  , ''         , ''       ])
-        out_lines.append([''      , ''    , 'TP' , 'FP', 'FN', 'Precision', 'Recall', 'TP'   , 'FP', 'FN', 'Precision', 'Recall',])
+        data = []
+        data.append(['Sample', 'File', 'SNP', ''  , ''  , ''         , ''      , 'INDEL', ''  , ''  , ''         , ''])
+        data.append([''      , ''    , 'TP' , 'FP', 'FN', 'Precision', 'Recall', 'TP'   , 'FP', 'FN', 'Precision', 'Recall', ])
         for stats_file, sname in zip(input.stats_files, params.samples):
-            print(stats_file, sname)
             with open(stats_file) as f:
-                out_lines.append([sname, stats_file] + f.readlines()[1].strip().split('\t'))
+                data.append([sname, stats_file] + f.readlines()[1].strip().split('\t'))
+        truth_snps = int(data[-1][2]) + int(data[-1][4])
+        truth_indels = int(data[-1][7]) + int(data[-1][9])
+        data.append(['Perfect', '', truth_snps, 0, truth_snps, 1.0, 1.0, truth_indels, 0, truth_indels, 1.0, 1.0])
 
         with open(output[0], 'w') as out_f:
-            for fields in out_lines:
-                print(fields)
-                out_f.write('\t'.join(map(str, fields)) + '\n')
+            pandas.DataFrame(data).to_csv(out_f, sep='\t', header=False, index=False)
+
 
 # rule eval:
 #     input:
@@ -275,17 +277,5 @@ rule report:
 #                 print(fields)
 #                 out_f.write('\t'.join(map(str, fields)) + '\n')
 
-
-# ensemble.subsample.re.truth.vcf.gz      Truth = 396 = TP + FN
-# ensemble.subsample.re.test.vcf.gz       Call  = 366 + TP + FP
-# fp.vcf.gz                               FP    = 19
-# fn.vcf.gz                               FN    = 49
-# tp.vcf.gz                               TP    = 347
-# bcftools_isec/0000.vcf.gz               FP    = 19     for records private to  ensemble.subsample.re.test.vcf.gz
-# bcftools_isec/0001.vcf.gz               FN    = 49     for records private to  ensemble.subsample.re.truth.vcf.gz
-# bcftools_isec/0002.vcf.gz               TP    = 347    for records from ensemble.subsample.re.test.vcf.gz shared by both       ensemble.subsample.re.test.vcf.gz ensemble.subsample.re.truth.vcf.gz
-
-
-# bcftools_isec/0000.vcf.gz               FP    = 71     for records private to  ensemble.subsample.re.test.vcf.gz
 
 

@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+import tempfile
+from os.path import dirname, abspath, join, basename
+import click
+import os
+import yaml
+from ngs_utils.file_utils import splitext_plus
+from ngs_utils.logger import err, critical
+
+from umccrise.utils import get_loc
+from umccrise import vcf_evaluation
+
+
+here = dirname(abspath(vcf_evaluation.__file__))
+loc = get_loc()
+
+
+def validate_inp(ctx, params, value):
+    if not value:
+        raise click.BadParameter('Provide at least one VCF file')
+    return value
+
+@click.command()
+@click.argument('vcfs', nargs=-1, type=click.Path(exists=True), callback=validate_inp)
+@click.option('-t', 'truth', type=click.Choice([ts for tsets in loc.truth_sets.values() for ts in tsets]), required=True)
+@click.option('-g', 'genome', default='GRCh37')
+@click.option('-o', 'output_dir', type=click.Path())
+@click.option('-r', 'regions', type=click.Path())
+def main(vcfs, truth, genome, output_dir=None, regions=None):
+    try:
+        truth = loc.truth_sets[truth][genome]
+    except ValueError:
+        critical(f'Truth set "{truth} not found for genome "{genome}" at file system "{loc.name}"')
+
+    config = {
+        'samples': {splitext_plus(basename(v))[0]: abspath(v) for v in vcfs
+                    if v.endswith('.vcf') or v.endswith('.vcf.gz')},
+        'truth_variants': truth['vcf'],
+        'reference_fasta': genome + '/seq/' + genome + '.fa'
+    }
+    if 'bed' in truth:
+        config['truth_regions'] = truth['bed']
+    if regions:
+        config['sample_regions'] = regions
+
+    f = tempfile.NamedTemporaryFile(mode='wt', delete=False)
+    yaml.dump(config, f)
+    f.close()
+
+    cmd = (f'snakemake ' +
+           f'--snakefile {join(here, "Snakefile")} ' +
+           f'--printshellcmds ' +
+          (f'--directory {output_dir} ' if output_dir else ' ') +
+           f'--configfile {f.name} ')
+    print(cmd)
+    os.system(cmd)
+    if output_dir:
+        print(f'Results are in "{output_dir}" folder. E.g. final report saved to "{output_dir}/report.tsv"')
+
+
+if __name__ == '__main__':
+    main()

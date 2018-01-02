@@ -20,7 +20,8 @@ setup(
         'scripts/normalise_vcf',
         'scripts/umccrise',
         'scripts/pcgr_prep',
-        'scripts/vcfToBedpe'
+        'scripts/vcfToBedpe',
+        'scripts/eval_vcf',
     ],
     include_package_data=True,
 )
