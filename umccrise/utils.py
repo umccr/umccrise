@@ -62,7 +62,7 @@ def get_loc():
         Loc(name='vlad',
             host_pattern=r'^5180L-135800-M.local$',
             hsapiens='/Users/vsaveliev/genomes/Hsapiens',
-            extras='/Users/vsaveliev/Analysis/umccrize',
+            extras='/Users/vsaveliev/Analysis/umccrise',
             panel_of_normals_dir='/Users/vsaveliev/Analysis/panel_of_normals/GRCh37/normals',
             truth_sets={},
         ),]:

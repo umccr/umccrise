@@ -73,7 +73,7 @@ rule narrow_samples_to_target:  # Extracts target sample, target regions, and re
         'work/narrow/{sample}.vcf.gz'
     run:
         regions = merge_regions()
-        regions = ('-R ' + regions) if regions else ''
+        regions = ('-T ' + regions) if regions else ''
         sn = get_tumor_sample_name(input[0])
         assert sn
         shell('bcftools view -s {sn} {input[0]} {regions} -f .,PASS -Oz -o {output[0]} && tabix -p vcf {output[0]}')
@@ -85,7 +85,7 @@ rule narrow_truth_to_target:  # Extracts target regions from truth VCF
         'work/narrow/truth_variants.vcf.gz'
     run:
         regions = merge_regions()
-        regions = ('-R ' + regions) if regions else ''
+        regions = ('-T ' + regions) if regions else ''
         shell('bcftools view {input.truth_variants} {regions} -Oz -o {output[0]} && tabix -p vcf {output[0]}')
 
 # def normalize_cmd():
