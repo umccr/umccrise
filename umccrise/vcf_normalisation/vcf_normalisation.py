@@ -28,7 +28,7 @@ def main(input_file, output_file, reference_fasta=False):
 def make_normalise_cmd(input_file, output_file, reference_fasta):
     return (
         f'bcftools norm -m \'-\' {input_file} -Ov -f {reference_fasta}'
-        f' | vcfallelicprimitives -t DECOMPOSED --keep-geno'
+        f' | vcfallelicprimitives -t DECOMPOSED --keep-geno --keep-info'
         f' | vcfstreamsort'
         f' | grep -v "##INFO=<ID=TYPE,Number=1"'
         f' | bgzip -c > {output_file}'
