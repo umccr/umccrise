@@ -15,10 +15,10 @@ def main(input_file, output_file=None):
     pull_genotype_data(input_file, output_file)
 
 
-TUMOR_AF = 'TVAF'
-NORMAL_AF = 'CVAF'
-TUMOR_DP = 'TDP'
-NORMAL_DP = 'CDP'
+TUMOR_AF = 'AF'
+NORMAL_AF = 'NORMAL_AF'
+TUMOR_DP = 'DP'
+NORMAL_DP = 'NORMAL_DP'
 
 
 def pull_genotype_data(query_vcf, output_vcf=None):
