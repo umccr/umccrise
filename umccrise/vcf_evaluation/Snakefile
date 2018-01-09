@@ -132,9 +132,7 @@ rule bcftools_isec:
         fn = 'work/eval/{sample}_bcftools_isec/0001.vcf',
         tp = 'work/eval/{sample}_bcftools_isec/0002.vcf'
     run:
-        regions = merge_regions()
-        regions = ('-R ' + regions) if regions else ''
-        shell('bcftools isec {input.sample_vcf} {input.truth_vcf} {regions} -p {params.output_dir}')
+        shell('bcftools isec {input.sample_vcf} {input.truth_vcf} -p {params.output_dir}')
 
 def count_variants(vcf):
     snps = 0
@@ -166,9 +164,21 @@ rule eval:
                 '#SNP TP', 'SNP FP', 'SNP FN', 'SNP Precision', 'SNP Recall', 
                  'IND TP', 'IND FP', 'IND FN', 'IND Precision', 'IND Recall'
             ])
+            snps_called = tp_snps + fp_snps
+            snps_prec = tp_snps / snps_called if snps_called else 0
+
+            snps_ref = tp_snps + fn_snps
+            snps_recall = tp_snps / snps_ref if snps_ref else 0
+
+            inds_called = tp_inds + fp_inds
+            inds_prec = tp_inds / inds_called if inds_called else 0
+
+            inds_ref = tp_inds + fn_inds
+            inds_recall = tp_inds / inds_ref if inds_ref else 0
+
             writer.writerow([
-                tp_snps, fp_snps, fn_snps, tp_snps / (tp_snps + fp_snps), tp_snps / (tp_snps + fn_snps),
-                tp_inds, fp_inds, fn_inds, tp_inds / (tp_inds + fp_inds), tp_inds / (tp_inds + fn_inds)
+                tp_snps, fp_snps, fn_snps, snps_prec, snps_recall,
+                tp_inds, fp_inds, fn_inds, inds_prec, inds_recall
             ])
 
 # rule sompy:

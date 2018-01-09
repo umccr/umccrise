@@ -41,7 +41,7 @@ def get_loc():
                 'dream': {
                     'GRCh37': {
                         'vcf': 'GRCh37/validation/dream-syn3/truth_small_variants.vcf.gz',
-                        'bed': 'GRCh37/validation/dream-syn3/truth_regions.bed',
+                        # 'bed': 'GRCh37/validation/dream-syn3/truth_regions.bed',
                     }
                 },
                 'giab': {
