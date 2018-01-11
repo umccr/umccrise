@@ -66,65 +66,107 @@ def merge_regions():
 #         elif samples_regions:
 #             shell('sort-bed {samples_regions} > {output}')
 
-rule narrow_samples_to_target:  # Extracts target sample, target regions, and remove rejected calls from the input VCF 
+##########################
+######### NARROW #########
+# Extracts target regions and PASSed calls:
+rule narrow_samples_to_regions_and_pass:
     input:
         lambda wildcards: config['samples'][wildcards.sample]
     output:
-        'work/narrow/{sample}.vcf.gz'
+        'work/narrow/{sample}.regions.pass.vcf.gz'
     run:
         regions = merge_regions()
         regions = ('-T ' + regions) if regions else ''
+        shell('bcftools view {input} {regions} -f .,PASS -Oz -o {output}')
+
+# Propagate FORMAT fields into INFO (using NORMAL_ prefix for normal samples matches):
+rule annotate_pcgr:
+    input:
+        rules.narrow_samples_to_regions_and_pass.output[0]
+    output:
+        'work/narrow/{sample}.regions.pass.anno.vcf.gz'
+    shell:
+        'pcgr_prep {input} | bgzip -c > {output}'
+
+# Extract only tumor sample and tabix:
+rule narrow_samples_to_tumor_sample:
+    input:
+        rules.annotate_pcgr.output[0]
+    output:
+        'work/narrow/{sample}.regions.pass.anno.tumor.vcf.gz'
+    run:
         sn = get_tumor_sample_name(input[0])
         assert sn
-        shell('bcftools view -s {sn} {input[0]} {regions} -f .,PASS -Oz -o {output[0]} && tabix -p vcf {output[0]}')
+        shell('bcftools view -s {sn} {input} -Oz -o {output} && tabix -p vcf {output}')
 
-rule narrow_truth_to_target:  # Extracts target regions from truth VCF
+# Extract target, PASSed and tumor sample from the truth VCF:
+rule narrow_truth_to_target:
     input:
-        truth_variants = get_ref(config['truth_variants'])
+        get_ref(config['truth_variants'])
     output:
         'work/narrow/truth_variants.vcf.gz'
     run:
         regions = merge_regions()
         regions = ('-T ' + regions) if regions else ''
-        shell('bcftools view {input.truth_variants} {regions} -Oz -o {output[0]} && tabix -p vcf {output[0]}')
+        shell('bcftools view {input} {regions} -Oz -o {output} && tabix -p vcf {output}')
 
-# def normalize_cmd():
-#     normalize = "bcftools norm -m '-' {input.vcf} -Ov"
-#     reference_fasta = os.path.join(ref_loc, config['reference_fasta'])
-#     if os.path.isfile(reference_fasta):
-#         normalize += ' -f ' + reference_fasta
-#     normalize += ' | vcfallelicprimitives -t DECOMPOSED --keep-geno | vcfstreamsort | bgzip -c > {output[0]}'
-#     normalize += ' && tabix -p vcf {output[0]}'
-#     return normalize
-
-# reference_fasta = ''
-# if 'reference_fasta' in config:
-#     reference_fasta = os.path.join(ref_loc, config['reference_fasta'])
-#     if not os.path.isfile(reference_fasta):
-#         reference_fasta = ''
-
-rule normalize_sample:
+############################
+######### NORMALSE #########
+# Normalise query VCFs:
+rule normalise_sample:
     input:
-        vcf = rules.narrow_samples_to_target.output[0],
+        vcf = rules.narrow_samples_to_tumor_sample.output[0],
         ref = get_ref(config['reference_fasta'])
     output:
-        'work/normalize/{sample}/{sample}.vcf.gz'
+        'work/normalise/{sample}/{sample}.vcf.gz'
     shell:
         make_normalise_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
 
-rule normalize_truth:
+# Normalise truth VCFs:
+rule normalise_truth:
     input:
         vcf = rules.narrow_truth_to_target.output[0],
         ref = get_ref(config['reference_fasta'])
     output:
-        'work/normalize/truth_variants.vcf.gz'
+        'work/normalise/truth_variants.vcf.gz'
     shell:
         make_normalise_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
 
+# Overlap normalised calls with tricky regions and annotate into INFO:
+tricky_bed = '/home/vlad/bcbio/genomes/Hsapiens/GRCh37/coverage/problem_regions/GA4GH/merged.sorted.bed.gz'
+TRICKY_TOML = f'''[[annotation]]
+file="{tricky_bed}"
+names=["TRICKY"]
+columns=[4]
+ops=["self"]'''
+rule anno_tricky_sample:
+    input:
+        rules.normalise_sample.output[0]
+    output:
+        'work/normalise/{sample}/{sample}.tricky.vcf.gz'
+    params:
+        toml = TRICKY_TOML.replace('\n', r'\n')
+    shell:
+        "vcfanno <(echo '{params.toml}') {input} | bgzip -c > {output}"
+
+# Overlap normalised truth calls with tricky regions and annotate into INFO:
+rule anno_tricky_truth:
+    input:
+        rules.normalise_truth.output[0]
+    output:
+        'work/normalise/truth_variants.tricky.vcf.gz'
+    params:
+        toml = TRICKY_TOML.replace('\n', r'\n')
+    shell:
+        "vcfanno <(echo '{params.toml}') {input} | bgzip -c > {output}"
+
+############################
+######### EVALUATE #########
+# Run bcftools isec to get separate VCFs with TP, FN and FN:
 rule bcftools_isec:
     input:
-        sample_vcf = rules.normalize_sample.output,
-        truth_vcf = rules.normalize_truth.output
+        sample_vcf = rules.anno_tricky_sample.output,
+        truth_vcf = rules.anno_tricky_truth.output
     params:
         output_dir = 'work/eval/{sample}_bcftools_isec'
     output:
@@ -146,6 +188,7 @@ def count_variants(vcf):
                 indels += 1
     return snps, indels
 
+# Count TP, FN and FN VCFs to get stats for each sample:
 rule eval:
     input: 
         fp = rules.bcftools_isec.output.fp,
@@ -195,6 +238,7 @@ rule eval:
 #         regions = ('-f ' + regions) if regions else ''
 #         shell('som.py {input.truth_vcf} {input.sample_vcf} {regions} -o {params.output_prefix} -r {input.ref}')
 
+# Combine all stats to get single report:
 rule report:
     input:
         stats_files = expand(rules.eval.output, sample=sorted(config['samples'].keys()))
