@@ -57,7 +57,14 @@ def get_loc():
             hsapiens='/home/563/vs2870/g/bcbio/genomes/Hsapiens',
             extras='/g/data3/gx8/extras',
             panel_of_normals_dir='/g/data3/gx8/extras/panel_or_normals',
-            truth_sets={},
+            truth_sets={
+                'giab': {
+                    'GRCh37': {
+                        'vcf': 'GRCh37/validation/giab-NA12878/truth_small_variants.vcf.gz',
+                        'bed': 'GRCh37/validation/giab-NA12878/truth_regions.bed',
+                    }
+                }
+            }
         ),
         Loc(name='vlad',
             host_pattern=r'^5180L-135800-M.local$',

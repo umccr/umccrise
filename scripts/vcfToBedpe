@@ -19,7 +19,7 @@ author: " + __author__ + "\n\
 version: " + __version__ + "\n\
 description: Convert a VCF file to a BEDPE file")
 
-    parser.add_option("-i","--input",type="string",help="VCF input (default: stdin)")
+    parser.add_option("-i", "--input", type="string",help="VCF input (default: stdin)")
     parser.add_option('-o', '--output', type="string", help='Output BEDPE to write (default: stdout)')
     (options, args) = parser.parse_args()
 
@@ -298,7 +298,11 @@ def vcfToBedpe(vcf_file, bedpe_out):
                 in_header = False
 
         v = line.rstrip().split('\t')
-        var = Variant(v, vcf)
+        try:
+            var = Variant(v, vcf)
+        except:
+            sys.stderr.write('Cannot parse ' + str(v) + ' from line ' + line + '\n')
+            raise
 
         chrom2 = var.chrom
         b1 = var.pos
@@ -326,13 +330,13 @@ def vcfToBedpe(vcf_file, bedpe_out):
 
         span = [0,0]
         if 'CIPOS' in var.info :
-            span = map(int, var.info['CIPOS'].split(','))
+            span = list(map(int, var.info['CIPOS'].split(',')))
         s1 = b1 + span[0] - 1
         e1 = b1 + span[1]
 
         span = [0,0]
         if 'CIEND' in var.info :
-            span = map(int, var.info['CIEND'].split(','))
+            span = list(map(int, var.info['CIEND'].split(',')))
         s2 = b2 + span[0] - 1
         e2 = b2 + span[1]
 

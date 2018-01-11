@@ -9,13 +9,15 @@ from umccrise import patient_analysis
 @click.argument('bcbio_project', type=click.Path(exists=True))
 @click.argument('rule', nargs=-1)
 @click.option('-o', 'output_dir', type=click.Path())
-def main(bcbio_project, output_dir=None, rule=list()):
+@click.option('-j', 'jobs', default=1)
+def main(bcbio_project, rule=list(), output_dir=None, jobs=1):
     cmd = (f'snakemake ' +
            f'{" ".join(rule)} ' +
            f'--snakefile {join(patient_analysis.package_path(), "Snakefile")} ' +
            f'--printshellcmds ' +
           (f'--directory {output_dir} ' if output_dir else ' ') +
-           f'--config run_dir={bcbio_project} '
+           f'--config run_dir={bcbio_project} ' +
+           f'-j {jobs}'
            )
     print(cmd)
     os.system(cmd)

@@ -20,7 +20,7 @@ dependencies:
   - pandoc
   #
   # Python libraries
-  - cyvcf
+  - cyvcf2
   - ngs_utils
   - click
   - cnvkit

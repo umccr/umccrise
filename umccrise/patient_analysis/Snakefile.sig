@@ -20,11 +20,11 @@ rule restrict_to_confident:
     input:
         rules.cgi.output[0]
     params:
-        regions = loc.truth_sets['giab'][run.genome_build]
+        regions = join(loc.hsapiens, loc.truth_sets['giab'][run.genome_build]['bed'])
     output:
         'umccrised/{batch}/somatic/rstudio/ensemble-ucsf-confident.vcf'
     shell:
-        'bcftools {input} -L {params.regions} -Oz -o {output}'
+        'bcftools view {input} -T {params.regions} -Oz -o {output}'
 
 
 rule sig_rmd:

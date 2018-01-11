@@ -3,10 +3,32 @@ UMCCR post-processing for bcbio-nextgen
 
 ## Installation
 ```
-conda env create -n post_bcbio --file conda_req.yaml
-source activate post_bcbio
+conda env create -n umcrrise --file environment.yml
+source activate umccrise
 pip install .
 ```
+
+## Loading
+
+### Raijin
+```
+source /home/563/vs2870/load_conda.sh
+source activate umccrise
+```
+
+### Spartan
+```
+source /home/vlad/load_conda.sh
+source activate umccrise
+```
+
+## Patient analysis
+```
+cd /path/to/bcbio/project/final
+umccrise . -j 30 -o umccrised   # Run using 30 CPUs
+```
+The output will be created in `umccrised` folder.
+
 
 ## Somatic filtering
 
