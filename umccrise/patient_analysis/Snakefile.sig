@@ -29,8 +29,8 @@ rule restrict_to_confident:
 
 rule sig_rmd:
     input:
-        af_freqs = rules.af_freqs.output[0],
-        af_freqs_az300 = rules.af_freqs_az300.output[0],
+        afs = rules.afs.output[0],
+        afs_az300 = rules.afs_az300.output[0],
         vcf = rules.restrict_to_confident.output[0]
     params:
         sig_rmd = get_sig_rmd_file(),
@@ -44,8 +44,8 @@ rule sig_rmd:
         shell('Rscript -e "rmarkdown::render(\'{params.sig_rmd}\', '
         'output_file=\'{params.output_file}\', '
         'params=list('
-        'af_freqs=\'{input.af_freqs}\', '
-        'af_freqs_az300=\'{input.af_freqs_az300}\', '
+        'af_freqs=\'{input.afs}\', '
+        'af_freqs_az300=\'{input.afs_az300}\', '
         'vcf=\'{input.vcf}\', '
         'tumor_name=\'{params.tumor_name}\', '
         'workdir=\'{params.workdir}\''

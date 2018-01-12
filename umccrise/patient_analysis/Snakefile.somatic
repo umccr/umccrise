@@ -48,31 +48,38 @@ rule pcgr_cns:
 
 
 ## Allelic frequencies
-# AF is not yet integrated into PCGR or CGI. We can extract those from VarDict or FreeBayes for plotting purposes, but still need to look up AF for genes of interest manually. Not entirely ideal but for a rough summary plot but this is going to be sufficient. Can revisit once we've unified AF information across callers:
+# AF is not yet integrated into PCGR or CGI. We can extract those from Mutect2 for plotting purposes, but still need to look up AF for genes of interest manually. Not entirely ideal but for a rough summary plot but this is going to be sufficient. Can revisit once we've unified AF information across callers:
 
-rule af_freqs:
+rule afs:
     input:
-        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-vardict-annotated.vcf.gz')
+        vcfs = lambda wc: expand(join(run.date_dir, f'{batch_by_name[wc.batch].name}-{{caller}}-annotated.vcf.gz'), caller=list(batch_by_name.values())[0].tumor.variantcallers)
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
-        'umccrised/{batch}/somatic/af/af_vardict_tumor.txt'
-    shell:
-        'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ou'
-        ' | bcftools query -f "[%AF]\\n" > {output}'
+        'umccrised/{batch}/somatic/af/af_tumor.txt'
+    run:
+        af_vcf = next((vcf for vcf in input.vcfs if vcf.endswith('-vardict-annotated.vcf.gz')), None)
+        if not af_vcf:
+            print('could not find VarDict VCF, falling back to Mutect2')
+            af_vcf = next((vcf for vcf in input.vcfs if vcf.endswith('-mutect2-annotated.vcf.gz')), None)
+        shell('bcftools view -f .,PASS ' + af_vcf + ' -s {params.tumor_name} -Ou | bcftools query -f "[%AF]\\n" > {output}')
 
-rule af_freqs_az300:
+rule afs_az300:
     input:
-        vcf = lambda wc: join(run.date_dir, batch_by_name[wc.batch].name + '-vardict-annotated.vcf.gz'),
+        vcfs = lambda wc: expand(join(run.date_dir, f'{batch_by_name[wc.batch].name}-{{caller}}-annotated.vcf.gz'), caller=list(batch_by_name.values())[0].tumor.variantcallers),
         az300 = az300
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
-        'umccrised/{batch}/somatic/af/af_vardict_tumor_az300.txt'
-    shell:
-       'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
-        ' | bedtools intersect -a stdin -b {input.az300} -header'
-        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t[%AF]\\t%INFO/ANN\n" > {output}'
+        'umccrised/{batch}/somatic/af/af_tumor_az300.txt'
+    run:
+        af_vcf = next((vcf for vcf in input.vcfs if vcf.endswith('-vardict-annotated.vcf.gz')), None)
+        if not af_vcf:
+            print('could not find VarDict VCF, falling back to Mutect2')
+            af_vcf = next((vcf for vcf in input.vcfs if vcf.endswith('-mutect2-annotated.vcf.gz')), None)
+        shell('bcftools view -f .,PASS ' + af_vcf + ' -s {params.tumor_name} -Ov'
+              ' | bedtools intersect -a stdin -b {input.az300} -header'
+              ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t[%AF]\\t%INFO/ANN\n" > {output}')
 
 # Generating the plot manually at a later stage.
 
@@ -80,8 +87,8 @@ rule af_freqs_az300:
 rule somatic:
     input:
         expand([
-            rules.af_freqs_az300.output[0],
-            rules.af_freqs.output[0],
+            rules.afs_az300.output[0],
+            rules.afs.output[0],
             rules.pcgr_somatic_vcf.output[0],
             rules.pcgr_cns.output[0]],
         batch=batch_by_name.keys())

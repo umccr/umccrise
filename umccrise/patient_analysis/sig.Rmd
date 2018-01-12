@@ -13,8 +13,8 @@ output:
 params:
   workdir: 'WPT-013/final/umccrised/batch1' 
   vcf: 'somatic/rstudio/ensemble-ucsf.vcf'
-  af_freqs: 'somatic/af/af_vardict_tumor.txt'
-  af_freqs_az300: 'somatic/af/af_vardict_tumor_az300.txt'
+  af_freqs: 'somatic/af/af_tumor.txt'
+  af_freqs_az300: 'somatic/af/af_tumor_az300.txt'
   tumor_name: ''
 ---
 
@@ -37,7 +37,7 @@ opts_knit$set(root.dir = params$workdir)
 
 ## Allelic frequencies
 
-Comparing the allelic frequencies of all somatic mutations vs those present in a subset of ~300 known cancer genes. Frequencies are currently based on [VarDict](https://github.com/AstraZeneca-NGS/VarDict) calls only and limited to 'high confidence' regions as determined by the [Genome in a Botte consortium].
+Comparing the allelic frequencies of all somatic mutations vs those present in a subset of ~300 known cancer genes. Frequencies are currently based on Mutect2 calls only and limited to 'high confidence' regions as determined by the [Genome in a Botte consortium].
 
 ```{r af}
 # Global AF
