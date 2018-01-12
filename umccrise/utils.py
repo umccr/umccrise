@@ -54,7 +54,7 @@ def get_loc():
         ),
         Loc(name='raijin',
             host_pattern=r'^raijin|(r\d\d\d\d$)',
-            hsapiens='/home/563/vs2870/g/bcbio/genomes/Hsapiens',
+            hsapiens='/g/data/gx8/local/development/bcbio/genomes/Hsapiens',
             extras='/g/data3/gx8/extras',
             panel_of_normals_dir='/g/data3/gx8/extras/panel_or_normals',
             truth_sets={
