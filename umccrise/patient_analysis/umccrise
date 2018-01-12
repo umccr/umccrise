@@ -11,6 +11,7 @@ from umccrise import patient_analysis
 @click.option('-o', 'output_dir', type=click.Path())
 @click.option('-j', 'jobs', default=1)
 def main(bcbio_project, rule=list(), output_dir=None, jobs=1):
+    bcbio_project = os.path.abspath(bcbio_project)
     cmd = (f'snakemake ' +
            f'{" ".join(rule)} ' +
            f'--snakefile {join(patient_analysis.package_path(), "Snakefile")} ' +
