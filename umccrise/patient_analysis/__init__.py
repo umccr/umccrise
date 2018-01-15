@@ -15,7 +15,9 @@ def get_sig_rmd_file():
     return verify_file(join(here, 'sig.Rmd'))
 
 
+def get_signatures_probabilities():
+    return verify_file(join(here, 'signatures_probabilities.txt'))
+
+
 def get_cancer_genes_ensg():
     return verify_file(join(here, 'cancer_genes_ENSG.txt'))
-
-from ngs_utils.utils import is_local

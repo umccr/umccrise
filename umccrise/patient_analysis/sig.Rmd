@@ -16,6 +16,7 @@ params:
   af_freqs: 'somatic/af/af_tumor.txt'
   af_freqs_az300: 'somatic/af/af_tumor_az300.txt'
   tumor_name: ''
+  sig_probs: 'signatures_probabilities.txt'
 ---
 
 ```{r custom, echo=FALSE, message=FALSE, warning=FALSE}
@@ -89,7 +90,7 @@ Extract somatic signatures and compare to the reference set:
 ```{r somSig}
 # Get Sanger sigs
 # sp_url <- paste("http://cancer.sanger.ac.uk/cancergenome/assets/", "signatures_probabilities.txt", sep = "")
-sp_url = "signatures_probabilities.txt"
+sp_url = params$sig_probs
 cancer_signatures <- read.table(sp_url, sep = "\t", header = TRUE)
 
 # Reorder (to make the order of the trinucleotide changes the same)
