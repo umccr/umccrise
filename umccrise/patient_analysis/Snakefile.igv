@@ -28,9 +28,9 @@ rule igv_bam:
         'umccrised/{batch}/igv/{phenotype}_mini.bam'
     threads: threads_max
     shell:
-        'sambamba view -f bam -L {input.bed} {input.bam} -t {threads} > {output}'
+#        'sambamba view -f bam -L {input.bed} {input.bam} -t {threads} > {output}'
+        'samtools view -b -L {input.bed} {input.bam} -@ {threads} > {output}'
         ' && samtools index {output}'
-#        'samtools view -b -L {input.bed} {input.bam} -@ {threads} > {output}'
 
 
 rule igv:
