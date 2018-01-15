@@ -105,8 +105,8 @@ rule bedpe:
 
 rule structural:
     input:
-        # expand(rules.bedpe.output, batch=batch_by_name.keys()),
-        # expand(rules.ribbon.output, batch=batch_by_name.keys()),
+        expand(rules.bedpe.output, batch=batch_by_name.keys()),
+        expand(rules.ribbon.output, batch=batch_by_name.keys()),
         expand(rules.prep_manta.output, batch=batch_by_name.keys()),
         expand(rules.cnvkit_plot.output, batch=batch_by_name.keys())
     output:
