@@ -11,12 +11,12 @@ output:
   rmdformats::material:
     highlight: kate
 params:
-  workdir: 'WPT-013/final/umccrised/batch1'
+  workdir: 'umccrised/diploid_tumor'
   vcf: 'somatic/rstudio/ensemble-ucsf.vcf'
   af_freqs: 'somatic/af/af_tumor.txt'
   af_freqs_az300: 'somatic/af/af_tumor_az300.txt'
-  sv: 'structural/sv-prioritize-manta-bpi.tsv'
-  tumor_name: 'WPT-013'
+  sv: '/Users/vsaveliev/tmp/tmp/umccrised/diploid_tumor/structural/sv-prioritize-manta-bpi.tsv'
+  tumor_name: 'diploid_tumor'
   sig_probs: 'signatures_probabilities.txt'
 ---
 
@@ -26,6 +26,7 @@ library(knitr)
 library(rmarkdown)
 library(dplyr)
 library(tidyr)
+library(raster)
 library(DT)
 library(MutationalPatterns)
 library(BSgenome)
@@ -47,16 +48,16 @@ Comparing the allelic frequencies of all somatic mutations vs those present in a
 af <- read.table(file.path(params$af_freqs),
                  header=FALSE, colClasses='numeric') %>%
   mutate(set='wgs') %>%
-  select(set, af=V1) 
+  select(set, af=V1)
 
 # AF for AstraZeneca's AZ300 gene set
 af_az300 <- read.table(file.path(params$af_freqs_az300),
                        header=FALSE) %>%
   mutate(set='cancer_genes') %>%
-  select(set, af=V6) 
+  select(set, af=V6)
 
 all_af <- rbind(af, af_az300)
-ggplot(all_af, aes(af)) + 
+ggplot(all_af, aes(af)) +
   geom_histogram(stat='bin', binwidth = 0.01) +
   facet_wrap(~set, scales='free_y')
 ```
@@ -66,7 +67,7 @@ ggplot(all_af, aes(af)) +
 [PCGR](https://github.com/sigven/pcgr) uses [deconstructSigs](https://cran.r-project.org/web/packages/deconstructSigs/index.html) to generate somatic signatures. From our experience it can miss signatures quite frequently; using [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html) to doublecheck.
 
 ```{r importVCF}
-# Grab ensemble calls from the post-processing stage. These were converted 
+# Grab ensemble calls from the post-processing stage. These were converted
 # by adding "chr" prefixes and remiving G* chromosomes.
 #
 
@@ -80,7 +81,7 @@ Look at somatic change distribution:
 ```{r somProfile}
 muts <- mutations_from_vcf(vcf)
 type_occurrences <- mut_type_occurrences(vcf, ref_genome)
-plot_spectrum(type_occurrences, CT=TRUE) 
+plot_spectrum(type_occurrences, CT=TRUE)
 
 # Could do this relative to a few reference samples
 mut_mat <- mut_matrix(vcf_list=as.list(vcf), ref_genome=ref_genome)
@@ -98,10 +99,10 @@ cancer_signatures <- read.table(sp_url, sep = "\t", header = TRUE)
 # Reorder (to make the order of the trinucleotide changes the same)
 cancer_signatures <- cancer_signatures[order(cancer_signatures[, 1]), ]
 
-# Only signatures in matrix
-cancer_signatures <- as.matrix(cancer_signatures[, 4:33])
+# Only signatures in MATRIX
+cancer_signatures <- as.MATRIX(cancer_signatures[, 4:33])
 
-# Fit mutation matrix to cancer signatures. This function finds the optimal linear 
+# Fit mutation matrix to cancer signatures. This function finds the optimal linear
 # combination of mutation signatures that most closely reconstructs the
 # mutation matrix by solving a non-negative least-squares constraints problem.
 fit_res <- fit_to_signatures(mut_mat, cancer_signatures)
@@ -138,7 +139,7 @@ cnv <- cnv_all %>%
   separate(annotation,
            c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
            sep='\\|') %>% # Unpack annotation columns %>%
-  select(chrom, start, end, gene, priority, score, annotation, type, lof,
+  dplyr::select(chrom, start, end, gene, priority, score, annotation, type, lof,
          split_read_support, paired_support_PR) %>%
   distinct()
 datatable(cnv, rownames=FALSE)
