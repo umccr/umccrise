@@ -122,11 +122,24 @@ datatable(result, rownames=FALSE) %>%
 ```
 
 Check for positional enrichment of somatic signatures (limited to autosomes):
-
-
 ```{r rainfall}
 chromosomes <- seqnames(get(ref_genome))[1:22]
 plot_rainfall(vcf[[1]], chromosomes=chromosomes, cex = 1.5, ylim = 1e+09 )
+```
+
+```{r sv_prioritize}
+cnv_all <- read.table('sv-prioritize-manta-bpi.tsv',
+                      header= TRUE, sep="\t", stringsAsFactors = FALSE)
+
+cnv <- cnv_all %>%
+  unnest(annotation = strsplit(annotation, ',')) %>% # Unpack multiple annotations per region
+  separate(annotation,
+           c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
+           sep='\\|') %>% # Unpack annotation columns %>%
+  select(chrom, start, end, gene, priority, score, annotation, type, lof,
+         split_read_support, paired_support_PR) %>%
+  distinct()
+datatable(cnv, rownames=FALSE)
 ```
 
 ## Addendum
