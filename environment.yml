@@ -32,7 +32,6 @@ dependencies:
   - r-ggplot2
   - r-dplyr
   - r-tidyr
-  - r-raster
   - r-dt
   - r-mutationalpatterns
   - bioconductor-bsgenome.hsapiens.ucsc.hg19

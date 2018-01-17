@@ -11,7 +11,7 @@ output:
   rmdformats::material:
     highlight: kate
 params:
-  workdir: 'umccrised/diploid_tumor'
+  workdir: '/Users/vsaveliev/tmp/tmp/umccrised/diploid_tumor'
   vcf: 'somatic/rstudio/ensemble-ucsf.vcf'
   af_freqs: 'somatic/af/af_tumor.txt'
   af_freqs_az300: 'somatic/af/af_tumor_az300.txt'
@@ -24,9 +24,8 @@ params:
 library(ggplot2)
 library(knitr)
 library(rmarkdown)
-library(dplyr)
 library(tidyr)
-library(raster)
+library(dplyr)
 library(DT)
 library(MutationalPatterns)
 library(BSgenome)
@@ -48,13 +47,13 @@ Comparing the allelic frequencies of all somatic mutations vs those present in a
 af <- read.table(file.path(params$af_freqs),
                  header=FALSE, colClasses='numeric') %>%
   mutate(set='wgs') %>%
-  select(set, af=V1)
+  dplyr::select(set, af=V1)
 
 # AF for AstraZeneca's AZ300 gene set
 af_az300 <- read.table(file.path(params$af_freqs_az300),
                        header=FALSE) %>%
   mutate(set='cancer_genes') %>%
-  select(set, af=V6)
+  dplyr::select(set, af=V6)
 
 all_af <- rbind(af, af_az300)
 ggplot(all_af, aes(af)) +
@@ -99,8 +98,8 @@ cancer_signatures <- read.table(sp_url, sep = "\t", header = TRUE)
 # Reorder (to make the order of the trinucleotide changes the same)
 cancer_signatures <- cancer_signatures[order(cancer_signatures[, 1]), ]
 
-# Only signatures in MATRIX
-cancer_signatures <- as.MATRIX(cancer_signatures[, 4:33])
+# Only signatures in matrix
+cancer_signatures <- as.matrix(cancer_signatures[, 4:33])
 
 # Fit mutation matrix to cancer signatures. This function finds the optimal linear
 # combination of mutation signatures that most closely reconstructs the
@@ -108,14 +107,14 @@ cancer_signatures <- as.MATRIX(cancer_signatures[, 4:33])
 fit_res <- fit_to_signatures(mut_mat, cancer_signatures)
 
 # Select signatures with some contribution
-select <- which(rowSums(fit_res$contribution) > 0)
+selection <- which(rowSums(fit_res$contribution) > 0)
 
 # plot contribution
-result <- as.data.frame(fit_res$contribution[select, ])
+result <- as.data.frame(fit_res$contribution[selection, ])
 result$Signature <- rownames(result)
 
 result <- result %>%
-  mutate(Contribution=fit_res$contribution[select, ]) %>%
+  mutate(Contribution=fit_res$contribution[selection, ]) %>%
   select(Signature, Contribution) %>%
   arrange(-Contribution)
 
