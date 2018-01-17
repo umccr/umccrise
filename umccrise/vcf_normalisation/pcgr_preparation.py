@@ -24,10 +24,8 @@ def main(input_file, output_file=None):
 
     tumor_index, control_index = get_sample_ids(input_file)
 
-    header_by_tag = _find_tags(vcf)
-
     # Add headers
-    for t, h in header_by_tag.items():
+    for t in ['AF', 'DP', 'MQ']:
         t = t.upper()
         vcf.add_info_to_header({
             'ID': t,
@@ -46,13 +44,12 @@ def main(input_file, output_file=None):
 
     # Go through each record and add new INFO fields
     for rec in vcf:
-        val_per_tag_per_sample = _collect_vals_per_sample(rec, control_index, tumor_index, header_by_tag)
+        af, dp, mq = _collect_vals_per_sample(rec, control_index, tumor_index)
 
-        for tag, val_by_sample in val_per_tag_per_sample.items():
-            tag = tag.upper()
-            rec.INFO[tag] = val_by_sample['tumor']
-            if val_by_sample.get('normal'):
-                rec.INFO['NORMAL_' + tag] = val_by_sample['normal']
+        for t, v in zip(['AF', 'DP', 'MQ'], [af, dp, mq]):
+            rec.INFO[t] = str(v[tumor_index])
+            if control_index and v[control_index] is not None:
+                rec.INFO['NORMAL_' + t] = str(v[control_index])
 
         if w:
             w.write_record(rec)
@@ -64,99 +61,62 @@ def main(input_file, output_file=None):
     vcf.close()
 
 
-def _find_tags(vcf):
-    tags_options = {
-        'ad': {'AD'},  # contains raw counts for each allele
-        'af': {'AF', 'FREQ', 'FA'},  # contains actual frequencies which can be used directly
-        'dp': {'DP'},
-        'mq': {'MQ', 'MMQ'},
-    }
+''' 
+VarDict
+FORMAT/DP,    FORMAT/AF,                           FORMAT/MQ (somatic), INFO/MQ (germline)
+             
+Mutect2             
+FORMAT/DP,    FORMAT/AF,                           FORMAT/MMQ
+             
+Freebayes                                       
+FORMAT/DP     FORMAT/AD = ref_count,alt_count      INFO/MQM+INFO/MQMR
+             
+GATK-Haplotype                                  
+FORMAT/DP     FORMAT/AD = ref_count,alt_count      FORMAT/MMQ
+    
+Strelka - germline                 
+SNV:
+FORMAT/DP     FORMAT/AD = ref_count,alt_count      INFO/MQ
+INDEL:
+FORMAT/DPI    FORMAT/AD = ref_count,alt_count      INFO/MQ
 
-    formats_by_id = {}
-    infos_by_id = {}
-    for h in vcf.header_iter():
-        i = h.info()
-        ht = i['HeaderType']
-        if ht in ['FORMAT', 'INFO']:
-            if i['Type'] == 'Integer':
-                i['python_type'] = int
-            if i['Type'] == 'Float':
-                i['python_type'] = float
-
-            if i['HeaderType'] == 'FORMAT':
-                formats_by_id[i['ID']] = i
-            elif i['HeaderType'] == 'INFO':
-                infos_by_id[i['ID']] = i
-
-    header_by_tag = {t: None for t in tags_options}
-
-    for headers_by_id in [formats_by_id, infos_by_id]:
-        for tag, header in header_by_tag.items():
-            if header is None:
-                header_id_options = tags_options[tag].intersection(headers_by_id)
-                if header_id_options:
-                    header_by_tag[tag] = headers_by_id[header_id_options.pop()]
-
-    pprint(header_by_tag)
-    return header_by_tag
+Strelka - somatic                 
+SNV:
+FORMAT/DP     FORMAT/{ALT}U[0] = alt_count         INFO/MQ
+INDEL:
+FORMAT/DP     FORMAT/TIR = alt_count               INFO/MQ
+'''
 
 
-def _collect_vals_per_sample(rec, control_index, tumor_index, header_by_tag):
-    d = {t: {'tumor': -1, 'normal': -1} for t in header_by_tag}  # val_by_sample_by_tags
+def _collect_vals_per_sample(rec, control_index, tumor_index):
+    try:
+        dp = rec.format('DP')[:,0]
+    except:  # Strelka2 indels:
+        dp = rec.format('DPI')[:,0]
 
-    if header_by_tag['af']:
-        af_header = header_by_tag['af']
-        ad_tag_is_frequency = True
-    else:
-        af_header = header_by_tag['ad']
-        ad_tag_is_frequency = False
+    # If FORMAT/AF exists, report it as af. Else, check FORMAT/AD. If not, check FORMAT/*U
+    try:
+        af = rec.format('AF')[:,0]
+    except:
+        try:
+            alt_counts = rec.format('AD')[:,1]  # AD=REF,ALT so 1 is the position of ALT
+        except:
+            if rec.is_snp:
+                alt_counts = rec.format(rec.ALT[0] + 'U')[:,0]
+            else:
+                alt_counts = rec.format('TIR')[:,0]
+        af = alt_counts / dp
 
-    c_alt_support = -1
-    t_alt_support = -1
-    if af_header:
-        if af_header['HeaderType'] == 'FORMAT':
-            af_data = rec.format(af_header['ID'])
-            t_alt_support = str(af_data[tumor_index][0])
+    try:
+        mq = rec.format('MQ', float)[:,0]  # VarDict has an incorrect MQ header (with Integer type instead of Float), so need to specify "float" type here explicitly otherwise MQ won't be parsed
+    except:
+        try:
+            mq = rec.format('MMQ')[:,0]
+        except:
+            mq = [None for _ in [control_index, tumor_index]]
+            mq[tumor_index] = rec.INFO.get('MQ')
 
-            sample_dim = af_data.shape[0]
-            if sample_dim >= 2:
-                c_alt_support = str(af_data[control_index][0])
-
-        else:  # Strelka doesn't have AF or AD in FORMAT, using INFO["AF"] (unfortunately INFO["AF"] is always 0.25)
-            t_alt_support = str(rec.INFO[af_header['ID']])
-
-    if t_alt_support == '-2147483648': t_alt_support = -1
-    if c_alt_support == '-2147483648': c_alt_support = -1
-
-    dp_header = header_by_tag['dp']
-    if dp_header:
-        if dp_header['HeaderType'] == 'FORMAT':
-            dp_data = rec.format(dp_header['ID'])
-            d['dp']['tumor'] = str(dp_data[tumor_index][0])
-
-            sample_dim = dp_data.shape[0]
-            if sample_dim >= 2:
-                d['dp']['normal'] = str(dp_data[control_index][0])
-
-            if d['dp']['tumor']  == '-2147483648': d['dp']['tumor']  = -1
-            if d['dp']['normal'] == '-2147483648': d['dp']['normal'] = -1
-        else:
-            d['dp']['tumor'] = str(rec.INFO[dp_header['ID']])
-
-    if ad_tag_is_frequency:
-        d['af']['tumor'] = t_alt_support
-    elif t_alt_support != -1 and d['dp']['tumor'] > 0:
-        d['af']['tumor'] = '{0:.4f}'.format(int(t_alt_support) / float(d['dp']['tumor']))
-
-    if ad_tag_is_frequency:
-        d['af']['normal'] = c_alt_support
-    elif c_alt_support != -1 and d['dp']['normal'] != -1:
-        if float(d['dp']['normal']) > 0:
-            d['af']['normal'] = "{0:.4f}".format(int(c_alt_support) / float(d['dp']['normal']))
-
-    _parse_tag(rec, header_by_tag, 'mq', d, tumor_index, control_index)
-
-    return d
+    return af, dp, mq
 
 
 def _parse_tag(rec, header_by_tag, tag, d, tumor_index, control_index):
