@@ -15,7 +15,8 @@ params:
   vcf: 'somatic/rstudio/ensemble-ucsf.vcf'
   af_freqs: 'somatic/af/af_tumor.txt'
   af_freqs_az300: 'somatic/af/af_tumor_az300.txt'
-  tumor_name: ''
+  sv: 'structural/sv-prioritize-manta-bpi.tsv'
+  tumor_name: 'WPT-013'
   sig_probs: 'signatures_probabilities.txt'
 ---
 
@@ -24,6 +25,7 @@ library(ggplot2)
 library(knitr)
 library(rmarkdown)
 library(dplyr)
+library(tidyr)
 library(DT)
 library(MutationalPatterns)
 library(BSgenome)
@@ -128,7 +130,7 @@ plot_rainfall(vcf[[1]], chromosomes=chromosomes, cex = 1.5, ylim = 1e+09 )
 ```
 
 ```{r sv_prioritize}
-cnv_all <- read.table('sv-prioritize-manta-bpi.tsv',
+cnv_all <- read.table(params$sv,
                       header= TRUE, sep="\t", stringsAsFactors = FALSE)
 
 cnv <- cnv_all %>%
