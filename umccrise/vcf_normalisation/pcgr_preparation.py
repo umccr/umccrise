@@ -20,27 +20,27 @@ def main(input_file, output_file=None):
         w = Writer(output_file, vcf)
     else:
         w = None
-        sys.stdout.write('\n'.join(vcf.raw_header.split('\n')))
 
     tumor_index, control_index = get_sample_ids(input_file)
 
     # Add headers
-    for t in ['AF', 'DP', 'MQ']:
-        t = t.upper()
-        vcf.add_info_to_header({
-            'ID': t,
-            'Description': f'{t} in tumor sample',
-            'Type': 'Float' if t == 'AF' else 'Integer',
-            'Number': '1'
-        })
-        if control_index:
-            t = 'NORMAL_' + t
-            vcf.add_info_to_header({
-                'ID': t,
-                'Description': f'{t} in control sample',
-                'Type': 'Float' if t == 'AF' else 'Integer',
-                'Number': '1'
-            })
+    new_header = []
+    for h in vcf.raw_header.split('\n'):
+        if h.startswith('#CHROM'):
+            for tag in ['AF', 'DP', 'MQ']:
+                type = 'Integer' if tag == 'DP' else 'Float'
+                new_header.append(f'##INFO=<ID={tag},Number=A,Type={type},Description="{tag} in tumor sample">')
+                # Add headers to original cyvcf2 header just to avoid errors
+                vcf.add_info_to_header({'ID': tag, 'Description': '', 'Type': type, 'Number': 'A'})
+                if control_index is not None:
+                    new_header.append(f'##INFO=<ID=NORMAL_{tag},Number=A,Type={type},Description="{tag} in control sample">')
+                    # Add headers to original cyvcf2 header just to avoid errors
+                    vcf.add_info_to_header({'ID': 'NORMAL_' + tag, 'Description': '', 'Type': type, 'Number': 'A'})
+
+        if not any(h.startswith(f'##INFO=<ID={tag},') for tag in ['AF', 'DP', 'MQ']):
+            new_header.append(h)
+
+    sys.stdout.write('\n'.join(new_header))
 
     # Go through each record and add new INFO fields
     for rec in vcf:
@@ -48,7 +48,7 @@ def main(input_file, output_file=None):
 
         for t, v in zip(['AF', 'DP', 'MQ'], [af, dp, mq]):
             rec.INFO[t] = str(v[tumor_index])
-            if control_index and v[control_index] is not None:
+            if control_index is not None and v[control_index] is not None:
                 rec.INFO['NORMAL_' + t] = str(v[control_index])
 
         if w:
