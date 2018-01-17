@@ -3,7 +3,7 @@
 rule igv_bed:
     input:
         az300 = az300,
-        small_variant_vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-ensemble-annotated.vcf.gz'),
+        small_variant_vcf = rules.pon_pass.output[0],
         structural_bed = rules.ribbon.output[0]
     output:
         'umccrised/{batch}/igv/roi.bed'
@@ -37,6 +37,6 @@ rule igv:
     input:
         expand(rules.igv_bam.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())
     output:
-        'umccrised/.snakemake/igv.done'
+        'umccrised/igv.done'
     shell:
         'touch {output}'

@@ -110,6 +110,6 @@ rule structural:
         expand(rules.prep_manta.output, batch=batch_by_name.keys()),
         expand(rules.cnvkit_plot.output, batch=batch_by_name.keys())
     output:
-        'umccrised/.snakemake/structural.done'
+        'umccrised/structural.done'
     shell:
         'touch {output}'

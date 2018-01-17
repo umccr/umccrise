@@ -26,20 +26,63 @@ if 'sample' in config:
     batch_by_name = {k: v for k, v in batch_by_name.items() if b.tumor.name == config['sample']}
 
 
+rule all:  # {}
+    input:
+        'umccrised/done'
+
+
+## Somatic
+rule panel_of_normals:  # {batch}
+    input:
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-ensemble-annotated.vcf.gz'),
+        toml = join(loc.panel_of_normals_dir, 'annotate_normals_vcfanno.toml'),
+        lua = join(loc.panel_of_normals_dir, 'code.lua')
+    params:
+        ht = 1,
+        normals_dir = loc.panel_of_normals_dir
+    output:
+        'umccrised/{batch}/somatic/ensemble-pon.vcf.gz'
+    shell:
+        'vcfanno -lua {input.lua}'
+        ' <(sed s#file=\\\"#file=\\\"{params.normals_dir}/# {input.toml})'
+        ' {input.vcf} |'
+        ' bcftools filter -e "INFO/PoN_CNT>={params.ht}" --soft-filter PoN --mode + -Oz -o {output}'
+        ' && tabix -p vcf {output}'
+
+rule pon_pass:  # {batch}
+    input:
+        rules.panel_of_normals.output[0]
+    output:
+        'umccrised/{batch}/somatic/ensemble-pon-pass.vcf.gz'
+    shell:
+        'bcftools view -f.,PASS -Oz {input} -o {output}'
+
+
+## Germline
+# Annotate any events found in Sean's 105/106 cancer predisposition gene set.
+from umccrise.patient_analysis import get_cancer_genes_ensg
+rule prep_germline:  # {batch}
+    input:
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}-ensemble-annotated.vcf.gz'),
+        ensg = get_cancer_genes_ensg()
+    output:
+        'umccrised/{batch}/germline/germline-ensemble-cancer.vcf.gz'
+    params:
+        ungz = lambda wc, output: get_ungz_gz(output[0])[0]
+    shell:
+        'zgrep ^# {input.vcf} > {params.ungz} && '
+        'zgrep -f {input.ensg} {input.vcf} >> {params.ungz} && '
+        'bgzip {params.ungz} && tabix {output}'
+
+
 include: "Snakefile.coverage"
-include: "Snakefile.somatic"
-include: "Snakefile.germline"
+include: "Snakefile.pcgr"
 include: "Snakefile.structural"
 include: "Snakefile.igv"
 include: "Snakefile.sig"
 
 
-rule all:
-    input:
-        'umccrised/done'
-
-
-rule symlink_multiqc:
+rule symlink_multiqc:  # {}
     input:
         join(run.date_dir, 'multiqc/multiqc_report.html')
     output:
@@ -50,7 +93,7 @@ rule symlink_multiqc:
 
 ## Additional information
 # TODO: link it to MultiQC
-rule log:
+rule log:  # {}
     input:
         join(run.date_dir, 'data_versions.csv'), 
         join(run.date_dir, 'programs.txt'), 
@@ -65,48 +108,15 @@ rule log:
         'ln -s {input} {params.log_dir}'
 
 
-rule upload_to_pcgr:
-    input:
-        rules.pcgr_somatic_vcf.output,
-        rules.pcgr_somatic_vcf.output,
-        rules.pcgr_cns.output,
-        rules.pcgr_germline.output,
-        rules.pcgr_germline.output
-    params:
-        url = f'ubuntu@{pcgr_url}.ap-southeast-2.compute.amazonaws.com',
-        som_dir = 'umccrised/{batch}/somatic/pcgr',
-        germ_dir = 'umccrised/{batch}/germline/pcgr',
-        batch = lambda wc: wc.batch
-    output:
-        'umccrised/.snakemake/pcgr_{batch}.done'
-    shell:
-        'scp -r {params.som_dir} {params.url}:/mnt/pcgr-0.4.2.1/{params.batch}_somatic'
-        ' && '
-        'scp -r {params.germ_dir} {params.url}:/mnt/pcgr-0.4.2.1/{params.batch}_germline'
-        ' && '
-        'touch {output}'
-        # 'conda install -c conda-forge ansible>=2.3'
-        # 'ansible-playbook aws.yaml'
-        # 'ssh ubuntu@<AWS INSTANCE>'
-        # 'cd /mnt/work/pcgr-*'
-        # './pcgr.py --input_vcf examples/tumor_sample.COAD.vcf.gz --input_cna examples/tumor_sample.COAD.cna.tsv /mnt/work/pcgr-* output tumor_sample.COAD'
-
-rule pcgr:
-    input:
-        expand(rules.upload_to_pcgr.output, batch=batch_by_name.keys())
-
-
-rule umccrised:
+rule umccrised:  # {}
     input:
         rules.symlink_multiqc.output,
         rules.coverage.output,
-        rules.somatic.output,
-        rules.germline.output,
+        rules.pcgr.output,
         rules.structural.output,
         rules.igv.output,
         rules.log.output,
-        rules.sig.output,
-        rules.pcgr.output
+        rules.sig.output
     output:
         'umccrised/done'
     shell:
