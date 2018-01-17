@@ -20,7 +20,7 @@ def main(input_file, output_file=None):
         w = Writer(output_file, vcf)
     else:
         w = None
-        sys.stdout.write('\n'.join([h for h in vcf.raw_header.split('\n') if not h.startswith('##SAMPLE')]))
+        sys.stdout.write('\n'.join(vcf.raw_header.split('\n')))
 
     tumor_index, control_index = get_sample_ids(input_file)
 
