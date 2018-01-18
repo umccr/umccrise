@@ -23,21 +23,27 @@ def main(input_file, output_file=None):
 
     tumor_index, control_index = get_sample_ids(input_file)
 
+    tumor_prefix = 'TUMOR_'
+    normal_prefix = 'NORMAL_'
+
     # Add headers
     new_header = []
     for h in vcf.raw_header.split('\n'):
         if h.startswith('#CHROM'):
             for tag in ['AF', 'DP', 'MQ']:
                 type = 'Integer' if tag == 'DP' else 'Float'
-                new_header.append(f'##INFO=<ID={tag},Number=A,Type={type},Description="{tag} in tumor sample">')
-                # Add headers to original cyvcf2 header just to avoid errors
-                vcf.add_info_to_header({'ID': tag, 'Description': '', 'Type': type, 'Number': 'A'})
-                if control_index is not None:
-                    new_header.append(f'##INFO=<ID=NORMAL_{tag},Number=A,Type={type},Description="{tag} in control sample">')
-                    # Add headers to original cyvcf2 header just to avoid errors
-                    vcf.add_info_to_header({'ID': 'NORMAL_' + tag, 'Description': '', 'Type': type, 'Number': 'A'})
+                tumor_tag = tumor_prefix + tag
+                normal_tag = normal_prefix + tag
 
-        if not any(h.startswith(f'##INFO=<ID={tag},') for tag in ['AF', 'DP', 'MQ']):
+                new_header.append(f'##INFO=<ID={tumor_tag},Number=1,Type={type},Description="{tag} in tumor sample">')
+                # Add headers to original cyvcf2 header just to avoid errors
+                vcf.add_info_to_header({'ID': tumor_tag, 'Description': '', 'Type': type, 'Number': '1'})
+                if control_index is not None:
+                    new_header.append(f'##INFO=<ID={normal_tag},Number=1,Type={type},Description="{tag} in control sample">')
+                    # Add headers to original cyvcf2 header just to avoid errors
+                    vcf.add_info_to_header({'ID': normal_tag, 'Description': '', 'Type': type, 'Number': '1'})
+
+        if not any(h.startswith(f'##INFO=<ID={p+tag},') for tag in ['AF', 'DP', 'MQ'] for p in [tumor_prefix, normal_prefix]):
             new_header.append(h)
 
     sys.stdout.write('\n'.join(new_header))
@@ -47,9 +53,9 @@ def main(input_file, output_file=None):
         af, dp, mq = _collect_vals_per_sample(rec, control_index, tumor_index)
 
         for t, v in zip(['AF', 'DP', 'MQ'], [af, dp, mq]):
-            rec.INFO[t] = str(v[tumor_index])
+            rec.INFO[tumor_prefix + t] = str(v[tumor_index])
             if control_index is not None and v[control_index] is not None:
-                rec.INFO['NORMAL_' + t] = str(v[control_index])
+                rec.INFO[normal_prefix + t] = str(v[control_index])
 
         if w:
             w.write_record(rec)
