@@ -1,5 +1,5 @@
-UMCCR post-processing for bcbio-nextgen
----------------------------------------
+UMCCRisation of Bcbio results. Filter, plot, put together, report
+-----------------------------------------------------------------
 
 ## Installation
 ```
@@ -25,7 +25,7 @@ source activate umccrise
 ## Patient analysis
 ```
 cd /path/to/bcbio/project/final
-umccrise . -j 30 -o umccrised   # Run using 30 CPUs
+umccrise . -j 30  # Run using 30 CPUs
 ```
 The output will be created in `umccrised` folder.
 
