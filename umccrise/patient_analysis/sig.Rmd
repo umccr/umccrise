@@ -75,7 +75,7 @@ vcf <- read_vcfs_as_granges(file.path(params$vcf),
                             ref_genome)
 ```
 
-Look at somatic change distribution:
+### Look at somatic change distribution:
 
 ```{r somProfile}
 muts <- mutations_from_vcf(vcf)
@@ -87,7 +87,7 @@ mut_mat <- mut_matrix(vcf_list=as.list(vcf), ref_genome=ref_genome)
 plot_96_profile(mut_mat)
 ```
 
-Extract somatic signatures and compare to the reference set:
+### Extract somatic signatures and compare to the reference set:
 
 ```{r somSig}
 # Get Sanger sigs
@@ -123,11 +123,13 @@ datatable(result, rownames=FALSE) %>%
   formatRound('Contribution', 1)
 ```
 
-Check for positional enrichment of somatic signatures (limited to autosomes):
+### Check for positional enrichment of somatic signatures (limited to autosomes):
 ```{r rainfall}
 chromosomes <- seqnames(get(ref_genome))[1:22]
 plot_rainfall(vcf[[1]], chromosomes=chromosomes, cex = 1.5, ylim = 1e+09 )
 ```
+
+## Prioritised structural variants
 
 ```{r sv_prioritize}
 cnv_all <- read.table(params$sv,
