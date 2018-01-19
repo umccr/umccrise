@@ -8,6 +8,9 @@ from ngs_utils.file_utils import add_suffix, get_ungz_gz
 from umccrise.utils import get_loc
 
 
+shell.executable("/bin/bash")
+
+
 pcgr_url = config.get('pcgr_url', 'ec2-13-55-18-20')
 cov_by_phenotype = config.get('cov_by_phenotype', {'tumor': 30, 'normal': 10})  # For goleft regions coverage, use minimum coverage 10 for normal, 30 for tumor
 threads_max = 32  # Use up to 32 cores at once, if available
