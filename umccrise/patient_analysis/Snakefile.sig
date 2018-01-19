@@ -39,7 +39,7 @@ rule split_multiallelic:
     output:
         'umccrised/{batch}/somatic/af/ensemble-confident-singleallelic.vcf.gz'
     shell:
-        "bcftools annotate -x ^INFO/ANN,^INFO/AF -Ob {input.vcf} | bcftools norm -m '-' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}"
+        "bcftools annotate -x ^INFO/ANN,^INFO/TUMOR_AF -Ob {input.vcf} | bcftools norm -m '-' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}"
 
 rule afs:
     input:
@@ -49,7 +49,7 @@ rule afs:
     output:
         'umccrised/{batch}/somatic/af/af_tumor.txt'
     shell:
-        'bcftools view {input} -s {params.tumor_name} -Ou | bcftools query -f "%AF\\n" > {output}'
+        'bcftools view {input} -s {params.tumor_name} -Ou | bcftools query -f "%INFO/TUMOR_AF\\n" > {output}'
 
 rule afs_az300:
     input:
@@ -62,7 +62,7 @@ rule afs_az300:
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.az300} -header'
-        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%AF\\t%INFO/ANN\n" > {output}'
+        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\n" > {output}'
 
 ## Mutational signatures VCF
 #
