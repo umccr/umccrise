@@ -63,31 +63,80 @@ rule prep_manta:
     shell:
         'cat {input.sv_prio} | {{ head -1 ; grep manta | grep -f <(cut -f1,2 {input.bpi_vcf}) ; }} > {output}'
 
+rule ribbon_filter_manta:
+    input:
+        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+    output:
+        'umccrised/{batch}/structural/manta.pass.vcf'
+    shell:
+        'bcftools view -f.,PASS {input.manta_vcf} > {output}'
+
+rule ribbon_filter_vcfbedtope_starts:
+    input:
+        bed = rules.ribbon_filter_manta.output[0],
+        fai = ref_fa + '.fai'
+    output:
+        'umccrised/{batch}/structural/manta.pass.strats.bed'
+    params:
+        vcftobedpe = vcftobedpe
+    shell:
+        'cat {input.bed} | {params.vcftobedpe}'
+        ' | cut -f 1-3'
+        ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
+        ' > {output}'
+
+rule ribbon_filter_vcfbedtope_ends:
+    input:
+        bed = rules.ribbon_filter_manta.output[0],
+        fai = ref_fa + '.fai'
+    output:
+        'umccrised/{batch}/structural/manta.pass.ends.bed'
+    params:
+        vcftobedpe = vcftobedpe
+    shell:
+        'cat {input.bed} | {params.vcftobedpe}'
+        ' | cut -f 4-6'
+        ' | grep -v \'CHROM\''
+        ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
+        ' > {output}'
+
 # At least for the (most conservative) manta calls generate a file for viewing in Ribbon:
 rule ribbon:
     input:
-        fai = ref_fa + '.fai',
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+        starts = rules.ribbon_filter_vcfbedtope_starts.output[0],
+        ends = rules.ribbon_filter_vcfbedtope_ends.output[0]
     output:
         'umccrised/{batch}/structural/manta.bed'
     params:
         vcftobedpe = vcftobedpe
     shell:
-        'bcftools view -f.,PASS {input.manta_vcf}'
-        ' | {{'
-        ' {params.vcftobedpe}'
-        ' | cut -f 1-3'
-        ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
-        ' ; '
-        ' {params.vcftobedpe}'
-        ' | cut -f 4-6'
-        ' | grep -v \'CHROM\''
-        ' | bedtools slop -i stdin -g {input.fai} -b 5000'
-        ' ;'
-        ' }}'
-        ' | bedtools sort -i stdin'
-        ' | bedtools merge -i stdin'
-        ' > {output}'
+        'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
+
+# # At least for the (most conservative) manta calls generate a file for viewing in Ribbon:
+# rule ribbon:
+#     input:
+#         fai = ref_fa + '.fai',
+#         manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+#     output:
+#         'umccrised/{batch}/structural/manta.bed'
+#     params:
+#         vcftobedpe = vcftobedpe
+#     shell:
+#         'bcftools view -f.,PASS {input.manta_vcf}'
+#         ' | {{'
+#         ' {params.vcftobedpe}'
+#         ' | cut -f 1-3'
+#         ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
+#         ' ; '
+#         ' {params.vcftobedpe}'
+#         ' | cut -f 4-6'
+#         ' | grep -v \'CHROM\''
+#         ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
+#         ' ;'
+#         ' }}'
+#         ' | bedtools sort -i stdin'
+#         ' | bedtools merge -i stdin'
+#         ' > {output}'
 
 # And one in BEDPE format
 rule bedpe:
