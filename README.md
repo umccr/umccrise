@@ -2,18 +2,30 @@ UMCCRisation of Bcbio results. Filter, plot, put together, report
 -----------------------------------------------------------------
 
 ## Installation
+Install conda
+```
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+bash miniconda.sh -b -p ./miniconda
+export PATH=$(pwd)/miniconda/bin:$PATH
+```
+
+Install umccrise
 ```
 conda env create -n umcrrise --file environment.yml
 source activate umccrise
-pip install .
+pip install -e .
+```
+
+Created loader
+```
+echo "export PATH=$(pwd)/miniconda/envs/umcrrise/bin:$(pwd)/miniconda/bin:$PATH" > load_umccrise.sh
 ```
 
 ## Loading
 
 ### Raijin
 ```
-source /home/563/vs2870/load_conda.sh
-source activate umccrise
+source /g/data3/gx8/extras/umccrise/load_umccrise.sh
 ```
 
 ### Spartan
