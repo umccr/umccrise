@@ -2,12 +2,10 @@
 
 import sys
 from pprint import pprint
-
 import click
 from os.path import isfile, join
 from cyvcf2 import VCF, Writer
-from ngs_utils.file_utils import verify_file
-from ngs_utils.vcf_utils import get_sample_ids
+import re
 
 
 @click.command()
@@ -54,8 +52,11 @@ def main(input_file, output_file=None):
 
         for t, v in zip(['AF', 'DP', 'MQ'], [af, dp, mq]):
             rec.INFO[tumor_prefix + t] = str(v[tumor_index])
-            if control_index is not None and v[control_index] is not None:
-                rec.INFO[normal_prefix + t] = str(v[control_index])
+            if control_index is not None:
+                if len(v) <= control_index:
+                    sys.stderr.write(f'Warning: for tag {t}, len of v={len(v)} is less than index {control_index} of control sample. Record {v}\n')
+                elif v[control_index] is not None:
+                    rec.INFO[normal_prefix + t] = str(v[control_index])
 
         if w:
             w.write_record(rec)

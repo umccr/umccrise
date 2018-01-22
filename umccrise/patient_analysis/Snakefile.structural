@@ -5,6 +5,7 @@ Re-do the CNV plots. This will need lots of love (drop gene names, make the scat
 '''
 vcftobedpe = 'vcfToBedpe'
 
+
 # Drop gene labels
 rule cnvkit_cleanup:
     input:
@@ -61,7 +62,8 @@ rule prep_manta:
     output:
         'umccrised/{batch}/structural/sv-prioritize-manta-bpi.tsv'
     shell:
-        'cat {input.sv_prio} | {{ head -1 ; grep manta | grep -f <(cut -f1,2 {input.bpi_vcf}) ; }} > {output}'
+        '{{ head -1 {input.sv_prio} ; grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.bpi_vcf}) ; }} > {output}'
+        # 'head -1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.bpi_vcf}) >> {output}'
 
 rule ribbon_filter_manta:
     input:
