@@ -6,6 +6,7 @@ import click
 from os.path import isfile, join
 from cyvcf2 import VCF, Writer
 import re
+from umccrise.utils import get_sample_ids
 
 
 @click.command()
@@ -65,7 +66,7 @@ def main(input_file, output_file=None):
 
     if w:
         w.close()
-    vcf.close()
+    # vcf.close()
 
 
 ''' 
