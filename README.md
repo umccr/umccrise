@@ -11,14 +11,14 @@ export PATH=$(pwd)/miniconda/bin:$PATH
 
 Install umccrise
 ```
-conda env create -n umcrrise --file environment.yml
+conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
 source activate umccrise
 pip install -e .
 ```
 
 Created loader
 ```
-echo "export PATH=$(pwd)/miniconda/envs/umcrrise/bin:$(pwd)/miniconda/bin:$PATH" > load_umccrise.sh
+echo "export PATH=$(pwd)/miniconda/envs/umcrrise/bin:$(pwd)/miniconda/bin:\$PATH" > load_umccrise.sh
 ```
 
 ## Loading
@@ -30,14 +30,13 @@ source /g/data3/gx8/extras/umccrise/load_umccrise.sh
 
 ### Spartan
 ```
-source /home/vlad/load_conda.sh
-source activate umccrise
+source /data/cephfs/punim0010/extras/umccrise/load_umccrise.sh
 ```
 
 ## Patient analysis
 ```
 cd /path/to/bcbio/project/final
-umccrise . -j 30  # Run using 30 CPUs
+umccrise . -j 30  # run using 30 CPUs
 ```
 The output will be created in `umccrised` folder.
 
