@@ -23,7 +23,7 @@ az300 = join(loc.hsapiens, run.genome_build, 'coverage', 'prioritize', 'cancer',
 ref_fa = join(loc.hsapiens, run.genome_build, 'seq', run.genome_build + '.fa')
 
 # Batch objects index by tumor sample names
-batch_by_name = {b.tumor.name: b for b in run.batch_by_name.values()}
+batch_by_name = {b.tumor.name: b for b in run.batch_by_name.values() if not b.is_germline()}
 if 'batch' in config:
     batch_by_name = {k: v for k, v in batch_by_name.items() if b.name == config['batch']}
 if 'sample' in config:
