@@ -12,13 +12,14 @@ export PATH=$(pwd)/miniconda/bin:$PATH
 Install umccrise
 ```
 conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
-source activate umccrise
+source activate $(pwd)/miniconda/envs/umccrise
 pip install -e .
 ```
 
-Created loader
+Create a loader script
 ```
-echo "export PATH=$(pwd)/miniconda/envs/umcrrise/bin:$(pwd)/miniconda/bin:\$PATH" > load_umccrise.sh
+echo "export PATH=$(pwd)/miniconda/bin:\$PATH" > load_umccrise.sh
+echo "source activate $(pwd)/miniconda/envs/umccrise" >> load_umccrise.sh
 ```
 
 ## Loading
