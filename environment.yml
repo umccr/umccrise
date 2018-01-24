@@ -1,9 +1,10 @@
 name: umccrise
 
 channels:
-  - vladsaveliev
   - bioconda
   - conda-forge
+  - defaults
+  - vladsaveliev
 
 dependencies:
   - python>=3.6
