@@ -24,12 +24,12 @@ echo "source activate $(pwd)/miniconda/envs/umccrise" >> load_umccrise.sh
 
 ## Loading
 
-### Raijin
+*Raijin:*
 ```
 source /g/data3/gx8/extras/umccrise/load_umccrise.sh
 ```
 
-### Spartan
+*Spartan:*
 ```
 source /data/cephfs/punim0010/extras/umccrise/load_umccrise.sh
 ```
@@ -40,6 +40,17 @@ cd /path/to/bcbio/project/final
 umccrise . -j 30  # run using 30 CPUs
 ```
 The output will be created in `umccrised` folder.
+
+To just run a particular part of the workflow, use:
+```
+umccrise . <part_name>
+```
+Where `<part_name>` is one of `pcgr`, `coverage`, `structural`, `igv`, `sig`, `symlink_multiqc`, `copy_logs`.
+
+E.g.:
+```
+umccrise . structural
+```
 
 
 ## Somatic filtering

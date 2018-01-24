@@ -97,7 +97,7 @@ rule symlink_multiqc:  # {}
 
 ## Additional information
 # TODO: link it to MultiQC
-rule log:  # {}
+rule copy_logs:  # {}
     input:
         join(run.date_dir, 'data_versions.csv'), 
         join(run.date_dir, 'programs.txt'), 
@@ -119,7 +119,7 @@ rule umccrised:  # {}
         rules.pcgr.output,
         rules.structural.output,
         rules.igv.output,
-        rules.log.output,
+        rules.copy_logs.output,
         rules.sig.output
     output:
         'umccrised/done'
