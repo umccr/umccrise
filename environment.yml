@@ -6,7 +6,7 @@ channels:
   - conda-forge
 
 dependencies:
-  - python>3.6
+  - python>=3.6
   - bcftools
   - tabix
   - bedops
@@ -17,7 +17,7 @@ dependencies:
   - pythonpy
   - goleft
   - break-point-inspector
-  - pandoc
+  - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   #
   # Python libraries
   - cyvcf2
@@ -30,9 +30,10 @@ dependencies:
   - r
   - r-rmarkdown
   - r-ggplot2
-  - r-dplyr
   - r-tidyr
   - r-dt
-  - r-mutationalpatterns
+  - bioconductor-delayedarray
+  - bioconductor-summarizedexperiment>=1.8
+  - bioconductor-mutationalpatterns
   - bioconductor-bsgenome.hsapiens.ucsc.hg19
   - r-devtools

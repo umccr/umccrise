@@ -11,13 +11,13 @@ output:
   rmdformats::material:
     highlight: kate
 params:
-  workdir: '/Users/vsaveliev/tmp/tmp/umccrised/diploid_tumor'
-  vcf: 'somatic/rstudio/ensemble-ucsf.vcf'
-  af_freqs: 'somatic/af/af_tumor.txt'
-  af_freqs_az300: 'somatic/af/af_tumor_az300.txt'
-  sv: '/Users/vsaveliev/tmp/tmp/umccrised/diploid_tumor/structural/sv-prioritize-manta-bpi.tsv'
-  tumor_name: 'diploid_tumor'
-  sig_probs: 'signatures_probabilities.txt'
+  workdir: '/Users/vsaveliev/tmp'
+  vcf: 'rstudio/ensemble-hg19.vcf'
+  af_freqs: 'af/af_tumor.txt'
+  af_freqs_az300: 'af/af_tumor_az300.txt'
+  sv: 'sv-prioritize-manta-bpi.tsv'
+  tumor_name: '17MHP031Tmr'
+  sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/signatures_probabilities.txt'
 ---
 
 ```{r custom, echo=FALSE, message=FALSE, warning=FALSE}
