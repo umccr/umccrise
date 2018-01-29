@@ -1,10 +1,12 @@
 """ UMCCR post-bcbio patient analysis workflow
 """
 import os
+import sys
 from os.path import join, abspath, dirname
 from ngs_utils.file_utils import splitext_plus
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
+from ngs_utils.logger import critical
 from umccrise.utils import get_loc
 
 
@@ -27,6 +29,8 @@ batch_by_name = {b.tumor.name: b for b in run.batch_by_name.values() if not b.is
 name = config.get('batch') or config.get('sample')
 if name:
     batch_by_name = {n: b for n, b in batch_by_name.items() if b.name == name or b.tumor.name == name}
+    if len(batch_by_name) == 0:
+        critical(f'Error: could not find a batch or a sample with the name {name}')
 
 
 rule all:  # {}

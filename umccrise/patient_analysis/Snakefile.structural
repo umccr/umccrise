@@ -66,7 +66,7 @@ rule prep_sv_vcf:
 rule prep_sv_tsv:
     input:
         sv_prio = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize.tsv'),
-        bpi_vcf = rules.bpi.output.vcf
+        bpi_vcf = rules.prep_sv_vcf.output.vcf
     output:
         'umccrised/{batch}/structural/sv-prioritize-manta-bpi-pass.tsv'
     shell:
