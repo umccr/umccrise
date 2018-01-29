@@ -10,16 +10,21 @@ from umccrise import patient_analysis
 @click.argument('rule', nargs=-1)
 @click.option('-o', 'output_dir', type=click.Path())
 @click.option('-j', 'jobs', default=1)
-def main(bcbio_project, rule=list(), output_dir=None, jobs=1):
+@click.option('-s', '--sample', 'sample')
+@click.option('-s', '--batch', 'batch')
+def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None):
     bcbio_project = os.path.abspath(bcbio_project)
-    cmd = (f'snakemake ' +
-           f'{" ".join(rule)} ' +
-           f'--snakefile {join(patient_analysis.package_path(), "Snakefile")} ' +
-           f'--printshellcmds ' +
-          (f'--directory {output_dir} ' if output_dir else ' ') +
-           f'--config run_dir={bcbio_project} ' +
-           f'-j {jobs}'
-           )
+    cmd = (
+        f'snakemake ' +
+        f'{" ".join(rule)} ' +
+        f'--snakefile {join(patient_analysis.package_path(), "Snakefile")} ' +
+        f'--printshellcmds ' +
+       (f'--directory {output_dir} ' if output_dir else ' ') +
+        f'--config run_dir={bcbio_project} ' +
+        f'-j {jobs} ' +
+       (f'--config sample={sample} ' if sample else '') +
+       (f'--config batch={batch} ' if batch else '')
+    )
     print(cmd)
     os.system(cmd)
 
