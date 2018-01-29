@@ -61,6 +61,15 @@ ggplot(all_af, aes(af)) +
   facet_wrap(~set, scales='free_y')
 ```
 
+```{r modecalc}
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+```
+Based on all variants we are seeing a mean allelic frequency of `r round(mean(af$af), 2)` (median `r median(af$af)`, mode `r mode(af$af)`). Looking at just SNVs in known cancer genes this changes to mean `r round(mean(af_az300$af), 2)` (median `r median(af_az300$af)`, mode `r mode(af_az300$af)`).
+
+
 ## Mutational signature
 
 [PCGR](https://github.com/sigven/pcgr) uses [deconstructSigs](https://cran.r-project.org/web/packages/deconstructSigs/index.html) to generate somatic signatures. From our experience it can miss signatures quite frequently; using [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html) to doublecheck.
@@ -78,7 +87,6 @@ vcf <- read_vcfs_as_granges(file.path(params$vcf),
 ### Look at somatic change distribution:
 
 ```{r somProfile}
-muts <- mutations_from_vcf(vcf)
 type_occurrences <- mut_type_occurrences(vcf, ref_genome)
 plot_spectrum(type_occurrences, CT=TRUE)
 
