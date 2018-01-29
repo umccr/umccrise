@@ -6,6 +6,9 @@ Re-do the CNV plots. This will need lots of love (drop gene names, make the scat
 vcftobedpe = 'vcfToBedpe'
 
 
+#########
+## CNV
+
 # Drop gene labels
 rule cnvkit_cleanup:
     input:
@@ -29,47 +32,52 @@ rule cnvkit_plot:
     shell:
         'cnvkit.py diagram -s {input} -o {output}'
 
-rule prep_bpi:
+
+#########
+## SV
+
+rule prep_sv_vcf:
     input:
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta-bpi.vcf.gz')
     output:
-        vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-pass.vcf'
+        vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-bpi-pass.vcf'
     shell:
         'bcftools view -f.,PASS {input.manta_vcf} > {output}'
 
-# Run break-point-inspector tool to filter out low-quality manta calls. Usually reduces the output by 2-3 times
-rule bpi:
-    input:
-        manta_vcf = rules.prep_bpi.output.vcf,
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam
-    output:
-        vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-pass-bpi.vcf',
-        stats = 'umccrised/{batch}/structural/bpi_stats.tsv'
-    shell:
-        'break-point-inspector'
-        ' -vcf {input.manta_vcf}'
-        ' -ref {input.normal_bam}'
-        ' -tumor {input.tumor_bam}'
-        ' -output_vcf {output.vcf}'
-        ' > {output.stats}'
+# # Run break-point-inspector tool to filter out low-quality manta calls. Usually reduces the output by 2-3 times
+# rule bpi:
+#     input:
+#         manta_vcf = rules.prep_sv_vcf.output.vcf,
+#         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+#         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam
+#     output:
+#         vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-pass-bpi.vcf'
+#     params:
+#         stats = 'umccrised/{batch}/structural/bpi_stats.tsv'
+#     shell:
+#         'break-point-inspector'
+#         ' -vcf {input.manta_vcf}'
+#         ' -ref {input.normal_bam}'
+#         ' -tumor {input.tumor_bam}'
+#         ' -output_vcf {output.vcf}'
+#         ' > {params.stats}'
 
-# Bring in the prioritized SV calls from Manta. This will change with the inclusion of BPI and should also include a basic plot at some stage.
-rule prep_manta:
+# Bring in the prioritized SV calls from Manta. This should also include a basic plot at some stage.
+rule prep_sv_tsv:
     input:
         sv_prio = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize.tsv'),
         bpi_vcf = rules.bpi.output.vcf
     output:
-        'umccrised/{batch}/structural/sv-prioritize-manta-bpi.tsv'
+        'umccrised/{batch}/structural/sv-prioritize-manta-bpi-pass.tsv'
     shell:
         '{{ head -1 {input.sv_prio} ; grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.bpi_vcf}) ; }} > {output}'
         # 'head -1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.bpi_vcf}) >> {output}'
 
 rule ribbon_filter_manta:
     input:
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+        manta_vcf = rules.prep_sv_vcf.output.vcf
     output:
-        'umccrised/{batch}/structural/manta.pass.vcf'
+        'umccrised/{batch}/structural/ribbon/manta.pass.vcf'
     shell:
         'bcftools view -f.,PASS {input.manta_vcf} > {output}'
 
@@ -78,7 +86,7 @@ rule ribbon_filter_vcfbedtope_starts:
         bed = rules.ribbon_filter_manta.output[0],
         fai = ref_fa + '.fai'
     output:
-        'umccrised/{batch}/structural/manta.pass.strats.bed'
+        'umccrised/{batch}/structural/ribbon/manta.pass.strats.bed'
     params:
         vcftobedpe = vcftobedpe
     shell:
@@ -92,7 +100,7 @@ rule ribbon_filter_vcfbedtope_ends:
         bed = rules.ribbon_filter_manta.output[0],
         fai = ref_fa + '.fai'
     output:
-        'umccrised/{batch}/structural/manta.pass.ends.bed'
+        'umccrised/{batch}/structural/ribbon/manta.pass.ends.bed'
     params:
         vcftobedpe = vcftobedpe
     shell:
@@ -108,7 +116,7 @@ rule ribbon:
         starts = rules.ribbon_filter_vcfbedtope_starts.output[0],
         ends = rules.ribbon_filter_vcfbedtope_ends.output[0]
     output:
-        'umccrised/{batch}/structural/manta.bed'
+        'umccrised/{batch}/structural/ribbon/manta.bed'
     params:
         vcftobedpe = vcftobedpe
     shell:
@@ -143,9 +151,9 @@ rule ribbon:
 # And one in BEDPE format
 rule bedpe:
     input:
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+        manta_vcf = rules.prep_sv_vcf.output.vcf
     output:
-        'umccrised/{batch}/structural/sv-prioritize-manta.bedpe'
+        'umccrised/{batch}/structural/sv-prioritize-manta-bpi-pass.bedpe'
     params:
         vcftobedpe = vcftobedpe
     shell:
@@ -158,7 +166,7 @@ rule structural:
     input:
         expand(rules.bedpe.output, batch=batch_by_name.keys()),
         expand(rules.ribbon.output, batch=batch_by_name.keys()),
-        expand(rules.prep_manta.output, batch=batch_by_name.keys()),
+        expand(rules.prep_sv_tsv.output, batch=batch_by_name.keys()),
         expand(rules.cnvkit_plot.output, batch=batch_by_name.keys())
     output:
         'umccrised/structural.done'

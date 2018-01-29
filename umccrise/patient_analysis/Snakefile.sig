@@ -88,7 +88,7 @@ rule sig_rmd:
         afs = rules.afs.output[0],
         afs_az300 = rules.afs_az300.output[0],
         vcf = rules.cgi.output[0],
-        sv = rules.prep_manta.output[0],
+        sv = rules.prep_sv_tsv.output[0],
         sig_rmd = get_sig_rmd_file(),
         sig_probs = get_signatures_probabilities()
     params:
