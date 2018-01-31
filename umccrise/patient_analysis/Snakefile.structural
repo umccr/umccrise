@@ -38,9 +38,9 @@ rule cnvkit_plot:
 
 rule prep_sv_vcf:
     input:
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta-bpi.vcf.gz')
+        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
     output:
-        vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-bpi-pass.vcf'
+        vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-pass.vcf'
     shell:
         'bcftools view -f.,PASS {input.manta_vcf} > {output}'
 
@@ -51,7 +51,7 @@ rule prep_sv_vcf:
 #         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
 #         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam
 #     output:
-#         vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-pass-bpi.vcf'
+#         vcf = 'umccrised/{batch}/structural/sv-prioritize-manta-pass.vcf'
 #     params:
 #         stats = 'umccrised/{batch}/structural/bpi_stats.tsv'
 #     shell:
@@ -66,12 +66,12 @@ rule prep_sv_vcf:
 rule prep_sv_tsv:
     input:
         sv_prio = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize.tsv'),
-        bpi_vcf = rules.prep_sv_vcf.output.vcf
+        vcf = rules.prep_sv_vcf.output.vcf
     output:
-        'umccrised/{batch}/structural/sv-prioritize-manta-bpi-pass.tsv'
+        'umccrised/{batch}/structural/sv-prioritize-manta-pass.tsv'
     shell:
-        '{{ head -1 {input.sv_prio} ; grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.bpi_vcf}) ; }} > {output}'
-        # 'head -1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.bpi_vcf}) >> {output}'
+        '{{ head -1 {input.sv_prio} ; grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) ; }} > {output}'
+        # 'head -1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) >> {output}'
 
 rule ribbon_filter_manta:
     input:
@@ -153,7 +153,7 @@ rule bedpe:
     input:
         manta_vcf = rules.prep_sv_vcf.output.vcf
     output:
-        'umccrised/{batch}/structural/sv-prioritize-manta-bpi-pass.bedpe'
+        'umccrised/{batch}/structural/sv-prioritize-manta-pass.bedpe'
     params:
         vcftobedpe = vcftobedpe
     shell:
