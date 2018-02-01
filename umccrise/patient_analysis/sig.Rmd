@@ -12,12 +12,13 @@ output:
     highlight: kate
 params:
   workdir: '/Users/vsaveliev/tmp'
-  vcf_fname: 'rstudio/ensemble-hg19.vcf'
+  vcf_fname: 'ensemble-hg19.vcf'
   af_freqs: 'af/af_tumor.txt'
   af_freqs_az300: 'af/af_tumor_az300.txt'
   sv_fname: 'sv-prioritize-manta-bpi.tsv'
   tumor_name: '17MHP031Tmr'
-  sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/signatures_probabilities.txt'
+  sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/rmd_files/signatures_probabilities.txt'
+  suppressors: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/rmd_files/suppressors.txt'
 ---
 
 ```{r custom, echo=FALSE, message=FALSE, warning=FALSE}
@@ -31,6 +32,7 @@ library(DT)
 library(MutationalPatterns)
 library(BSgenome)
 library(devtools)
+library(stringr)
 ref_genome <- 'BSgenome.Hsapiens.UCSC.hg19'
 library(ref_genome, character.only = TRUE)
 ```
@@ -43,7 +45,8 @@ renderMyDocument <- function() {
     af_freqs = '../../nogit/data/af/af_vardict_tumor.txt',
     af_freqs_az300 = '../../nogit/data/af/af_vardict_tumor_az300.txt',
     sv_fname = '../../nogit/data/structural/sv-prioritize-manta-bpi.tsv',
-    sig_probs = 'signatures_probabilities.txt'
+    sig_probs = 'rmd_files/signatures_probabilities.txt',
+    supressors = 'rmd_files/suppressors.txt'
   ))
 }
 
@@ -55,6 +58,7 @@ renderMyDocument()
 knitr::opts_knit$set(root.dir = params$workdir)
 options(width = 140)
 ```
+
 
 ## Allelic frequencies
 
@@ -145,18 +149,41 @@ chromosomes <- seqnames(get(ref_genome))[1:22]
 plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 ```
 
+
 ## Prioritised structural variants
 
 ```{r sv_prioritize}
-readr::read_tsv(params$sv_fname, col_names = TRUE) %>%
+cnv_all <- read.table(params$sv_fname,
+                      header= TRUE, sep="\t", stringsAsFactors = FALSE)
+
+# SV events
+cnv <- cnv_all %>%
   tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # Unpack multiple annotations per region
   tidyr::separate(annotation,
-                  c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
-                  sep = '\\|') %>% # Unpack annotation columns %>%
-  dplyr::select(chrom, start, end, gene, priority, score, annotation, type, lof,
+           c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
+           sep='\\|') %>% # Unpack annotation columns
+  dplyr::select(chrom, start, end, gene, priority, score, annotation, type,
                 split_read_support, paired_support_PR) %>%
-  dplyr::distinct() %>%
-  DT::datatable(rownames = FALSE)
+  dplyr::distinct()
+datatable(cnv, rownames=FALSE)
+```
+
+## Loss of function in tumor suppressors
+
+```{r lof}
+suppressors <- read.table(params$suppressors, header=FALSE)$V1
+
+lof <- cnv_all %>%
+  mutate(lof=str_replace_all(lof, '\\(|\\)', '')) %>%
+  tidyr::unnest(lof = strsplit(lof, ',')) %>%
+  tidyr::separate(lof,
+           c('lof_gene', 'geneid', 'transcript_count', 'percent_affected'),
+           sep='\\|') %>%
+  dplyr::select(chrom, start, end, lof_gene, transcript_count, percent_affected,
+         split_read_support, paired_support_PR) %>%
+  dplyr::filter(lof_gene %in% suppressors) %>%
+  dplyr::distinct()
+datatable(lof, rownames=FALSE)
 ```
 
 ## Addendum
