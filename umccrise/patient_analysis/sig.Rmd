@@ -12,10 +12,10 @@ output:
     highlight: kate
 params:
   workdir: '/Users/vsaveliev/tmp'
-  vcf: 'rstudio/ensemble-hg19.vcf'
+  vcf_fname: 'rstudio/ensemble-hg19.vcf'
   af_freqs: 'af/af_tumor.txt'
   af_freqs_az300: 'af/af_tumor_az300.txt'
-  sv: 'sv-prioritize-manta-bpi.tsv'
+  sv_fname: 'sv-prioritize-manta-bpi.tsv'
   tumor_name: '17MHP031Tmr'
   sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/signatures_probabilities.txt'
 ---
@@ -26,16 +26,34 @@ library(knitr)
 library(rmarkdown)
 library(tidyr)
 library(dplyr)
+library(readr)
 library(DT)
 library(MutationalPatterns)
 library(BSgenome)
 library(devtools)
-ref_genome = 'BSgenome.Hsapiens.UCSC.hg19'
-library(ref_genome, character.only=TRUE)
+ref_genome <- 'BSgenome.Hsapiens.UCSC.hg19'
+library(ref_genome, character.only = TRUE)
+```
+
+```{r render_interactively, eval=FALSE, echo=FALSE}
+renderMyDocument <- function() {
+  rmarkdown::render("sig.Rmd", params = list(
+    tumor_name = 'sample_foo',
+    vcf_fname = '../../nogit/data/somatic/ensemble-hg19.vcf',
+    af_freqs = '../../nogit/data/af/af_vardict_tumor.txt',
+    af_freqs_az300 = '../../nogit/data/af/af_vardict_tumor_az300.txt',
+    sv_fname = '../../nogit/data/structural/sv-prioritize-manta-bpi.tsv',
+    sig_probs = 'signatures_probabilities.txt'
+  ))
+}
+
+# can run this interactively to knit report
+renderMyDocument()
 ```
 
 ```{r "setup", include=FALSE}
-opts_knit$set(root.dir = params$workdir)
+knitr::opts_knit$set(root.dir = params$workdir)
+options(width = 140)
 ```
 
 ## Allelic frequencies
@@ -44,21 +62,18 @@ Comparing the allelic frequencies of all somatic mutations vs those present in a
 
 ```{r af}
 # Global AF
-af <- read.table(file.path(params$af_freqs),
-                 header=FALSE, colClasses='numeric') %>%
-  mutate(set='wgs') %>%
-  dplyr::select(set, af=V1)
+af <- readr::read_tsv(params$af_freqs, col_names = "af", col_types = "d") %>%
+  dplyr::mutate(set = "wgs")
 
 # AF for AstraZeneca's AZ300 gene set
-af_az300 <- read.table(file.path(params$af_freqs_az300),
-                       header=FALSE) %>%
-  mutate(set='cancer_genes') %>%
-  dplyr::select(set, af=V6)
+af_az300 <- readr::read_tsv(params$af_freqs_az300, col_names = "af", col_types = "-----d-") %>%
+  dplyr::mutate(set = 'cancer_genes')
 
-all_af <- rbind(af, af_az300)
-ggplot(all_af, aes(af)) +
-  geom_histogram(stat='bin', binwidth = 0.01) +
-  facet_wrap(~set, scales='free_y')
+dplyr::bind_rows(af, af_az300) %>%
+  ggplot(aes(af)) +
+  geom_histogram(stat = 'bin', binwidth = 0.01, fill = "firebrick") +
+  facet_wrap(~set, scales = 'free_y') +
+  theme_bw()
 ```
 
 ```{r modecalc}
@@ -79,19 +94,21 @@ Based on all variants we are seeing a mean allelic frequency of `r round(mean(af
 # by adding "chr" prefixes and remiving G* chromosomes.
 #
 
-vcf <- read_vcfs_as_granges(file.path(params$vcf),
-                            params$tumor_name,
-                            ref_genome)
+vcf <- read_vcfs_as_granges(
+  params$vcf_fname,
+  sample_names = params$tumor_name,
+  genome = "BSgenome.Hsapiens.UCSC.hg19",
+  group = "auto+sex")
 ```
 
 ### Look at somatic change distribution:
 
 ```{r somProfile}
-type_occurrences <- mut_type_occurrences(vcf, ref_genome)
-plot_spectrum(type_occurrences, CT=TRUE)
+type_occurrences <- mut_type_occurrences(vcf, ref_genome = ref_genome)
+plot_spectrum(type_occurrences, CT = TRUE)
 
 # Could do this relative to a few reference samples
-mut_mat <- mut_matrix(vcf_list=as.list(vcf), ref_genome=ref_genome)
+mut_mat <- mut_matrix(vcf_list = vcf, ref_genome = ref_genome)
 plot_96_profile(mut_mat)
 ```
 
@@ -100,58 +117,46 @@ plot_96_profile(mut_mat)
 ```{r somSig}
 # Get Sanger sigs
 # sp_url <- paste("http://cancer.sanger.ac.uk/cancergenome/assets/", "signatures_probabilities.txt", sep = "")
-sp_url = params$sig_probs
-cancer_signatures <- read.table(sp_url, sep = "\t", header = TRUE)
-
-# Reorder (to make the order of the trinucleotide changes the same)
-cancer_signatures <- cancer_signatures[order(cancer_signatures[, 1]), ]
-
-# Only signatures in matrix
-cancer_signatures <- as.matrix(cancer_signatures[, 4:33])
+sp_url <- params$sig_probs
+cancer_signatures <- readr::read_tsv(sp_url, col_names = TRUE) %>%
+  dplyr::arrange(`Substitution Type`) %>%
+  dplyr::select(4:33) %>%
+  as.matrix()
 
 # Fit mutation matrix to cancer signatures. This function finds the optimal linear
 # combination of mutation signatures that most closely reconstructs the
 # mutation matrix by solving a non-negative least-squares constraints problem.
 fit_res <- fit_to_signatures(mut_mat, cancer_signatures)
-
 # Select signatures with some contribution
-selection <- which(rowSums(fit_res$contribution) > 0)
-
-# plot contribution
-result <- as.data.frame(fit_res$contribution[selection, ])
-result$Signature <- rownames(result)
-
-result <- result %>%
-  mutate(Contribution=fit_res$contribution[selection, ]) %>%
-  select(Signature, Contribution) %>%
-  arrange(-Contribution)
+fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
+result <- data.frame(Signature = names(fit_res_contr), Contribution = fit_res_contr)
 
 # Quick summary of the results; no plotting yet
-datatable(result, rownames=FALSE) %>%
-  formatRound('Contribution', 1)
+result %>%
+  dplyr::select(Signature, Contribution) %>%
+  dplyr::arrange(-Contribution) %>%
+  DT::datatable(rownames = FALSE) %>%
+  DT::formatRound('Contribution', 1)
 ```
 
 ### Check for positional enrichment of somatic signatures (limited to autosomes):
 ```{r rainfall}
 chromosomes <- seqnames(get(ref_genome))[1:22]
-plot_rainfall(vcf[[1]], chromosomes=chromosomes, cex = 1.5, ylim = 1e+09 )
+plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 ```
 
 ## Prioritised structural variants
 
 ```{r sv_prioritize}
-cnv_all <- read.table(params$sv,
-                      header= TRUE, sep="\t", stringsAsFactors = FALSE)
-
-cnv <- cnv_all %>%
-  unnest(annotation = strsplit(annotation, ',')) %>% # Unpack multiple annotations per region
-  separate(annotation,
-           c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
-           sep='\\|') %>% # Unpack annotation columns %>%
+readr::read_tsv(params$sv_fname, col_names = TRUE) %>%
+  tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # Unpack multiple annotations per region
+  tidyr::separate(annotation,
+                  c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
+                  sep = '\\|') %>% # Unpack annotation columns %>%
   dplyr::select(chrom, start, end, gene, priority, score, annotation, type, lof,
-         split_read_support, paired_support_PR) %>%
-  distinct()
-datatable(cnv, rownames=FALSE)
+                split_read_support, paired_support_PR) %>%
+  dplyr::distinct() %>%
+  DT::datatable(rownames = FALSE)
 ```
 
 ## Addendum
@@ -159,3 +164,4 @@ datatable(cnv, rownames=FALSE)
 ```{r sessioninfo}
 devtools::session_info()
 ```
+
