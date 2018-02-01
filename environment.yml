@@ -38,3 +38,4 @@ dependencies:
   - bioconductor-mutationalpatterns
   - bioconductor-bsgenome.hsapiens.ucsc.hg19
   - r-devtools
+  - r-readr
