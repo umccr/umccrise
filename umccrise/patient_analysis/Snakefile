@@ -86,7 +86,7 @@ include: "Snakefile.coverage"
 include: "Snakefile.pcgr"
 include: "Snakefile.structural"
 include: "Snakefile.igv"
-include: "Snakefile.sig"
+include: "Snakefile.rmd"
 
 
 rule symlink_multiqc:  # {}
