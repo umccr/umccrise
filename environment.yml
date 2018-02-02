@@ -37,6 +37,7 @@ dependencies:
   - bioconductor-summarizedexperiment>=1.8
   - bioconductor-mutationalpatterns
   - bioconductor-bsgenome.hsapiens.ucsc.hg19
+  - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
   - r-devtools
   - r-readr
   - r-stringr

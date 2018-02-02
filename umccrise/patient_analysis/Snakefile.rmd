@@ -1,4 +1,4 @@
-from umccrise.patient_analysis import get_sig_rmd_file, get_signatures_probabilities
+from umccrise.patient_analysis import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
 
 
 ## Allelic frequencies
@@ -90,7 +90,8 @@ rule sig_rmd:
         vcf = rules.cgi.output[0],
         sv = rules.prep_sv_tsv.output[0],
         sig_rmd = get_sig_rmd_file(),
-        sig_probs = get_signatures_probabilities()
+        sig_probs = get_signatures_probabilities(),
+        suppressors = get_suppressors()
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         workdir = os.getcwd(),
@@ -104,10 +105,11 @@ rule sig_rmd:
         'params=list('
         'af_freqs=\'{input.afs}\', '
         'af_freqs_az300=\'{input.afs_az300}\', '
-        'vcf=\'{input.vcf}\', '
-        'sv=\'{input.sv}\', '
+        'vcf_fname=\'{input.vcf}\', '
+        'sv_fname=\'{input.sv}\', '
         'tumor_name=\'{params.tumor_name}\', '
         'sig_probs=\'{input.sig_probs}\', '
+        'suppressors=\'{input.suppressors}\', '
         'workdir=\'{params.workdir}\''
         '))"'
         ' && if [ -e x.txt ] ; then exit 1; fi')
