@@ -1,6 +1,8 @@
 UMCCRisation of Bcbio results. Filter, plot, put together, report
 -----------------------------------------------------------------
 
+![Works on my machine](https://www.leadingagile.com/wp-content/uploads/2017/03/worksonmymachine.png)
+
 ## Installation
 Install conda
 ```
