@@ -22,7 +22,7 @@ dependencies:
   #
   # Python libraries
   - cyvcf2
-  - ngs_utils
+  - ngs_utils>=1.2.2
   - click
   - cnvkit
   - pandas

@@ -19,6 +19,7 @@ setup(
     scripts=[
         'scripts/normalise_vcf',
         'scripts/umccrise',
+        'scripts/umccrize',
         'scripts/pcgr_prep',
         'scripts/vcfToBedpe',
         'scripts/eval_vcf',
