@@ -45,6 +45,8 @@ rule pcgr_germline:
 
 
 from umccrise.patient_analysis import here as pa_source_dir
+import uuid
+unique_id = str(uuid.uuid4().hex[:6])
 
 rule somatic_tar_gz:
     input:
@@ -52,7 +54,7 @@ rule somatic_tar_gz:
         cns = rules.pcgr_cns.output[0],
         toml = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml')
     output:
-        'umccrised/{batch}/somatic/pcgr/tarballed-somatic.tar.gz'
+        'umccrised/{batch}/somatic/pcgr/{batch}-somatic-' + unique_id + '.tar.gz'
     params:
         basedir = dirname(output[0])
     shell:
@@ -63,36 +65,34 @@ rule germline_tar_gz:
         vcf = rules.pcgr_germline.output.vcf,
         toml = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml')
     output:
-        'umccrised/{batch}/somatic/pcgr/tarballed-somatic.tar.gz'
+        'umccrised/{batch}/somatic/pcgr/{batch}-germline-' + unique_id + '.tar.gz'
     params:
         basedir = dirname(output[0])
     shell:
         'tar -czf {output} -C {params.basedir} {input.vcf} {input.cns} {input.toml}'
 
-
-rule upload_to_pcgr:
+rule upload_somatic_to_pcgr:
     input:
-        rules.somatic_tar_gz.output[0],
-        rules.germline_tar_gz.output[0]
-    params:
-        url = f'ubuntu@{pcgr_url}.ap-southeast-2.compute.amazonaws.com',
-        som_dir = 'umccrised/{batch}/somatic/pcgr',
-        germ_dir = 'umccrised/{batch}/germline/pcgr',
-        batch = lambda wc: wc.batch
+        rules.somatic_tar_gz.output[0]
+    # params:
+    #     url = f'ubuntu@{pcgr_url}.ap-southeast-2.compute.amazonaws.com',
+    #     som_dir = 'umccrised/{batch}/somatic/pcgr',
+    #     germ_dir = 'umccrised/{batch}/germline/pcgr',
+    #     batch = lambda wc: wc.batch
     output:
-        'umccrised/.snakemake/pcgr_{batch}.done'
+        'umccrised/.snakemake/pcgr_{batch}_somatic.done'
     shell:
-        'scp -r {params.som_dir} {params.url}:/mnt/pcgr-0.4.2.1/{params.batch}_somatic'
-        ' && '
-        'scp -r {params.germ_dir} {params.url}:/mnt/pcgr-0.4.2.1/{params.batch}_germline'
-        ' && '
-        'touch {output}'
-        # 'conda install -c conda-forge ansible>=2.3'
-        # 'ansible-playbook aws.yaml'
-        # 'ssh ubuntu@<AWS INSTANCE>'
-        # 'cd /mnt/work/pcgr-*'
-        # './pcgr.py --input_vcf examples/tumor_sample.COAD.vcf.gz --input_cna examples/tumor_sample.COAD.cna.tsv /mnt/work/pcgr-* output tumor_sample.COAD'
+        'aws s3 cp {input} s3://umccr-pcgr && touch {output}'
 
+rule upload_germline_to_pcgr:
+    input:
+        rules.germline_tar_gz.output[0]
+    output:
+        'umccrised/.snakemake/pcgr_{batch}_germline.done'
+    shell:
+        'aws s3 cp {input} s3://umccr-pcgr && touch {output}'
+
+        
 
 rule pcgr:
     input:
