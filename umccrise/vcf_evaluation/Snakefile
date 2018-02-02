@@ -146,9 +146,11 @@ rule anno_tricky_sample:
         vcf = 'work/normalise/{sample}/{sample}.tricky.vcf.gz',
         tbi = 'work/normalise/{sample}/{sample}.tricky.vcf.gz.tbi'
     params:
-        toml = TRICKY_TOML.replace('\n', r'\n')
+        toml_text = TRICKY_TOML.replace('\n', r'\\n').replace('"', r'\"'),
+        toml_path = 'work/normalise/{sample}/config.toml'
     shell:
-        "vcfanno <(echo '{params.toml}') {input} | bgzip -c > {output.vcf} && tabix -p vcf -f {output.vcf}"
+        'printf "{params.toml_text}" > {params.toml_path} && '
+        'vcfanno {params.toml_path} {input} | bgzip -c > {output.vcf} && tabix -p vcf -f {output.vcf}'
 
 # Overlap normalised truth calls with tricky regions and annotate into INFO:
 rule anno_tricky_truth:

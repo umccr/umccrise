@@ -1,5 +1,5 @@
-UMCCRisation of Bcbio results. Filter, plot, put together, report
------------------------------------------------------------------
+UMCCRization of bcbio results: filter, normalise, generate plots and reports
+----------------------------------------------------------------------------
 
 ![Works on my machine](https://www.leadingagile.com/wp-content/uploads/2017/03/worksonmymachine.png)
 
@@ -14,14 +14,14 @@ export PATH=$(pwd)/miniconda/bin:$PATH
 Install umccrise
 ```
 conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
-source activate $(pwd)/miniconda/envs/umccrise
+source activate $(pwd)/miniconda/envs/umccrize
 pip install -e .
 ```
 
 Create a loader script
 ```
-echo "export PATH=$(pwd)/miniconda/bin:\$PATH" > load_umccrise.sh
-echo "source activate $(pwd)/miniconda/envs/umccrise" >> load_umccrise.sh
+echo "export PATH=$(pwd)/miniconda/bin:\$PATH" > load_umccrize.sh
+echo "source activate $(pwd)/miniconda/envs/umccrize" >> load_umccrize.sh
 ```
 
 ## Loading
@@ -39,19 +39,19 @@ source /data/cephfs/punim0010/extras/umccrise/load_umccrise.sh
 ## Patient analysis
 ```
 cd /path/to/bcbio/project/final
-umccrise . -j 30  # run using 30 CPUs
+umccrize . -j 30  # run using 30 CPUs
 ```
 The output will be created in `umccrised` folder.
 
 To just run a particular part of the workflow, use:
 ```
-umccrise . <part_name>
+umccrize . <part_name>
 ```
 Where `<part_name>` is one of `pcgr`, `coverage`, `structural`, `igv`, `sig`, `symlink_multiqc`, `copy_logs`.
 
 E.g.:
 ```
-umccrise . structural
+umccrize . structural
 ```
 
 
