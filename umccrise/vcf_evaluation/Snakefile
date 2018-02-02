@@ -24,7 +24,7 @@ def get_ref(path):
 
 rule all:
     input:
-        'work/eval/report.tsv'
+        'eval/report.tsv'
     output:
         'report.tsv'
     shell:
@@ -35,7 +35,7 @@ def merge_regions():
     samples_regions = config.get('regions')
     truth_regions = get_ref(config['truth_regions']) if 'truth_regions' in config else None
 
-    output = 'work/narrow/regions.bed'
+    output = 'narrow/regions.bed'
     if samples_regions and truth_regions:
         shell('bedops -i <(sort-bed {truth_regions}) <(sort-bed {samples_regions}) > {output}')
         return output
@@ -57,7 +57,7 @@ def merge_regions():
 #     input:
 #         get_regions_input
 #     output:
-#         'work/regions/regions.bed'
+#         'regions/regions.bed'
 #     run:
 #         if samples_regions and truth_regions:
 #             shell('bedops -i <(sort-bed {truth_regions}) <(sort-bed {samples_regions}) > {output}')
@@ -73,7 +73,7 @@ rule narrow_samples_to_regions_and_pass:
     input:
         lambda wildcards: config['samples'][wildcards.sample]
     output:
-        'work/narrow/{sample}.regions.pass.vcf.gz'
+        'narrow/{sample}.regions.pass.vcf.gz'
     run:
         regions = merge_regions()
         regions = ('-T ' + regions) if regions else ''
@@ -84,7 +84,7 @@ rule annotate_pcgr:
     input:
         rules.narrow_samples_to_regions_and_pass.output[0]
     output:
-        'work/narrow/{sample}.regions.pass.anno.vcf.gz'
+        'narrow/{sample}.regions.pass.anno.vcf.gz'
     shell:
         'pcgr_prep {input} | bgzip -c > {output}'
 
@@ -93,7 +93,7 @@ rule narrow_samples_to_tumor_sample:
     input:
         rules.annotate_pcgr.output[0]
     output:
-        'work/narrow/{sample}.regions.pass.anno.tumor.vcf.gz'
+        'narrow/{sample}.regions.pass.anno.tumor.vcf.gz'
     run:
         sn = get_tumor_sample_name(input[0])
         assert sn
@@ -104,7 +104,7 @@ rule narrow_truth_to_target:
     input:
         get_ref(config['truth_variants'])
     output:
-        'work/narrow/truth_variants.vcf.gz'
+        'narrow/truth_variants.vcf.gz'
     run:
         regions = merge_regions()
         regions = ('-T ' + regions) if regions else ''
@@ -118,7 +118,7 @@ rule normalise_sample:
         vcf = rules.narrow_samples_to_tumor_sample.output[0],
         ref = get_ref(config['reference_fasta'])
     output:
-        'work/normalise/{sample}/{sample}.vcf.gz'
+        'normalise/{sample}/{sample}.vcf.gz'
     shell:
         make_normalise_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
 
@@ -128,7 +128,7 @@ rule normalise_truth:
         vcf = rules.narrow_truth_to_target.output[0],
         ref = get_ref(config['reference_fasta'])
     output:
-        'work/normalise/truth_variants.vcf.gz'
+        'normalise/truth_variants.vcf.gz'
     shell:
         make_normalise_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
 
@@ -139,30 +139,35 @@ file="{tricky_bed}"
 names=["TRICKY"]
 columns=[4]
 ops=["self"]'''
-rule anno_tricky_sample:
-    input:
-        rules.normalise_sample.output[0]
+
+rule prep_tricky_toml:
     output:
-        vcf = 'work/normalise/{sample}/{sample}.tricky.vcf.gz',
-        tbi = 'work/normalise/{sample}/{sample}.tricky.vcf.gz.tbi'
+        'normalise/tricky_vcfanno.toml'
     params:
         toml_text = TRICKY_TOML.replace('\n', r'\\n').replace('"', r'\"'),
-        toml_path = 'work/normalise/{sample}/config.toml'
     shell:
-        'printf "{params.toml_text}" > {params.toml_path} && '
-        'vcfanno {params.toml_path} {input} | bgzip -c > {output.vcf} && tabix -p vcf -f {output.vcf}'
+        'printf "{params.toml_text}" > {output}'
+
+rule anno_tricky_sample:
+    input:
+        vcf = rules.normalise_sample.output[0],
+        toml = rules.prep_tricky_toml.output
+    output:
+        vcf = 'normalise/{sample}/{sample}.tricky.vcf.gz',
+        tbi = 'normalise/{sample}/{sample}.tricky.vcf.gz.tbi'
+    shell:
+        'vcfanno {input.toml} {input.vcf} | bgzip -c > {output.vcf} && tabix -p vcf -f {output.vcf}'
 
 # Overlap normalised truth calls with tricky regions and annotate into INFO:
 rule anno_tricky_truth:
     input:
-        rules.normalise_truth.output[0]
+        vcf = rules.normalise_truth.output[0],
+        toml = rules.prep_tricky_toml.output
     output:
-        vcf = 'work/normalise/truth_variants.tricky.vcf.gz',
-        tbi = 'work/normalise/truth_variants.tricky.vcf.gz.tbi'
-    params:
-        toml = TRICKY_TOML.replace('\n', r'\n')
+        vcf = 'normalise/truth_variants.tricky.vcf.gz',
+        tbi = 'normalise/truth_variants.tricky.vcf.gz.tbi'
     shell:
-        "vcfanno <(echo '{params.toml}') {input} | bgzip -c > {output.vcf} && tabix -p vcf -f {output.vcf}"
+        'vcfanno {input.toml} {input.vcf} | bgzip -c > {output.vcf} && tabix -p vcf -f {output.vcf}'
 
 ############################
 ######### EVALUATE #########
@@ -174,11 +179,11 @@ rule bcftools_isec:
         truth_vcf = rules.anno_tricky_truth.output.vcf,
         truth_tbi = rules.anno_tricky_truth.output.tbi
     params:
-        output_dir = 'work/eval/{sample}_bcftools_isec'
+        output_dir = 'eval/{sample}_bcftools_isec'
     output:
-        fp = 'work/eval/{sample}_bcftools_isec/0000.vcf',
-        fn = 'work/eval/{sample}_bcftools_isec/0001.vcf',
-        tp = 'work/eval/{sample}_bcftools_isec/0002.vcf'
+        fp = 'eval/{sample}_bcftools_isec/0000.vcf',
+        fn = 'eval/{sample}_bcftools_isec/0001.vcf',
+        tp = 'eval/{sample}_bcftools_isec/0002.vcf'
     run:
         shell('bcftools isec {input.sample_vcf} {input.truth_vcf} -p {params.output_dir}')
 
@@ -201,7 +206,7 @@ rule eval:
         fn = rules.bcftools_isec.output.fn,
         tp = rules.bcftools_isec.output.tp
     output:
-        'work/eval/{sample}_stats.tsv'
+        'eval/{sample}_stats.tsv'
     run:
         fp_snps, fp_inds = count_variants(input.fp)
         fn_snps, fn_inds = count_variants(input.fn)
@@ -236,9 +241,9 @@ rule eval:
 #         truth_vcf = rules.normalize_truth.output,
 #         ref = get_ref(config['reference_fasta'])
 #     output:
-#         'work/sompy/{sample}'
+#         'sompy/{sample}'
 #     params:
-#         output_prefix = 'work/sompy/{sample}'
+#         output_prefix = 'sompy/{sample}'
 #     run:
 #         regions = merge_regions()
 #         regions = ('-f ' + regions) if regions else ''
@@ -250,7 +255,7 @@ rule report:
         stats_files = expand(rules.eval.output, sample=sorted(config['samples'].keys()))
         # sompy_files = expand(rules.sompy.output, sample=sorted(config['samples'].keys()))
     output:
-        'work/eval/report.tsv'
+        'eval/report.tsv'
     params:
         samples = sorted(config['samples'].keys())
     run:
