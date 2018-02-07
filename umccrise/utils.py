@@ -75,9 +75,21 @@ def get_loc():
             extras='/Users/vsaveliev/Analysis/umccrise',
             panel_of_normals_dir='/Users/vsaveliev/Analysis/panel_of_normals/GRCh37/normals',
             truth_sets={},
-        ),]:
+        ),
+        Loc(name='travis',
+            host_pattern=r'^travis-',
+            hsapiens='/home/travis/build/umccr/umccrise/umccrise_test_data/data/genomes/Hsapiens',
+                # 'GRCh37/coverage/prioritize/cancer/az300.bed.gz'
+                # 'GRCh37/seq/GRCh37.fa'       # for goleft depth
+                # 'GRCh37/seq/GRCh37.fa.fai'   # for bedtools slop
+            extras='',
+            panel_of_normals_dir='',
+            truth_sets={},
+        ),
+    ]:
         if re.match(loc.host_pattern, hostname):
             return loc
+
     raise Exception('Could not find loc for hostname ' + hostname)
 
 

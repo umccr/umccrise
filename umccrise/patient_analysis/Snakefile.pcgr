@@ -91,11 +91,6 @@ rule germline_tar_gz:
 rule upload_somatic_to_pcgr:
     input:
         rules.somatic_tar_gz.output[0]
-    # params:
-    #     url = f'ubuntu@{pcgr_url}.ap-southeast-2.compute.amazonaws.com',
-    #     som_dir = 'umccrised/{batch}/somatic/pcgr',
-    #     germ_dir = 'umccrised/{batch}/germline/pcgr',
-    #     batch = lambda wc: wc.batch
     output:
         'umccrised/.snakemake/pcgr_{batch}_somatic.done'
     shell:
@@ -108,15 +103,14 @@ rule upload_germline_to_pcgr:
         'umccrised/.snakemake/pcgr_{batch}_germline.done'
     shell:
         'aws s3 cp {input} s3://umccr-pcgr && touch {output}'
-
         
 rule pcgr:
     input:
+#        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
+#        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
         expand(rules.pcgr_somatic_vcf.output, batch=batch_by_name.keys()),
         expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_germline.output, batch=batch_by_name.keys()),
-        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys())
+        expand(rules.pcgr_germline.output, batch=batch_by_name.keys())
     output:
         'umccrised/pcgr.done'
     shell:
