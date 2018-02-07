@@ -47,4 +47,4 @@ dependencies:
   # For jupyter
   - jupyter
   - matplotlib
-  - matplotlib_venn
+  - matplotlib-venn
