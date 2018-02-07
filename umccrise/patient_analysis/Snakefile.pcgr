@@ -54,7 +54,7 @@ rule somatic_tar_gz:
         cns = rules.pcgr_cns.output[0],
         toml = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml')
     output:
-        'umccrised/{batch}/somatic/pcgr/{batch}-somatic-' + unique_id + '.tar.gz'
+        'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.tar.gz'
     params:
         basedir = 'umccrised/{batch}/somatic/pcgr'
     shell:
@@ -65,7 +65,7 @@ rule germline_tar_gz:
         vcf = rules.pcgr_germline.output.vcf,
         toml = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml')
     output:
-        'umccrised/{batch}/germline/pcgr/{batch}-germline-' + unique_id + '.tar.gz'
+        'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.tar.gz'
     params:
         basedir = 'umccrised/{batch}/germline/pcgr'
     shell:
@@ -93,12 +93,13 @@ rule upload_germline_to_pcgr:
         'aws s3 cp {input} s3://umccr-pcgr && touch {output}'
 
         
-
 rule pcgr:
     input:
         expand(rules.pcgr_somatic_vcf.output, batch=batch_by_name.keys()),
         expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_germline.output, batch=batch_by_name.keys())
+        expand(rules.pcgr_germline.output, batch=batch_by_name.keys()),
+        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
+        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys())
     output:
         'umccrised/pcgr.done'
     shell:

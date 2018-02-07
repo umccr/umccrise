@@ -15,7 +15,7 @@ params:
   vcf_fname: 'ensemble-hg19.vcf'
   af_freqs: 'af/af_tumor.txt'
   af_freqs_az300: 'af/af_tumor_az300.txt'
-  sv_fname: 'sv-prioritize-manta-bpi.tsv'
+  sv_fname: 'sv-prioritize-manta-pass.tsv'
   tumor_name: '17MHP031Tmr'
   sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/rmd_files/signatures_probabilities.txt'
   suppressors: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/rmd_files/suppressors.txt'
