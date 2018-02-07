@@ -66,7 +66,7 @@ rule somatic_tar_gz:
         cns = rules.pcgr_cns.output[0],
         toml = rules.prep_tomls.output.somatic
     output:
-        'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.tar.gz'
+        'umccrised/{batch}/somatic/pcgr/{batch}-somatic-' + unique_id + '.tar.gz'
     params:
         basedir = 'umccrised/{batch}/somatic/pcgr',
         vcf = lambda wc, input: basename(input.vcf),
@@ -80,7 +80,7 @@ rule germline_tar_gz:
         vcf = rules.pcgr_germline.output.vcf,
         toml = rules.prep_tomls.output.germline
     output:
-        'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.tar.gz'
+        'umccrised/{batch}/germline/pcgr/{batch}-germline-' + unique_id + '.tar.gz'
     params:
         basedir = 'umccrised/{batch}/germline/pcgr',
         vcf = lambda wc, input: basename(input.vcf),
