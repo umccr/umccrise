@@ -5,6 +5,7 @@ channels:
   - conda-forge
   - defaults
   - vladsaveliev
+  - anaconda
 
 dependencies:
   - python>=3.6
@@ -41,3 +42,8 @@ dependencies:
   - r-devtools
   - r-readr
   - r-stringr
+  #
+  # For jupyter:
+  - jupyter
+  - matplotlib
+  - matplotlib_venn
