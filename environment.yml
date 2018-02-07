@@ -18,7 +18,6 @@ dependencies:
   - snakemake
   - pythonpy
   - goleft
-  - break-point-inspector
   - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - awscli
   #
@@ -43,8 +42,3 @@ dependencies:
   - r-devtools
   - r-readr
   - r-stringr
-  #
-  # For jupyter
-  - jupyter
-  - matplotlib
-  - matplotlib-venn
