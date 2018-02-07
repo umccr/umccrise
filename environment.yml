@@ -20,6 +20,7 @@ dependencies:
   - goleft
   - break-point-inspector
   - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
+  - awscli
   #
   # Python libraries
   - cyvcf2
@@ -43,7 +44,7 @@ dependencies:
   - r-readr
   - r-stringr
   #
-  # For jupyter:
+  # For jupyter
   - jupyter
   - matplotlib
   - matplotlib_venn
