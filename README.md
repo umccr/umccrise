@@ -1,6 +1,8 @@
 UMCCRization of bcbio results: filter, normalise, generate plots and reports
 ----------------------------------------------------------------------------
 
+[![Build Status](https://travis-ci.org/umccr/umccrise.svg?branch=master)](https://travis-ci.org/umccr/umccrise)
+
 ![Works on my machine](https://www.leadingagile.com/wp-content/uploads/2017/03/worksonmymachine.png)
 
 ## Installation
