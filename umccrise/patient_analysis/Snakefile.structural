@@ -17,10 +17,7 @@ rule cnvkit_cleanup:
         'umccrised/{batch}/structural/cnvkit-nolabels.cns'
     shell:
         'cat {input}'
-        ' | {{'
-        ' head -n1 ;'
-        ' grep -v ^chromosome | py -x "\'\\t\'.join(x.split()[:3] + [\'.\'] + x.split()[4:])" ;'
-        ' }}'
+        ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\'] + x.split()[4:]) if not x.startswith(\'chromosome\') else x.split())"'
         ' > {output}'
 
 # Plot
@@ -70,8 +67,8 @@ rule prep_sv_tsv:
     output:
         'umccrised/{batch}/structural/sv-prioritize-manta-pass.tsv'
     shell:
-        '{{ head -1 {input.sv_prio} ; grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) ; }} > {output}'
-        # 'head -1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) >> {output}'
+        'head -n1 {input.sv_prio} > {output} && '
+        'grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) >> {output}'
 
 rule ribbon_filter_manta:
     input:
