@@ -48,7 +48,7 @@ script:
 #  email: false
 #  slack:
 #    rooms:
-umccrise_test_data
+
 #cache:
 #  directories:
 #  - $HOME/anaconda
