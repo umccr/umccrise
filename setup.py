@@ -4,7 +4,7 @@ import os
 from os.path import join, isfile, abspath, dirname
 from setuptools import setup
 
-version = '0.1'
+version = '0.2'
 
 setup(
     name='umccrise',
