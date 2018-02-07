@@ -1,0 +1,54 @@
+sudo: required
+
+language: python
+python:
+  # We don't actually use the Travis Python (since we are on conda), but this keeps it organized.
+  - "3.6"
+
+before_install:
+  # Temporal fix for networking problem: https://github.com/travis-ci/travis-ci/issues/1484
+  - echo "127.0.1.1 "`hostname` | sudo tee /etc/hosts
+
+  # The next couple lines fix a crash with multiprocessing on Travis and
+  # are not specific to using Miniconda
+  - sudo rm -rf /dev/shm
+  - sudo ln -s /run/shm /dev/shm
+
+  # Get and install anaconda (https://conda.io/docs/travis.html)
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH=$HOME/miniconda/bin:$PATH
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a  # Useful for debugging any issues with conda
+
+install:
+  # Install conda packages
+  - conda env create -n umccrise --file environment.yml
+  - source activate umccrise
+  # Installing (source code was automatically cloned into CWD by Travis)
+  - python setup.py install --single-version-externally-managed --record=record.txt
+  # Installing dependencies from source to check with the master versions
+  # Cloning test data
+  - git clone https://github.com/umccr/umccrise_test_data
+
+env:
+  - TEST=test_umccrise.py:Test_umccrize.test_one
+
+script:
+  - nosetests --nocapture umccrise_test_data/$TEST
+
+#notifications:
+#  on_success: always
+#  email: false
+#  slack:
+#    rooms:
+umccrise_test_data
+#cache:
+#  directories:
+#  - $HOME/anaconda
