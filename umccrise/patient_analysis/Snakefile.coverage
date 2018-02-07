@@ -25,7 +25,7 @@ rule goleft_plots:
     output:
         'umccrised/{batch}/coverage/indexcov/index.html'
     shell:
-        'goleft indexcov --directory {params.directory} {input.bam}'
+        'goleft indexcov --directory {params.directory} {input.bam} --sex X'
 
 
 rule coverage:
