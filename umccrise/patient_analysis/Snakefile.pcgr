@@ -3,6 +3,7 @@ Somatic calls
 -------------
 Run ensemble and raw calls through PCGR and combine with the cnv calls.
 """
+from os.path import relpath, basename
 from umccrise import panel_of_normals
 
 
@@ -10,12 +11,12 @@ from umccrise import panel_of_normals
 # It also ignores any variant not marked `PASS` so might as well remove others to save on transfer times.
 rule pcgr_somatic_vcf:
     input:
-        rules.pon_pass.output[0]
+        vcf = rules.pon_pass.output[0]
     output:
         vcf = 'umccrised/{batch}/somatic/pcgr/somatic-ensemble-pon-pass-pcgr.vcf.gz',
         tbi = 'umccrised/{batch}/somatic/pcgr/somatic-ensemble-pon-pass-pcgr.vcf.gz.tbi'
     shell:
-        'pcgr_prep {input} |'
+        'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
 
@@ -41,10 +42,21 @@ rule pcgr_germline:
         'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
+
 # Can review the `.txt` file in Excel or submit the VCF to frameworks such as [gene.iobio](http://gene.iobio.io/).
 
-
 from umccrise.patient_analysis import here as pa_source_dir
+
+rule prep_tomls:
+    input:
+        somatic = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml'),
+        germline = join(pa_source_dir, 'pcgr', 'pcgr_configuration_germline.toml')
+    output:
+        somatic = 'umccrised/{batch}/somatic/pcgr/pcgr_configuration.toml',
+        germline = 'umccrised/{batch}/germline/pcgr/pcgr_configuration.toml'
+    shell:
+        'cp {input.somatic} {output.somatic} && cp {input.germline} {output.germline}'
+
 import uuid
 unique_id = str(uuid.uuid4().hex[:6])
 
@@ -52,24 +64,29 @@ rule somatic_tar_gz:
     input:
         vcf = rules.pcgr_somatic_vcf.output.vcf,
         cns = rules.pcgr_cns.output[0],
-        toml = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml')
+        toml = rules.prep_tomls.output.somatic
     output:
         'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.tar.gz'
     params:
-        basedir = 'umccrised/{batch}/somatic/pcgr'
+        basedir = 'umccrised/{batch}/somatic/pcgr',
+        vcf = lambda wc, input: basename(input.vcf),
+        cns = lambda wc, input: basename(input.cns),
+        toml = lambda wc, input: basename(input.toml)
     shell:
-        'tar -czf {output} -C {params.basedir} {input.vcf} {input.cns} {input.toml}'
+        'tar -czf {output} -C {params.basedir} {params.vcf} {params.cns} {params.toml}'
 
 rule germline_tar_gz:
     input:
         vcf = rules.pcgr_germline.output.vcf,
-        toml = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml')
+        toml = rules.prep_tomls.output.germline
     output:
         'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.tar.gz'
     params:
-        basedir = 'umccrised/{batch}/germline/pcgr'
+        basedir = 'umccrised/{batch}/germline/pcgr',
+        vcf = lambda wc, input: basename(input.vcf),
+        toml = lambda wc, input: basename(input.toml)
     shell:
-        'tar -czf {output} -C {params.basedir} {input.vcf} {input.cns} {input.toml}'
+        'tar -czf {output} -C {params.basedir} {params.vcf} {params.toml}'
 
 rule upload_somatic_to_pcgr:
     input:
