@@ -6,6 +6,12 @@ UMCCRization of bcbio results: filter, normalise, generate plots and reports
 ![Works on my machine](https://www.leadingagile.com/wp-content/uploads/2017/03/worksonmymachine.png)
 
 ## Installation
+
+Clone the repository
+```
+git clone https://github.com/umccr/umccrise
+```
+
 Install conda
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -27,6 +33,19 @@ SCRIPTPATH=\$(dirname \$(readlink -e $(pwd)))
 export PATH=\$SCRIPTPATH/miniconda/bin:\$PATH
 source activate \$SCRIPTPATH/miniconda/envs/umccrise
 EOT
+```
+
+To update
+```
+git pull
+conda env update -f environment.yml
+pip install -e .
+```
+
+To test
+```
+git clone https://github.com/umccr/umccrise_test_data
+nosetests -s umccrise_test_data/test_umccrise.py
 ```
 
 ## Loading
