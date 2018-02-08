@@ -89,13 +89,13 @@ include: "Snakefile.igv"
 include: "Snakefile.rmd"
 
 
-rule symlink_multiqc:  # {}
+rule copy_multiqc:  # {}
     input:
         join(run.date_dir, 'multiqc/multiqc_report.html')
     output:
         'umccrised/qc/multiqc_report.html'
     shell:
-        'ln -s {input} {output}'
+        'cp {input} {output}'
 
 
 ## Additional information
@@ -117,7 +117,7 @@ rule copy_logs:  # {}
 
 rule umccrised:  # {}
     input:
-        rules.symlink_multiqc.output,
+        rules.copy_multiqc.output,
         rules.coverage.output,
         rules.pcgr.output,
         rules.structural.output,
