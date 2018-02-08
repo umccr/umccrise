@@ -26,20 +26,20 @@ before_install:
   - ln -s $HOME/seq umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
 
 install:
+  # Get and install anaconda (https://conda.io/docs/travis.html) and umccrise packages
   - if [ ! -d $HOME/miniconda ] ; then
-      # Get and install anaconda (https://conda.io/docs/travis.html)
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
       bash miniconda.sh -b -p $HOME/miniconda ;
       export PATH=$HOME/miniconda/bin:$PATH ;
       hash -r ;
       conda config --set always_yes yes --set changeps1 no ;
       conda update -q conda ;
-      # Install conda packages
       conda env create -n umccrise --file environment.yml ;
     fi
   - export PATH=$HOME/miniconda/bin:$PATH
   - source activate umccrise
-  - conda info -a  # Useful for debugging any issues with conda
+  # Useful for debugging any issues with conda
+  - conda info -a
   # Installing the codebase (source code was automatically cloned into CWD by Travis)
   - pip install -e .
 
