@@ -3,6 +3,7 @@ import os
 from os.path import isfile, join, dirname, abspath
 import click
 from umccrise import patient_analysis
+from ngs_utils.call_process import run
 
 
 @click.command()
@@ -25,8 +26,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
        (f'--config sample={sample} ' if sample else '') +
        (f'--config batch={batch} ' if batch else '')
     )
-    print(cmd)
-    os.system(cmd)
+    run(cmd)
 
 
 if __name__ == '__main__':

@@ -34,7 +34,7 @@ def get_loc():
             host_pattern=r'spartan.*\.hpc\.unimelb\.edu\.au',
             hsapiens='/data/projects/punim0010/local/share/bcbio/genomes/Hsapiens',
             extras='/data/cephfs/punim0010/extras',
-            panel_of_normals_dir='/data/cephfs/punim0010/extras/panel_or_normals',
+            panel_of_normals_dir='/data/cephfs/punim0010/extras/panel_of_normals',
             truth_sets={
                 'mb': {
                     'GRCh37': {
@@ -59,7 +59,7 @@ def get_loc():
             host_pattern=r'^raijin|(r\d\d\d\d$)',
             hsapiens='/g/data/gx8/local/development/bcbio/genomes/Hsapiens',
             extras='/g/data3/gx8/extras',
-            panel_of_normals_dir='/g/data3/gx8/extras/panel_or_normals',
+            panel_of_normals_dir='/g/data3/gx8/extras/panel_of_normals',
             truth_sets={
                 'giab': {
                     'GRCh37': {
@@ -83,7 +83,7 @@ def get_loc():
                 # 'GRCh37/seq/GRCh37.fa'       # for goleft depth
                 # 'GRCh37/seq/GRCh37.fa.fai'   # for bedtools slop
             extras='',
-            panel_of_normals_dir='',
+            panel_of_normals_dir='/home/travis/build/umccr/umccrise/umccrise_test_data/data/panel_of_normals',
             truth_sets={
                 'giab': {
                     'GRCh37': {

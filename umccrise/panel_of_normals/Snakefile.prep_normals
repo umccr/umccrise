@@ -5,9 +5,10 @@ import glob
 import re
 from umccrise.utils import get_loc
 
-normal_by_name = dict(l.strip().split() for l in '''
-MH17B001P004              /data/cephfs/punim0010/data/Results/Avner/MH17T001P004/2017-07-27_final/2017-06-15_MH17T001P004/MH17B001P004-germline-ensemble-annotated.vcf.gz
-MH17B001P013              /data/cephfs/punim0010/data/Results/Avner/MH17T001P013/final/2017-06-15_MH17T001P013/MH17B001P013-germline-ensemble-annotated.vcf.gz           
+if get_loc().name == 'spartan':
+    normal_by_name = dict(l.strip().split() for l in '''
+MH17B001P004              /data/cephfs/punim0010/data/Results/Avner/MH17T001P004/archive/2017-07-27_final/2017-06-15_MH17T001P004/MH17B001P004-germline-ensemble-annotated.vcf.gz
+MH17B001P013              /data/cephfs/punim0010/data/Results/Avner/archive/MH17T001P013/final/2017-06-15_MH17T001P013/MH17B001P013-germline-ensemble-annotated.vcf.gz
 VPH52_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH52_Blood-germline-ensemble-annotated.vcf.gz      
 VPH54_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH54_Blood-germline-ensemble-annotated.vcf.gz      
 VPH56_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH56_Blood-germline-ensemble-annotated.vcf.gz      
@@ -30,7 +31,10 @@ WES003KMBL                /data/projects/punim0010/projects/Hsu_WGS_Validation/W
 
 if get_loc().name == 'vlad':
     normal_by_name = {'tmp': '/Users/vsaveliev/Analysis/panel_of_normals/GRCh37/normals/MH17B001P004-germline-ensemble-annotated.vcf.gz'}
-     
+
+if 'normal' in config:
+    normal_by_name = dict([config['normal'].split(':')])
+
 def str_to_lua_variable_name(name):
     name = os.path.basename(name)
     name = name.replace('.vcf.gz', '')
