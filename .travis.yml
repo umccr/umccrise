@@ -15,9 +15,9 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
 
   # Download the reference data
-  - if [ ! -f seq/GRCh37.fa ]; then
+  - if [ ! -f $HOME/seq/GRCh37.fa ]; then
       wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz ;
-      tar -xzvpf GRCh37-seq.tar.gz --directory $HOME/seq ;
+      tar -xzvpf GRCh37-seq.tar.gz --directory $HOME ;
       gunzip -c $HOME/seq/GRCh37.fa.gz > $HOME/seq/GRCh37.fa ;
     fi
 
