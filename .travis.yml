@@ -27,6 +27,12 @@ before_install:
   - conda update -q conda
   - conda info -a  # Useful for debugging any issues with conda
 
+  # Download the reference data
+  - wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz
+  - tar -xzvpf GRCh37-seq.tar.gz
+  - gunzip -c seq/GRCh37.fa.gz > seq/GRCh37.fa
+  - mv seq umccrise_test_data/data/genomes/Hsapiens/GRCh37
+
 install:
   # Install conda packages
   - conda env create -n umccrise --file environment.yml
@@ -38,7 +44,7 @@ install:
   - git clone https://github.com/umccr/umccrise_test_data
 
 env:
-  - TEST=test_umccrise.py:Test_umccrize.test_one
+  - TEST=test_umccrise.py:Test_umccrise.test_one
 
 script:
   - nosetests --nocapture umccrise_test_data/$TEST
@@ -52,3 +58,8 @@ script:
 #cache:
 #  directories:
 #  - $HOME/anaconda
+
+cache:
+  directories:
+  - umccrise_test_data/data/genomes
+  - $HOME/miniconda
