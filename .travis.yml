@@ -18,7 +18,7 @@ before_install:
   - if [ ! -f seq/GRCh37.fa ]; then
       wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz ;
       tar -xzvpf GRCh37-seq.tar.gz --directory $HOME/seq ;
-      gunzip -c $HOME/seq/GRCh37.fa.gz > $HOME/seq/GRCh37.fa
+      gunzip -c $HOME/seq/GRCh37.fa.gz > $HOME/seq/GRCh37.fa ;
     fi
 
   # Cloning the test data
