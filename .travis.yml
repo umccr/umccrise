@@ -26,17 +26,15 @@ before_install:
   - ln -s $HOME/seq umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
 
 install:
-  # Get and install anaconda (https://conda.io/docs/travis.html) and umccrise packages
-  - if [ ! -d $HOME/miniconda ] ; then
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
-      bash miniconda.sh -b -p $HOME/miniconda ;
-      export PATH=$HOME/miniconda/bin:$PATH ;
-      hash -r ;
-      conda config --set always_yes yes --set changeps1 no ;
-      conda update -q conda ;
-      conda env create -n umccrise --file environment.yml ;
-    fi
+  # Get and install anaconda (https://conda.io/docs/travis.html)
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH=$HOME/miniconda/bin:$PATH
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Installing umccrise packages
+  - conda env create -n umccrise --file environment.yml
   - source activate umccrise
   # Useful for debugging any issues with conda
   - conda info -a
@@ -58,4 +56,42 @@ script:
 cache:
   directories:
   - $HOME/seq
-  - $HOME/miniconda
+
+
+#####################################
+## If you want to cache miniconda: ##
+#####################################
+# install:
+#   # Get and install anaconda (https://conda.io/docs/travis.html) and umccrise packages
+#   - if [ ! -d $HOME/miniconda ] ; then
+#       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
+#       bash miniconda.sh -b -p $HOME/miniconda ;
+#       export PATH=$HOME/miniconda/bin:$PATH ;
+#       hash -r ;
+#       conda config --set always_yes yes --set changeps1 no ;
+#       conda update -q conda ;
+#       conda env create -n umccrise --file environment.yml ;
+#     fi
+#   - export PATH=$HOME/miniconda/bin:$PATH
+#   - source activate umccrise
+#   # Useful for debugging any issues with conda
+#   - conda info -a
+#   # Installing the codebase (source code was automatically cloned into CWD by Travis)
+#   - pip install -e .
+
+# env:
+#   - TEST=test_umccrise.py:Test_umccrise.test_one
+
+# script:
+#   - nosetests --nocapture umccrise_test_data/$TEST
+
+# #notifications:
+# #  on_success: always
+# #  email: false
+# #  slack:
+# #    rooms:
+
+# cache:
+#   directories:
+#   - $HOME/seq
+#   - $HOME/miniconda
