@@ -25,21 +25,59 @@ before_install:
   - git clone https://github.com/umccr/umccrise_test_data
   - ln -s $HOME/seq umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
 
+
+#####################################################
+### If you want to install miniconda from scratch: ##
+#####################################################
+#install:
+#  # Get and install anaconda (https://conda.io/docs/travis.html)
+#  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+#  - bash miniconda.sh -b -p $HOME/miniconda
+#  - export PATH=$HOME/miniconda/bin:$PATH
+#  - hash -r
+#  - conda config --set always_yes yes --set changeps1 no
+#  - conda update -q conda
+#  # Installing umccrise packages
+#  - conda env create -n umccrise --file environment.yml
+#  - source activate umccrise
+#  # Useful for debugging any issues with conda
+#  - conda info -a
+#  # Installing the codebase (source code was automatically cloned into CWD by Travis)
+#  - pip install -e .
+#
+#cache:
+#  directories:
+#  - $HOME/seq
+
+
+####################################################
+## If you want to install miniconda from scratch: ##
+####################################################
 install:
-  # Get and install anaconda (https://conda.io/docs/travis.html)
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH=$HOME/miniconda/bin:$PATH
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Installing umccrise packages
-  - conda env create -n umccrise --file environment.yml
+  # Get and install anaconda (https://conda.io/docs/travis.html) and umccrise packages
+  - if [ ! -d $HOME/miniconda ] ; then
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
+      bash miniconda.sh -b -p $HOME/miniconda ;
+      export PATH=$HOME/miniconda/bin:$PATH ;
+      hash -r ;
+      conda config --set always_yes yes --set changeps1 no ;
+      conda update -q conda ;
+      conda env create -n umccrise --file environment.yml ;
+    else
+      export PATH=$HOME/miniconda/bin:$PATH ;
+      conda env update -f environment.yml ;
+    fi
   - source activate umccrise
   # Useful for debugging any issues with conda
   - conda info -a
   # Installing the codebase (source code was automatically cloned into CWD by Travis)
   - pip install -e .
+
+
+cache:
+  directories:
+  - $HOME/seq
+  - $HOME/miniconda
 
 env:
   - TEST=test_umccrise.py:Test_umccrise.test_one
@@ -52,46 +90,3 @@ script:
 #  email: false
 #  slack:
 #    rooms:
-
-cache:
-  directories:
-  - $HOME/seq
-
-
-#####################################
-## If you want to cache miniconda: ##
-#####################################
-# install:
-#   # Get and install anaconda (https://conda.io/docs/travis.html) and umccrise packages
-#   - if [ ! -d $HOME/miniconda ] ; then
-#       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
-#       bash miniconda.sh -b -p $HOME/miniconda ;
-#       export PATH=$HOME/miniconda/bin:$PATH ;
-#       hash -r ;
-#       conda config --set always_yes yes --set changeps1 no ;
-#       conda update -q conda ;
-#       conda env create -n umccrise --file environment.yml ;
-#     fi
-#   - export PATH=$HOME/miniconda/bin:$PATH
-#   - source activate umccrise
-#   # Useful for debugging any issues with conda
-#   - conda info -a
-#   # Installing the codebase (source code was automatically cloned into CWD by Travis)
-#   - pip install -e .
-
-# env:
-#   - TEST=test_umccrise.py:Test_umccrise.test_one
-
-# script:
-#   - nosetests --nocapture umccrise_test_data/$TEST
-
-# #notifications:
-# #  on_success: always
-# #  email: false
-# #  slack:
-# #    rooms:
-
-# cache:
-#   directories:
-#   - $HOME/seq
-#   - $HOME/miniconda
