@@ -14,16 +14,16 @@ before_install:
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
 
+  # Download the reference data
+  - if [ ! -f seq/GRCh37.fa ]; then
+      wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz
+      tar -xzvpf GRCh37-seq.tar.gz --directory $HOME/seq
+      gunzip -c $HOME/seq/GRCh37.fa.gz > $HOME/seq/GRCh37.fa
+    fi
+
   # Cloning the test data
   - git clone https://github.com/umccr/umccrise_test_data
-
-  # Download the reference data
-  - if [ ! -f umccrise_test_data/data/genomes/seq/GRCh37.fa ]; then
-      wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz
-      tar -xzvpf GRCh37-seq.tar.gz
-      gunzip -c seq/GRCh37.fa.gz > seq/GRCh37.fa
-      mv seq umccrise_test_data/data/genomes/Hsapiens/GRCh37
-    fi
+  - ln -s $HOME/seq umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
 
   # Get and install anaconda (https://conda.io/docs/travis.html)
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -53,10 +53,6 @@ script:
 #  slack:
 #    rooms:
 
-#cache:
-#  directories:
-#  - $HOME/anaconda
-
 cache:
   directories:
-  - umccrise_test_data/data/genomes
+  - $HOME/seq
