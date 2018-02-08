@@ -84,7 +84,13 @@ def get_loc():
                 # 'GRCh37/seq/GRCh37.fa.fai'   # for bedtools slop
             extras='',
             panel_of_normals_dir='',
-            truth_sets={},
+            truth_sets={
+                'giab': {
+                    'GRCh37': {
+                        'bed': 'GRCh37/validation/giab-NA12878/truth_regions.bed',
+                    }
+                }
+            }
         ),
     ]:
         if re.match(loc.host_pattern, hostname):
