@@ -112,7 +112,7 @@ rule copy_logs:  # {}
     params:
         log_dir = 'umccrised/log'
     shell:
-        'ln -s {input} {params.log_dir}'
+        'cp -r {input} {params.log_dir}'
 
 
 rule umccrised:  # {}

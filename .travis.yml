@@ -50,12 +50,14 @@ before_install:
 #  - $HOME/seq
 
 
-####################################################
-## If you want to install miniconda from scratch: ##
-####################################################
+###################################################
+# If you want to install miniconda from scratch: ##
+###################################################
 install:
   # Get and install anaconda (https://conda.io/docs/travis.html) and umccrise packages
-  - if [ ! -d $HOME/miniconda ] ; then
+  - if [ -d $HOME/miniconda ]; then echo "ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;
+  - if [ ! -d $HOME/miniconda/bin ] ; then
+      if [ -d $HOME/miniconda ] ; then rm -rf $HOME/miniconda ; fi ;
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
       bash miniconda.sh -b -p $HOME/miniconda ;
       export PATH=$HOME/miniconda/bin:$PATH ;
@@ -65,7 +67,7 @@ install:
       conda env create -n umccrise --file environment.yml ;
     else
       export PATH=$HOME/miniconda/bin:$PATH ;
-      ls $HOME/miniconda/bin ;
+      echo "else ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;
       conda config --set always_yes yes --set changeps1 no ;
       conda env update -f environment.yml ;
     fi
