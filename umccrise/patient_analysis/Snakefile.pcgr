@@ -63,6 +63,7 @@ unique_id = str(uuid.uuid4().hex[:6])
 rule somatic_tar_gz:
     input:
         vcf = rules.pcgr_somatic_vcf.output.vcf,
+        tbi = rules.pcgr_somatic_vcf.output.tbi,
         cns = rules.pcgr_cns.output[0],
         toml = rules.prep_tomls.output.somatic
     output:
@@ -74,11 +75,12 @@ rule somatic_tar_gz:
         cns = lambda wc, input: basename(input.cns),
         toml = lambda wc, input: basename(input.toml)
     shell:
-        'tar -czf {output} -C {params.basedir} {params.vcf} {params.cns} {params.toml}'
+        'tar -czf {output} -C {params.basedir} {params.vcf} {params.tbi} {params.cns} {params.toml}'
 
 rule germline_tar_gz:
     input:
         vcf = rules.pcgr_germline.output.vcf,
+        tbi = rules.pcgr_germline.output.tbi,
         toml = rules.prep_tomls.output.germline
     output:
         'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.tar.gz'
@@ -88,7 +90,7 @@ rule germline_tar_gz:
         tbi = lambda wc, input: basename(input.tbi),
         toml = lambda wc, input: basename(input.toml)
     shell:
-        'tar -czf {output} -C {params.basedir} {params.vcf} {params.toml}'
+        'tar -czf {output} -C {params.basedir} {params.vcf} {params.tbi} {params.toml}'
 
 rule upload_somatic_to_pcgr:
     input:

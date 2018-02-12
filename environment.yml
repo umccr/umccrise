@@ -42,3 +42,4 @@ dependencies:
   - r-devtools
   - r-readr
   - r-stringr
+  - bioconductor-genomeinfodb
