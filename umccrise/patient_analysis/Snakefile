@@ -123,8 +123,8 @@ rule umccrised:  # {}
             rules.structural.output[0], \
             rules.igv.output[0], \
             rules.copy_logs.output[0], \
-            rules.sig.output[0] \
-            rules.pcgr_prep.output[0], \
+            rules.sig.output[0], \
+            rules.pcgr_prep.output[0] \
         ] + ([rules.pcgr_upload.output[0]] if config.get('upload_pcgr', False) else [])
     output:
         'umccrised/done'
