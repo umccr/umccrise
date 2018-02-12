@@ -67,7 +67,7 @@ install:
       conda env create -n umccrise --file environment.yml ;
     else
       export PATH=$HOME/miniconda/bin:$PATH ;
-      echo "else ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;
+      echo "else ls HOME/miniconda:" ; ls $HOME/miniconda ;
       conda config --set always_yes yes --set changeps1 no ;
       conda env update -f environment.yml ;
     fi

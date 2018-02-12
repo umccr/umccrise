@@ -73,17 +73,25 @@ def get_loc():
             host_pattern=r'^5180L-135800-M.local$',
             hsapiens='/Users/vsaveliev/genomes/Hsapiens',
             extras='/Users/vsaveliev/Analysis/umccrise',
-            panel_of_normals_dir='/Users/vsaveliev/Analysis/panel_of_normals/GRCh37/normals',
-            truth_sets={},
+            panel_of_normals_dir='../../data/panel_of_normals',
+            # panel_of_normals_dir='/Users/vsaveliev/Analysis/panel_of_normals/GRCh37/normals',
+            truth_sets={
+                'giab': {
+                    'GRCh37': {
+                        'bed': 'GRCh37/validation/giab-NA12878/truth_regions.bed',
+                    }
+                }
+            }
         ),
         Loc(name='travis',
             host_pattern=r'^travis-',
-            hsapiens='/home/travis/build/umccr/umccrise/umccrise_test_data/data/genomes/Hsapiens',
-                # 'GRCh37/coverage/prioritize/cancer/az300.bed.gz'
-                # 'GRCh37/seq/GRCh37.fa'       # for goleft depth
-                # 'GRCh37/seq/GRCh37.fa.fai'   # for bedtools slop
+            hsapiens='../../data/genomes/Hsapiens',
+            # For tests, using the following in Hsapiens:
+            # For germline subsampling: 'GRCh37/coverage/prioritize/cancer/az300.bed.gz'
+            # For goleft depth:         'GRCh37/seq/GRCh37.fa
+            # For bedtools slop :       'GRCh37/seq/GRCh37.fa.fai'
             extras='',
-            panel_of_normals_dir='/home/travis/build/umccr/umccrise/umccrise_test_data/data/panel_of_normals',
+            panel_of_normals_dir='../../data/panel_of_normals',
             truth_sets={
                 'giab': {
                     'GRCh37': {
