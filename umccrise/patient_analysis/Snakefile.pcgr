@@ -66,7 +66,7 @@ rule somatic_tar_gz:
         cns = rules.pcgr_cns.output[0],
         toml = rules.prep_tomls.output.somatic
     output:
-        'umccrised/{batch}/somatic/pcgr/{batch}-somatic-' + unique_id + '.tar.gz'
+        'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.tar.gz'
     params:
         basedir = 'umccrised/{batch}/somatic/pcgr',
         vcf = lambda wc, input: basename(input.vcf),
@@ -80,7 +80,7 @@ rule germline_tar_gz:
         vcf = rules.pcgr_germline.output.vcf,
         toml = rules.prep_tomls.output.germline
     output:
-        'umccrised/{batch}/germline/pcgr/{batch}-germline-' + unique_id + '.tar.gz'
+        'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.tar.gz'
     params:
         basedir = 'umccrised/{batch}/germline/pcgr',
         vcf = lambda wc, input: basename(input.vcf),
@@ -94,7 +94,7 @@ rule upload_somatic_to_pcgr:
     output:
         'umccrised/.snakemake/pcgr_{batch}_somatic.done'
     shell:
-        'aws s3 cp {input} s3://umccr-pcgr && touch {output}'
+        'aws s3 cp {input} s3://pcgr && touch {output}'
 
 rule upload_germline_to_pcgr:
     input:
@@ -102,16 +102,34 @@ rule upload_germline_to_pcgr:
     output:
         'umccrised/.snakemake/pcgr_{batch}_germline.done'
     shell:
-        'aws s3 cp {input} s3://umccr-pcgr && touch {output}'
-        
-rule pcgr:
+        'aws s3 cp {input} s3://pcgr && touch {output}'
+
+rule pcgr_prep:
     input:
-#        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
-#        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_somatic_vcf.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_germline.output, batch=batch_by_name.keys())
+        expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys()),
+        expand(rules.germline_tar_gz.output, batch=batch_by_name.keys())
     output:
-        'umccrised/pcgr.done'
+        'umccrised/pcgr_prep.done'
     shell:
         'touch {output}'
+
+rule pcgr_upload:
+    input:
+       expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
+       expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys())
+    output:
+        'umccrised/pcgr_upload.done'
+    shell:
+        'touch {output}'
+
+rule pcgr:
+    input:
+        rules.pcgr_prep.output[0],
+        rules.pcgr_upload.output[0]
+    output:
+        'umccrised/pcgr_all.done'
+    shell:
+        'touch {output}'
+
+
+

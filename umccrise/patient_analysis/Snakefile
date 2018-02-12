@@ -117,13 +117,15 @@ rule copy_logs:  # {}
 
 rule umccrised:  # {}
     input:
-        rules.copy_multiqc.output,
-        rules.coverage.output,
-        rules.pcgr.output,
-        rules.structural.output,
-        rules.igv.output,
-        rules.copy_logs.output,
-        rules.sig.output
+        lambda _: [ \
+            rules.copy_multiqc.output[0], \
+            rules.coverage.output[0], \
+            rules.structural.output[0], \
+            rules.igv.output[0], \
+            rules.copy_logs.output[0], \
+            rules.sig.output[0] \
+            rules.pcgr_prep.output[0], \
+        ] + ([rules.pcgr_upload.output[0]] if config.get('upload_pcgr', False) else [])
     output:
         'umccrised/done'
     shell:
