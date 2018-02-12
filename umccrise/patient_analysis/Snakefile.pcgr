@@ -70,6 +70,7 @@ rule somatic_tar_gz:
     params:
         basedir = 'umccrised/{batch}/somatic/pcgr',
         vcf = lambda wc, input: basename(input.vcf),
+        tbi = lambda wc, input: basename(input.tbi),
         cns = lambda wc, input: basename(input.cns),
         toml = lambda wc, input: basename(input.toml)
     shell:
@@ -84,6 +85,7 @@ rule germline_tar_gz:
     params:
         basedir = 'umccrised/{batch}/germline/pcgr',
         vcf = lambda wc, input: basename(input.vcf),
+        tbi = lambda wc, input: basename(input.tbi),
         toml = lambda wc, input: basename(input.toml)
     shell:
         'tar -czf {output} -C {params.basedir} {params.vcf} {params.toml}'
