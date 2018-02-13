@@ -15,7 +15,9 @@ from ngs_utils.call_process import run
 @click.option('-s', '--batch', 'batch')
 @click.option('-u', '--upload-pcgr/--no-upload-pcgr', 'upload_pcgr', default=False)
 def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, upload_pcgr=False):
+
     bcbio_project = os.path.abspath(bcbio_project)
+
     conf = f'run_dir={bcbio_project}'
     if sample:
         conf += f' sample={sample}'
@@ -24,16 +26,21 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
     if upload_pcgr:
         conf += f' upload_pcgr=True'
 
-    cmd = (
-        f'snakemake ' +
+    output_dir = output_dir or 'umccrised'
+
+    run(f'snakemake ' +
         f'{" ".join(rule)} ' +
         f'--snakefile {join(patient_analysis.package_path(), "Snakefile")} ' +
         f'--printshellcmds ' +
-       (f'--directory {output_dir} ' if output_dir else ' ') +
+        f'--directory {output_dir} ' +
         f'-j {jobs} ' +
         f'--config {conf} '
     )
-    run(cmd)
+
+    # Cleanup
+    work_dir = join(output_dir, 'work')
+    # if isdir(work_dir):
+    #     shutils.rmtree(work_dir)
 
 
 if __name__ == '__main__':
