@@ -22,7 +22,7 @@ dependencies:
   - awscli
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - cyvcf2
-  - ngs_utils>=1.2.2
+  - ngs_utils>=1.2.3
   - click
   - cnvkit
   - pandas
@@ -38,7 +38,8 @@ dependencies:
   - bioconductor-mutationalpatterns
   - bioconductor-bsgenome.hsapiens.ucsc.hg19
   - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
+  - bioconductor-genomeinfodb
+  - bioconductor-genomeinfodbdata
   - r-devtools
   - r-readr
   - r-stringr
-  - bioconductor-genomeinfodb
