@@ -20,8 +20,7 @@ dependencies:
   - goleft
   - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - awscli
-  #
-  # Python libraries
+  - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - cyvcf2
   - ngs_utils>=1.2.2
   - click
