@@ -11,7 +11,7 @@ from umccrise.patient_analysis import get_sig_rmd_file, get_signatures_probabili
 #     input:
 #         vcfs = lambda wc: expand(join(run.date_dir, f'{batch_by_name[wc.batch].name}-{{caller}}-annotated.vcf.gz'), caller=list(batch_by_name.values())[0].tumor.variantcallers)
 #     output:
-#         'umccrised/{batch}/somatic/af/variants.vcf.gz'
+#         '{batch}/somatic/af/variants.vcf.gz'
 #     run:
 #         af_vcf = next((vcf for vcf in input.vcfs if vcf.endswith('-ff-annotated.vcf.gz')), None)
 #         if not af_vcf:
@@ -27,7 +27,7 @@ rule subset_to_giab:
     params:
         regions = join(loc.hsapiens, loc.truth_sets['giab'][run.genome_build]['bed'])
     output:
-        'umccrised/{batch}/somatic/af/ensemble-confident.vcf.gz'
+        'work/{batch}/rmd/afs/ensemble-confident.vcf.gz'
     shell:
         'bcftools view {input.vcf} -T {params.regions} -Oz -o {output}'
 
@@ -37,7 +37,7 @@ rule split_multiallelic:
         vcf = rules.subset_to_giab.output[0],
         ref_fa = ref_fa
     output:
-        'umccrised/{batch}/somatic/af/ensemble-confident-singleallelic.vcf.gz'
+        'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz'
     shell:
         "bcftools annotate -x ^INFO/ANN,^INFO/TUMOR_AF -Ob {input.vcf} | bcftools norm -m '-' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}"
 
@@ -47,7 +47,7 @@ rule afs:
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
-        'umccrised/{batch}/somatic/af/af_tumor.txt'
+        'work/{batch}/rmd/afs/af_tumor.txt'
     shell:
         'bcftools view {input} -s {params.tumor_name} -Ou | bcftools query -f "%INFO/TUMOR_AF\\n" > {output}'
 
@@ -58,7 +58,7 @@ rule afs_az300:
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
-        'umccrised/{batch}/somatic/af/af_tumor_az300.txt'
+        'work/{batch}/rmd/afs/af_tumor_az300.txt'
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.az300} -header'
@@ -74,7 +74,7 @@ rule cgi:
     input:
         rules.pon_pass.output[0]
     output:
-        'umccrised/{batch}/somatic/rstudio/ensemble-hg19.vcf'
+        'work/{batch}/rmd/ensemble-hg19.vcf'
     shell:
         'gunzip -c {input}'
         " | py -x \"x.replace('##contig=<ID=', '##contig=<ID=chr') if x.startswith('#') else 'chr' + x\""
@@ -95,9 +95,9 @@ rule sig_rmd:
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         workdir = os.getcwd(),
-        output_file = join(os.getcwd(), 'umccrised/{batch}/somatic/rstudio/sig.html')
+        output_file = lambda wc, output: join(os.getcwd(), output[0])
     output:
-        'umccrised/{batch}/somatic/rstudio/sig.html'
+        '{batch}/rmd_report.html'
     run:
         os.system("which Rscript")
         shell('Rscript -e "rmarkdown::render(\'{input.sig_rmd}\', '
@@ -115,11 +115,9 @@ rule sig_rmd:
         ' && if [ -e x.txt ] ; then exit 1; fi')
 
 
+#############
+
 rule sig:
     input:
         expand(rules.sig_rmd.output[0], batch=batch_by_name.keys())
-    output:
-        'umccrised/sig.done'
-    shell:
-        'touch {output}'
-    
+

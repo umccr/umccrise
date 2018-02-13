@@ -6,20 +6,17 @@ Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarba
 from os.path import relpath, basename
 from umccrise import panel_of_normals
 
-import uuid
-unique_id = str(uuid.uuid4().hex[:6])
 
-
-###### Preparing inputs for pcgr.py
+##### Preparing inputs for pcgr.py
 
 # PCGR struggles with anything but the basic chromosome setup.
 # It also ignores any variant not marked `PASS` so might as well remove others to save on transfer times.
 rule pcgr_somatic_vcf:
     input:
-        vcf = rules.pon_pass.output[0]
+        vcf = rules.pon_pass.output.vcf
     output:
-        vcf = 'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.vcf.gz',
-        tbi = 'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/{batch}-' + unique_id + '-somatic.vcf.gz',
+        tbi = '{batch}/pcgr/{batch}-' + unique_id + '-somatic.vcf.gz.tbi'
     shell:
         'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
@@ -27,10 +24,10 @@ rule pcgr_somatic_vcf:
 
 rule pcgr_germline:
     input:
-        vcf = rules.prep_germline.output[0]
+        vcf = rules.prep_germline.output.vcf
     output:
-        vcf = 'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.vcf.gz',
-        tbi = 'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/{batch}-' + unique_id + '-germline.vcf.gz',
+        tbi = '{batch}/pcgr/{batch}-' + unique_id + '-germline.vcf.gz.tbi'
     shell:
         'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
@@ -41,7 +38,7 @@ rule pcgr_cns:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
-        'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.tsv'
+        '{batch}/pcgr/{batch}-' + unique_id + '-somatic.tsv'
     shell:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | grep -v ^chromosome | cut -f 1,2,3,5 >> {output}'
 
@@ -52,8 +49,8 @@ rule prep_tomls:
         somatic = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml'),
         germline = join(pa_source_dir, 'pcgr', 'pcgr_configuration_germline.toml')
     output:
-        somatic = 'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.toml',
-        germline = 'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.toml'
+        somatic = '{batch}/pcgr/{batch}-' + unique_id + '-somatic.toml',
+        germline = '{batch}/pcgr/{batch}-' + unique_id + '-germline.toml'
     shell:
         'cp {input.somatic} {output.somatic} && cp {input.germline} {output.germline}'
 
@@ -67,9 +64,9 @@ rule somatic_tar_gz:
         cns = rules.pcgr_cns.output[0],
         toml = rules.prep_tomls.output.somatic
     output:
-        'umccrised/{batch}/somatic/pcgr/{batch}-' + unique_id + '-somatic.tar.gz'
+        '{batch}/pcgr/{batch}-' + unique_id + '-somatic.tar.gz'
     params:
-        basedir = 'umccrised/{batch}/somatic/pcgr',
+        basedir = '{batch}/pcgr',
         vcf = lambda wc, input: basename(input.vcf),
         tbi = lambda wc, input: basename(input.tbi),
         cns = lambda wc, input: basename(input.cns),
@@ -83,9 +80,9 @@ rule germline_tar_gz:
         tbi = rules.pcgr_germline.output.tbi,
         toml = rules.prep_tomls.output.germline
     output:
-        'umccrised/{batch}/germline/pcgr/{batch}-' + unique_id + '-germline.tar.gz'
+        '{batch}/pcgr/{batch}-' + unique_id + '-germline.tar.gz'
     params:
-        basedir = 'umccrised/{batch}/germline/pcgr',
+        basedir = '{batch}/pcgr',
         vcf = lambda wc, input: basename(input.vcf),
         tbi = lambda wc, input: basename(input.tbi),
         toml = lambda wc, input: basename(input.toml)
@@ -104,47 +101,27 @@ rule upload_somatic_to_pcgr:
     input:
         rules.somatic_tar_gz.output[0]
     output:
-        'umccrised/.snakemake/pcgr_{batch}_somatic.done'
-    shell:
+        '{batch}/pcgr/upload-somatic.done'
+    run:
         upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
 rule upload_germline_to_pcgr:
     input:
         rules.germline_tar_gz.output[0]
     output:
-        'umccrised/.snakemake/pcgr_{batch}_germline.done'
+        '{batch}/pcgr/upload-germline.done'
     shell:
         upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
 
-#########################
+#############
 
 rule pcgr_prep:
     input:
         expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys()),
         expand(rules.germline_tar_gz.output, batch=batch_by_name.keys())
-    output:
-        'umccrised/pcgr_prep.done'
-    shell:
-        'touch {output}'
 
 rule pcgr_upload:
     input:
        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys())
-    output:
-        'umccrised/pcgr_upload.done'
-    shell:
-        'touch {output}'
-
-rule pcgr:
-    input:
-        rules.pcgr_prep.output[0],
-        rules.pcgr_upload.output[0]
-    output:
-        'umccrised/pcgr_all.done'
-    shell:
-        'touch {output}'
-
-
-

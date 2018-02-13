@@ -7,10 +7,10 @@ rule goleft_depth:
         az300 = az300,
         ref_fa = ref_fa
     params:
-        prefix = lambda wc, output: output[0].replace('.callable.bed', ''),
+        prefix = lambda wc, output: output[0].replace('.depth.bed', ''),
         cutoff = lambda wc: cov_by_phenotype[wc.phenotype]
     output:
-        'umccrised/{batch}/coverage/{phenotype}.callable.bed'
+        '{batch}/coverage/{phenotype}.depth.bed'
     threads: threads_max
     shell:
         'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
@@ -21,9 +21,9 @@ rule goleft_plots:
     input:
         bam = lambda wc: batch_by_name[wc.batch].tumor.bam
     params:
-        directory = 'umccrised/{batch}/coverage/indexcov'
+        directory = '{batch}/coverage/indexcov'
     output:
-        'umccrised/{batch}/coverage/indexcov/index.html'
+        '{batch}/coverage/indexcov/index.html'
     shell:
         'goleft indexcov --directory {params.directory} {input.bam} --sex X'
 
@@ -32,7 +32,3 @@ rule coverage:
     input:
         expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
         expand(rules.goleft_plots.output[0], batch=batch_by_name.keys())
-    output:
-        'umccrised/coverage.done'
-    shell:
-        'touch {output}'

@@ -6,7 +6,7 @@ rule igv_bed:
         small_variant_vcf = rules.pon_pass.output[0],
         structural_bed = rules.ribbon.output[0]
     output:
-        'umccrised/{batch}/igv/roi.bed'
+        '{batch}/igv/roi.bed'
     shell:
         '{{ '
         'gunzip -c {input.az300} | cut -f1-3'
@@ -25,7 +25,7 @@ rule igv_bam:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = rules.igv_bed.output
     output:
-        'umccrised/{batch}/igv/{phenotype}_mini.bam'
+        '{batch}/igv/{phenotype}_mini.bam'
     threads: threads_max
     shell:
 #        'sambamba view -f bam -L {input.bed} {input.bam} -t {threads} > {output}'
@@ -36,7 +36,3 @@ rule igv_bam:
 rule igv:
     input:
         expand(rules.igv_bam.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())
-    output:
-        'umccrised/igv.done'
-    shell:
-        'touch {output}'

@@ -33,55 +33,44 @@ if name:
         critical(f'Error: could not find a batch or a sample with the name {name}')
 
 
-rule all:  # {}
-    input:
-        'umccrised/done'
+# Generating unique ID for PCGR tarballs
+import uuid
+unique_id = str(uuid.uuid4().hex[:6])
 
 
-## Somatic
-rule panel_of_normals:  # {batch}
-    input:
-        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-ensemble-annotated.vcf.gz'),
-        toml = join(loc.panel_of_normals_dir, 'annotate_normals_vcfanno.toml'),
-        lua = join(loc.panel_of_normals_dir, 'code.lua')
-    params:
-        ht = 1,
-        normals_dir = loc.panel_of_normals_dir
-    output:
-        'umccrised/{batch}/somatic/ensemble-pon.vcf.gz'
-    shell:
-        'vcfanno -lua {input.lua}'
-        ' <(sed s#file=\\\"#file=\\\"{params.normals_dir}/# {input.toml})'
-        ' {input.vcf} |'
-        ' bcftools filter -e "INFO/PoN_CNT>={params.ht}" --soft-filter PoN --mode + -Oz -o {output}'
-        ' && tabix -p vcf {output}'
+def upload_all(wc):
+    batch_outputs = [
+        '{batch}/coverage/indexcov/index.html',
+        '{batch}/coverage/tumor.depth.bed',
+        '{batch}/coverage/normal.depth.bed',
+        '{batch}/structural/cnvkit-diagram.pdf',
+        '{batch}/structural/sv-prioritize-manta-pass.vcf',
+        '{batch}/structural/sv-prioritize-manta-pass.bedpe',
+        '{batch}/structural/sv-prioritize-manta-pass.ribbon.bed',
+        '{batch}/igv/tumor_mini.bam',
+        '{batch}/igv/normal_mini.bam',
+        '{batch}/rmd_report.html',
+        '{batch}/pcgr/{batch}-' + unique_id + '-somatic.tar.gz',
+        '{batch}/pcgr/{batch}-' + unique_id + '-germline.tar.gz',
+    ]
+    all = expand(batch_outputs, batch=batch_by_name.keys()) + [
+        'log/data_versions.csv',
+        'log/programs.txt',
+        'log/config',
+        'multiqc_report.html'
+    ]
+    if config.get('upload_pcgr', False):
+        all.extend(expand([
+            '{batch}/pcgr/upload-somatic.done',
+            '{batch}/pcgr/upload-germline.done',
+        ], batch=batch_by_name.keys()))
+    return all
 
-rule pon_pass:  # {batch}
-    input:
-        rules.panel_of_normals.output[0]
-    output:
-        'umccrised/{batch}/somatic/ensemble-pon-pass.vcf.gz'
-    shell:
-        'bcftools view -f.,PASS -Oz {input} -o {output}'
-
-
-## Germline
-# Annotate any events found in Sean's 105/106 cancer predisposition gene set.
-from umccrise.patient_analysis import get_cancer_genes_ensg
-rule prep_germline:  # {batch}
-    input:
-        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}-ensemble-annotated.vcf.gz'),
-        ensg = get_cancer_genes_ensg()
-    output:
-        'umccrised/{batch}/germline/germline-ensemble-cancer.vcf.gz'
-    params:
-        ungz = lambda wc, output: get_ungz_gz(output[0])[0]
-    shell:
-        'zgrep ^# {input.vcf} > {params.ungz} && '
-        'zgrep -f {input.ensg} {input.vcf} >> {params.ungz} && '
-        'bgzip {params.ungz} && tabix {output}'
+rule all:
+    input: upload_all
 
 
+include: "Snakefile.small_variants"
 include: "Snakefile.coverage"
 include: "Snakefile.pcgr"
 include: "Snakefile.structural"
@@ -93,7 +82,7 @@ rule copy_multiqc:  # {}
     input:
         join(run.date_dir, 'multiqc/multiqc_report.html')
     output:
-        'umccrised/qc/multiqc_report.html'
+        'multiqc_report.html'
     shell:
         'cp {input} {output}'
 
@@ -106,29 +95,13 @@ rule copy_logs:  # {}
         join(run.date_dir, 'programs.txt'), 
         run.config_dir
     output:
-        'umccrised/log/data_versions.csv', 
-        'umccrised/log/programs.txt', 
-        'umccrised/log/config'
+        'log/data_versions.csv', 
+        'log/programs.txt', 
+        'log/config'
     params:
-        log_dir = 'umccrised/log'
+        log_dir = 'log'
     shell:
         'cp -r {input} {params.log_dir}'
 
-
-rule umccrised:  # {}
-    input:
-        lambda _: [ \
-            rules.copy_multiqc.output[0], \
-            rules.coverage.output[0], \
-            rules.structural.output[0], \
-            rules.igv.output[0], \
-            rules.copy_logs.output[0], \
-            rules.sig.output[0], \
-            rules.pcgr_prep.output[0] \
-        ] + ([rules.pcgr_upload.output[0]] if config.get('upload_pcgr', False) else [])
-    output:
-        'umccrised/done'
-    shell:
-        'touch {output}'
 
 

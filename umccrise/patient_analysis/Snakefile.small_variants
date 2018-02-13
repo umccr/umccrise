@@ -1,0 +1,48 @@
+
+#### Somatic
+rule panel_of_normals:  # {batch}
+    input:
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-ensemble-annotated.vcf.gz'),
+        toml = join(loc.panel_of_normals_dir, 'annotate_normals_vcfanno.toml'),
+        lua = join(loc.panel_of_normals_dir, 'code.lua')
+    params:
+        ht = 1,
+        normals_dir = loc.panel_of_normals_dir
+    output:
+        vcf = '{batch}/small_variants/somatic-ensemble-pon_softfiltered.vcf.gz',
+        tbi = '{batch}/small_variants/somatic-ensemble-pon_softfiltered.vcf.gz.tbi'
+    shell:
+        'vcfanno -lua {input.lua}'
+        ' <(sed s#file=\\\"#file=\\\"{params.normals_dir}/# {input.toml})'
+        ' {input.vcf} |'
+        ' bcftools filter -e "INFO/PoN_CNT>={params.ht}" --soft-filter PoN --mode + -Oz -o {output.vcf}'
+        ' && tabix -p vcf {output.vcf}'
+
+rule pon_pass:  # {batch}
+    input:
+        rules.panel_of_normals.output.vcf
+    output:
+        vcf = '{batch}/small_variants/somatic-ensemble-pon_hardfiltered.vcf.gz',
+        tbi = '{batch}/small_variants/somatic-ensemble-pon_hardfiltered.vcf.gz.tbi'
+    shell:
+        'bcftools view -f.,PASS -Oz {input} -o {output.vcf}'
+        ' && tabix -p vcf {output.vcf}'
+
+
+#### Germline
+# Annotate any events found in Sean's 105/106 cancer predisposition gene set.
+from umccrise.patient_analysis import get_cancer_genes_ensg
+rule prep_germline:  # {batch}
+    input:
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}-ensemble-annotated.vcf.gz'),
+        ensg = get_cancer_genes_ensg()
+    output:
+        vcf = '{batch}/small_variants/germline-ensemble-cancer_genes.vcf.gz',
+        tbi = '{batch}/small_variants/germline-ensemble-cancer_genes.vcf.gz.tbi'
+    params:
+        ungz = lambda wc, output: get_ungz_gz(output[0])[0]
+    shell:
+        'zgrep ^# {input.vcf} > {params.ungz}'
+        ' && zgrep -f {input.ensg} {input.vcf} >> {params.ungz}'
+        ' && bgzip {params.ungz}'
+        ' && tabix -p vcf {output.vcf}'
