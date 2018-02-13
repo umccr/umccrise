@@ -13,7 +13,7 @@ from ngs_utils.call_process import run
 @click.option('-j', 'jobs', default=1)
 @click.option('-s', '--sample', 'sample')
 @click.option('-s', '--batch', 'batch')
-@click.option('--upload-pcgr/--no-upload-pcgr', 'upload_pcgr', default=False)
+@click.option('-u', '--upload-pcgr/--no-upload-pcgr', 'upload_pcgr', default=False)
 def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, upload_pcgr=False):
     bcbio_project = os.path.abspath(bcbio_project)
     conf = f'run_dir={bcbio_project}'

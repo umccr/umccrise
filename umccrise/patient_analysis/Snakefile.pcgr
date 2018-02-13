@@ -95,13 +95,18 @@ rule germline_tar_gz:
 
 ##### Uploading tarballs
 
+upload_proxy = ''
+if loc.name == 'spartan':
+    upload_proxy = 'export ftp_proxy=http://wwwproxy.unimelb.edu.au:8000; '
+
+
 rule upload_somatic_to_pcgr:
     input:
         rules.somatic_tar_gz.output[0]
     output:
         'umccrised/.snakemake/pcgr_{batch}_somatic.done'
     shell:
-        'aws s3 cp {input} s3://pcgr && touch {output}'
+        upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
 rule upload_germline_to_pcgr:
     input:
@@ -109,7 +114,7 @@ rule upload_germline_to_pcgr:
     output:
         'umccrised/.snakemake/pcgr_{batch}_germline.done'
     shell:
-        'aws s3 cp {input} s3://pcgr && touch {output}'
+        upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
 
 #########################
