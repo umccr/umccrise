@@ -6,6 +6,9 @@ Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarba
 from os.path import relpath, basename
 from umccrise import panel_of_normals
 
+import uuid
+unique_id = str(uuid.uuid4().hex[:6])
+
 
 ###### Preparing inputs for pcgr.py
 
@@ -56,9 +59,6 @@ rule prep_tomls:
 
 
 ##### Making tarballs
-
-import uuid
-unique_id = str(uuid.uuid4().hex[:6])
 
 rule somatic_tar_gz:
     input:
