@@ -26,9 +26,9 @@ before_install:
   - ln -s $HOME/seq umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
 
 
-#####################################################
-### If you want to install miniconda from scratch: ##
-#####################################################
+####################################################
+## If you want to install miniconda from scratch: ##
+####################################################
 #install:
 #  # Get and install anaconda (https://conda.io/docs/travis.html)
 #  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -50,9 +50,9 @@ before_install:
 #  - $HOME/seq
 
 
-###################################################
-# If you want to install miniconda from scratch: ##
-###################################################
+####################################################
+## If you want to install miniconda from scratch: ##
+####################################################
 install:
   # Get and install anaconda (https://conda.io/docs/travis.html) and umccrise packages
   - if [ -d $HOME/miniconda ]; then echo "ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;
@@ -80,7 +80,6 @@ install:
 
 cache:
   directories:
-  - $HOME/seq
   - $HOME/miniconda
   timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
