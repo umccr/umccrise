@@ -7,6 +7,7 @@ import os
 import glob
 import re
 from umccrise.utils import get_loc
+from umccrise.panel_of_normals import get_toml_path
 
 # configfile: 'config.yaml'
 normals_dir = config.get('normals_dir', get_loc().panel_of_normals_dir)
@@ -21,9 +22,9 @@ rule all:
 
 rule prep_toml:
     input:
-        toml = os.path.join(normals_dir, 'annotate_normals_vcfanno.toml')
+        toml = get_toml_path()
     output:
-        'work/annotate/annotate_normals_vcfanno.toml'
+        'work/annotate/vcfanno.toml'
     params:
         normals_dir = normals_dir
     shell:
@@ -68,12 +69,11 @@ rule prep_vcf:
 rule annotate:
     input:
         vcf = rules.prep_vcf.output,
-        toml = prep_toml.output[0],
-        lua = os.path.join(normals_dir, 'code.lua')
+        toml = prep_toml.output[0]
     output:
         'work/annotate/{sample}-ann.vcf.gz'
     shell:
-        'vcfanno -lua {input.lua} {input.toml} {input.vcf} | bgzip -c > {output}'
+        'vcfanno {input.toml} {input.vcf} | bgzip -c > {output}'
 
 rule filter:
     input:

@@ -5,28 +5,32 @@ import glob
 import re
 from umccrise.utils import get_loc
 
+
+threads_max = 32  # Use up to 32 cores at once, if available
+
+
 if get_loc().name == 'spartan':
     normal_by_name = dict(l.strip().split() for l in '''
-MH17B001P004              /data/cephfs/punim0010/data/Results/Avner/MH17T001P004/archive/2017-07-27_final/2017-06-15_MH17T001P004/MH17B001P004-germline-ensemble-annotated.vcf.gz
-MH17B001P013              /data/cephfs/punim0010/data/Results/Avner/archive/MH17T001P013/final/2017-06-15_MH17T001P013/MH17B001P013-germline-ensemble-annotated.vcf.gz
-VPH52_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH52_Blood-germline-ensemble-annotated.vcf.gz      
-VPH54_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH54_Blood-germline-ensemble-annotated.vcf.gz      
-VPH56_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH56_Blood-germline-ensemble-annotated.vcf.gz      
-VPH58_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH58_Blood-germline-ensemble-annotated.vcf.gz      
-VPH59_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH59_Blood-germline-ensemble-annotated.vcf.gz      
-VPH61_Blood               /data/cephfs/punim0010/data/Results/Tothill-Research/VPH/2017-08-16_tothill_pilot/germline/VPH61_Blood-germline-ensemble-annotated.vcf.gz      
-NA12878-1VD               /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-GiaB-merged/final/2017-11-13_giab-merged/UtahMormon-1-ensemble-annotated.vcf.gz
-NA24631-1KC               /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-GiaB-merged/final/2017-11-13_giab-merged/HanChinese-4-ensemble-annotated.vcf.gz
-NA24385-1LL               /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-GiaB-merged/final/2017-11-13_giab-merged/AshkenazimJew-1-ensemble-annotated.vcf.gz
-MDx150891                 /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-ALLOCATE-MDx150892-merged/final/2017-07-07_WGS-ALLOCATE-MDx150892-merged/MDx150891-germline-ensemble-annotated.vcf.gz
-COLO829Bld-CCR170091a     /data/cephfs/punim0010/projects/Hofmann_Catchup/catchup_colo829/2017-11-17_Final/2017-11-09_catchup_colo829/COLO829_normal-ensemble-annotated.vcf.gz
-BriGibBld-PRJ170155_S3    /data/cephfs/punim0010/data/Results/Patients/BriGib/final/2017-10-20_brigibFFPE/BriGibBld-ensemble-annotated.vcf.gz
-17MHP031Bld-CCR170089_S1  /data/cephfs/punim0010/data/Results/Avner/MH17B001P031/final/2017-09-19_17MHP031/17MHP031Bld-germline-ensemble-annotated.vcf.gz
-MH17B001P010              /data/cephfs/punim0010/data/Results/Avner/MH17B001P010/final/2017-10-19_MH17B001P010/MH17B001P010-ensemble-annotated.vcf.gz
-17MHP002Bld-CCR170002     /data/cephfs/punim0010/data/Results/Avner/MH17B001P002/final/2017-10-23_MH17B001P002/17MHP002Bld-ensemble-annotated.vcf.gz
-WES013BL                  /data/cephfs/punim0010/projects/Hsu_WGS_Validation/WGS-WES013PF-merged/final/2017-07-17_WGS-WES013PF-merged/WES013PFBL-germline-ensemble-annotated.vcf.gz
-WES012MVBL                /data/projects/punim0010/projects/Hsu_WGS_Validation/WGS-WES012MV-merged/final/2017-07-05_WGS-WES012MV-merged/WES012MVBL-germline-ensemble-annotated.vcf.gz
-WES003KMBL                /data/projects/punim0010/projects/Hsu_WGS_Validation/WGS-WES003KM-merged/final/2017-06-19_AGRF15-00335_H23HJDMXX_WES003KM-merged/WES003KMBL-germline-ensemble-annotated.vcf.gz
+17MHP002Bld /data/cephfs/punim0010/extras/panel_of_normals/vcfs/17MHP002Bld-CCR170002.vcf.gz
+17MHP031Bld /data/cephfs/punim0010/extras/panel_of_normals/vcfs/17MHP031Bld-CCR170089_S1.vcf.gz
+BriGibBld   /data/cephfs/punim0010/extras/panel_of_normals/vcfs/BriGibBld-PRJ170155_S3.vcf.gz
+COLO829Bld  /data/cephfs/punim0010/extras/panel_of_normals/vcfs/COLO829Bld-CCR170091a.vcf.gz
+MDx150891   /data/cephfs/punim0010/extras/panel_of_normals/vcfs/MDx150891.vcf.gz
+MH17B001P004    /data/cephfs/punim0010/extras/panel_of_normals/vcfs/MH17B001P004.vcf.gz
+MH17B001P010    /data/cephfs/punim0010/extras/panel_of_normals/vcfs/MH17B001P010.vcf.gz
+MH17B001P013    /data/cephfs/punim0010/extras/panel_of_normals/vcfs/MH17B001P013.vcf.gz
+NA12878 /data/cephfs/punim0010/extras/panel_of_normals/vcfs/NA12878-1VD.vcf.gz
+NA24385 /data/cephfs/punim0010/extras/panel_of_normals/vcfs/NA24385-1LL.vcf.gz
+NA24631 /data/cephfs/punim0010/extras/panel_of_normals/vcfs/NA24631-1KC.vcf.gz
+VPH52_Blood /data/cephfs/punim0010/extras/panel_of_normals/vcfs/VPH52_Blood.vcf.gz
+VPH54_Blood /data/cephfs/punim0010/extras/panel_of_normals/vcfs/VPH54_Blood.vcf.gz
+VPH56_Blood /data/cephfs/punim0010/extras/panel_of_normals/vcfs/VPH56_Blood.vcf.gz
+VPH58_Blood /data/cephfs/punim0010/extras/panel_of_normals/vcfs/VPH58_Blood.vcf.gz
+VPH59_Blood /data/cephfs/punim0010/extras/panel_of_normals/vcfs/VPH59_Blood.vcf.gz
+VPH61_Blood /data/cephfs/punim0010/extras/panel_of_normals/vcfs/VPH61_Blood.vcf.gz
+WES003KMBL  /data/cephfs/punim0010/extras/panel_of_normals/vcfs/WES003KMBL.vcf.gz
+WES012MVBL  /data/cephfs/punim0010/extras/panel_of_normals/vcfs/WES012MVBL.vcf.gz
+WES013BL    /data/cephfs/punim0010/extras/panel_of_normals/vcfs/WES013BL.vcf.gz
 '''.split('\n') if l.strip())
 
 if get_loc().name == 'vlad':
@@ -42,76 +46,60 @@ def str_to_lua_variable_name(name):
     name = re.sub('^[^a-zA-Z_]+', '_', name)  # Remove leading characters until we find a letter or underscore
     return name
 
-VCFANNO_ANNO = '''
-[[annotation]]
-file="{fname}"
-fields=[""]
-ops=["self"]
-names=["{name}"]
-'''
-
-VCFANNO_POSTANNO = '''
-[[postannotation]]
-name="PoN_CNT"
-fields=[{fields}]
-op="lua:count_true({vars})"
-type="Integer"
-
-[[postannotation]]
-fields=[{fields}]
-op="delete"
-'''
-
-VCFANNO_LUA = '''
-function count_true(...)
-  local t = {...}
-  local count = 0
-  for i, v in pairs(t) do
-    if v == true then
-      count = count + 1
-    end
-  end
-  return count
-end
-'''
 
 rule all:
     input:
-        lua = 'code.lua',
-        toml = 'annotate_normals_vcfanno.toml'
+        'panel_of_normals.vcf.gz'
 
-rule copy_normal_vcfs:
+
+rule clean_vcf:
     input:
         lambda wc: normal_by_name[wc.sample],
         lambda wc: normal_by_name[wc.sample] + '.tbi'
     output:
-        'vcfs/{sample}.vcf.gz',
-        'vcfs/{sample}.vcf.gz.tbi'
+        vcf = 'work/{sample}.clean.vcf.gz',
+        tbi = 'work/{sample}.clean.vcf.gz.tbi'
     shell:
-        'cp {input[0]} {output[0]} ; cp {input[1]} {output[1]}'
+        'bcftools annotate -x INFO,FORMAT {input} -Oz -o {output} && tabix {output}'
 
-rule prep_vcfanno:
+
+rule combine_vcfs:
     input:
-        expand(rules.copy_normal_vcfs.output[0], sample=normal_by_name.keys())
+        expand(rules.clean_vcf.output.vcf, sample=normal_by_name.keys())
     output:
-        toml = 'annotate_normals_vcfanno.toml'
-    run:
-        fpaths = input
-        with open(output[0], 'w') as out:
-            for fp in fpaths:
-                out.write(VCFANNO_ANNO.format(
-                    fname=fp,
-                    name=str_to_lua_variable_name(fp)))
+        vcf = 'work/clean_merged.vcf.gz',
+        tbi = 'work/clean_merged.vcf.gz.tbi'
+    threads: threads_max
+    shell:
+        'bcftools merge {input} --threads {threads} -Oz -o {output.vcf} && tabix {output.vcf}'
+        # 'bcftools concat {input} -d all --allow-overlaps --threads {threads} -Oz -o {output}'
 
-            out.write(VCFANNO_POSTANNO.format(
-                fields=', '.join('"' + str_to_lua_variable_name(fp) + '"' for fp in fpaths), 
-                vars=', '.join(str_to_lua_variable_name(fp) for fp in fpaths)))
 
-rule prep_lua:
+rule count_hits:
+    input:
+        rules.combine_vcfs.output[0]
     output:
-        lua = 'code.lua'
+        'panel_of_normals.vcf'
     run:
-        with open(output[0], 'w') as out:
-            out.write(VCFANNO_LUA)
+        from cyvcf2 import VCF, Writer
+        import sys
 
+        vcf = VCF(input[0])
+        vcf.add_info_to_header({'ID': 'PoN', 'Description': 'Panel of normal hits', 'Type': 'Integer', 'Number': '1'})
+
+        w = Writer(output[0], vcf)
+
+        for v in vcf:
+            v.INFO['PoN'] = len(list(filter(None, v.format('GT'))))
+            w.write_record(v)
+
+
+rule bgzip_and_tabix_final_vcf:
+    input:
+        rules.count_hits.output[0]
+    output:
+        vcf ='panel_of_normals.vcf.gz',
+        tbi = 'panel_of_normals.vcf.gz.tbi'
+    shell:
+        'bgzip {input} && tabix {output.vcf}'
 
