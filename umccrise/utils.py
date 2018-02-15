@@ -29,8 +29,9 @@ def get_loc():
          'truth_sets ')
 
     hostname = socket.gethostname()
-    for loc in [
-        Loc(name='spartan',
+    loc_by_name = {
+        'spartan': Loc(
+            name='spartan',
             host_pattern=r'spartan.*\.hpc\.unimelb\.edu\.au',
             hsapiens='/data/projects/punim0010/local/share/bcbio/genomes/Hsapiens',
             extras='/data/cephfs/punim0010/extras',
@@ -55,7 +56,8 @@ def get_loc():
                 }
             },
         ),
-        Loc(name='raijin',
+        'raijin': Loc(
+            name='raijin',
             host_pattern=r'^raijin|(r\d\d\d\d$)',
             hsapiens='/g/data/gx8/local/development/bcbio/genomes/Hsapiens',
             extras='/g/data3/gx8/extras',
@@ -69,7 +71,8 @@ def get_loc():
                 }
             }
         ),
-        Loc(name='vlad',
+        'vlad': Loc(
+            name='vlad',
             host_pattern=r'^5180L-135800-M.local$',
             hsapiens='/Users/vsaveliev/genomes/Hsapiens',
             extras='/Users/vsaveliev/Analysis/umccrise',
@@ -83,7 +86,8 @@ def get_loc():
                 }
             }
         ),
-        Loc(name='travis',
+        'travis': Loc(
+            name='travis',
             host_pattern=r'^travis-',
             hsapiens='../../data/genomes/Hsapiens',
             # For tests, using the following in Hsapiens:
@@ -100,9 +104,13 @@ def get_loc():
                 }
             }
         ),
-    ]:
-        if re.match(loc.host_pattern, hostname):
-            return loc
+    }
+    if 'TRAVIS' in os.environ.keys():
+        return loc_by_name['travis']
+    else:
+        for loc in loc_by_name.values():
+            if re.match(loc.host_pattern, hostname):
+                return loc
 
     raise Exception('Could not find loc for hostname ' + hostname)
 
