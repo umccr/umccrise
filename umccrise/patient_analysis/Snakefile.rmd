@@ -23,7 +23,7 @@ from umccrise.patient_analysis import get_sig_rmd_file, get_signatures_probabili
 # Subset to GiaB confident intervals
 rule subset_to_giab:
     input:
-        vcf = rules.pcgr_somatic_vcf.output[0]
+        vcf = rules.pcgr_somatic_vcf.output.vcf
     params:
         regions = join(loc.hsapiens, loc.truth_sets['giab'][run.genome_build]['bed'])
     output:
@@ -62,7 +62,7 @@ rule afs_az300:
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.az300} -header'
-        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\n" > {output}'
+        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\\n" > {output}'
 
 ## Mutational signatures VCF
 #
@@ -72,7 +72,7 @@ rule afs_az300:
 # Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the ensemble calls:
 rule cgi:
     input:
-        rules.pon_pass.output[0]
+        rules.pcgr_somatic_vcf.output.vcf
     output:
         'work/{batch}/rmd/ensemble-hg19.vcf'
     shell:
