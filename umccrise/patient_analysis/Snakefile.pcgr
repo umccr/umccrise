@@ -102,7 +102,7 @@ rule upload_somatic_to_pcgr:
         rules.somatic_tar_gz.output[0]
     output:
         '{batch}/pcgr/upload-somatic.done'
-    run:
+    shell:
         upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
 rule upload_germline_to_pcgr:
@@ -123,5 +123,10 @@ rule pcgr_prep:
 
 rule pcgr_upload:
     input:
-       expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
-       expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys())
+       expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
+       expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
+
+rule pcgr:
+    input:
+       expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
+       expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
