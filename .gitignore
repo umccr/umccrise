@@ -10,3 +10,7 @@ work
 playground
 .vscode/
 umccrise_test_data
+.RData
+.Rhistory
+load_umccrise.sh
+miniconda/
