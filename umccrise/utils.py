@@ -53,6 +53,11 @@ def get_loc():
                         'vcf': 'GRCh37/validation/giab-NA12878/truth_small_variants.vcf.gz',
                         'bed': 'GRCh37/validation/giab-NA12878/truth_regions.bed',
                     }
+                },
+                'colo': {
+                    'GRCh37': {
+                        'vcf': '/data/cephfs/punim0010/data/External/Reference/COLO829_Craig/truth_set/EGAZ00001226241_ListforNatureReports.IndelsandSNVs.final.Suppl1.snpEff.validated.SORTED.vcf'
+                    }
                 }
             },
         ),
