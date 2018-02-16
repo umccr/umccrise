@@ -13,25 +13,23 @@ from umccrise import panel_of_normals
 # It also ignores any variant not marked `PASS` so might as well remove others to save on transfer times.
 rule pcgr_somatic_vcf:
     input:
-        vcf = rules.pon_pass.output.vcf
+        vcf = rules.somatic_vcf_pon_pass.output.vcf,
+        tbi = rules.somatic_vcf_pon_pass.output.tbi
     output:
         vcf = '{batch}/pcgr/{batch}-' + unique_id + '-somatic.vcf.gz',
         tbi = '{batch}/pcgr/{batch}-' + unique_id + '-somatic.vcf.gz.tbi'
     shell:
-        'pcgr_prep {input.vcf} |'
-        ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
-        ' && tabix -p vcf {output.vcf}'
+        'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
-rule pcgr_germline:
+rule pcgr_germline_vcf:
     input:
-        vcf = rules.prep_germline.output.vcf
+        vcf = rules.germline_vcf_prep.output.vcf,
+        tbi = rules.germline_vcf_prep.output.tbi
     output:
         vcf = '{batch}/pcgr/{batch}-' + unique_id + '-germline.vcf.gz',
         tbi = '{batch}/pcgr/{batch}-' + unique_id + '-germline.vcf.gz.tbi'
     shell:
-        'pcgr_prep {input.vcf} |'
-        ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
-        ' && tabix -p vcf {output.vcf}'
+        'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
 # PCGR also wants a slightly different format for the CNS data:
 rule pcgr_cns:
@@ -76,8 +74,8 @@ rule somatic_tar_gz:
 
 rule germline_tar_gz:
     input:
-        vcf = rules.pcgr_germline.output.vcf,
-        tbi = rules.pcgr_germline.output.tbi,
+        vcf = rules.pcgr_germline_vcf.output.vcf,
+        tbi = rules.pcgr_germline_vcf.output.tbi,
         toml = rules.prep_tomls.output.germline
     output:
         '{batch}/pcgr/{batch}-' + unique_id + '-germline.tar.gz'

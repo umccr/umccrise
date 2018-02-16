@@ -3,7 +3,7 @@
 rule igv_bed:
     input:
         az300 = az300,
-        small_variant_vcf = rules.pon_pass.output[0],
+        small_variant_vcf = rules.somatic_vcf_pon_pass.output[0],
         structural_bed = rules.ribbon.output[0]
     output:
         '{batch}/igv/roi.bed'
