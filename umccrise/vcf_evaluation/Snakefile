@@ -7,7 +7,8 @@
 import os
 import gzip
 import csv
-import pandas
+import pandas as pd
+from prettytable import PrettyTable
 from ngs_utils.vcf_utils import get_tumor_sample_name
 from umccrise.utils import get_loc
 from umccrise.vcf_normalisation.vcf_normalisation import make_normalise_cmd
@@ -218,21 +219,25 @@ rule eval:
                 '#SNP TP', 'SNP FP', 'SNP FN', 'SNP Precision', 'SNP Recall', 
                  'IND TP', 'IND FP', 'IND FN', 'IND Precision', 'IND Recall'
             ])
+            # https://en.wikipedia.org/wiki/Precision_and_recall :
+            # precision                  = tp / (tp + fp)
+            # recall = sensitivity = tpr = tp / (tp + fn)
+
             snps_called = tp_snps + fp_snps
             snps_prec = tp_snps / snps_called if snps_called else 0
 
-            snps_ref = tp_snps + fn_snps
-            snps_recall = tp_snps / snps_ref if snps_ref else 0
+            snps_truth = tp_snps + fn_snps
+            snps_recall = tp_snps / snps_truth if snps_truth else 0
 
             inds_called = tp_inds + fp_inds
             inds_prec = tp_inds / inds_called if inds_called else 0
 
-            inds_ref = tp_inds + fn_inds
-            inds_recall = tp_inds / inds_ref if inds_ref else 0
+            inds_truth = tp_inds + fn_inds
+            inds_recall = tp_inds / inds_truth if inds_truth else 0
 
             writer.writerow([
-                tp_snps, fp_snps, fn_snps, snps_prec, snps_recall,
-                tp_inds, fp_inds, fn_inds, inds_prec, inds_recall
+                snps_truth, tp_snps, fp_snps, fn_snps, snps_prec, snps_recall,
+                inds_truth, tp_inds, fp_inds, fn_inds, inds_prec, inds_recall
             ])
 
 # rule sompy:
@@ -259,18 +264,64 @@ rule report:
     params:
         samples = sorted(config['samples'].keys())
     run:
+        idx = pd.MultiIndex.from_arrays([
+            ['Sample', 'File', 'SNP', 'SNP', 'SNP', 'SNP'             , 'SNP'              , 'INDEL', 'INDEL', 'INDEL' , 'INDEL',            'INDEL'            ],
+            ['',       ''    , 'TP' , 'FP' , 'FN' , 'Prec (TP/called)', 'Recall (TP/truth)', 'TP'   , 'FP'   , 'FN'    , 'Prec (TP/called)', 'Recall (TP/truth)']
+            ],
+            names=['1', '2'])
+
+        # df = pd.DataFrame(columns=['File', 'S TP', 'S FP', 'S FN', 'S prec (TP/called)', 'S recall (TP/ref)', 'I TP', 'I FP', 'I FN', 'I prec (TP/called)', 'I recall (TP/ref)'])
+        # data = []
+        # data.append(['Sample', 'File', 'SNP', ''  , ''  , ''         , ''      , 'INDEL', ''  , ''  , ''         , ''])
+        # data.append([''      , ''    , 'TP' , 'FP', 'FN', 'Precision', 'Recall', 'TP'   , 'FP', 'FN', 'Precision', 'Recall', ])
         data = []
-        data.append(['Sample', 'File', 'SNP', ''  , ''  , ''         , ''      , 'INDEL', ''  , ''  , ''         , ''])
-        data.append([''      , ''    , 'TP' , 'FP', 'FN', 'Precision', 'Recall', 'TP'   , 'FP', 'FN', 'Precision', 'Recall', ])
+        s_truth = i_truth = None
         for stats_file, sname in zip(input.stats_files, params.samples):
             with open(stats_file) as f:
-                data.append([sname, stats_file] + f.readlines()[1].strip().split('\t'))
-        truth_snps = int(data[-1][2]) + int(data[-1][4])
-        truth_indels = int(data[-1][7]) + int(data[-1][9])
-        data.append(['Perfect', '', truth_snps, 0, truth_snps, 1.0, 1.0, truth_indels, 0, truth_indels, 1.0, 1.0])
+                s_truth, s_tp, s_fp, s_fn, s_prec, s_rec, i_truth, i_tp, i_fp, i_fn, i_prec, i_rec = f.readlines()[1].strip().split('\t')
+                data.append({
+                    ('Sample', ''): sname,
+                    ('File', ''): stats_file,
+                    ('SNP', 'TP'): int(s_tp),
+                    ('SNP', 'FP'): int(s_fp),
+                    ('SNP', 'FN'): int(s_fn),
+                    ('SNP', 'Prec (TP/called)'): float(s_prec),
+                    ('SNP', 'Recall (TP/truth)'): float(i_rec),
+                    ('INDEL', 'TP'): int(i_tp),
+                    ('INDEL', 'FP'): int(i_fp),
+                    ('INDEL', 'FN'): int(i_fn),
+                    ('INDEL', 'Prec (TP/called)'): float(i_prec),
+                    ('INDEL', 'Recall (TP/truth)'): float(i_rec)
+                })
+        data.append({
+            ('Sample', ''): 'Truth',
+            ('File', ''): get_ref(config['truth_variants']),
+            ('SNP', 'TP'): int(s_truth),
+            ('SNP', 'FP'): 0,
+            ('SNP', 'FN'): int(s_truth),
+            ('SNP', 'Prec (TP/called)'): 1.0,
+            ('SNP', 'Recall (TP/truth)'): 1.0,
+            ('INDEL', 'TP'): int(i_truth),
+            ('INDEL', 'FP'): 0,
+            ('INDEL', 'FN'): int(i_truth),
+            ('INDEL', 'Prec (TP/called)'): 1.0,
+            ('INDEL', 'Recall (TP/truth)'): 1.0
+        })
+        df = pd.DataFrame(data, columns=idx)
 
+        # Writing raw data to the TSV file
         with open(output[0], 'w') as out_f:
-            pandas.DataFrame(data).to_csv(out_f, sep='\t', header=False, index=False)
+            df.to_csv(out_f, sep='\t', index=False)
+
+        # Pretty-printing the table on the screen
+        df = df.drop(('File', ''), 1)
+        with pd.option_context(
+                'display.max_rows', None,
+                'display.max_columns', None,
+                'display.width', None,
+                'display.float_format', lambda v: '{:,.2f}%'.format(100.0*v)
+            ):
+            print(df.to_string(index=False))
 
 
 # rule eval:
