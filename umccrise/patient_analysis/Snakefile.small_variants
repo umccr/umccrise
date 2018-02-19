@@ -88,3 +88,11 @@ rule germline_vcf_prep:
         'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
+
+
+#############
+
+rule small_variants:
+    input:
+        expand(rules.somatic_vcf_pon_pass.output, batch=batch_by_name.keys()),
+        expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys())
