@@ -34,8 +34,13 @@ if name:
 
 
 # Generating unique ID for PCGR tarballs
-import uuid
-unique_id = str(uuid.uuid4().hex[:6])
+if 'unique_id' in config:
+    unique_id = config['unique_id']
+    print(f'Reusing unique ID for PCGR (for downloading): {unique_id}')
+else:
+    import uuid
+    unique_id = str(uuid.uuid4().hex[:6])
+    print(f'Creating new unique ID for PCGR: {unique_id}')
 
 
 def upload_all(wc):
@@ -50,8 +55,8 @@ def upload_all(wc):
         '{batch}/igv/tumor_mini.bam',
         '{batch}/igv/normal_mini.bam',
         '{batch}/rmd_report.html',
-        '{batch}/pcgr/{batch}-' + unique_id + '-somatic.tar.gz',
-        '{batch}/pcgr/{batch}-' + unique_id + '-germline.tar.gz',
+        '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.tar.gz',
+        '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.tar.gz',
     ]
     all = expand(batch_outputs, batch=batch_by_name.keys()) + [
         'log/data_versions.csv',
@@ -59,10 +64,10 @@ def upload_all(wc):
         'log/config',
         'multiqc_report.html'
     ]
-    if config.get('upload_pcgr', False):
+    if loc.name == 'spartan':
         all.extend(expand([
-            '{batch}/pcgr/upload-somatic.done',
-            '{batch}/pcgr/upload-germline.done',
+            '{batch}/pcgr/input/upload-somatic.done',
+            '{batch}/pcgr/input/upload-germline.done',
         ], batch=batch_by_name.keys()))
     return all
 

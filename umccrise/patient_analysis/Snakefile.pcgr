@@ -16,8 +16,8 @@ rule pcgr_somatic_vcf:
         vcf = rules.somatic_vcf_pon_pass.output.vcf,
         tbi = rules.somatic_vcf_pon_pass.output.tbi
     output:
-        vcf = '{batch}/pcgr/{batch}-' + unique_id + '-somatic.vcf.gz',
-        tbi = '{batch}/pcgr/{batch}-' + unique_id + '-somatic.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.vcf.gz',
+        tbi = '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.vcf.gz.tbi'
     shell:
         'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
@@ -26,8 +26,8 @@ rule pcgr_germline_vcf:
         vcf = rules.germline_vcf_prep.output.vcf,
         tbi = rules.germline_vcf_prep.output.tbi
     output:
-        vcf = '{batch}/pcgr/{batch}-' + unique_id + '-germline.vcf.gz',
-        tbi = '{batch}/pcgr/{batch}-' + unique_id + '-germline.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.vcf.gz',
+        tbi = '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.vcf.gz.tbi'
     shell:
         'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
@@ -36,7 +36,7 @@ rule pcgr_cns:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
-        '{batch}/pcgr/{batch}-' + unique_id + '-somatic.tsv'
+        '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.tsv'
     shell:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | grep -v ^chromosome | cut -f 1,2,3,5 >> {output}'
 
@@ -47,8 +47,8 @@ rule prep_tomls:
         somatic = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml'),
         germline = join(pa_source_dir, 'pcgr', 'pcgr_configuration_germline.toml')
     output:
-        somatic = '{batch}/pcgr/{batch}-' + unique_id + '-somatic.toml',
-        germline = '{batch}/pcgr/{batch}-' + unique_id + '-germline.toml'
+        somatic = '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.toml',
+        germline = '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.toml'
     shell:
         'cp {input.somatic} {output.somatic} && cp {input.germline} {output.germline}'
 
@@ -62,9 +62,9 @@ rule somatic_tar_gz:
         cns = rules.pcgr_cns.output[0],
         toml = rules.prep_tomls.output.somatic
     output:
-        '{batch}/pcgr/{batch}-' + unique_id + '-somatic.tar.gz'
+        '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.tar.gz'
     params:
-        basedir = '{batch}/pcgr',
+        basedir = '{batch}/pcgr/input/',
         vcf = lambda wc, input: basename(input.vcf),
         tbi = lambda wc, input: basename(input.tbi),
         cns = lambda wc, input: basename(input.cns),
@@ -78,9 +78,9 @@ rule germline_tar_gz:
         tbi = rules.pcgr_germline_vcf.output.tbi,
         toml = rules.prep_tomls.output.germline
     output:
-        '{batch}/pcgr/{batch}-' + unique_id + '-germline.tar.gz'
+        '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.tar.gz'
     params:
-        basedir = '{batch}/pcgr',
+        basedir = '{batch}/pcgr/input/',
         vcf = lambda wc, input: basename(input.vcf),
         tbi = lambda wc, input: basename(input.tbi),
         toml = lambda wc, input: basename(input.toml)
@@ -99,7 +99,7 @@ rule upload_somatic_to_pcgr:
     input:
         rules.somatic_tar_gz.output[0]
     output:
-        '{batch}/pcgr/upload-somatic.done'
+        '{batch}/pcgr/input/upload-somatic.done'
     shell:
         upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
@@ -107,9 +107,23 @@ rule upload_germline_to_pcgr:
     input:
         rules.germline_tar_gz.output[0]
     output:
-        '{batch}/pcgr/upload-germline.done'
+        '{batch}/pcgr/input/upload-germline.done'
     shell:
         upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
+
+
+rule download_pcgr:
+    output:
+        html = '{batch}/pcgr/{batch}-' + unique_id + '-{phenotype}.pcgr.html'
+    params:
+        targz_folder = '{batch}/work/pcgr/',
+        targz_fname = '{batch}-' + unique_id + '-{phenotype}-output.tar.gz',
+        untar_output_dirname = 'output_{batch}-' + unique_id + '-{phenotype}',
+        final_output_folder = '{batch}/pcgr/'
+    shell:
+        upload_proxy + 'aws s3 cp s3://pcgr/{params.targz_fname} {params.targz_folder}'
+        ' && tar -xzf {params.targz_folder}/{params.targz_fname} -C {params.targz_folder} '
+        ' && mv {params.targz_folder}{params.untar_output_dirname}/* {params.final_output_folder}'
 
 
 #############
@@ -128,3 +142,13 @@ rule pcgr:
     input:
        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
+
+
+rule pcgr_download:
+    input:
+        expand(rules.download_pcgr.output, phenotype=['somatic', 'germline'], batch=batch_by_name.keys())
+
+
+
+
+
