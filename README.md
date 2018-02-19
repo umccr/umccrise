@@ -60,20 +60,28 @@ source /data/cephfs/punim0010/extras/umccrise/load_umccrise.sh
 
 ## Patient analysis
 ```
-cd /path/to/bcbio/project/final
-umccrize . -j 30  # run using 30 CPUs
+umccrise /path/to/bcbio/project/final -j 30  # run using 30 CPUs
 ```
-The output will be created in `umccrised` folder.
+
+The output will be created in `umccrised` folder. To override, use `-o`:
+```
+umccrise /path/to/bcbio/project/final -o umccrised_results
+```
 
 To just run a particular part of the workflow, use:
 ```
-umccrize . <part_name>
+umccrise /path/to/bcbio/project/final <part_name>
 ```
-Where `<part_name>` is one of `pcgr`, `coverage`, `structural`, `igv`, `sig`, `symlink_multiqc`, `copy_logs`.
+Where `<part_name>` is one of `pcgr`, `pcgr_download`, `coverage`, `structural`, `small_variants`, `igv`, `sig`, `copy_multiqc`, `copy_logs`.
 
 E.g.:
 ```
-umccrize . structural
+umccrise /path/to/bcbio/project/final pcgr
+```
+
+Umccrise submits a request to PCGR AWS instance. To download the results back, use the `pcgr_download` target, and specify the unique ID from the original umccrise run when the PCGR request was submitted:
+```
+umccrise /path/to/bcbio/project/final pcgr_download --uid f725ab
 ```
 
 
