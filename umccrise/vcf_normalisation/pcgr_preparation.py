@@ -6,6 +6,7 @@ import click
 from os.path import isfile, join
 from cyvcf2 import VCF, Writer
 import re
+import numpy as np
 from umccrise.utils import get_sample_ids
 
 
@@ -71,49 +72,53 @@ def main(input_file, output_file=None):
 
 ''' 
 VarDict
-FORMAT/DP,    FORMAT/AF,                           FORMAT/MQ (somatic), INFO/MQ (germline)
-             
-Mutect2             
-FORMAT/DP,    FORMAT/AF,                           FORMAT/MMQ
-             
-Freebayes                                       
-FORMAT/DP     FORMAT/AD = ref_count,alt_count      INFO/MQM+INFO/MQMR
-             
-GATK-Haplotype                                  
-FORMAT/DP     FORMAT/AD = ref_count,alt_count      FORMAT/MMQ
-    
-Strelka - germline                 
-SNV:
-FORMAT/DP     FORMAT/AD = ref_count,alt_count      INFO/MQ
-INDEL:
-FORMAT/DPI    FORMAT/AD = ref_count,alt_count      INFO/MQ
+FORMAT/DP,       FORMAT/AF,                                FORMAT/MQ (somatic), INFO/MQ (germline)
+                     
+Mutect2                     
+FORMAT/DP,       FORMAT/AF,                                FORMAT/MMQ
+                     
+Freebayes                                               
+FORMAT/DP        FORMAT/AD = ref_count,alt_count           INFO/MQM+INFO/MQMR
+                     
+GATK-Haplotype                                          
+FORMAT/DP        FORMAT/AD = ref_count,alt_count           FORMAT/MMQ
+         
+Strelka2 - germline                      
+SNV:     
+sum(alt_counts)  FORMAT/AD = ref_count,alt_counts          INFO/MQ
+INDEL:     
+sum(alt_counts)  FORMAT/AD = ref_count,alt_counts          INFO/MQ
 
-Strelka - somatic                 
+Strelka2 - somatic                 
 SNV:
-FORMAT/DP     FORMAT/{ALT}U[0] = alt_count         INFO/MQ
+FORMAT/DP        FORMAT/{ALT}U[0] = alt_count(tier1,tier2) INFO/MQ
 INDEL:
-FORMAT/DP     FORMAT/TIR = alt_count               INFO/MQ
+FORMAT/DP        FORMAT/TIR = alt_count(tier1,tier2)       INFO/MQ
 '''
 
 
 def _collect_vals_per_sample(rec, control_index, tumor_index):
-    try:
-        dp = rec.format('DP')[:,0]
-    except:  # Strelka2 indels:
-        dp = rec.format('DPI')[:,0]
+    dp = None
+    af = None
+    mq = None
 
     # If FORMAT/AF exists, report it as af. Else, check FORMAT/AD. If not, check FORMAT/*U
-    try:
+    if 'AF' in rec.FORMAT:
         af = rec.format('AF')[:,0]
-    except:
-        try:
+        dp = rec.format('DP')[:,0]
+    else:
+        # strelka2 germline?
+        if 'AD' in rec.FORMAT:
             alt_counts = rec.format('AD')[:,1]  # AD=REF,ALT so 1 is the position of ALT
-        except:
+            dp = np.sum(rec.format('AD')[:,0:], axis=1)
+        # strelka2 somatic?
+        else:
             if rec.is_snp:
                 alt_counts = rec.format(rec.ALT[0] + 'U')[:,0]
             else:
                 alt_counts = rec.format('TIR')[:,0]
-        af = alt_counts / dp
+            dp = rec.format('DP')[:,0]
+        af = np.true_divide(alt_counts, dp, out=np.zeros(alt_counts.shape), where=dp!=0)
 
     try:
         mq = rec.format('MQ', float)[:,0]  # VarDict has an incorrect MQ header (with Integer type instead of Float), so need to specify "float" type here explicitly otherwise MQ won't be parsed
