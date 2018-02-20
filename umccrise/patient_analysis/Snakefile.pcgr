@@ -92,7 +92,7 @@ rule germline_tar_gz:
 
 upload_proxy = ''
 if loc.name == 'spartan':
-    upload_proxy = 'export ftp_proxy=http://wwwproxy.unimelb.edu.au:8000; '
+    upload_proxy = 'export HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000; '
 
 
 rule upload_somatic_to_pcgr:
