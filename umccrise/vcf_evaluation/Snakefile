@@ -119,7 +119,8 @@ rule normalise_sample:
         vcf = rules.narrow_samples_to_tumor_sample.output[0],
         ref = get_ref(config['reference_fasta'])
     output:
-        'normalise/{sample}/{sample}.vcf.gz'
+        vcf = 'normalise/{sample}/{sample}.vcf.gz',
+        tbi = 'normalise/{sample}/{sample}.vcf.gz.tbi'
     shell:
         make_normalise_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
 
@@ -129,17 +130,20 @@ rule normalise_truth:
         vcf = rules.narrow_truth_to_target.output[0],
         ref = get_ref(config['reference_fasta'])
     output:
-        'normalise/truth_variants.vcf.gz'
+        vcf = 'normalise/truth_variants.vcf.gz',
+        tbi = 'normalise/truth_variants.vcf.gz.tbi'
     shell:
         make_normalise_cmd('{input.vcf}', '{output[0]}', '{input.ref}')
 
-# Overlap normalised calls with tricky regions and annotate into INFO:
-tricky_bed = os.path.join(get_loc().extras, 'GRCh37_tricky.bed.gz')
-TRICKY_TOML = f'''[[annotation]]
-file="{tricky_bed}"
-names=["TRICKY"]
-columns=[4]
-ops=["self"]'''
+TRICKY_TOML = ''
+if config.get('anno_tricky'):
+    # Overlap normalised calls with tricky regions and annotate into INFO:
+    tricky_bed = os.path.join(get_loc().extras, 'GRCh37_tricky.bed.gz')
+    TRICKY_TOML = f'''[[annotation]]
+    file="{tricky_bed}"
+    names=["TRICKY"]
+    columns=[4]
+    ops=["self"]'''
 
 rule prep_tricky_toml:
     output:
@@ -175,10 +179,10 @@ rule anno_tricky_truth:
 # Run bcftools isec to get separate VCFs with TP, FN and FN:
 rule bcftools_isec:
     input:
-        sample_vcf = rules.anno_tricky_sample.output.vcf,
-        sample_tbi = rules.anno_tricky_sample.output.tbi,
-        truth_vcf = rules.anno_tricky_truth.output.vcf,
-        truth_tbi = rules.anno_tricky_truth.output.tbi
+        sample_vcf = rules.anno_tricky_sample.output.vcf if config.get('anno_tricky') else rules.normalise_sample.output.vcf,
+        sample_tbi = rules.anno_tricky_sample.output.tbi if config.get('anno_tricky') else rules.normalise_sample.output.tbi,
+        truth_vcf = rules.anno_tricky_truth.output.vcf   if config.get('anno_tricky') else rules.normalise_truth.output.vcf,
+        truth_tbi = rules.anno_tricky_truth.output.tbi   if config.get('anno_tricky') else rules.normalise_truth.output.tbi
     params:
         output_dir = 'eval/{sample}_bcftools_isec'
     output:
