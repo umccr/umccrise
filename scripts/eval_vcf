@@ -7,7 +7,7 @@ import yaml
 from ngs_utils.file_utils import splitext_plus
 from ngs_utils.logger import err, critical
 
-from umccrise.utils import get_loc
+from umccrise.utils import get_loc, find_loc
 from umccrise import vcf_evaluation
 
 
@@ -37,11 +37,11 @@ def main(truth, vcfs, genome, output_dir=None, regions=None, jobs=1, anno_tricky
     if regions:
         config['sample_regions'] = regions
 
+    loc = find_loc()
 
     if isfile(truth):
         config['truth_variants'] = abspath(truth)
-    else:
-        loc = get_loc()
+    elif loc:
         if truth in loc.truth_sets:
             if genome not in loc.truth_sets[truth]:
                 critical(f'Truth set "{truth}" not found for genome "{genome}" at file system "{loc.name}"')
@@ -50,11 +50,16 @@ def main(truth, vcfs, genome, output_dir=None, regions=None, jobs=1, anno_tricky
                 config['truth_regions'] = loc.truth_sets[truth][genome]['bed']
         else:
             critical(f'First argument must be either a VCF file, or a value from: {", ".join(loc.truth_sets.keys())}.')
+    else:
+        assert isfile(truth), 'File for truth does not exist, and cannot automatically find it by location.'
+        config['truth_variants'] = abspath(truth)
 
     if isfile(genome):
         config['reference_fasta'] = genome
-    else:
+    elif loc:
         config['reference_fasta'] = f'{genome}/seq/{genome}.fa'
+    else:
+        assert isfile(genome), 'File for genome fasta does not exist, and cannot automatically find it by location.'
 
     f = tempfile.NamedTemporaryFile(mode='wt', delete=False)
     yaml.dump(config, f)

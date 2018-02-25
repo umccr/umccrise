@@ -16,8 +16,9 @@ from ngs_utils.file_utils import open_gzipsafe
 ##############################
 ### HPC dependencies paths ###
 
-def get_loc():
-    """ Depending on the machine name, return a dict conatining system-dependant paths 
+
+def find_loc():
+    """ Depending on the machine name, return a dict conatining system-dependant paths
         to human reference genomes and extras
     """
     Loc = collections.namedtuple('Loc',
@@ -117,7 +118,15 @@ def get_loc():
             if re.match(loc.host_pattern, hostname):
                 return loc
 
-    raise Exception('Could not find loc for hostname ' + hostname)
+    return None
+
+
+def get_loc():
+    loc = find_loc()
+    if loc:
+        return loc
+    else:
+        raise Exception('Could not find loc for hostname ' + socket.gethostname())
 
 
 """
