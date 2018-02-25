@@ -1,4 +1,6 @@
 *
+!minimap2
+!.gitignore
 !*.py
-!*.ipynb
-!*.md
+!*/*.ipynb
+!*/*.md
