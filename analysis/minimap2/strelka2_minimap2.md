@@ -29,18 +29,23 @@ We evaluated 3 variant callers ran from data from 2 different aligners (BWA-MEM 
 Our goal was to understand if we can replace BWA-MEM with a faster Minimap2 in our cancer variant calling pipleine, and generally they seem to show a reasonably similar performance. However, if you look at the FN column, in all 3 datasets Strelka2 seem to generally miss more SNPs with Minimap2 compared to BWA-MEM. In contrast, 1. that doesn't seem to happen with indels; 2. VarDict and Mutect2 don't show significant discrepancy between aligners. We guess that Strelka2 might make some assumptions based on some BWA-MEM features (SAM flags, etc.) that might be reported differrently in Minimap2, with other callers ignoring those features.
 
 All 40 false negative SNPs from the `MB` study were rejected by Strelka2 as having a `LowEVS`. From 246 `COLO` false negative SNPs, 15 were not detected, and the rest rejected with `LowEVS`. We tried to check if there are any significant alignment differences in those sites, like in the coverage depth, mapping quality, etc. On average, the difference in DP and MQ stands out a bit:
-MB: DP               +2.83
+```
+                     BWA minus Minimap2
+mb: DP               +2.83
 mb: AF               +0.01
 mb: MQ               +0.99
 mb: ReadPosRankSum   -0.04
 mb: SomaticEVS       +3.36
+```
 
+```
+                    BWA minus Minimap2 
 colo: DP            +20.56
 colo: AF              0.00
 colo: MQ             +2.73
 colo: ReadPosRankSum -0.09
 colo: SomaticEVS     +3.83
-
+```
 Though eyeballing one variant (1:50,854,774 from `MB`), it doesn't seem clear why the EVS differs significantly. Mapping look very similar in IGV: 
 ```
 Minimap2         BWA:
