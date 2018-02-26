@@ -1,8 +1,8 @@
 ### BWA-MEM vs Minimap2: somatic variant calling 
 
-We evaluated 3 variant callers ran from data from 2 different aligners (BWA-MEM and Minimap2), on 2 somatic and 1 germline datasets with a curated truth sets. Below, 2-way Venn diagrams show how Minimap2 compare against BWA-MEM for each caller.
+We evaluated 3 variant callers ran from data from 2 different aligners (BWA-MEM and Minimap2), on 2 somatic and 1 germline datasets with 3 curated truth sets. Below, 2-way Venn diagrams showing how Minimap2 compares against BWA-MEM for each caller (from top to bottom), and for SNPs true positives `SNP tp`, indels true positives `Ind tp`, `SNP fp`, `Ind fp`, `SNP fn`, `Ind fn` (from left to right).
 
-`MB` - [somatic T/N ICGC medulloblastoma dataset](https://www.nature.com/articles/ncomms10001)
+[somatic T/N ICGC medulloblastoma dataset](https://www.nature.com/articles/ncomms10001) (`MB`)
 
 ![ICGC MB, strelka2 calls, BWA-MEM vs Minimap2](img/mb_strelka2.png)
 
@@ -10,7 +10,7 @@ We evaluated 3 variant callers ran from data from 2 different aligners (BWA-MEM 
 
 ![ICGC MB, vardict calls, BWA-MEM vs Minimap2](img/mb_vardict.png)
 
-`COLO` - [somatic T/N COLO829 dataset](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4837349)
+[somatic T/N COLO829 dataset](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4837349) (`COLO`)
 
 ![COLO829 strelka2 calls, BWA-MEM vs Minimap2](img/colo_strelka2.png)
 
@@ -18,7 +18,7 @@ We evaluated 3 variant callers ran from data from 2 different aligners (BWA-MEM 
 
 ![COLO829 vardict calls, BWA-MEM vs Minimap2](img/colo_vardict.png)
 
-`GiaB` - germline GiaB NA12878
+Germline GiaB NA12878 (`GiaB`). Only calculated false negatives here.
 
 ![GiaB NA18878 strelka2 calls, BWA-MEM vs Minimap2](img/giab_strelka2.png)
 
@@ -26,27 +26,11 @@ We evaluated 3 variant callers ran from data from 2 different aligners (BWA-MEM 
 
 ![GiaB NA18878 vardict calls, BWA-MEM vs Minimap2](img/giab_vardict.png)
 
-Our goal was to understand if we can replace BWA-MEM with a faster Minimap2 in our cancer variant calling pipleine, and generally they seem to show a reasonably similar performance. However, if you look at the FN column, in all 3 datasets Strelka2 seem to generally miss more SNPs with Minimap2 compared to BWA-MEM. In contrast, 1. that doesn't seem to happen with indels; 2. VarDict and Mutect2 don't show significant discrepancy between aligners. We guess that Strelka2 might make some assumptions based on some BWA-MEM features (SAM flags, etc.) that might be reported differrently in Minimap2, with other callers ignoring those features.
+Our goal was to understand if we can replace BWA-MEM with a faster Minimap2 in our cancer variant calling pipleine, and generally they seem to show a reasonably similar performance. However, as evident from the the FN column, in all 3 datasets Strelka2 seem to generally miss more SNPs with Minimap2 compared to BWA-MEM. In contrast, 1. that doesn't seem to be clear with indels; 2. VarDict and Mutect2 don't show such discrepancy between the aligners. We guessed that Strelka2 might make some assumptions based on some BWA-MEM features (e.g. SAM tag values) that might be reported differrently in Minimap2, with other callers ignoring those features.
 
-All 40 false negative SNPs from the `MB` study were rejected by Strelka2 as having a `LowEVS`. From 246 `COLO` false negative SNPs, 15 were not detected, and the rest rejected with `LowEVS`. We tried to check if there are any significant alignment differences in those sites, like in the coverage depth, mapping quality, etc. On average, the difference in DP and MQ stands out a bit:
-```
-                     BWA minus Minimap2
-mb: DP               +2.83
-mb: AF               +0.01
-mb: MQ               +0.99
-mb: ReadPosRankSum   -0.04
-mb: SomaticEVS       +3.36
-```
+All 40 false negative SNPs from the `MB` study were rejected by Strelka2 as having a `LowEVS`. From 246 `COLO` false negative SNPs, 15 were not detected, and the rest rejected with `LowEVS`. We tried to check if there are any significant alignment differences in those sites, like in the coverage depth, mapping quality, alignment score, etc. 
 
-```
-                    BWA minus Minimap2 
-colo: DP            +20.56
-colo: AF              0.00
-colo: MQ             +2.73
-colo: ReadPosRankSum -0.09
-colo: SomaticEVS     +3.83
-```
-Though eyeballing one variant (1:50,854,774 from `MB`), it doesn't seem clear why the EVS differs significantly. Mapping look very similar in IGV: 
+Eyeballing some variants, e.g. 1:50,854,774 from `MB`, it's not very clear why the EVS differs significantly. Mapping look very similar in IGV: 
 ```
 Minimap2         BWA:
 ```
@@ -69,7 +53,40 @@ And VCF tags seem to be very close as well (`MQ` 59.89 vs. 58.84, Tier1-`DP` 74 
 1       50854774        .       T       C       .       LowEVS  AC=1;AF=0.25;AN=4;DP=158;MQ=58.84;MQ0=0;NT=ref;QSS=75;QSS_NT=75;ReadPosRankSum=-0.03;SGT=TT->CT;SNVSB=0;SOMATIC;SomaticEVS=6.77;TQSS=1;TQSS_NT=1;ANN=C|intergenic_region|MODIFIER|RP11-183G22.1-HMGB1P45|ENSG00000234080-ENSG00000229316|intergenic_region|ENSG00000234080-ENSG00000229316|||n.50854774T>C||||||;TUMOR_AF=0.0833333333333;NORMAL_AF=0.0;TUMOR_DP=72;NORMAL_DP=77;TUMOR_MQ=58.84000015258789     GT:AU:CU:DP:FDP:GU:SDP:SUBDP:TU 0/0:0,0:0,0:77:0:0,0:0:0:77,82  0/1:0,0:6,6:72:0:0,0:0:0:66,70
 ```
 
-This variant was also cought by Mutect2, and missed by VarDict. That does seem to be a pattern for `MB`: of 40 strelka2-missed variants, only 2 were reported by VarDict, and 35 were reported by Mutect2 (consistently in BWA and Minimap2 case):
+To see if there are any trends, counting average tag values for all false negatives variants, and false positives for comparison.
+
+```
+Average stats for all Strelka Minimap2 FN:
+                MB BWA MM2    COLO BWA MM2
+SAM_AS          100.59 201.85   101.84 204.76
+SAM_XS           34.58 .         91.15 .
+SAM_NM            0.49 0.47       1.62 1.59
+SAM_MQ           58.74 57.54     34.99 30.07
+MQ               59.02 58.02     38.92 36.86
+MQ0               0.40 0.30      29.97 21.35
+AF                0.07 0.06       0.55 0.56
+DP              103.83 101.00    58.39 37.56
+ReadPosRankSum   -0.15 -0.12     -0.22 -0.14
+SomaticEVS        9.38 6.02       9.67 5.84
+```
+
+```
+Average stats for random FP shared between BWA and Minimap2:
+                MB BWA MM2    COLO BWA MM2
+SAM_AS           99.03 198.67   106.25 212.94
+SAM_XS           27.34  .        29.96   .
+SAM_NM            0.82  0.80      1.12   1.10
+SAM_MQ           59.76 58.88     58.73  58.31
+MQ               59.85 59.29     59.04  58.83
+MQ0               0.07  0.05      0.82   0.72
+AF                0.38  0.38      0.78   0.78
+DP               80.12 79.29     91.18  90.22
+ReadPosRankSum    0.06  0.05     -0.18  -0.18
+SomaticEVS       18.21 16.45     18.70  17.20
+```
+As expected, BWA EVS is quite higher than Minimap's for Minimap-FN. It's also slightly larger for false positives. DP and MQ are a bit higher too. DP and MQ from SAM appear to be especially larger for FN in the C0LO study. Also, AS is consistently exactly twice as higher for Minimap2, wondering if it anyhow might affect EVS?
+
+That `1:50854774` variant was cought by Mutect2 for both BWA and Minimap2, and missed by VarDict in both cases. That does seem to be a pattern for `MB`: of 40 strelka2-missed variants, only 2 were reported by VarDict, and 35 were reported by Mutect2 (consistently in BWA and Minimap2 case):
 
 ![](img/mb_40.png) 
 
@@ -77,5 +94,24 @@ For `COLO` however, both VarDict and Mutect2 did a better job and reported the m
 
 ![](img/colo_231.png)
 
-Our question is if the discrepancy for Strelka2 comes from the alignment decisions Minimap2 makes differently from BWA, or it might have to do with different ways to calculate and report particular SAM tags that Strelka2 is using?
+Interestingly, of 40 MB SNPs, 2 were actually called with a different ALT. For `12:38153362`, the correct alelle is T>C which was called with BWA by all callers, and with Minimap2 with VarDict and Mutect2; however Strelka2 reported T>G with Minimap2 here:
 
+COLO BWA, strelka2:
+```
+12		38153362	.	T	C	.	PASS	AC=1;AF=0.25;AN=4;DP=343;MQ=42.98;MQ0=58;NT=ref;QSS=142;QSS_NT=142;ReadPosRankSum=-0.47;SGT=TT->CT;SNVSB=0;SOMATIC;SomaticEVS=11.33;TQSS=2;TQSS_NT=2;ANN=C|intergenic_region|MODIFIER|RP11-125N22.2-RP11-297L6.2|ENSG00000258368-ENSG00000257173|intergenic_region|ENSG00000258368-ENSG00000257173|||n.38153362T>C||||||	
+        GT:  AU:  CU:    DP: FDP: GU:   SDP:SUBDP: TU	
+Normal: 0/0: 0,0: 0,0:   82: 2:   0,9:  0:0:       80,146	
+Tumor:  0/1: 0,0: 33,33: 89: 0:   0,13: 0:0:       56,142
+```
+COLO minimap2, strelka2:
+```
+12		38153362	.	T	G	.	PASS	AC=1;AF=0.25;AN=4;DP=297;MQ=45.74;MQ0=11;NT=ref;QSS=112;QSS_NT=112;ReadPosRankSum=-0.47;SGT=TT->GT;SNVSB=0;SOMATIC;SomaticEVS=12.83;TQSS=2;TQSS_NT=2;ANN=G|intergenic_region|MODIFIER|RP11-125N22.2-RP11-297L6.2|ENSG00000258368-ENSG00000257173|intergenic_region|ENSG00000258368-ENSG00000257173|||n.38153362T>G||||||	
+        GT:  AU:  CU:    DP: FDP: GU:   SDP:SUBDP: TU	
+Normal: 0/0: 0,1: 0,0:   82: 1:   0,26: 0:0:       81,113	
+Tumor:  0/1: 0,3: 33,33: 89: 0:   0,36: 0:0:       56,85         
+```
+Interesting that for T>G, the 1st-tier allelic depth for G is 0.
+
+A question is if the discrepancy for Strelka2 comes from the alignment decisions Minimap2 makes differently from BWA (leading to diffences in coverage and reads aligner) or it might have to do with different ways to calculate and report particular SAM tags (like AS)?
+
+Maybe Strelka2 model needs to be trained against Minimap2 data as well. We would be happy to share any data!
