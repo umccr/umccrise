@@ -88,11 +88,11 @@ As expected, BWA EVS is quite higher than Minimap's for Minimap-FN. It's also sl
 
 That `1:50854774` variant was cought by Mutect2 for both BWA and Minimap2, and missed by VarDict in both cases. That does seem to be a pattern for `MB`: of 40 strelka2-missed variants, only 2 were reported by VarDict, and 35 were reported by Mutect2 (consistently in BWA and Minimap2 case):
 
-![](img/mb_40.png) 
+![](img/mb_40.png) ![](img/mb_40_3way.png) 
 
 For `COLO` however, both VarDict and Mutect2 did a better job and reported the majority of 231 variants missed by strelka2:
 
-![](img/colo_231.png)
+![](img/colo_231.png) ![](img/colo_231_3way.png)
 
 Interestingly, of 40 MB SNPs, 2 were actually called with a different ALT. For `12:38153362`, the correct alelle is T>C which was called with BWA by all callers, and with Minimap2 with VarDict and Mutect2; however Strelka2 reported T>G with Minimap2 here:
 
