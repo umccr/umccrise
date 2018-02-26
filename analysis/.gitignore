@@ -1,5 +1,7 @@
 *
 !minimap2
+!*/img
+!*/img/*
 !.gitignore
 !*.py
 !*/*.ipynb
