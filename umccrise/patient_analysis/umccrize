@@ -8,6 +8,11 @@ from ngs_utils.call_process import run
 import subprocess
 
 
+import locale
+if 'UTF-8' not in locale.getlocale(locale.LC_ALL):
+    locale.setlocale(locale.LC_ALL, 'en_AU.UTF-8')
+
+
 @click.command()
 @click.argument('bcbio_project', type=click.Path(exists=True))
 @click.argument('rule', nargs=-1)
