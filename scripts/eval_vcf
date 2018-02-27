@@ -10,10 +10,12 @@ from ngs_utils.logger import err, critical
 from umccrise.utils import get_loc, find_loc
 from umccrise import vcf_evaluation
 
-
 import locale
-if 'UTF-8' not in locale.getlocale(locale.LC_ALL):
-    locale.setlocale(locale.LC_ALL, 'en_AU.UTF-8')
+try:
+    if 'UTF-8' not in locale.getlocale(locale.LC_ALL):
+        locale.setlocale(locale.LC_ALL, 'en_AU.UTF-8')
+except TypeError:
+    pass
 
 
 here = dirname(abspath(vcf_evaluation.__file__))

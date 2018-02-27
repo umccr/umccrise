@@ -7,10 +7,12 @@ from umccrise import patient_analysis
 from ngs_utils.call_process import run
 import subprocess
 
-
 import locale
-if 'UTF-8' not in locale.getlocale(locale.LC_ALL):
-    locale.setlocale(locale.LC_ALL, 'en_AU.UTF-8')
+try:
+    if 'UTF-8' not in locale.getlocale(locale.LC_ALL):
+        locale.setlocale(locale.LC_ALL, 'en_AU.UTF-8')
+except TypeError:
+    pass
 
 
 @click.command()
