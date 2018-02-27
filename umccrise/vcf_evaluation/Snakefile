@@ -274,10 +274,10 @@ rule report:
             ],
             names=['1', '2'])
 
-        # df = pd.DataFrame(columns=['File', 'S TP', 'S FP', 'S FN', 'S prec (TP/called)', 'S recall (TP/ref)', 'I TP', 'I FP', 'I FN', 'I prec (TP/called)', 'I recall (TP/ref)'])
+        # df = pd.DataFrame(columns=['S TP', 'S FP', 'S FN', 'S prec (TP/called)', 'S recall (TP/ref)', 'I TP', 'I FP', 'I FN', 'I prec (TP/called)', 'I recall (TP/ref)'])
         # data = []
-        # data.append(['Sample', 'File', 'SNP', ''  , ''  , ''         , ''      , 'INDEL', ''  , ''  , ''         , ''])
-        # data.append([''      , ''    , 'TP' , 'FP', 'FN', 'Precision', 'Recall', 'TP'   , 'FP', 'FN', 'Precision', 'Recall', ])
+        # data.append(['Sample', 'SNP', ''  , ''  , ''         , ''      , 'INDEL', ''  , ''  , ''         , ''])
+        # data.append([''      , 'TP' , 'FP', 'FN', 'Precision', 'Recall', 'TP'   , 'FP', 'FN', 'Precision', 'Recall', ])
         data = []
         s_truth = i_truth = None
         for stats_file, sname in zip(input.stats_files, params.samples):
@@ -285,12 +285,11 @@ rule report:
                 s_truth, s_tp, s_fp, s_fn, s_prec, s_rec, i_truth, i_tp, i_fp, i_fn, i_prec, i_rec = f.readlines()[1].strip().split('\t')
                 data.append({
                     ('Sample', ''): sname,
-                    ('File', ''): stats_file,
                     ('SNP', 'TP'): int(s_tp),
                     ('SNP', 'FP'): int(s_fp),
                     ('SNP', 'FN'): int(s_fn),
-                    ('SNP', 'Prec (TP/called)'): float(s_prec),
-                    ('SNP', 'Recall (TP/truth)'): float(i_rec),
+                    ('SNP', 'Prec'): float(s_prec),  # TP/called
+                    ('SNP', 'Recall'): float(s_rec),  # TP/truth
                     ('INDEL', 'TP'): int(i_tp),
                     ('INDEL', 'FP'): int(i_fp),
                     ('INDEL', 'FN'): int(i_fn),
@@ -299,7 +298,6 @@ rule report:
                 })
         data.append({
             ('Sample', ''): 'Truth',
-            ('File', ''): get_ref(config['truth_variants']),
             ('SNP', 'TP'): int(s_truth),
             ('SNP', 'FP'): 0,
             ('SNP', 'FN'): int(s_truth),
