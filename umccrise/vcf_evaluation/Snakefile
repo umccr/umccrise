@@ -269,8 +269,8 @@ rule report:
         samples = sorted(config['samples'].keys())
     run:
         idx = pd.MultiIndex.from_arrays([
-            ['Sample', 'File', 'SNP', 'SNP', 'SNP', 'SNP'             , 'SNP'              , 'INDEL', 'INDEL', 'INDEL' , 'INDEL',            'INDEL'            ],
-            ['',       ''    , 'TP' , 'FP' , 'FN' , 'Prec (TP/called)', 'Recall (TP/truth)', 'TP'   , 'FP'   , 'FN'    , 'Prec (TP/called)', 'Recall (TP/truth)']
+            ['Sample', 'File', 'SNP', 'SNP', 'SNP', 'SNP',  'SNP'   , 'INDEL', 'INDEL', 'INDEL' , 'INDEL', 'INDEL'],
+            ['',       ''    , 'TP' , 'FP' , 'FN' , 'Prec', 'Recall', 'TP'   , 'FP'   , 'FN'    , 'Prec' , 'Recall']
             ],
             names=['1', '2'])
 
@@ -293,21 +293,21 @@ rule report:
                     ('INDEL', 'TP'): int(i_tp),
                     ('INDEL', 'FP'): int(i_fp),
                     ('INDEL', 'FN'): int(i_fn),
-                    ('INDEL', 'Prec (TP/called)'): float(i_prec),
-                    ('INDEL', 'Recall (TP/truth)'): float(i_rec)
+                    ('INDEL', 'Prec'): float(i_prec),
+                    ('INDEL', 'Recall'): float(i_rec)
                 })
         data.append({
             ('Sample', ''): 'Truth',
             ('SNP', 'TP'): int(s_truth),
             ('SNP', 'FP'): 0,
             ('SNP', 'FN'): int(s_truth),
-            ('SNP', 'Prec (TP/called)'): 1.0,
-            ('SNP', 'Recall (TP/truth)'): 1.0,
+            ('SNP', 'Prec'): 1.0,
+            ('SNP', 'Recall'): 1.0,
             ('INDEL', 'TP'): int(i_truth),
             ('INDEL', 'FP'): 0,
             ('INDEL', 'FN'): int(i_truth),
-            ('INDEL', 'Prec (TP/called)'): 1.0,
-            ('INDEL', 'Recall (TP/truth)'): 1.0
+            ('INDEL', 'Prec'): 1.0,
+            ('INDEL', 'Recall'): 1.0
         })
         df = pd.DataFrame(data, columns=idx)
 
