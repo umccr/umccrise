@@ -12,6 +12,7 @@ from prettytable import PrettyTable
 from ngs_utils.vcf_utils import get_tumor_sample_name
 from umccrise.utils import get_loc
 from umccrise.vcf_normalisation.vcf_normalisation import make_normalise_cmd
+from umccrise.vcf_evaluation import stats_to_df, dislay_stats_df
 
 # shell.prefix("set -o pipefail; ")
 
@@ -268,62 +269,17 @@ rule report:
     params:
         samples = sorted(config['samples'].keys())
     run:
-        idx = pd.MultiIndex.from_arrays([
-            ['Sample', 'File', 'SNP', 'SNP', 'SNP', 'SNP',  'SNP'   , 'INDEL', 'INDEL', 'INDEL' , 'INDEL', 'INDEL'],
-            ['',       ''    , 'TP' , 'FP' , 'FN' , 'Prec', 'Recall', 'TP'   , 'FP'   , 'FN'    , 'Prec' , 'Recall']
-            ],
-            names=['1', '2'])
-
-        # df = pd.DataFrame(columns=['S TP', 'S FP', 'S FN', 'S prec (TP/called)', 'S recall (TP/ref)', 'I TP', 'I FP', 'I FN', 'I prec (TP/called)', 'I recall (TP/ref)'])
-        # data = []
-        # data.append(['Sample', 'SNP', ''  , ''  , ''         , ''      , 'INDEL', ''  , ''  , ''         , ''])
-        # data.append([''      , 'TP' , 'FP', 'FN', 'Precision', 'Recall', 'TP'   , 'FP', 'FN', 'Precision', 'Recall', ])
-        data = []
-        s_truth = i_truth = None
+        stats_by_sname = dict()
         for stats_file, sname in zip(input.stats_files, params.samples):
             with open(stats_file) as f:
-                s_truth, s_tp, s_fp, s_fn, s_prec, s_rec, i_truth, i_tp, i_fp, i_fn, i_prec, i_rec = f.readlines()[1].strip().split('\t')
-                data.append({
-                    ('Sample', ''): sname,
-                    ('SNP', 'TP'): int(s_tp),
-                    ('SNP', 'FP'): int(s_fp),
-                    ('SNP', 'FN'): int(s_fn),
-                    ('SNP', 'Prec'): float(s_prec),  # TP/called
-                    ('SNP', 'Recall'): float(s_rec),  # TP/truth
-                    ('INDEL', 'TP'): int(i_tp),
-                    ('INDEL', 'FP'): int(i_fp),
-                    ('INDEL', 'FN'): int(i_fn),
-                    ('INDEL', 'Prec'): float(i_prec),
-                    ('INDEL', 'Recall'): float(i_rec)
-                })
-        data.append({
-            ('Sample', ''): 'Truth',
-            ('SNP', 'TP'): int(s_truth),
-            ('SNP', 'FP'): 0,
-            ('SNP', 'FN'): int(s_truth),
-            ('SNP', 'Prec'): 1.0,
-            ('SNP', 'Recall'): 1.0,
-            ('INDEL', 'TP'): int(i_truth),
-            ('INDEL', 'FP'): 0,
-            ('INDEL', 'FN'): int(i_truth),
-            ('INDEL', 'Prec'): 1.0,
-            ('INDEL', 'Recall'): 1.0
-        })
-        df = pd.DataFrame(data, columns=idx)
+                stats_by_sname[sname] = f.readlines()[1].strip().split('\t')
+        df = stats_to_df(stats_by_sname)
+
+        dislay_stats_df(df)
 
         # Writing raw data to the TSV file
         with open(output[0], 'w') as out_f:
             df.to_csv(out_f, sep='\t', index=False)
-
-        # Pretty-printing the table on the screen
-        df = df.drop(('File', ''), 1)
-        with pd.option_context(
-                'display.max_rows', None,
-                'display.max_columns', None,
-                'display.width', None,
-                'display.float_format', lambda v: '{:,.2f}%'.format(100.0*v)
-            ):
-            print(df.to_string(index=False))
 
 
 # rule eval:
