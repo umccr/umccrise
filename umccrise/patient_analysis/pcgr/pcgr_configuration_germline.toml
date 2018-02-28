@@ -64,7 +64,7 @@ mutsignatures_signature_limit = 5
 # deconstructSigs option: type of trimer count normalization for inference of known mutational signatures, see explanation at https://github.com/raerose01/deconstructSigs"
 # options = 'default', 'exome', 'genome', 'exome2genome'
 # NOTE: If your data (VCF) is from exome sequencing, 'default' or 'exome2genome' should be used. See https://github.com/raerose01/deconstructSigs/issues/2
-mutsignatures_normalization = "default"
+mutsignatures_normalization = "genome"
 # Require a minimum number of mutations for signature estimation
 mutsignatures_mutation_limit = 100
 
