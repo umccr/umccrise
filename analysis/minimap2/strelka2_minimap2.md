@@ -59,7 +59,7 @@ As expected for false negatives, BWA-MEM's EVS is quite higher than Minimap's. I
 Another curious observation is that the `MB` failed calls are all of quite low AF, unlike those for `COLO` which seem to have evenly distributed AFs:
 ![AF for mm2-failed SNPs](img/af_plot.png)
 
-Eyeballing some variants, e.g. 1:50,854,774 from `MB`, it's interesting that EVS is twice as high, even though the rest of the tags are very close. And tags seem to be very close: both SAM and VCF `MQ` values are 59.89 vs. 58.84, `DP` 74 vs. 72, Allelic depth is 6 for both calls, `ReadPosRankSum` is close to 0 for both. However, `SomaticEVS` differs quite a lot (12.82 vs. 6.77):
+Eyeballing some variants, e.g. 1:50,854,774 from `MB`, it's interesting that EVS is twice as high, even though the rest of the tags are very close: both SAM and VCF `MQ` values are 59.89 vs. 58.84, `DP` 74 vs. 72, Allelic depth is 6 for both calls, `ReadPosRankSum` is close to 0 for both. However, `SomaticEVS` differs quite a lot (12.82 vs. 6.77):
 
 ``` Strelka2 BWA (batch1-strelka2-annotated-bwa.vcf.gz)
 1       50854774        .       T       C       .       PASS    AC=1;AF=0.25;AN=4;DP=159;MQ=59.89;MQ0=0;NT=ref;QSS=75;QSS_NT=75;ReadPosRankSum=-0.14;SGT=TT->CT;SNVSB=0;SOMATIC;SomaticEVS=12.82;TQSS=1;TQSS_NT=1;ANN=C|intergenic_region|MODIFIER|RP11-183G22.1-HMGB1P45|ENSG00000234080-ENSG00000229316|intergenic_region|ENSG00000234080-ENSG00000229316|||n.50854774T>C||||||     GT:AU:CU:DP:FDP:GU:SDP:SUBDP:TU 0/0:0,0:0,0:78:0:0,0:0:0:78,82  0/1:0,0:6,6:74:0:0,0:0:0:68,71
@@ -74,3 +74,26 @@ That variant was cought by Mutect2 and VarDict for both BWA and Minimap2. That d
 In general, even though showing a lower performance than Strelka2, VarDict and Mutect2 seem to be stable when switching between the aligners.
 
 Interestingly, of 40 MB SNPs, 2 were actually called by Strelka2 with a different ALT. For `12:38153362`, the correct alelle is T>C which was called with BWA by all callers, and with Minimap2 with VarDict and Mutect2; however Strelka2 reported T>G with Minimap2 here:
+
+COLO BWA, strelka2:
+
+```
+12		38153362	.	T	C	.	PASS	AC=1;AF=0.25;AN=4;DP=343;MQ=42.98;MQ0=58;NT=ref;QSS=142;QSS_NT=142;ReadPosRankSum=-0.47;SGT=TT->CT;SNVSB=0;SOMATIC;SomaticEVS=11.33;TQSS=2;TQSS_NT=2;ANN=C|intergenic_region|MODIFIER|RP11-125N22.2-RP11-297L6.2|ENSG00000258368-ENSG00000257173|intergenic_region|ENSG00000258368-ENSG00000257173|||n.38153362T>C||||||	
+        GT:  AU:  CU:    DP: FDP: GU:   SDP:SUBDP: TU
+Normal: 0/0: 0,0: 0,0:   82: 2:   0,9:  0:0:       80,146
+Tumor:  0/1: 0,0: 33,33: 89: 0:   0,13: 0:0:       56,142
+
+```
+
+COLO minimap2, strelka2:
+
+```
+12		38153362	.	T	G	.	PASS	AC=1;AF=0.25;AN=4;DP=297;MQ=45.74;MQ0=11;NT=ref;QSS=112;QSS_NT=112;ReadPosRankSum=-0.47;SGT=TT->GT;SNVSB=0;SOMATIC;SomaticEVS=12.83;TQSS=2;TQSS_NT=2;ANN=G|intergenic_region|MODIFIER|RP11-125N22.2-RP11-297L6.2|ENSG00000258368-ENSG00000257173|intergenic_region|ENSG00000258368-ENSG00000257173|||n.38153362T>G||||||	
+        GT:  AU:  CU:    DP: FDP: GU:   SDP:SUBDP: TU
+Normal: 0/0: 0,1: 0,0:   82: 1:   0,26: 0:0:       81,113
+Tumor:  0/1: 0,3: 33,33: 89: 0:   0,36: 0:0:       56,85         
+```
+
+Even though the 1st-tier allelic depth for G is 0, the variant was called as T>G.
+
+We are wondering if in general, the discrepancy for Strelka2 comes from the alignment decisions Minimap2 makes differently from BWA (leading to diffences in coverage and reads aligner), or it might have to do with different ways to calculate and report particular SAM tags (like AS, XS)? If Strelka2's model were trained with Minimap2 data, would it improve the performance, or it has to do with Minimap2 beeing less accurate than BWA-MEM?. We would be happy to share any data and the details of the runs!
