@@ -11,20 +11,20 @@ from umccrise.panel_of_normals import get_toml_path
 
 # configfile: 'config.yaml'
 normals_dir = config.get('normals_dir', get_loc().panel_of_normals_dir)
-hits_thresholds = config.get('hits_thresholds', [2])
+hits_thresholds = config.get('hits_thresholds', [1, 2, 3])
 samples = config.get('samples')
 if isinstance(samples, str):
     samples = {'sample': samples}
 
 rule all:
     input:
-        expand('work/filter/{sample}-ann-n{ht}.vcf.gz', sample=samples, ht=hits_thresholds)
+        expand('pon_filter/{sample}-ann-n{ht}.vcf.gz', sample=samples, ht=hits_thresholds)
 
 rule prep_toml:
     input:
         toml = get_toml_path()
     output:
-        'work/annotate/vcfanno.toml'
+        'pon_annotate/vcfanno.toml'
     params:
         normals_dir = normals_dir
     shell:
@@ -51,7 +51,7 @@ rule prep_vcf:
     input:
         lambda wildcards: samples[wildcards.sample]
     output:
-        'work/prep_vcf/{sample}.vcf.gz'
+        'pon_prep_vcf/{sample}.vcf.gz'
     shell:
         'bcftools view {input} -f.,PASS -Oz -o {output}'
 
@@ -69,9 +69,9 @@ rule prep_vcf:
 rule annotate:
     input:
         vcf = rules.prep_vcf.output,
-        toml = prep_toml.output[0]
+        toml = rules.prep_toml.output[0]
     output:
-        'work/annotate/{sample}-ann.vcf.gz'
+        'pon_annotate/{sample}-ann.vcf.gz'
     shell:
         'vcfanno {input.toml} {input.vcf} | bgzip -c > {output}'
 
@@ -79,21 +79,8 @@ rule filter:
     input:
         rules.annotate.output
     output:
-        'work/filter/{sample}-ann-n{ht}.vcf.gz'
+        'pon_filter/{sample}-ann-n{ht}.vcf.gz'
     params:
         ht = lambda wildcards: wildcards.ht
     shell:
         'bcftools filter -e "INFO/PoN_CNT>={params.ht}" {input} -Oz -o {output} && tabix -p vcf {output}'
-
-
-
-
-
-
-
-
-
-
-
-
-

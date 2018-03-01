@@ -17,6 +17,8 @@ setup(
         'umccrise',
     ],
     scripts=[
+        'scripts/panel_of_normals',
+        'scripts/anno_pon',
         'scripts/normalise_vcf',
         'scripts/umccrise',
         'scripts/umccrize',

@@ -3,8 +3,8 @@ import pandas as pd
 
 def stats_to_df(stat_by_sname):
     idx = pd.MultiIndex.from_arrays([
-        ['Sample', 'File', 'SNP', 'SNP', 'SNP', 'SNP',  'SNP'   , 'INDEL', 'INDEL', 'INDEL' , 'INDEL', 'INDEL'],
-        ['',       ''    , 'TP' , 'FP' , 'FN' , 'Prec', 'Recall', 'TP'   , 'FP'   , 'FN'    , 'Prec' , 'Recall']
+        ['Sample', 'SNP', 'SNP', 'SNP', 'SNP',  'SNP'   , 'INDEL', 'INDEL', 'INDEL' , 'INDEL', 'INDEL'],
+        [''      , 'TP' , 'FP' , 'FN' , 'Prec', 'Recall', 'TP'   , 'FP'   , 'FN'    , 'Prec' , 'Recall']
         ],
         names=['1', '2'])
 
@@ -50,4 +50,4 @@ def dislay_stats_df(df):
             'display.width', None,
             'display.float_format', lambda v: '{:,.2f}%'.format(100.0*v)
             ):
-        print(df.to_string(index=False))
+        print(df.to_string(index=True))
