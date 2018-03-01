@@ -6,7 +6,17 @@ We ran 3 variant calling pipelines (Strelka2, GATK, Vardict) using bcbio-nextgen
 
 All callers seem to show a reasonably similar performance between the aligners. However, in all 3 datasets Strelka2 seem to generally miss more SNPs with Minimap2 compared to BWA-MEM:
 
-![ICGC MB, strelka2 SNP FN, BWA-MEM vs Minimap2](img/mb_strelka2_fn.png) ![COLO829 strelka2 SNP FN, BWA-MEM vs Minimap2](img/colo_strelka2_fn.png) ![GiaB NA18878 strelka2 SNP FN, BWA-MEM vs Minimap2](img/giab_strelka2_fn.png)
+[Somatic T/N ICGC medulloblastoma dataset](https://www.nature.com/articles/ncomms10001) (`MB`)
+
+![ICGC MB, strelka2 SNP FN, BWA-MEM vs Minimap2](img/mb_strelka2_fn.png) 
+
+[Somatic T/N COLO829 dataset](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4837349) (`COLO`)
+
+![COLO829 strelka2 SNP FN, BWA-MEM vs Minimap2](img/colo_strelka2_fn.png)
+
+Germline GiaB NA12878 (`GiaB`). Only calculated false negatives here.
+
+![GiaB NA18878 strelka2 SNP FN, BWA-MEM vs Minimap2](img/giab_strelka2_fn.png)
 
 In contrast, 1. that doesn't seem to be evident with indels; 2. VarDict and Mutect2 don't show such discrepancy between the aligners. We guessed that Strelka2 might be making some assumptions based on some BWA-MEM features, e.g. SAM tag values, that might be reported differently in Minimap2, with other callers ignoring those features.
 
@@ -35,7 +45,7 @@ As expected for false negatives, BWA-MEM's EVS is quite higher than Minimap's. I
 Another curious observation is that the `MB` failed calls are all of quite low AF, unlike those for `COLO` which seem to have evenly distributed AFs:
 ![AF for mm2-failed SNPs](img/af_plot.png)
 
-Eyeballing some variants, e.g. 1:50,854,774 from `MB`, it's interesting that EVS is twice as high, even though the rest of the tags are very close. And tags seem to be very close: both SAM and VCF `MQ` values are 59.89 vs. 58.84, `DP` 74 vs. 72, Allelic depth is 6 for both calls, `ReadPosRankSum` is close to 0 for both. However, `SomaticEVS` differs quite a lot (12.82 vs. 6.77):
+Eyeballing some variants, e.g. 1:50,854,774 from `MB`, it's interesting that EVS is twice as high, even though the rest of the tags are very close: both SAM and VCF `MQ` values are 59.89 vs. 58.84, `DP` 74 vs. 72, Allelic depth is 6 for both calls, `ReadPosRankSum` is close to 0 for both. However, `SomaticEVS` differs quite a lot (12.82 vs. 6.77):
 
 ``` Strelka2 BWA (batch1-strelka2-annotated-bwa.vcf.gz)
 1       50854774        .       T       C       .       PASS    AC=1;AF=0.25;AN=4;DP=159;MQ=59.89;MQ0=0;NT=ref;QSS=75;QSS_NT=75;ReadPosRankSum=-0.14;SGT=TT->CT;SNVSB=0;SOMATIC;SomaticEVS=12.82;TQSS=1;TQSS_NT=1;ANN=C|intergenic_region|MODIFIER|RP11-183G22.1-HMGB1P45|ENSG00000234080-ENSG00000229316|intergenic_region|ENSG00000234080-ENSG00000229316|||n.50854774T>C||||||     GT:AU:CU:DP:FDP:GU:SDP:SUBDP:TU 0/0:0,0:0,0:78:0:0,0:0:0:78,82  0/1:0,0:6,6:74:0:0,0:0:0:68,71
