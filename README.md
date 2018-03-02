@@ -35,13 +35,15 @@ EOT
 
 To update
 ```
-git pull
-conda env update -f environment.yml
-pip install -e .
+source load_umccrise.sh
+git pull                                                             # if the code base changed
+conda env update -f environment.yml                                  # if dependencies changed
+./setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
 ```
 
 To test
 ```
+source load_umccrise.sh
 git clone https://github.com/umccr/umccrise_test_data
 nosetests -s umccrise_test_data/test_umccrise.py
 ```
