@@ -1,5 +1,4 @@
-*
-!minimap2
+minimap2/*
 !*/img
 !*/img/*
 !.gitignore
@@ -7,3 +6,4 @@
 !*/*.ipynb
 !*/*.md
 .DS_Store
+!somatic_eval
