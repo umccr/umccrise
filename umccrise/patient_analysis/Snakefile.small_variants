@@ -37,8 +37,8 @@ rule somatic_vcf_pon:  # {batch}
         ht = 1,
         normals_dir = loc.panel_of_normals_dir
     output:
-        vcf = '{batch}/small_variants/somatic-ensemble-pon_softfiltered.vcf.gz',
-        tbi = '{batch}/small_variants/somatic-ensemble-pon_softfiltered.vcf.gz.tbi'
+        vcf = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz',
+        tbi = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz.tbi'
     shell:
         'vcfanno -permissive-overlap'
         ' <(sed s#file=\\\"#file=\\\"{params.normals_dir}/# {input.toml})'
@@ -51,8 +51,8 @@ rule somatic_vcf_pon_pass:  # {batch}
     input:
         rules.somatic_vcf_pon.output.vcf
     output:
-        vcf = '{batch}/small_variants/somatic-ensemble-pon_hardfiltered.vcf.gz',
-        tbi = '{batch}/small_variants/somatic-ensemble-pon_hardfiltered.vcf.gz.tbi'
+        vcf = '{batch}/small_variants/{batch}-somatic-ensemble-pon_hardfiltered.vcf.gz',
+        tbi = '{batch}/small_variants/{batch}-somatic-ensemble-pon_hardfiltered.vcf.gz.tbi'
     shell:
         'bcftools view -f.,PASS -Oz {input} -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
@@ -66,8 +66,8 @@ rule germline_vcf_subset:  # {batch}
         vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}-ensemble-annotated.vcf.gz'),
         ensg = get_cancer_genes_ensg()
     output:
-        vcf = '{batch}/work/small_variants/raw_germline-ensemble-cancer_genes.vcf.gz',
-        tbi = '{batch}/work/small_variants/raw_germline-ensemble-cancer_genes.vcf.gz.tbi'
+        vcf = '{batch}/work/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz',
+        tbi = '{batch}/work/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz.tbi'
     params:
         ungz = lambda wc, output: get_ungz_gz(output[0])[0]
     shell:
@@ -82,8 +82,8 @@ rule germline_vcf_prep:
     input:
         vcf = rules.germline_vcf_subset.output.vcf
     output:
-        vcf = '{batch}/small_variants/germline-ensemble-cancer_genes.vcf.gz',
-        tbi = '{batch}/small_variants/germline-ensemble-cancer_genes.vcf.gz.tbi'
+        vcf = '{batch}/small_variants/{batch}-normal-ensemble-cancer_genes.vcf.gz',
+        tbi = '{batch}/small_variants/{batch}-normal-ensemble-cancer_genes.vcf.gz.tbi'
     shell:
         'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'

@@ -97,7 +97,7 @@ rule sig_rmd:
         workdir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0])
     output:
-        '{batch}/rmd_report.html'
+        '{batch}/{batch}-rmd_report.html'
     run:
         os.system("which Rscript")
         shell('Rscript -e "rmarkdown::render(\'{input.sig_rmd}\', '

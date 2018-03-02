@@ -10,7 +10,7 @@ rule goleft_depth:
         prefix = lambda wc, output: output[0].replace('.depth.bed', ''),
         cutoff = lambda wc: cov_by_phenotype[wc.phenotype]
     output:
-        '{batch}/coverage/{phenotype}.depth.bed'
+        '{batch}/coverage/{batch}-{phenotype}.depth.bed'
     threads: threads_max
     shell:
         'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
@@ -21,9 +21,9 @@ rule goleft_plots:
     input:
         bam = lambda wc: batch_by_name[wc.batch].tumor.bam
     params:
-        directory = '{batch}/coverage/indexcov'
+        directory = '{batch}/coverage/{batch}-indexcov'
     output:
-        '{batch}/coverage/indexcov/index.html'
+        '{batch}/coverage/{batch}-indexcov/index.html'
     shell:
         'goleft indexcov --directory {params.directory} {input.bam} --sex X'
 

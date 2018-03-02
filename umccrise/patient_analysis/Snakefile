@@ -2,7 +2,7 @@
 """
 import os
 import sys
-from os.path import join, abspath, dirname, isfile
+from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
@@ -18,7 +18,9 @@ pcgr_url = config.get('pcgr_url', 'ec2-13-55-18-20')
 cov_by_phenotype = config.get('cov_by_phenotype', {'tumor': 30, 'normal': 10})  # For goleft regions coverage, use minimum coverage 10 for normal, 30 for tumor
 threads_max = 32  # Use up to 32 cores at once, if available
 
-run = BcbioProject(config.get('run_dir', abspath(os.getcwd())))  
+run = BcbioProject(config.get('run_dir', abspath(os.getcwd())))
+project_id = splitext(basename(run.bcbio_yaml_fpath))[0]
+
 
 loc = get_loc()
 az300 = join(loc.hsapiens, run.genome_build, 'coverage', 'prioritize', 'cancer', 'az300.bed.gz')
@@ -45,29 +47,29 @@ else:
 
 def upload_all(wc):
     batch_outputs = [
-        '{batch}/coverage/indexcov/index.html',
-        '{batch}/coverage/tumor.depth.bed',
-        '{batch}/coverage/normal.depth.bed',
-        '{batch}/structural/cnvkit-diagram.pdf',
-        '{batch}/structural/sv-prioritize-manta-pass.vcf',
-        '{batch}/structural/sv-prioritize-manta-pass.bedpe',
-        '{batch}/structural/sv-prioritize-manta-pass.ribbon.bed',
-        '{batch}/igv/tumor_mini.bam',
-        '{batch}/igv/normal_mini.bam',
-        '{batch}/rmd_report.html',
+        '{batch}/coverage/{batch}-indexcov/index.html',
+        '{batch}/coverage/{batch}-tumor.depth.bed',
+        '{batch}/coverage/{batch}-normal.depth.bed',
+        '{batch}/structural/{batch}-cnvkit-diagram.pdf',
+        '{batch}/structural/{batch}-sv-prioritize-manta-pass.vcf',
+        '{batch}/structural/{batch}-sv-prioritize-manta-pass.bedpe',
+        '{batch}/structural/{batch}-sv-prioritize-manta-pass.ribbon.bed',
+        '{batch}/igv/{batch}-tumor_mini.bam',
+        '{batch}/igv/{batch}-normal_mini.bam',
+        '{batch}/{batch}-rmd_report.html',
         '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.tar.gz',
-        '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.tar.gz',
+        '{batch}/pcgr/input/{batch}-' + unique_id + '-normal.tar.gz',
     ]
     all = expand(batch_outputs, batch=batch_by_name.keys()) + [
-        'log/data_versions.csv',
-        'log/programs.txt',
-        'log/config',
-        'multiqc_report.html'
+        'log/' + project_id + '-data_versions.csv',
+        'log/' + project_id + '-programs.txt',
+        'log/' + project_id + '-config',
+        project_id + '-multiqc_report.html'
     ]
     if loc.name == 'spartan':
         all.extend(expand([
             '{batch}/pcgr/input/upload-somatic.done',
-            '{batch}/pcgr/input/upload-germline.done',
+            '{batch}/pcgr/input/upload-normal.done',
         ], batch=batch_by_name.keys()))
     return all
 
@@ -87,7 +89,7 @@ rule copy_multiqc:  # {}
     input:
         join(run.date_dir, 'multiqc/multiqc_report.html')
     output:
-        'multiqc_report.html'
+        project_id + '-multiqc_report.html'
     shell:
         'cp {input} {output}'
 
@@ -100,13 +102,11 @@ rule copy_logs:  # {}
         join(run.date_dir, 'programs.txt'), 
         run.config_dir
     output:
-        'log/data_versions.csv', 
-        'log/programs.txt', 
-        'log/config'
-    params:
-        log_dir = 'log'
+        'log/' + project_id + '-data_versions.csv',
+        'log/' + project_id + '-programs.txt',
+        'log/' + project_id + '-config'
     shell:
-        'cp -r {input} {params.log_dir}'
+        'cp -r {input[0]} {output[0]} && cp -r {input[1]} {output[1]} && cp -r {input[2]} {output[2]}'
 
 
 

@@ -26,8 +26,8 @@ rule pcgr_germline_vcf:
         vcf = rules.germline_vcf_prep.output.vcf,
         tbi = rules.germline_vcf_prep.output.tbi
     output:
-        vcf = '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.vcf.gz',
-        tbi = '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/input/{batch}-' + unique_id + '-normal.vcf.gz',
+        tbi = '{batch}/pcgr/input/{batch}-' + unique_id + '-normal.vcf.gz.tbi'
     shell:
         'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
@@ -45,10 +45,10 @@ from umccrise.patient_analysis import here as pa_source_dir
 rule prep_tomls:
     input:
         somatic = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml'),
-        germline = join(pa_source_dir, 'pcgr', 'pcgr_configuration_germline.toml')
+        germline = join(pa_source_dir, 'pcgr', 'pcgr_configuration_normal.toml')
     output:
         somatic = '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.toml',
-        germline = '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.toml'
+        germline = '{batch}/pcgr/input/{batch}-' + unique_id + '-normal.toml'
     shell:
         'cp {input.somatic} {output.somatic} && cp {input.germline} {output.germline}'
 
@@ -78,7 +78,7 @@ rule germline_tar_gz:
         tbi = rules.pcgr_germline_vcf.output.tbi,
         toml = rules.prep_tomls.output.germline
     output:
-        '{batch}/pcgr/input/{batch}-' + unique_id + '-germline.tar.gz'
+        '{batch}/pcgr/input/{batch}-' + unique_id + '-normal.tar.gz'
     params:
         basedir = '{batch}/pcgr/input/',
         vcf = lambda wc, input: basename(input.vcf),
@@ -107,7 +107,7 @@ rule upload_germline_to_pcgr:
     input:
         rules.germline_tar_gz.output[0]
     output:
-        '{batch}/pcgr/input/upload-germline.done'
+        '{batch}/pcgr/input/upload-normal.done'
     shell:
         upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
@@ -146,7 +146,7 @@ rule pcgr:
 
 rule pcgr_download:
     input:
-        expand(rules.download_pcgr.output, phenotype=['somatic', 'germline'], batch=batch_by_name.keys())
+        expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys())
 
 
 

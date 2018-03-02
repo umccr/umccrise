@@ -14,7 +14,7 @@ rule cnvkit_cleanup:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
-        'work/{batch}/structural/cnvkit-nolabels.cns'
+        'work/{batch}/structural/{batch}-cnvkit-nolabels.cns'
     shell:
         'cat {input}'
         ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\'] + x.split()[4:]) if not x.startswith(\'chromosome\') else x.split())"'
@@ -25,7 +25,7 @@ rule cnvkit_plot:
     input:
         rules.cnvkit_cleanup.output[0]
     output:
-        '{batch}/structural/cnvkit-diagram.pdf'
+        '{batch}/structural/{batch}-cnvkit-diagram.pdf'
     shell:
         'cnvkit.py diagram -s {input} -o {output}'
 
@@ -37,7 +37,7 @@ rule prep_sv_vcf:
     input:
         manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
     output:
-        vcf = '{batch}/structural/sv-prioritize-manta-pass.vcf'
+        vcf = '{batch}/structural/{batch}-sv-prioritize-manta-pass.vcf'
     shell:
         'bcftools view -f.,PASS {input.manta_vcf} > {output}'
 
@@ -47,7 +47,7 @@ rule prep_sv_tsv:
         sv_prio = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize.tsv'),
         vcf = rules.prep_sv_vcf.output.vcf
     output:
-        '{batch}/structural/sv-prioritize-manta-pass.tsv'
+        '{batch}/structural/{batch}-sv-prioritize-manta-pass.tsv'
     shell:
         'head -n1 {input.sv_prio} > {output} && '
         'grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) >> {output}'
@@ -97,7 +97,7 @@ rule ribbon:
         starts = rules.ribbon_filter_vcfbedtope_starts.output[0],
         ends = rules.ribbon_filter_vcfbedtope_ends.output[0]
     output:
-        '{batch}/structural/sv-prioritize-manta-pass.ribbon.bed'
+        '{batch}/structural/{batch}-sv-prioritize-manta-pass.ribbon.bed'
     params:
         vcftobedpe = vcftobedpe
     shell:
@@ -109,7 +109,7 @@ rule bedpe:
     input:
         manta_vcf = rules.prep_sv_vcf.output.vcf
     output:
-        '{batch}/structural/sv-prioritize-manta-pass.bedpe'
+        '{batch}/structural/{batch}-sv-prioritize-manta-pass.bedpe'
     params:
         vcftobedpe = vcftobedpe
     shell:
