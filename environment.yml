@@ -14,20 +14,20 @@ dependencies:
   - bedops
   - bedtools
   - vcfanno
-  - vcflib
+  - vcflib  # for VCF normalisation
   - snakemake
   - pythonpy
-  - goleft
-  - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
-  - awscli
-  - pyasn1  # for awscli - for some reason doesn't install automatically on macos
-  - cyvcf2
-  - ngs_utils>=1.2.4
   - click
-  - cnvkit
+  - cyvcf2
   - pandas
   #
+  # Umccrise-specific
+  - goleft
+  - awscli
+  - pyasn1  # for awscli - for some reason doesn't install automatically on macos
+  - cnvkit
   # R libraries
+  - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - r
   - r-rmarkdown
   - r-ggplot2
@@ -43,3 +43,7 @@ dependencies:
   - r-devtools
   - r-readr
   - r-stringr
+  - pip:
+    - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
+    - "--editable=git+https://github.com/umccr/python_utils#egg=python_utils"
+    - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"

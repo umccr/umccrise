@@ -1,6 +1,3 @@
-from umccrise.panel_of_normals import get_toml_path
-
-
 #################
 #### Somatic ####
 
@@ -31,8 +28,7 @@ rule somatic_vcf_filter_af:  # {batch}
 
 rule somatic_vcf_pon:  # {batch}
     input:
-        vcf = rules.somatic_vcf_filter_af.output.vcf,
-        toml = get_toml_path()
+        vcf = rules.somatic_vcf_filter_af.output.vcf
     params:
         ht = 1,
         normals_dir = loc.panel_of_normals_dir
@@ -40,12 +36,7 @@ rule somatic_vcf_pon:  # {batch}
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz',
         tbi = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz.tbi'
     shell:
-        'vcfanno -permissive-overlap'
-        ' <(sed s#file=\\\"#file=\\\"{params.normals_dir}/# {input.toml})'
-        ' {input.vcf} |'
-        ' bcftools filter -e "INFO/PoN_CNT>={params.ht}" --soft-filter PoN --mode + -Oz -o {output.vcf}'
-        ' && tabix -p vcf {output.vcf}'
-        #'bcftools annotate --collapse all -c "INFO/PoN" -a {input.pon_vcf} {input.vcf} -Oz -o [output.vcf}'
+        'pon_anno {input.vcf} -h {params.ht} -o {output.vcf} && tabix -p vcf {output.vcf}'
 
 rule somatic_vcf_pon_pass:  # {batch}
     input:

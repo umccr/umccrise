@@ -10,21 +10,16 @@ setup(
     name='umccrise',
     version=version,
     author='Vlad Saveliev',
-    description='VCF file normalization, validation and filtering',
+    description='UMCCRisation of bcbio-nextgen analysis results',
     keywords='bioinformatics',
     license='GPLv3',
     packages=[
         'umccrise',
     ],
     scripts=[
-        'scripts/panel_of_normals',
-        'scripts/anno_pon',
-        'scripts/normalise_vcf',
         'scripts/umccrise',
         'scripts/umccrize',
-        'scripts/pcgr_prep',
         'scripts/vcfToBedpe',
-        'scripts/eval_vcf',
     ],
     include_package_data=True,
 )
