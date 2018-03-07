@@ -1,5 +1,6 @@
 #################
 #### Somatic ####
+from umccrise import get_cancer_genes_ensg
 
 # Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and non-passed calls.
 # Suites for PCGR, but for all other processing steps too
@@ -30,8 +31,7 @@ rule somatic_vcf_pon:  # {batch}
     input:
         vcf = rules.somatic_vcf_filter_af.output.vcf
     params:
-        ht = 1,
-        normals_dir = loc.panel_of_normals_dir
+        ht = 1
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz',
         tbi = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz.tbi'
@@ -51,7 +51,6 @@ rule somatic_vcf_pon_pass:  # {batch}
 ##################
 #### Germline ####
 # Annotate any events found in Sean's 105/106 cancer predisposition gene set.
-from umccrise.patient_analysis import get_cancer_genes_ensg
 rule germline_vcf_subset:  # {batch}
     input:
         vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}-ensemble-annotated.vcf.gz'),

@@ -7,7 +7,7 @@ from ngs_utils.file_utils import splitext_plus
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
 from ngs_utils.logger import critical
-from umccrise.utils import get_loc
+from python_utils.hpc import get_ref_file, get_loc
 
 
 shell.executable("bash")
@@ -22,9 +22,8 @@ run = BcbioProject(config.get('run_dir', abspath(os.getcwd())))
 project_id = splitext(basename(run.bcbio_yaml_fpath))[0]
 
 
-loc = get_loc()
-az300 = join(loc.hsapiens, run.genome_build, 'coverage', 'prioritize', 'cancer', 'az300.bed.gz')
-ref_fa = join(loc.hsapiens, run.genome_build, 'seq', run.genome_build + '.fa')
+az300 = get_ref_file(run.genome_build, 'az300')
+ref_fa = get_ref_file(run.genome_build)
 
 # Batch objects index by tumor sample names
 batch_by_name = {b.tumor.name: b for b in run.batch_by_name.values() if not b.is_germline()}
@@ -66,7 +65,7 @@ def upload_all(wc):
         'log/' + project_id + '-config',
         project_id + '-multiqc_report.html'
     ]
-    if loc.name == 'spartan':
+    if get_loc().name == 'spartan':
         all.extend(expand([
             '{batch}/pcgr/input/upload-somatic.done',
             '{batch}/pcgr/input/upload-normal.done',

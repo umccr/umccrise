@@ -4,7 +4,8 @@ PCGR
 Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
 """
 from os.path import relpath, basename
-from umccrise import panel_of_normals
+from python_utils.hpc import get_loc
+from umccrise import package_path
 
 
 ##### Preparing inputs for pcgr.py
@@ -40,12 +41,10 @@ rule pcgr_cns:
     shell:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | grep -v ^chromosome | cut -f 1,2,3,5 >> {output}'
 
-from umccrise.patient_analysis import here as pa_source_dir
-
 rule prep_tomls:
     input:
-        somatic = join(pa_source_dir, 'pcgr', 'pcgr_configuration_somatic.toml'),
-        germline = join(pa_source_dir, 'pcgr', 'pcgr_configuration_normal.toml')
+        somatic = join(package_path(), 'pcgr', 'pcgr_configuration_somatic.toml'),
+        germline = join(package_path(), 'pcgr', 'pcgr_configuration_normal.toml')
     output:
         somatic = '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.toml',
         germline = '{batch}/pcgr/input/{batch}-' + unique_id + '-normal.toml'
@@ -91,7 +90,7 @@ rule germline_tar_gz:
 ##### Uploading tarballs
 
 upload_proxy = ''
-if loc.name == 'spartan':
+if get_loc().name == 'spartan':
     upload_proxy = 'export HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000; '
 
 

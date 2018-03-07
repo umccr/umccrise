@@ -50,9 +50,9 @@ before_install:
 #  - $HOME/seq
 
 
-####################################################
-## If you want to install miniconda from scratch: ##
-####################################################
+######################################################
+## If you want to pull cached miniconda and update: ##
+######################################################
 install:
   # Get and install anaconda (https://conda.io/docs/travis.html) and umccrise packages
   - if [ -d $HOME/miniconda ]; then echo "ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;

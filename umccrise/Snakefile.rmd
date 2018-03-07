@@ -1,4 +1,5 @@
-from umccrise.patient_analysis import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
+from python_utils.hpc import get_genomes_d, get_ref_file
+from umccrise import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
 
 
 ## Allelic frequencies
@@ -25,7 +26,7 @@ rule subset_to_giab:
     input:
         vcf = rules.pcgr_somatic_vcf.output.vcf
     params:
-        regions = join(loc.hsapiens, loc.truth_sets['giab'][run.genome_build]['bed'])
+        regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
     output:
         'work/{batch}/rmd/afs/ensemble-confident.vcf.gz'
     shell:

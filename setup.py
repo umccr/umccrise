@@ -4,7 +4,7 @@ import os
 from os.path import join, isfile, abspath, dirname
 from setuptools import setup
 
-version = '0.2.1'
+version = '0.3.0'
 
 setup(
     name='umccrise',
@@ -17,9 +17,13 @@ setup(
         'umccrise',
     ],
     scripts=[
-        'scripts/umccrise',
-        'scripts/umccrize',
         'scripts/vcfToBedpe',
     ],
+    entry_points = {
+        'console_scripts': [
+            'umccrise=umccrise:main',
+            'umccrize=umccrise:main',
+        ],
+    },
     include_package_data=True,
 )
