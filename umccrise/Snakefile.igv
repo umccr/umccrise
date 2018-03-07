@@ -34,5 +34,6 @@ rule igv_bam:
 
 
 rule igv:
+    priority: -50
     input:
         expand(rules.igv_bam.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())
