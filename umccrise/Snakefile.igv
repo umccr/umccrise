@@ -21,6 +21,7 @@ rule igv_bed:
 
 
 rule igv_bam:
+    priority: -50
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = rules.igv_bed.output
