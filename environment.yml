@@ -43,6 +43,7 @@ dependencies:
   - r-devtools
   - r-readr
   - r-stringr
+  - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
   #
   # Actively developed accompanying libraries
   - pip:
