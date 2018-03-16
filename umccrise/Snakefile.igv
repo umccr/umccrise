@@ -29,12 +29,22 @@ rule igv_bam:
         '{batch}/igv/{batch}-{phenotype}_mini.bam'
     threads: threads_max
     shell:
-#        'sambamba view -f bam -L {input.bed} {input.bam} -t {threads} > {output}'
         'samtools view -b -L {input.bed} {input.bam} -@ {threads} > {output}'
         ' && samtools index {output}'
+
+
+rule igv_upload:
+    priority: -50
+    input:
+        rules.igv_bam.output
+    output:
+        '{batch}/igv/upload-{phenotype}.done'
+    shell:
+        upload_proxy + 'aws s3 cp {input} s3://umccr-igv && touch {output}'
 
 
 rule igv:
     priority: -50
     input:
-        expand(rules.igv_bam.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())
+        expand((rules.igv_upload.output if get_loc().name == 'spartan' else rules.igv_bam.output),
+               phenotype=['tumor', 'normal'], batch=batch_by_name.keys())

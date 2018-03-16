@@ -44,6 +44,11 @@ else:
     print(f'Creating new unique ID for PCGR: {unique_id}')
 
 
+upload_proxy = ''
+if get_loc().name == 'spartan':
+    upload_proxy = 'export HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000; '
+
+
 def upload_all(wc):
     batch_outputs = [
         '{batch}/coverage/{batch}-indexcov/index.html',
@@ -67,9 +72,12 @@ def upload_all(wc):
     ]
     if get_loc().name == 'spartan':
         all.extend(expand([
+            '{batch}/igv/upload-tumor.done',
+            '{batch}/igv/upload-normal.done',
             '{batch}/pcgr/input/upload-somatic.done',
-            '{batch}/pcgr/input/upload-normal.done',
+            '{batch}/pcgr/input/upload-normal.done'
         ], batch=batch_by_name.keys()))
+
     return all
 
 rule all:
