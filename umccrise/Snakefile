@@ -105,12 +105,10 @@ rule progress:
         expand(rules.somatic_vcf_pon_pass.output, batch=batch_by_name.keys()),
         expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys()),
         expand(rules.sig_rmd.output[0], batch=batch_by_name.keys()),
-        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.igv_upload.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
-        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys())
+        expand((rules.upload_somatic_to_pcgr.output if is_hpc else rules.somatic_tar_gz.output), batch=batch_by_name.keys()),
+        expand((rules.upload_germline_to_pcgr.output if is_hpc else rules.germline_tar_gz.output), batch=batch_by_name.keys()),
+        expand((rules.igv_upload.output if is_hpc else rules.igv_bam.output), phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
+        (expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys()) if is_hpc else [])
     output:
         'umccrised.progress'
     shell:
