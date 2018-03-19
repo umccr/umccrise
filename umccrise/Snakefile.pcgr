@@ -90,6 +90,7 @@ rule germline_tar_gz:
 ##### Uploading tarballs
 
 rule upload_somatic_to_pcgr:
+    priority: 50
     input:
         rules.somatic_tar_gz.output[0]
     output:
@@ -98,6 +99,7 @@ rule upload_somatic_to_pcgr:
         upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
 rule upload_germline_to_pcgr:
+    priority: 50
     input:
         rules.germline_tar_gz.output[0]
     output:
@@ -107,17 +109,28 @@ rule upload_germline_to_pcgr:
 
 
 rule download_pcgr:
+    input:
+        expand(rules.igv_upload.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys()) if not config.get('download_pcgr') else []  # unless download_pcgr is set explicitly, run only after done with IGV - to make sure instance is finished
     output:
-        html = '{batch}/pcgr/{batch}-' + unique_id + '-{phenotype}.pcgr.html'
+         '{batch}/pcgr/{batch}-' + unique_id + '-{phenotype}.pcgr.download_status'  # even if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
+    # output:
+    #     (('{batch}/pcgr/{batch}-' + unique_id + '-{phenotype}.pcgr.html')
+    #      if config.get('download_pcgr')
+    #      else ('{batch}/pcgr/{batch}-' + unique_id + '-{phenotype}.pcgr.download_status'))  # if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
     params:
         targz_folder = '{batch}/work/pcgr',
         targz_fname = '{batch}-' + unique_id + '-{phenotype}-output.tar.gz',
         untar_output_dirname = '{batch}-' + unique_id + '-{phenotype}-output',
         final_output_folder = '{batch}/pcgr'
     shell:
-        'mkdir -p {params.targz_folder} && ' + upload_proxy + 'aws s3 cp s3://pcgr/{params.targz_fname} {params.targz_folder}'
-        ' && tar -xzf {params.targz_folder}/{params.targz_fname} -C {params.targz_folder} '
+        'aws s3 ls s3://pcgr/{params.targz_fname}'
+        ' && mkdir -p {params.targz_folder} '
+        ' && ' + upload_proxy + 'aws s3 cp s3://pcgr/{params.targz_fname} {params.targz_folder}'
+        ' && tar -xzf {params.targz_folder}/{params.targz_fname} -C {params.targz_folder}'
         ' && mv {params.targz_folder}/{params.untar_output_dirname}/* {params.final_output_folder}'
+        ' && echo "ok" > {output}'
+        ' || echo "Cannot find the result tarball at s3://pcgr/{params.targz_fname}. PCGR is not finished?" >&2'
+        ' && echo "failed" > {output}'
 
 
 #############
@@ -129,20 +142,16 @@ rule pcgr_prep:
 
 rule pcgr_upload:
     input:
-       expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
-       expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
+        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
+        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
 
 rule pcgr:
     input:
-       expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
-       expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
-
+        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
+        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
 
 rule pcgr_download:
     input:
         expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys())
-
-
-
-
-
+    shell:
+        'if [ -f {input[0]} -a -f {input[1]} ] ; then rm {input} ; fi'

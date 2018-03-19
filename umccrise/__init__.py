@@ -41,6 +41,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
     if unique_id:
         conf += f' unique_id={unique_id}'
         rule.append('pcgr_download')
+        conf += f' pcgr_download=yes'
 
     if 'pcgr_download' in rule and not unique_id:
         sys.stderr.write(f'Error: when you run pcgr_download, provide the unique id with --uid option so umccrise can find the tarballs:\n')

@@ -29,9 +29,12 @@ ref_fa = get_ref_file(run.genome_build)
 batch_by_name = {b.tumor.name: b for b in run.batch_by_name.values() if not b.is_germline()}
 name = config.get('batch') or config.get('sample')
 if name:
-    batch_by_name = {n: b for n, b in batch_by_name.items() if b.name == name or b.tumor.name == name}
-    if len(batch_by_name) == 0:
-        critical(f'Error: could not find a batch or a sample with the name {name}')
+    selected_batch_by_name = {n: b for n, b in batch_by_name.items() if b.name == name or b.tumor.name == name}
+    if len(selected_batch_by_name) == 0:
+        critical(f'Error: could not find a batch or a sample with the name {name}. '
+                 f'Known batches: {list(b.name for b in batch_by_name.values())}, '
+                 f'known samples: {list(b.tumor.name for b in batch_by_name.values())}')
+    batch_by_name = selected_batch_by_name
 
 
 # Generating unique ID for PCGR tarballs
@@ -44,51 +47,24 @@ else:
     print(f'Creating new unique ID for PCGR: {unique_id}')
 
 
+is_spartan = get_loc().name == 'spartan'
+is_raijin = get_loc().name == 'raijin'
+is_hpc = is_spartan or is_raijin
 upload_proxy = ''
-if get_loc().name == 'spartan':
+if is_spartan:
     upload_proxy = 'export HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000; '
 
 
-def upload_all(wc):
-    batch_outputs = [
-        '{batch}/coverage/{batch}-indexcov/index.html',
-        '{batch}/coverage/{batch}-tumor.depth.bed',
-        '{batch}/coverage/{batch}-normal.depth.bed',
-        '{batch}/structural/{batch}-cnvkit-diagram.pdf',
-        '{batch}/structural/{batch}-sv-prioritize-manta-pass.vcf',
-        '{batch}/structural/{batch}-sv-prioritize-manta-pass.bedpe',
-        '{batch}/structural/{batch}-sv-prioritize-manta-pass.ribbon.bed',
-        '{batch}/igv/{batch}-tumor_mini.bam',
-        '{batch}/igv/{batch}-normal_mini.bam',
-        '{batch}/{batch}-rmd_report.html',
-        '{batch}/pcgr/input/{batch}-' + unique_id + '-somatic.tar.gz',
-        '{batch}/pcgr/input/{batch}-' + unique_id + '-normal.tar.gz',
-    ]
-    all = expand(batch_outputs, batch=batch_by_name.keys()) + [
-        'log/' + project_id + '-data_versions.csv',
-        'log/' + project_id + '-programs.txt',
-        'log/' + project_id + '-config',
-        project_id + '-multiqc_report.html'
-    ]
-    if get_loc().name == 'spartan':
-        all.extend(expand([
-            '{batch}/igv/upload-tumor.done',
-            '{batch}/igv/upload-normal.done',
-            '{batch}/pcgr/input/upload-somatic.done',
-            '{batch}/pcgr/input/upload-normal.done'
-        ], batch=batch_by_name.keys()))
-
-    return all
-
 rule all:
-    input: upload_all
+    input: 'umccrised.progress'    # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
+    shell: 'rm {input}'            # We could just keep that redundant ".done" file, but better to remove it to avoid confusing the user.
 
 
 include: "Snakefile.small_variants"
 include: "Snakefile.coverage"
-include: "Snakefile.pcgr"
 include: "Snakefile.structural"
 include: "Snakefile.igv"
+include: "Snakefile.pcgr"
 include: "Snakefile.rmd"
 
 
@@ -116,4 +92,26 @@ rule copy_logs:  # {}
         'cp -r {input[0]} {output[0]} && cp -r {input[1]} {output[1]} && cp -r {input[2]} {output[2]}'
 
 
-
+rule progress:
+    input:  # Copy here inputs of the "milestone" rules (rules without output defined in the end of each Snakemake.* file)
+        rules.copy_multiqc.output,
+        rules.copy_logs.output,
+        expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
+        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
+        expand(rules.bedpe.output, batch=batch_by_name.keys()),
+        expand(rules.ribbon.output, batch=batch_by_name.keys()),
+        expand(rules.prep_sv_tsv.output, batch=batch_by_name.keys()),
+        expand(rules.cnvkit_plot.output, batch=batch_by_name.keys()),
+        expand(rules.somatic_vcf_pon_pass.output, batch=batch_by_name.keys()),
+        expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys()),
+        expand(rules.sig_rmd.output[0], batch=batch_by_name.keys()),
+        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
+        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
+        expand(rules.igv_upload.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
+        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
+        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys()),
+        expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys())
+    output:
+        'umccrised.progress'
+    shell:
+        'touch {output}'

@@ -46,5 +46,4 @@ rule igv_upload:
 rule igv:
     priority: -50
     input:
-        expand((rules.igv_upload.output if get_loc().name == 'spartan' else rules.igv_bam.output),
-               phenotype=['tumor', 'normal'], batch=batch_by_name.keys())
+        expand(rules.igv_upload.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())
