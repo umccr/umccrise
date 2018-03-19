@@ -23,7 +23,7 @@ def package_path():
 @click.option('-o', 'output_dir', type=click.Path())
 @click.option('-j', 'jobs', default=1)
 @click.option('-s', '--sample', 'sample')
-@click.option('-s', '--batch', 'batch')
+@click.option('-b', '--batch', 'batch')
 @click.option('-u', '--uid', '--uuid', 'unique_id')
 @click.option('--unlock', is_flag=True)
 def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, unique_id=None, unlock=False):
