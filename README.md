@@ -3,14 +3,28 @@ UMCCRization of bcbio results: filter, normalise, generate plots and reports
 
 [![Build Status](https://travis-ci.org/umccr/umccrise.svg?branch=master)](https://travis-ci.org/umccr/umccrise)
 
+Umccrise post-processess an output from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) somatic variant calling pipeline for cancer samples:
+
+- Filters small somatic calls with [panel of normals](https://github.com/umccr/vcf_stuff#panel-of-normals)
+- Filters small germline calls with key genes
+- Runs [PCGR](https://github.com/sigven/pcgr) using the [AWS runner](https://github.com/umccr/pcgr-deploy) for somatic, germline and structural variants
+- Generates an Rmd report with mutational signatures and strand bias analysis
+- QCs coverage for 300 key cancer genes
+- Filters CNV and plots a diagram
+- Filters SV and generates files to view in Ribbon
+- Generates minibams to view in IGV
+- Copies MultiQC reports and summaries from bcbio
+
 ## Installation
 
 Clone the repository
+
 ```
 git clone https://github.com/umccr/umccrise
 ```
 
 Install conda
+
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p ./miniconda
@@ -18,6 +32,7 @@ export PATH=$(pwd)/miniconda/bin:$PATH
 ```
 
 Install umccrise
+
 ```
 conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
 source activate $(pwd)/miniconda/envs/umccrise
@@ -25,6 +40,7 @@ pip install -e .
 ```
 
 Create a loader script
+
 ```
 cat <<EOT > load_umccrise.sh
 SCRIPTPATH=\$(dirname \$(readlink -e $(pwd)))
@@ -34,6 +50,7 @@ EOT
 ```
 
 To update
+
 ```
 source load_umccrise.sh
 git pull                                                             # if the code base changed
@@ -42,6 +59,7 @@ conda env update -f environment.yml                                  # if depend
 ```
 
 To test
+
 ```
 source load_umccrise.sh
 git clone https://github.com/umccr/umccrise_test_data
@@ -51,11 +69,13 @@ nosetests -s umccrise_test_data/test_umccrise.py
 ## Loading
 
 *Raijin:*
+
 ```
 source /g/data3/gx8/extras/umccrise/load_umccrise.sh
 ```
 
 *Spartan:*
+
 ```
 source /data/cephfs/punim0010/extras/umccrise/load_umccrise.sh
 ```
@@ -69,24 +89,43 @@ umccrise /path/to/bcbio/project/final -j 30  # run using 30 CPUs
 ```
 
 The output will be created in `umccrised` folder. To override, use `-o`:
+
 ```
 umccrise /path/to/bcbio/project/final -o umccrised_results
 ```
 
-To just run a particular part of the workflow, use:
-```
-umccrise /path/to/bcbio/project/final <part_name>
-```
-Where `<part_name>` is one of `pcgr`, `pcgr_download`, `coverage`, `structural`, `small_variants`, `igv`, `sig`, `copy_multiqc`, `copy_logs`.
+#### Run selected steps
 
-E.g.:
+Umccrise workflow consists of the following steps: `pcgr`, `pcgr_download`, `coverage`, `structural`, `small_variants`, `sig`, `copy_multiqc`, `copy_logs`, `igv`.
+
+To run just a particular step (or steps), use:
+
+```
+umccrise /path/to/bcbio/project/final <step_name>
+```
+
+Where `<step_name>` is from the list above. E.g.:
+
 ```
 umccrise /path/to/bcbio/project/final pcgr
 ```
 
-Umccrise submits a request to PCGR AWS instance. To download the results back, use the `pcgr_download` target, and specify the unique ID from the original umccrise run when the PCGR request was submitted:
+Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-igv`) takes ~5 hours for a WGS sample compared to ~20 minutes for all other steps combined. For that reason, it is always executed in the end of the pipeline, so you can expect that when it is being executed, all other output is ready - except for PCGR reports which are submitted to the AWS instance (see below).
+
+#### <a name="pcgr"></a> Getting PCGR results
+As part of the pipeline, Umccrise submits a request to [PCGR AWS](https://github.com/umccr/pcgr-deploy) instance at `s3://pcgr`. To download the results back, use the `pcgr_download` target, and specify the unique ID from the original umccrised run when the PCGR request was submitted:
+
 ```
 umccrise /path/to/bcbio/project/final pcgr_download --uid f725ab
+```
+
+#### Run on selected samples
+
+By default, Umccrise will process all batches in the run in parallel. You can submit only one sample/batch using `--sample` or `--batch` arguments, e.g.:
+
+```
+umccrise /path/to/bcbio/project/final --batch cup-batch
+umccrise /path/to/bcbio/project/final --sample cup-tumor
 ```
 
 ## Output
