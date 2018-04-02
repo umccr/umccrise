@@ -38,11 +38,6 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
     if batch:
         conf += f' batch={batch}'
 
-    if unique_id:
-        conf += f' unique_id={unique_id}'
-        rule.append('pcgr_download')
-        conf += f' pcgr_download=yes'
-
     if 'pcgr_download' in rule and not unique_id:
         sys.stderr.write(f'Error: when you run pcgr_download, provide the unique id with --uid option so umccrise can find the tarballs:\n')
         sys.stderr.write('\n')
@@ -50,9 +45,23 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
         sys.stderr.write(f'    {args} --uid XXXXXX\n')
         sys.stderr.write('\n')
         sys.exit(1)
+    if unique_id:
+        conf += f' unique_id={unique_id}'
+        conf += f' pcgr_download=yes'
 
     output_dir = output_dir or 'umccrised'
     output_dir = abspath(output_dir)
+
+    if unlock:
+        print('Unlocking previous run...')
+        cmd = (f'snakemake ' +
+            f'--snakefile {join(package_path(), "Snakefile")} ' +
+            f'--directory {output_dir} ' +
+           (f'--unlock ' if unlock else '')
+        )
+        print(cmd)
+        subprocess.call(cmd, shell=True)
+        print('Now rerunning')
 
     cmd = (f'snakemake ' +
         f'{" ".join(rule)} ' +
@@ -60,8 +69,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
         f'--printshellcmds ' +
         f'--directory {output_dir} ' +
         f'-j {jobs} ' +
-        f'--config {conf} ' +
-       (f'--unlock ' if unlock else '')
+        f'--config {conf} '
     )
     print(cmd)
     exit_code = subprocess.call(cmd, shell=True)

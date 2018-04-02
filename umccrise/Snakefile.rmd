@@ -112,8 +112,7 @@ rule sig_rmd:
         'sig_probs=\'{input.sig_probs}\', '
         'suppressors=\'{input.suppressors}\', '
         'workdir=\'{params.workdir}\''
-        '))"'
-        ' && if [ -e x.txt ] ; then exit 1; fi')
+        '))"')
 
 
 #############
