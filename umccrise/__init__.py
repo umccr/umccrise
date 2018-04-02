@@ -52,25 +52,20 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
     output_dir = output_dir or 'umccrised'
     output_dir = abspath(output_dir)
 
-    if unlock:
-        print('Unlocking previous run...')
-        cmd = (f'snakemake ' +
-            f'--snakefile {join(package_path(), "Snakefile")} ' +
-            f'--directory {output_dir} ' +
-           (f'--unlock ' if unlock else '')
-        )
-        print(cmd)
-        subprocess.call(cmd, shell=True)
-        print('Now rerunning')
-
     cmd = (f'snakemake ' +
         f'{" ".join(rule)} ' +
         f'--snakefile {join(package_path(), "Snakefile")} ' +
         f'--printshellcmds ' +
         f'--directory {output_dir} ' +
         f'-j {jobs} ' +
-        f'--config {conf} '
-    )
+        f'--config {conf} ')
+
+    if unlock:
+        print('* Unlocking previous run... *')
+        print(cmd + ' --unlock')
+        subprocess.call(cmd + ' --unlock', shell=True)
+        print('* Now rerunning *')
+
     print(cmd)
     exit_code = subprocess.call(cmd, shell=True)
     if exit_code != 0:
