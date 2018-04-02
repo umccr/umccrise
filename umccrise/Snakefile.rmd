@@ -94,14 +94,15 @@ rule sig_rmd:
         sig_probs = get_signatures_probabilities(),
         suppressors = get_suppressors()
     params:
+        rmd_tmp = 'work/{batch}/rmd/sig.Rmd',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         workdir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0])
     output:
         '{batch}/{batch}-rmd_report.html'
-    run:
-        os.system("which Rscript")
-        shell('Rscript -e "rmarkdown::render(\'{input.sig_rmd}\', '
+    shell:
+        'cp {input.sig_rmd} {params.rmd_tmp} && ' \
+        'Rscript -e "rmarkdown::render(\'{params.rmd_tmp}\', '
         'output_file=\'{params.output_file}\', '
         'params=list('
         'af_freqs=\'{input.afs}\', '
@@ -112,7 +113,7 @@ rule sig_rmd:
         'sig_probs=\'{input.sig_probs}\', '
         'suppressors=\'{input.suppressors}\', '
         'workdir=\'{params.workdir}\''
-        '))"')
+        '))"'
 
 
 #############
