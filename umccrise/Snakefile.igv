@@ -27,7 +27,7 @@ rule igv_bam:
         bed = rules.igv_bed.output
     output:
         '{batch}/igv/{batch}-{phenotype}_mini.bam'
-    threads: threads_max
+    threads: max(1, threads_max // len(batch_by_name))
     shell:
         'samtools view -b -L {input.bed} {input.bam} -@ {threads} > {output}'
         ' && samtools index {output}'

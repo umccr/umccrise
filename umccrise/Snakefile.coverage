@@ -11,7 +11,7 @@ rule goleft_depth:
         cutoff = lambda wc: cov_by_phenotype[wc.phenotype]
     output:
         '{batch}/coverage/{batch}-{phenotype}.depth.bed'
-    threads: threads_max
+    threads: max(1, threads_max // len(batch_by_name))
     shell:
         'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
 
