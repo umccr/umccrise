@@ -8,7 +8,8 @@ from python_utils.hpc import get_loc
 from umccrise import package_path
 
 
-##### Preparing inputs for pcgr.py
+######################
+### Preparing inputs
 
 # PCGR struggles with anything but the basic chromosome setup.
 # It also ignores any variant not marked `PASS` so might as well remove others to save on transfer times.
@@ -51,8 +52,8 @@ rule prep_tomls:
     shell:
         'cp {input.somatic} {output.somatic} && cp {input.germline} {output.germline}'
 
-
-##### Making tarballs
+######################
+###  Making tarballs
 
 rule somatic_tar_gz:
     input:
@@ -86,8 +87,8 @@ rule germline_tar_gz:
     shell:
         'tar -czf {output} -C {params.basedir} {params.vcf} {params.tbi} {params.toml}'
 
-
-##### Uploading tarballs
+######################
+###  Uploading tarballs
 
 upload_cmd = 'aws s3 ls s3://pcgr/{params.fname}' \
     ' && touch {output}; echo "Tarball already uploaded, or cannot access the bucket"' \
@@ -115,12 +116,35 @@ rule upload_germline_to_pcgr:
     shell:
         upload_cmd
 
+######################
+###  Target rules
+
+rule pcgr_prep:
+    input:
+        expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys()),
+        expand(rules.germline_tar_gz.output, batch=batch_by_name.keys())
+    output:
+        temp(touch('pcgr_prep.done'))
+
+rule pcgr:
+    input:
+        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
+        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
+    output:
+        temp(touch('pcgr.done'))
+
+###################
+### Downloading results
 
 rule download_pcgr:
     input:
-        expand(rules.igv_upload.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys()) if not config.get('download_pcgr') else []  # unless download_pcgr is set explicitly, run only after done with IGV - to make sure instance is finished
+        expand(rules.igv_upload.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())\
+            if not config.get('pcgr_download')\
+            else []  # unless download_pcgr is set explicitly, run only after done with IGV - to make sure instance is finished
     output:
-         '{batch}/pcgr/{batch}-' + unique_id + '-{phenotype}.pcgr.download_status'  # even if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
+         # Even if failed, create some output anyway - we cannot be sure that PCGR has
+         # finished, so shouldn't just fail the run because of that.
+         temp('{batch}/pcgr/{batch}-' + unique_id + '-{phenotype}.pcgr.download_status')
     # output:
     #     (('{batch}/pcgr/{batch}-' + unique_id + '-{phenotype}.pcgr.html')
     #      if config.get('download_pcgr')
@@ -140,26 +164,10 @@ rule download_pcgr:
         ' || echo "Cannot find the result tarball at s3://pcgr/{params.targz_fname}. PCGR is not finished?" >&2'
         ' && echo "failed" > {output}'
 
-
-#############
-
-rule pcgr_prep:
-    input:
-        expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys()),
-        expand(rules.germline_tar_gz.output, batch=batch_by_name.keys())
-
-rule pcgr_upload:
-    input:
-        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
-
-rule pcgr:
-    input:
-        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
-
+### Target rule for downloading
 rule pcgr_download:
     input:
         expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys())
-    shell:
-        'if [ -f {input[0]} -a -f {input[1]} ] ; then rm {input} ; fi'
+    output:
+        # 'if [ -f {input[0]} -a -f {input[1]} ] ; then rm {input} ; fi'
+        temp(touch('pcgr_download.done'))

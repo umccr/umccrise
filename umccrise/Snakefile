@@ -54,8 +54,8 @@ if is_spartan:
 
 
 rule all:
-    input: 'umccrised.progress'    # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
-    shell: 'rm {input}'            # We could just keep that redundant ".done" file, but better to remove it to avoid confusing the user.
+    input: 'umccrised.done'
+    # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
 
 
 include: "Snakefile.small_variants"
@@ -90,24 +90,16 @@ rule copy_logs:  # {}
         'cp -r {input[0]} {output[0]} && cp -r {input[1]} {output[1]} && cp -r {input[2]} {output[2]}'
 
 
-rule progress:
+rule umccrise:
     input:  # Copy here inputs of the "milestone" rules (rules without output defined in the end of each Snakemake.* file)
         rules.copy_multiqc.output,
         rules.copy_logs.output,
-        expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
-        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
-        expand(rules.bedpe.output, batch=batch_by_name.keys()),
-        expand(rules.ribbon.output, batch=batch_by_name.keys()),
-        expand(rules.prep_sv_tsv.output, batch=batch_by_name.keys()),
-        expand(rules.cnvkit_plot.output, batch=batch_by_name.keys()),
-        expand(rules.somatic_vcf_pon_pass.output, batch=batch_by_name.keys()),
-        expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys()),
-        expand(rules.sig_rmd.output[0], batch=batch_by_name.keys()),
-        expand((rules.upload_somatic_to_pcgr.output if is_hpc else rules.somatic_tar_gz.output), batch=batch_by_name.keys()),
-        expand((rules.upload_germline_to_pcgr.output if is_hpc else rules.germline_tar_gz.output), batch=batch_by_name.keys()),
-        expand((rules.igv_upload.output if is_hpc else rules.igv_bam.output), phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
-        (expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys()) if is_hpc else [])
+        rules.coverage.output,
+        rules.structural.output,
+        rules.small_variants.output,
+        rules.rmd.output,
+        rules.pcgr.output,
+        rules.igv.output,
+        (rules.pcgr_download.output if is_hpc else [])
     output:
-        'umccrised.progress'
-    shell:
-        'touch {output}'
+        temp(touch('umccrised.done'))

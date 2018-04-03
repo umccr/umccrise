@@ -96,7 +96,7 @@ umccrise /path/to/bcbio/project/final -o umccrised_results
 
 #### Run selected steps
 
-Umccrise workflow consists of the following steps: `pcgr`, `pcgr_download`, `coverage`, `structural`, `small_variants`, `sig`, `copy_multiqc`, `copy_logs`, `igv`.
+Umccrise workflow consists of the following steps: `pcgr`, `pcgr_download`, `coverage`, `structural`, `small_variants`, `rmd`, `copy_multiqc`, `copy_logs`, `igv`.
 
 To run just a particular step (or steps), use:
 
