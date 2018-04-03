@@ -24,7 +24,7 @@ def package_path():
 @click.option('-j', 'jobs', default=1)
 @click.option('-s', '--sample', 'sample')
 @click.option('-b', '--batch', 'batch')
-@click.option('-u', '--uid', '--uuid', 'unique_id', default='000000')
+@click.option('-u', '--uid', '--uuid', 'unique_id', default='XXXXXX')
 @click.option('--unlock', is_flag=True)
 def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, unique_id=None, unlock=False):
     rule = list(rule)
@@ -46,7 +46,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
     #     sys.stderr.write('\n')
     #     sys.exit(1)
     # if unique_id:
-    conf += f' unique_id={unique_id}'
+    conf += f' unique_id="{unique_id}"'
     conf += f' pcgr_download=yes'
 
     output_dir = output_dir or 'umccrised'
