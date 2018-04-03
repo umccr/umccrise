@@ -89,17 +89,20 @@ rule germline_tar_gz:
 
 ##### Uploading tarballs
 
+upload_cmd = 'aws s3 ls s3://pcgr/{params.fname}' \
+    ' && touch {output}; echo "Tarball already uploaded, or cannot access the bucket"' \
+    ' || ' + upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
+
 rule upload_somatic_to_pcgr:
     priority: 50
     input:
         rules.somatic_tar_gz.output[0]
     output:
         '{batch}/pcgr/input/upload-somatic.done'
+    params:
+        fname = lambda w, output, input: basename(input[0])
     shell:
-        'if [ -z $(aws s3 ls {input}) ];'
-        ' then ' + upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}; '
-        ' else echo "Tarball already uploaded, or cannot access the bucket"; touch {output}; fi'
-
+        upload_cmd
 
 rule upload_germline_to_pcgr:
     priority: 50
@@ -107,10 +110,10 @@ rule upload_germline_to_pcgr:
         rules.germline_tar_gz.output[0]
     output:
         '{batch}/pcgr/input/upload-normal.done'
+    params:
+        fname = lambda w, output, input: basename(input[0])
     shell:
-        'if [ -z $(aws s3 ls {input}) ];'
-        ' then ' + upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}; '
-        ' else echo "Tarball already uploaded, or cannot access the bucket"; touch {output}; fi'
+        upload_cmd
 
 
 rule download_pcgr:
