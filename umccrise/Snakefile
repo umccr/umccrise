@@ -42,9 +42,7 @@ if 'unique_id' in config:
     unique_id = config['unique_id']
     print(f'Reusing unique ID for PCGR (for downloading): {unique_id}')
 else:
-    import uuid
-    unique_id = str(uuid.uuid4().hex[:6])
-    print(f'Creating new unique ID for PCGR: {unique_id}')
+    unique_id = '000000'
 
 
 is_spartan = get_loc().name == 'spartan'

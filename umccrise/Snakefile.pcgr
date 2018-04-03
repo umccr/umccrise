@@ -96,7 +96,10 @@ rule upload_somatic_to_pcgr:
     output:
         '{batch}/pcgr/input/upload-somatic.done'
     shell:
-        upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
+        'if [ -z $(aws s3 ls {input}) ];'
+        ' then ' + upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}; '
+        ' else echo "Tarball already uploaded, or cannot access the bucket"; touch {output}; fi'
+
 
 rule upload_germline_to_pcgr:
     priority: 50
@@ -105,7 +108,9 @@ rule upload_germline_to_pcgr:
     output:
         '{batch}/pcgr/input/upload-normal.done'
     shell:
-        upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
+        'if [ -z $(aws s3 ls {input}) ];'
+        ' then ' + upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}; '
+        ' else echo "Tarball already uploaded, or cannot access the bucket"; touch {output}; fi'
 
 
 rule download_pcgr:
