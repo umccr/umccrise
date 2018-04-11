@@ -27,7 +27,8 @@ def package_path():
 @click.option('-u', '--uid', '--uuid', 'unique_id')
 @click.option('--cluster')
 @click.option('--unlock', is_flag=True)
-def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, unique_id=None, unlock=False, cluster=None):
+@click.option('--rerun-incomplete', is_flag=True)
+def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, unique_id=None, cluster=None, unlock=False, rerun_incomplete=False):
     rule = list(rule)
 
     bcbio_project = os.path.abspath(bcbio_project)
@@ -60,16 +61,16 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
         f'--printshellcmds ' +
         f'--directory {output_dir} ' +
         f'-j {jobs} ' +
-        f'--config {conf} ')
+       (f'--rerun-incomplete ' if rerun_incomplete else '') +
+       (f'--cluster "{cluster}" ' if cluster else '') +
+        f'--config {conf} '
+     )
 
     if unlock:
         print('* Unlocking previous run... *')
         print(cmd + ' --unlock')
         subprocess.call(cmd + ' --unlock', shell=True)
         print('* Now rerunning *')
-
-    if cluster:
-        cmd += f' --cluster "{cluster}"'
 
     print(cmd)
     exit_code = subprocess.call(cmd, shell=True)
