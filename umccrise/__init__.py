@@ -25,8 +25,9 @@ def package_path():
 @click.option('-s', '--sample', 'sample')
 @click.option('-b', '--batch', 'batch')
 @click.option('-u', '--uid', '--uuid', 'unique_id')
+@click.option('--cluster')
 @click.option('--unlock', is_flag=True)
-def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, unique_id=None, unlock=False):
+def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, unique_id=None, unlock=False, cluster=None):
     rule = list(rule)
 
     bcbio_project = os.path.abspath(bcbio_project)
@@ -66,6 +67,9 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
         print(cmd + ' --unlock')
         subprocess.call(cmd + ' --unlock', shell=True)
         print('* Now rerunning *')
+
+    if cluster:
+        cmd += f' --cluster "{cluster}"'
 
     print(cmd)
     exit_code = subprocess.call(cmd, shell=True)
