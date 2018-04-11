@@ -21,14 +21,14 @@ def package_path():
 @click.argument('bcbio_project', type=click.Path(exists=True))
 @click.argument('rule', nargs=-1)
 @click.option('-o', 'output_dir', type=click.Path())
-@click.option('-j', 'jobs', default=1)
+@click.option('-j', 'jobs')
 @click.option('-s', '--sample', 'sample')
 @click.option('-b', '--batch', 'batch')
 @click.option('-u', '--uid', '--uuid', 'unique_id')
 @click.option('--cluster')
 @click.option('--unlock', is_flag=True)
 @click.option('--rerun-incomplete', is_flag=True)
-def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch=None, unique_id=None, cluster=None, unlock=False, rerun_incomplete=False):
+def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, batch=None, unique_id=None, cluster=None, unlock=False, rerun_incomplete=False):
     rule = list(rule)
 
     bcbio_project = os.path.abspath(bcbio_project)
@@ -60,7 +60,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=1, sample=None, batch
         f'--snakefile {join(package_path(), "Snakefile")} ' +
         f'--printshellcmds ' +
         f'--directory {output_dir} ' +
-        f'-j {jobs} ' +
+       (f'-j {jobs} ' if jobs else '') +
        (f'--rerun-incomplete ' if rerun_incomplete else '') +
        (f'--cluster "{cluster}" ' if cluster else '') +
         f'--config {conf} '
