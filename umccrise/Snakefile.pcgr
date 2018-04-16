@@ -155,7 +155,7 @@ rule download_pcgr:
         untar_output_dirname = '{batch}-' + unique_id + '-{phenotype}-output',
         final_output_folder = '{batch}/pcgr'
     shell:
-        'aws s3 ls s3://pcgr/{params.targz_fname}'
+        upload_proxy + 'aws s3 ls s3://pcgr/{params.targz_fname}'
         ' && mkdir -p {params.targz_folder} '
         ' && ' + upload_proxy + 'aws s3 cp s3://pcgr/{params.targz_fname} {params.targz_folder}'
         ' && tar -xzf {params.targz_folder}/{params.targz_fname} -C {params.targz_folder}'
