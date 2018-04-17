@@ -15,6 +15,19 @@ Umccrise post-processess an output from [bcbio-nextgen](https://github.com/chapm
 - Generates minibams to view in IGV
 - Copies MultiQC reports and summaries from bcbio
 
+Contents:
+
+- [Installation](#installation)
+- [Loading](#loading)
+- [Usage](#usage)
+    + [Run selected steps](#run-selected-steps)
+    + [Pull PCGR results](#pull-pcgr-results)
+    + [Run on selected samples](#run-on-selected-samples)
+    + [Use HPC cluster](#use-hpc-cluster)
+- [Output explanation](#output-explanation)
+- [Version history](#version-history)
+
+
 ## Installation
 
 Clone the repository
@@ -112,11 +125,11 @@ umccrise /path/to/bcbio/project/final pcgr
 
 Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-igv`) takes ~5 hours for a WGS sample compared to ~20 minutes for all other steps combined. For that reason, it is always executed in the end of the pipeline, so you can expect that when it is being executed, all other output is ready - except for PCGR reports which are submitted to the AWS instance (see below).
 
-#### <a name="pcgr"></a> Getting PCGR results
-As part of the pipeline, Umccrise submits a request to [PCGR AWS](https://github.com/umccr/pcgr-deploy) instance at `s3://pcgr`. To download the results back, use the `pcgr_download` target, and specify the unique ID from the original umccrised run when the PCGR request was submitted:
+#### Pull PCGR results
+<a name="pcgr"></a>As part of the pipeline, Umccrise submits a request to [PCGR AWS](https://github.com/umccr/pcgr-deploy) instance at `s3://pcgr`. To download the results back, use the `pcgr_download` target:
 
 ```
-umccrise /path/to/bcbio/project/final pcgr_download --uid f725ab
+umccrise /path/to/bcbio/project/final pcgr_download
 ```
 
 #### Run on selected samples
@@ -128,7 +141,18 @@ umccrise /path/to/bcbio/project/final --batch cup-batch
 umccrise /path/to/bcbio/project/final --sample cup-tumor
 ```
 
-## Output
+#### Use HPC cluster
+
+Use `--cluster` to set up the command template that submits a script to cluster:
+
+```
+umccrise /path/to/bcbio/project/final -j 30 --cluster "sbatch -p vccc -n 1 -t 48:00:00 --mem 20G -J umccrise"
+```
+
+Make sure to use `-j` outside of that template: this is for snakemake to control how many cluster will run at the same time.
+
+
+## Output explanation
 
 ```
 umccrised/
@@ -166,3 +190,31 @@ umccrised/
         {project-name}-programs.txt        # - Copy of the bcbio-nextgen file with software versions
     {project-name}-multiqc_report.html     # - Project-level MultiQC summary report: coverage stats and more
 ```
+
+
+## Version history
+
+0.4.0: 
+- Propagate snakemake's cluster options to the wrapper
+- Propagate snakemake's `--rerun-incomplete` and to the wrapper
+- PCGR: stop using the UID, skip uploading if already uploaded
+- Fix `HTTP_PROXY` setting for running on Spartan worker nodes
+- New panel of normals: add the large A5 cohort, normalize normals, check only POS for indels
+- Correctly set threads to mibibams samtools runs
+
+0.3.0:
+- Refactor output folder structure (see docs)
+- `pcgr_download` taget to automatically pull results
+- Automatically attempt downloading PCGR results after minibams
+- Minibams always run in the ned
+- Use `--unlock` to automate the snakemake unlock pattern to continue unterrupted runs
+- Move `vcf_stuff` to a separate repo
+- Remove GL* chromosomes from the cnvkit diagram
+- PCGR tomls: changed mutsignatures_normalization to genome
+- Rmd: add SV-prioritize table
+
+
+
+
+
+
