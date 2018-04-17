@@ -90,7 +90,7 @@ rule germline_tar_gz:
 ######################
 ###  Uploading tarballs
 
-upload_cmd = 'aws s3 ls s3://pcgr/{params.fname}' \
+upload_cmd = upload_proxy + 'aws s3 ls s3://pcgr/{params.fname}' \
     ' && touch {output}; echo "Tarball already uploaded, or cannot access the bucket"' \
     ' || ' + upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
 
