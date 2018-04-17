@@ -50,12 +50,25 @@ is_raijin = get_loc().name == 'raijin'
 is_hpc = is_spartan or is_raijin
 upload_proxy = ''
 if is_spartan:
-    upload_proxy = 'export HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000; '
+    upload_proxy = 'HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000 '
 
 
 rule all:
     input: 'umccrised.done'
     # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
+
+# TODO: try subworkflows here? http://snakemake.readthedocs.io/en/stable/snakefiles/modularization.html#sub-workflows
+"""
+subworkflow small_variants:
+    workdir: 'small_variants'
+    snakefile: 'Snakefile.small_variants'
+
+rule all:
+    input:  small_variants('small_variants.done')
+    output: ...
+    shell:  ...
+"""
+# Or maybe it's not reasonable and not doable here since the input file is a phony .done, and also we depend on config in subworkflows
 
 
 include: "Snakefile.small_variants"
