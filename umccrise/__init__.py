@@ -64,7 +64,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
        (f'--rerun-incomplete ' if rerun_incomplete else '') +
        (f'--cluster "{cluster}" ' if cluster else '') +
         f'--config {conf} '
-     )
+    )
 
     if unlock:
         print('* Unlocking previous run... *')
