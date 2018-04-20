@@ -14,7 +14,7 @@ rule goleft_depth:
         '{batch}/coverage/{batch}-{phenotype}.depth.bed'
     threads: max(1, threads_max // len(batch_by_name))
     shell:
-        'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {az300} --mincov {params.cutoff} --prefix {params.prefix}'
+        'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
 
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
