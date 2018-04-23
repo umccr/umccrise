@@ -26,7 +26,7 @@ rule igv_bam:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = rules.igv_bed.output
     output:
-        '{batch}/igv/{batch}-{phenotype}_mini.bam'
+        '{batch}/igv/{batch}-{phenotype}.mini.bam'
     benchmark:
         "{batch}/igv/benchmarks/{batch}-{phenotype}.tsv"
     threads:

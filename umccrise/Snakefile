@@ -26,21 +26,23 @@ az300 = get_ref_file(run.genome_build, 'az300')
 ref_fa = get_ref_file(run.genome_build)
 
 # Batch objects index by tumor sample names
-batch_by_name = {b.tumor.name: b for b in run.batch_by_name.values() if not b.is_germline()}
+batches = [b for b in run.batch_by_name.values() if not b.is_germline()]
 name = config.get('batch') or config.get('sample')
 if name:
-    selected_batch_by_name = {n: b for n, b in batch_by_name.items() if b.name == name or b.tumor.name == name}
-    if len(selected_batch_by_name) == 0:
+    selected_batches = [b for b in batches if b.name == name or b.tumor.name == name]
+    if len(selected_batches) == 0:
         critical(f'Error: could not find a batch or a sample with the name {name}. '
-                 f'Known batches: {list(b.name for b in batch_by_name.values())}, '
-                 f'known samples: {list(b.tumor.name for b in batch_by_name.values())}')
-    batch_by_name = selected_batch_by_name
+                 f'Known batches: {list(b.name for b in batches)}, '
+                 f'known samples: {list(b.tumor.name for b in batches)}')
+    batches = selected_batches
+
+batch_by_name = {b.name + '-' + b.tumor.name: b for b in batches}
 
 
 # Generating unique ID for PCGR tarballs
 if 'unique_id' in config:
     uuid_suffix = '.' + config['unique_id']
-    print(f'Reusing unique ID for PCGR (for downloading): {unique_id}')
+    print(f'Reusing unique ID for PCGR (for downloading): {uuid_suffix}')
 else:
     uuid_suffix = ''
 
@@ -71,12 +73,12 @@ rule all:
 # Or maybe it's not reasonable and not doable here since the input file is a phony .done, and also we depend on config in subworkflows
 
 
-include: "Snakefile.small_variants"
-include: "Snakefile.coverage"
-include: "Snakefile.structural"
-include: "Snakefile.igv"
-include: "Snakefile.pcgr"
-include: "Snakefile.rmd"
+include: "small_variants.smk"
+include: "coverage.smk"
+include: "structural.smk"
+include: "igv.smk"
+include: "pcgr.smk"
+include: "rmd.smk"
 
 
 rule copy_multiqc:  # {}

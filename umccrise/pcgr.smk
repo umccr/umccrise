@@ -18,8 +18,8 @@ rule pcgr_somatic_vcf:
         vcf = rules.somatic_vcf_pon_pass.output.vcf,
         tbi = rules.somatic_vcf_pon_pass.output.tbi
     output:
-        vcf = '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-somatic.vcf.gz',
-        tbi = '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-somatic.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.vcf.gz',
+        tbi = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.vcf.gz.tbi'
     shell:
         'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
@@ -28,8 +28,8 @@ rule pcgr_germline_vcf:
         vcf = rules.germline_vcf_prep.output.vcf,
         tbi = rules.germline_vcf_prep.output.tbi
     output:
-        vcf = '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-normal.vcf.gz',
-        tbi = '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-normal.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.vcf.gz',
+        tbi = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.vcf.gz.tbi'
     shell:
         'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
@@ -38,7 +38,7 @@ rule pcgr_cns:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
-        '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-somatic.tsv'
+        '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.tsv'
     shell:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | grep -v ^chromosome | cut -f 1,2,3,5 >> {output}'
 
@@ -47,8 +47,8 @@ rule prep_tomls:
         somatic = join(package_path(), 'pcgr', 'pcgr_configuration_somatic.toml'),
         germline = join(package_path(), 'pcgr', 'pcgr_configuration_normal.toml')
     output:
-        somatic = '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-somatic.toml',
-        germline = '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-normal.toml'
+        somatic = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.toml',
+        germline = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.toml'
     shell:
         'cp {input.somatic} {output.somatic} && cp {input.germline} {output.germline}'
 
@@ -62,7 +62,7 @@ rule somatic_tar_gz:
         cns = rules.pcgr_cns.output[0],
         toml = rules.prep_tomls.output.somatic
     output:
-        '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-somatic.tar.gz'
+        '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.tar.gz'
     params:
         basedir = '{batch}/pcgr/input/',
         vcf = lambda wc, input: basename(input.vcf),
@@ -78,7 +78,7 @@ rule germline_tar_gz:
         tbi = rules.pcgr_germline_vcf.output.tbi,
         toml = rules.prep_tomls.output.germline
     output:
-        '{batch}/pcgr/input/{batch}-' + uuid_suffix + '-normal.tar.gz'
+        '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.tar.gz'
     params:
         basedir = '{batch}/pcgr/input/',
         vcf = lambda wc, input: basename(input.vcf),
@@ -144,15 +144,15 @@ rule download_pcgr:
     output:
          # Even if failed, create some output anyway - we cannot be sure that PCGR has
          # finished, so shouldn't just fail the run because of that.
-         temp('{batch}/pcgr/{batch}-' + uuid_suffix + '-{phenotype}.pcgr.download_status')
+         temp('{batch}/pcgr/{batch}' + uuid_suffix + '-{phenotype}.pcgr.download_status')
     # output:
-    #     (('{batch}/pcgr/{batch}-' + uuid_suffix + '-{phenotype}.pcgr.html')
+    #     (('{batch}/pcgr/{batch}' + uuid_suffix + '-{phenotype}.pcgr.html')
     #      if config.get('download_pcgr')
-    #      else ('{batch}/pcgr/{batch}-' + uuid_suffix + '-{phenotype}.pcgr.download_status'))  # if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
+    #      else ('{batch}/pcgr/{batch}' + uid_suffix + '-{phenotype}.pcgr.download_status'))  # if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
     params:
         targz_folder = '{batch}/work/pcgr',
-        targz_fname = '{batch}-' + uuid_suffix + '-{phenotype}-output.tar.gz',
-        untar_output_dirname = '{batch}-' + uuid_suffix + '-{phenotype}-output',
+        targz_fname = '{batch}' + uuid_suffix + '-{phenotype}-output.tar.gz',
+        untar_output_dirname = '{batch}' + uuid_suffix + '-{phenotype}-output',
         final_output_folder = '{batch}/pcgr'
     shell:
         upload_proxy + 'aws s3 ls s3://pcgr/{params.targz_fname}'

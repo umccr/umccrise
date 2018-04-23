@@ -157,30 +157,30 @@ Make sure to use `-j` outside of that template: this is for snakemake to control
 ```
 umccrised/
     {batch}/                               # - Folder with a batch {batch} (tumor/normal pair) analysis
-        {batch}-rmd_report.html            # - Rmd report with mutational signatures, AF frequencies,
+        {batch}-{sample}-rmd_report.html   # - Rmd report with mutational signatures, AF frequencies,
                                            #   structural variants, and strand bias plots
         coverage/
-            {batch}-indexcov/index.html    # - Plots by `goleft indexcov`
-            {batch}-normal.callable.bed    # - Coverage for exons of 300 AstraZeneca key cancer genes,
-            {batch}-tumor.callable.bed     #   calculated by `goleft depth`. The "callable" coverage
-            {batch}-normal.depth.bed       #   thresholds: 10x for normal, 30x for tumor.
-            {batch}-tumor.depth.bed        #       
+            {batch}-{sample}-indexcov/index.html  # - Plots by `goleft indexcov`
+            {batch}-{sample}-normal.callable.bed  # - Coverage for exons of 300 AstraZeneca key cancer genes,
+            {batch}-{sample}-tumor.callable.bed   #   calculated by `goleft depth`. The "callable" coverage
+            {batch}-{sample}-normal.depth.bed     #   thresholds: 10x for normal, 30x for tumor.
+            {batch}-{sample}-tumor.depth.bed      #       
         igv/ 
-            {batch}-normal_mini.bam        # - Minibams, containing locations of AZ 300 cancer genes,
-            {batch}-tumor_mini.bam         #   and areas around passed variants (SNV, indels, SV, CNV)
+            {batch}-{sample}-normal-mini.bam      # - Minibams, containing locations of AZ 300 cancer genes,
+            {batch}-{sample}-tumor-mini.bam       #   and areas around passed variants (SNV, indels, SV, CNV)
         pcgr/
-            {batch}-5a6808-normal.tar.gz   # - Tarballs ready to be processed by PCGR. `5a6808` is
-            {batch}-5a6808-somatic.tar.gz  #   a unique ID of a umccrise run.
+            {batch}-{sample}-normal.tar.gz        # - Tarballs ready to be processed by PCGR. `5a6808` is
+            {batch}-{sample}-somatic.tar.gz       #   a unique ID of a umccrise run.
         snv/
-            {batch}-somatic-ensemble-pon_softfiltered.vcf.gz  # - Somatic small variants (SNV and indels), soft- and
-            {batch}-somatic-ensemble-pon_hardfiltered.vcf.gz  #   hard-filtered against the panel of normals
-            {batch}-normal-ensemble-cancer_genes.vcf.gz       # - Germline small variants, subset to 106 cancer genes
+            {batch}-{sample}-somatic-ensemble-pon_softfiltered.vcf.gz  # - Somatic small variants (SNV and indels), soft- and
+            {batch}-{sample}-somatic-ensemble-pon_hardfiltered.vcf.gz  #   hard-filtered against the panel of normals
+            {batch}-{sample}-normal-ensemble-cancer_genes.vcf.gz       # - Germline small variants, subset to 106 cancer genes
         structural/
-            {batch}-sv-prioritize-manta-pass.bedpe       # - Prioritized Manta SV calls in differrent
-            {batch}-sv-prioritize-manta-pass.ribbon.bed  #   formats (e.g. to view in Ribbon)
-            {batch}-sv-prioritize-manta-pass.tsv         #
-            {batch}-sv-prioritize-manta-pass.vcf         #
-            {batch}-cnvkit-diagram.pdf                   # - Diagram of CNV called by CNVkit
+            {batch}-{sample}-sv-prioritize-manta-pass.bedpe       # - Prioritized Manta SV calls in differrent
+            {batch}-{sample}-sv-prioritize-manta-pass.ribbon.bed  #   formats (e.g. to view in Ribbon)
+            {batch}-{sample}-sv-prioritize-manta-pass.tsv         #
+            {batch}-{sample}-sv-prioritize-manta-pass.vcf         #
+            {batch}-{sample}-cnvkit-diagram.pdf                   # - Diagram of CNV called by CNVkit
     log/
         config/                            # - Copy of config folder from the original bcbio-nextgen run
             {project-name}-template.yaml   #
