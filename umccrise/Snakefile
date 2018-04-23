@@ -39,10 +39,10 @@ if name:
 
 # Generating unique ID for PCGR tarballs
 if 'unique_id' in config:
-    unique_id = config['unique_id']
+    uuid_suffix = '.' + config['unique_id']
     print(f'Reusing unique ID for PCGR (for downloading): {unique_id}')
 else:
-    unique_id = 'XXXXXX'
+    uuid_suffix = ''
 
 
 is_spartan = get_loc().name == 'spartan'
