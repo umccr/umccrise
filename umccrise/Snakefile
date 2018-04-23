@@ -36,7 +36,7 @@ if name:
                  f'known samples: {list(b.tumor.name for b in batches)}')
     batches = selected_batches
 
-batch_by_name = {b.name + '-' + b.tumor.name: b for b in batches}
+batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
 
 
 # Generating unique ID for PCGR tarballs
@@ -113,7 +113,7 @@ rule umccrise:
         rules.structural.output,
         rules.small_variants.output,
         rules.rmd.output,
-        rules.pcgr.output,
+        (rules.pcgr.output if is_hpc else rules.pcgr_prep.output),
         rules.igv.output,
         (rules.pcgr_download.output if is_hpc else [])
     output:
