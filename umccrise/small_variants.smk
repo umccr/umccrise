@@ -1,6 +1,7 @@
 #################
 #### Somatic ####
 from umccrise import get_cancer_genes_ensg
+from python_utils import hpc
 
 # Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and non-passed calls.
 # Suites for PCGR, but for all other processing steps too
@@ -29,14 +30,20 @@ rule somatic_vcf_filter_af:  # {batch}
 
 rule somatic_vcf_pon:  # {batch}
     input:
-        vcf = rules.somatic_vcf_filter_af.output.vcf
+        vcf = rules.somatic_vcf_filter_af.output.vcf,
+        tbi = rules.somatic_vcf_filter_af.output.tbi
     params:
+        genome_build = run.genome_build,
+        pon_exists = hpc.ref_file_exists(run.genome_build, 'panel_of_normals_dir'),
         ht = 1
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz',
         tbi = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz.tbi'
-    shell:
-        'pon_anno {input.vcf} -h {params.ht} -o {output.vcf} && tabix -p vcf {output.vcf}'
+    run:
+        if params.pon_exists:
+            shell('pon_anno {input.vcf} -h {params.ht} -o {output.vcf} -g {params.genome_build} && tabix -p vcf {output.vcf}')
+        else:
+            shell('cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}')
 
 rule somatic_vcf_pon_pass:  # {batch}
     input:
