@@ -33,7 +33,7 @@ rule somatic_vcf_pon:  # {batch}
         vcf = rules.somatic_vcf_filter_af.output.vcf,
         tbi = rules.somatic_vcf_filter_af.output.tbi
     params:
-        genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
+        genome_build = run.genome_build,
         pon_exists = hpc.ref_file_exists(run.genome_build, 'panel_of_normals_dir'),
         ht = 1
     output:

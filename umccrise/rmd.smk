@@ -101,7 +101,7 @@ rule sig_rmd:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         workdir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0]),
-        genome_build = run.genome_build
+        genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build
     output:
         '{batch}/{batch}-rmd_report.html'
     shell:
