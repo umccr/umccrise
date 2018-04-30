@@ -13,7 +13,7 @@ rule somatic_vcf_prep:  # {batch}
         tbi = '{batch}/work/small_variants/somatic-ensemble-prep.vcf.gz.tbi'
     shell:
         'pcgr_prep {input.vcf} |'
-        ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
+        ' bcftools view -f.,PASS -Oz -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
 
 # Bcbio doesn't properly filter Strelka2 and MuTect2 calls, so need to post-filter
@@ -33,7 +33,7 @@ rule somatic_vcf_pon:  # {batch}
         vcf = rules.somatic_vcf_filter_af.output.vcf,
         tbi = rules.somatic_vcf_filter_af.output.tbi
     params:
-        genome_build = run.genome_build,
+        genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
         pon_exists = hpc.ref_file_exists(run.genome_build, 'panel_of_normals_dir'),
         ht = 1
     output:
@@ -83,7 +83,7 @@ rule germline_vcf_prep:
         tbi = '{batch}/small_variants/{batch}-normal-ensemble-cancer_genes.vcf.gz.tbi'
     shell:
         'pcgr_prep {input.vcf} |'
-        ' bcftools view -f.,PASS -t 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,X,Y -Oz -o {output.vcf}'
+        ' bcftools view -f.,PASS -Oz -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
 
 

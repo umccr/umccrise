@@ -75,12 +75,15 @@ rule cgi:
     input:
         rules.pcgr_somatic_vcf.output.vcf
     output:
-        'work/{batch}/rmd/ensemble-hg19.vcf'
-    shell:
-        'gunzip -c {input}'
-        " | py -x \"x.replace('##contig=<ID=', '##contig=<ID=chr') if x.startswith('#') else 'chr' + x\""
-        " | py -x \"x.replace('chrMT', 'chrM')\""
-        ' | grep -v chrG > {output}'
+        'work/{batch}/rmd/ensemble-with_chr_prefix.vcf'
+    run:
+        if run.genome_build == 'GRCh37':
+            shell('gunzip -c {input}'
+            " | py -x \"x.replace('##contig=<ID=', '##contig=<ID=chr') if x.startswith('#') else 'chr' + x\""
+            " | py -x \"x.replace('chrMT', 'chrM')\""
+            ' | grep -v chrG > {output}')
+        else:
+            shell('gunzip -c {input} > {output}')
 
 
 ## Running Rmarkdown
@@ -97,7 +100,8 @@ rule sig_rmd:
         rmd_tmp = 'work/{batch}/rmd/sig.Rmd',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         workdir = os.getcwd(),
-        output_file = lambda wc, output: join(os.getcwd(), output[0])
+        output_file = lambda wc, output: join(os.getcwd(), output[0]),
+        genome_build = run.genome_build
     output:
         '{batch}/{batch}-rmd_report.html'
     shell:
@@ -112,7 +116,8 @@ rule sig_rmd:
         'tumor_name=\'{params.tumor_name}\', '
         'sig_probs=\'{input.sig_probs}\', '
         'suppressors=\'{input.suppressors}\', '
-        'workdir=\'{params.workdir}\''
+        'workdir=\'{params.workdir}\', '
+        'genome_build=\'{params.genome_build}\''
         '))"'
 
 

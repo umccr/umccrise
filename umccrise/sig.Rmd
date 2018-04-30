@@ -12,13 +12,14 @@ output:
     highlight: kate
 params:
   workdir: '/Users/vsaveliev/tmp'
-  vcf_fname: 'ensemble-hg19.vcf'
+  vcf_fname: 'ensemble-with_chr_prefix.vcf'
   af_freqs: 'af/af_tumor.txt'
   af_freqs_az300: 'af/af_tumor_az300.txt'
   sv_fname: 'sv-prioritize-manta-pass.tsv'
   tumor_name: '17MHP031Tmr'
   sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/rmd_files/signatures_probabilities.txt'
   suppressors: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/rmd_files/suppressors.txt'
+  genome_build: hg19
 ---
 
 ```{r custom, echo=FALSE, message=FALSE, warning=FALSE}
@@ -33,9 +34,10 @@ library(MutationalPatterns)
 library(BSgenome)
 library(devtools)
 library(stringr)
-ref_genome <- 'BSgenome.Hsapiens.UCSC.hg19'
+ref_genome <- paste("BSgenome.Hsapiens.UCSC.", params$genome_build, sep="")
+tx_ref_genome = paste("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene", sep="")
 library(ref_genome, character.only = TRUE)
-library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(tx_ref_genome, character.only = TRUE)
 ```
 
 ```{r setup, include=FALSE}
@@ -47,7 +49,7 @@ options(width = 140)
 renderMyDocument <- function() {
   rmarkdown::render("sig.Rmd", params = list(
     tumor_name = 'sample_foo',
-    vcf_fname = '../../nogit/data/somatic/ensemble-hg19.vcf',
+    vcf_fname = '../../nogit/data/somatic/ensemble-with_chr_prefix.vcf',
     af_freqs = '../../nogit/data/af/af_vardict_tumor.txt',
     af_freqs_az300 = '../../nogit/data/af/af_vardict_tumor_az300.txt',
     sv_fname = '../../nogit/data/structural/sv-prioritize-manta-bpi.tsv',
@@ -66,6 +68,13 @@ Comparing the allelic frequencies of all somatic mutations vs those present in a
 
 ```{r af}
 # Global AF
+print("params$af_freqs:")
+print(params$af_freqs)
+print("")
+print("params$af_freqs_az300:")
+print(params$af_freqs_az300)
+print("")
+
 af <- readr::read_tsv(params$af_freqs, col_names = "af", col_types = "d") %>%
   dplyr::mutate(set = "wgs")
 
@@ -200,13 +209,13 @@ strand information is reported for base substitutions that overlap with more
 than one gene on different strands.
 
 ```{r tran_strand_bias}
-# Get known genes table from UCSC hg19
-genes_hg19 <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
+# Get known genes table from UCSC
+genes <- genes(tx_ref_genome)
 
 # Mutation count matrix with strand info (4*6*4=96 -> 96*2=192)
 mut_mat_s <- mut_matrix_stranded(vcf,
                                  ref_genome = ref_genome,
-                                 ranges = genes_hg19,
+                                 ranges = genes,
                                  mode = "transcription")
 
 # Mutation count per type and strand
