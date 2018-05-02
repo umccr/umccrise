@@ -22,11 +22,12 @@ rule goleft_plots:
     input:
         bam = lambda wc: batch_by_name[wc.batch].tumor.bam
     params:
-        directory = '{batch}/coverage/{batch}-indexcov'
+        directory = '{batch}/coverage/{batch}-indexcov',
+        xchr = 'X' if run.genome_build == 'GRCh37' else 'chrX'
     output:
         '{batch}/coverage/{batch}-indexcov/index.html'
     shell:
-        'goleft indexcov --directory {params.directory} {input.bam} --sex X'
+        'goleft indexcov --directory {params.directory} {input.bam} --sex {params.xchr}'
 
 
 rule coverage:
