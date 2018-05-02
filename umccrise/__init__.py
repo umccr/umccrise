@@ -1,7 +1,8 @@
 import os
 import sys
 from os.path import isfile, join, dirname, abspath
-from ngs_utils.file_utils import verify_file
+from ngs_utils.file_utils import verify_file, safe_mkdir
+from ngs_utils import logger
 import click
 import subprocess
 
@@ -29,6 +30,13 @@ def package_path():
 @click.option('--unlock', is_flag=True)
 @click.option('--rerun-incomplete', is_flag=True)
 def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, batch=None, unique_id=None, cluster=None, unlock=False, rerun_incomplete=False):
+
+    output_dir = output_dir or 'umccrised'
+    output_dir = abspath(output_dir)
+    safe_mkdir(output_dir)
+
+    logger.init(log_fpath_=join(output_dir, 'umccrise.log'), save_previous=True)
+
     rule = list(rule)
 
     bcbio_project = os.path.abspath(bcbio_project)
@@ -52,16 +60,13 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
     if unique_id:
         conf += f' unique_id="{unique_id}"'
 
-    output_dir = output_dir or 'umccrised'
-    output_dir = abspath(output_dir)
-
     cmd = (f'snakemake ' +
         f'{" ".join(rule)} ' +
         f'--snakefile {join(package_path(), "Snakefile")} ' +
         f'--printshellcmds ' +
         f'--directory {output_dir} ' +
        (f'-j {jobs} ' if jobs else '') +
-       (f'--rerun-incomplete ' if rerun_incomplete else '') +
+       (f'--rerun-incomplete ' if rerun_incomplete or unlock else '') +
        (f'--cluster "{cluster}" ' if cluster else '') +
         f'--config {conf} '
     )
