@@ -71,7 +71,7 @@ rule afs_az300:
 # Ensemble calls only include variants that `PASS` so no additional filtering required.
 #
 # Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the ensemble calls:
-rule cgi:
+rule somatic_to_hg19:
     input:
         rules.pcgr_somatic_vcf.output.vcf
     output:
@@ -91,7 +91,7 @@ rule sig_rmd:
     input:
         afs = rules.afs.output[0],
         afs_az300 = rules.afs_az300.output[0],
-        vcf = rules.cgi.output[0],
+        vcf = rules.somatic_to_hg19.output[0],
         sv = rules.prep_sv_tsv.output[0],
         sig_rmd = get_sig_rmd_file(),
         sig_probs = get_signatures_probabilities(),
@@ -101,7 +101,7 @@ rule sig_rmd:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         workdir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0]),
-        genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build
+        rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build
     output:
         '{batch}/{batch}-rmd_report.html'
     shell:
@@ -117,7 +117,7 @@ rule sig_rmd:
         'sig_probs=\'{input.sig_probs}\', '
         'suppressors=\'{input.suppressors}\', '
         'workdir=\'{params.workdir}\', '
-        'genome_build=\'{params.genome_build}\''
+        'genome_build=\'{params.rmd_genome_build}\''
         '))"'
 
 
