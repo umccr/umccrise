@@ -79,6 +79,12 @@ git clone https://github.com/umccr/umccrise_test_data
 nosetests -s umccrise_test_data/test_umccrise.py
 ```
 
+Installing PCGR on Spartan
+
+```
+bash /data/cephfs/punim0010/extras/vlad/synced/pcgr/install_no_docker/install.sh
+```
+
 ## Loading
 
 *Raijin:*
