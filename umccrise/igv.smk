@@ -31,6 +31,8 @@ rule igv_bam:
         "{batch}/igv/benchmarks/{batch}-{phenotype}.tsv"
     threads:
         max(1, threads_max // (2 * len(batch_by_name)))
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 10000
     shell:
         'samtools view -b -L {input.bed} {input.bam} -@ {threads} > {output}'
         ' && samtools index {output}'
