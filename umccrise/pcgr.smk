@@ -38,19 +38,13 @@ rule pcgr_cns:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
-        '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.tsv'
+        '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.1-based.tsv'
     shell:
-        'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | grep -v ^chromosome | cut -f 1,2,3,5 >> {output}'
-
-rule prep_tomls:
-    input:
-        somatic = join(package_path(), 'pcgr', 'pcgr_configuration_somatic.toml'),
-        germline = join(package_path(), 'pcgr', 'pcgr_configuration_normal.toml')
-    output:
-        somatic = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.toml',
-        germline = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.toml'
-    shell:
-        'cp {input.somatic} {output.somatic} && cp {input.germline} {output.germline}'
+        'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | '
+        'grep -v ^chromosome | '
+        'cut -f 1,2,3,5 | '
+        'awk \'BEGIN {{OFS="\t"}} {{print $1, $2+1, $3, $4}} \''
+        '>> {output}'
 
 ######################
 ###  Making tarballs
