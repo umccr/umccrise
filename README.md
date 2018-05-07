@@ -150,19 +150,19 @@ umccrise /path/to/bcbio/project/final --exclude cup-tumor_1,cup-batch_2
 
 #### Use HPC cluster
 
-Set `--cluster-auto` option to submit jobs on HPC cluster. Supports Spartan and Raijin.
+Set `--cluster-auto` option to submit jobs on HPC cluster. Supports Spartan for now.
 
 ```
 umccrise /path/to/bcbio/project/final -j 30 --cluster-auto
 ```
 
-You can also specify a custom submission template with `--cluster-cmd`:
+Alternatively, you can specify a custom submission template with `--cluster-cmd`, e.g.:
 
 ```
 umccrise /path/to/bcbio/project/final -j 30 --cluster-cmd "sbatch -p vccc -n {threads} -t 24:00:00 --mem {resources.mem_mb} -J umccrise"
 ```
 
-Make sure to use `-j` outside of that template: this is for snakemake to control how many cluster will run at the same time.
+Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use at single moment.
 
 
 ## Output explanation
