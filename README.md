@@ -149,10 +149,16 @@ umccrise /path/to/bcbio/project/final --sample cup-tumor
 
 #### Use HPC cluster
 
-Use `--cluster` to set up the command template that submits a script to cluster:
+Set `--cluster-auto` option to submit jobs on HPC cluster. Supports Spartan and Raijin.
 
 ```
-umccrise /path/to/bcbio/project/final -j 30 --cluster "sbatch -p vccc -n 1 -t 48:00:00 --mem 20G -J umccrise"
+umccrise /path/to/bcbio/project/final -j 30 --cluster-auto
+```
+
+You can also specify a custom submission template with `--cluster-cmd`:
+
+```
+umccrise /path/to/bcbio/project/final -j 30 --cluster-cmd "sbatch -p vccc -n {threads} -t 24:00:00 --mem {resources.mem_mb} -J umccrise"
 ```
 
 Make sure to use `-j` outside of that template: this is for snakemake to control how many cluster will run at the same time.
