@@ -36,7 +36,7 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
            f'{("--input_cna " + abspath(cnv_path)) if cnv_path else ""} '
            f'{pcgr_dir} '
            f'{output_dir} '
-           f'{"grch37" if genome in ["hg19", "GRCh37"] else "grch38"} '
+           f'{"grch38" if genome in ["hg38", "GRCh38"] else "grch37"} '
            f'{somatic_toml} '
            f'{sample or splitext_plus(basename(vcf_path))[0]}')
 
