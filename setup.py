@@ -1,10 +1,7 @@
 #!/usr/bin/env python
-import sys
-import os
-from os.path import join, isfile, abspath, dirname
 from setuptools import setup
 
-version = '0.4.0'
+version = '0.5.0'
 
 setup(
     name='umccrise',

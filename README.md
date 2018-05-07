@@ -18,10 +18,11 @@ Umccrise post-processess an output from [bcbio-nextgen](https://github.com/chapm
 Contents:
 
 - [Installation](#installation)
+- [Updating](#updating)
+- [Testing](#testing)
 - [Loading](#loading)
 - [Usage](#usage)
     + [Run selected steps](#run-selected-steps)
-    + [Pull PCGR results](#pull-pcgr-results)
     + [Run on selected samples](#run-on-selected-samples)
     + [Use HPC cluster](#use-hpc-cluster)
 - [Output explanation](#output-explanation)
@@ -116,7 +117,7 @@ umccrise /path/to/bcbio/project/final -o umccrised_results
 
 #### Run selected steps
 
-Umccrise workflow consists of the following steps: `pcgr`, `pcgr_download`, `coverage`, `structural`, `small_variants`, `rmd`, `copy_multiqc`, `copy_logs`, `igv`.
+Umccrise workflow consists of the following steps: `pcgr`, `coverage`, `structural`, `small_variants`, `rmd`, `copy_multiqc`, `copy_logs`, `igv`.
 
 To run just a particular step (or steps), use:
 
@@ -130,14 +131,7 @@ Where `<step_name>` is from the list above. E.g.:
 umccrise /path/to/bcbio/project/final pcgr
 ```
 
-Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-igv`) takes ~5 hours for a WGS sample compared to ~20 minutes for all other steps combined. For that reason, it is always executed in the end of the pipeline, so you can expect that when it is being executed, all other output is ready - except for PCGR reports which are submitted to the AWS instance (see below).
-
-#### Pull PCGR results
-<a name="pcgr"></a>As part of the pipeline, Umccrise submits a request to [PCGR AWS](https://github.com/umccr/pcgr-deploy) instance at `s3://pcgr`. To download the results back, use the `pcgr_download` target:
-
-```
-umccrise /path/to/bcbio/project/final pcgr_download
-```
+Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-igv`) takes ~5 hours for a WGS sample compared to ~20 minutes for all other steps combined. For that reason, it is always executed in the end of the pipeline, so you can expect that when it is being executed, all other output is ready.
 
 #### Run on selected samples
 
@@ -182,8 +176,8 @@ umccrised/
             {batch}-{sample}-normal-mini.bam      # - Minibams, containing locations of AZ 300 cancer genes,
             {batch}-{sample}-tumor-mini.bam       #   and areas around passed variants (SNV, indels, SV, CNV)
         pcgr/
-            {batch}-{sample}-normal.tar.gz        # - Tarballs ready to be processed by PCGR. `5a6808` is
-            {batch}-{sample}-somatic.tar.gz       #   a unique ID of a umccrise run.
+            {batch}-{sample}-somatic.pcgr_acmg.html
+            {batch}-{sample}-normal.pcgr_acmg.html
         snv/
             {batch}-{sample}-somatic-ensemble-pon_softfiltered.vcf.gz  # - Somatic small variants (SNV and indels), soft- and
             {batch}-{sample}-somatic-ensemble-pon_hardfiltered.vcf.gz  #   hard-filtered against the panel of normals
@@ -206,6 +200,12 @@ umccrised/
 
 
 ## Version history
+
+0.5.0:
+- PCGR is deployed directly on Spartan, so no AWS dependency.
+  - Add pcgr wrapper: `pcgr variants.vcf.gz cnv.tsv -o results [-g hg38]`
+- Correctly providing memory resources on HPC to avoid oom-kill
+- On Spartan, support --cluster-auto to automatically substitute proper cluster parameters
 
 0.4.0: 
 - Propagate snakemake's cluster options to the wrapper
