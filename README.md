@@ -62,7 +62,14 @@ source activate \$SCRIPTPATH/miniconda/envs/umccrise
 EOT
 ```
 
-To update
+Install PCGR
+
+```
+git clone https://github.com/vladsaveliev/pcgr
+bash pcgr/install_no_docker/install.sh
+```
+
+## Updating
 
 ```
 source load_umccrise.sh
@@ -71,18 +78,12 @@ conda env update -f environment.yml                                  # if depend
 ./setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
 ```
 
-To test
+## Testing
 
 ```
 source load_umccrise.sh
 git clone https://github.com/umccr/umccrise_test_data
 nosetests -s umccrise_test_data/test_umccrise.py
-```
-
-Installing PCGR on Spartan
-
-```
-bash /data/cephfs/punim0010/extras/vlad/synced/pcgr/install_no_docker/install.sh
 ```
 
 ## Loading

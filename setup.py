@@ -23,6 +23,7 @@ setup(
         'console_scripts': [
             'umccrise=umccrise:main',
             'umccrize=umccrise:main',
+            'pcgr=umccrise.pcgr.pcgr_runner:main',
         ],
     },
     include_package_data=True,
