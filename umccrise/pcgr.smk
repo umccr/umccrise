@@ -64,6 +64,58 @@ rule run_pcgr_local_somatic:
     shell:
         'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name}'
 
+rule run_pcgr_local_germline:
+    input:
+        vcf = rules.pcgr_germline_vcf.output.vcf,
+        tbi = rules.pcgr_germline_vcf.output.tbi
+    output:
+        '{batch}/pcgr/{batch}-normal.pcgr_acmg.html'
+    params:
+        output_dir = '{batch}/pcgr',
+        genome_build = run.genome_build,
+        sample_name = '{batch}-normal'
+    resources:
+        mem_mb=10000
+    shell:
+        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name}'
+
+localrules: pcgr_symlink_somatic, pcgr_symlink_germline
+
+rule pcgr_symlink_somatic:
+    input:
+        rules.run_pcgr_local_somatic.output[0]
+    output:
+        '{batch}/{batch}-somatic.pcgr_acmg.html'
+    shell:
+        'ln -s {input} {output}'
+
+rule pcgr_symlink_germline:
+    input:
+        rules.run_pcgr_local_germline.output[0]
+    output:
+        '{batch}/{batch}-normal.pcgr_acmg.html'
+    shell:
+        'ln -s {input} {output}'
+
+######################
+###  Target rules
+
+# rule pcgr_prep:
+#     input:
+#         expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys())
+#     output:
+#         temp(touch('pcgr_prep.done'))
+
+rule pcgr:
+    input:
+        expand(rules.pcgr_symlink_somatic.output, batch=batch_by_name.keys()),
+        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
+    output:
+        temp(touch('pcgr.done'))
+
+
+
+
 # rule prep_tomls:
 #     input:
 #         somatic = join(package_path(), 'pcgr', 'pcgr_configuration_somatic.toml'),
@@ -146,12 +198,6 @@ rule run_pcgr_local_somatic:
 #         expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys())
 #     output:
 #         temp(touch('pcgr_prep.done'))
-
-rule pcgr:
-    input:
-        expand(rules.run_pcgr_local_somatic.output, batch=batch_by_name.keys())
-    output:
-        temp(touch('pcgr.done'))
 
 # ###################
 # ### Downloading results
