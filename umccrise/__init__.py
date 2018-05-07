@@ -5,6 +5,8 @@ from ngs_utils.file_utils import verify_file, safe_mkdir
 from ngs_utils import logger
 import click
 import subprocess
+from python_utils.hpc import get_loc
+
 
 import locale
 try:
@@ -22,14 +24,14 @@ def package_path():
 @click.argument('bcbio_project', type=click.Path(exists=True))
 @click.argument('rule', nargs=-1)
 @click.option('-o', 'output_dir', type=click.Path())
-@click.option('-j', 'jobs')
+@click.option('-j', '--jobs', 'jobs', default=1)
 @click.option('-s', '--sample', 'sample')
 @click.option('-b', '--batch', 'batch')
-@click.option('-u', '--uid', '--uuid', 'unique_id')
-@click.option('--cluster')
+@click.option('-c', '--cluster-auto', 'cluster', is_flag=True)
+@click.option('--cluster', '--cluster-cmd', 'cluster_cmd')
 @click.option('--unlock', is_flag=True)
 @click.option('--rerun-incomplete', is_flag=True)
-def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, batch=None, unique_id=None, cluster=None, unlock=False, rerun_incomplete=False):
+def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, batch=None, unique_id=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False):
 
     output_dir = output_dir or 'umccrised'
     output_dir = abspath(output_dir)
@@ -60,15 +62,22 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
     if unique_id:
         conf += f' unique_id="{unique_id}"'
 
-    cmd = (f'snakemake ' +
-        f'{" ".join(rule)} ' +
-        f'--snakefile {join(package_path(), "Snakefile")} ' +
-        f'--printshellcmds ' +
-        f'--directory {output_dir} ' +
-       (f'-j {jobs} ' if jobs else '') +
-       (f'--rerun-incomplete ' if rerun_incomplete or unlock else '') +
-       (f'--cluster "{cluster}" ' if cluster else '') +
-        f'--config {conf} '
+    cluster_param = ''
+    if cluster or cluster_cmd:
+        if not cluster_cmd:
+            loc = get_loc()
+            cluster_cmd = f'{loc.submit_job_cmd} -J umccrise'
+        cluster_param = f' --cluster "{cluster_cmd}"'
+
+    cmd = (f'snakemake '
+        f'{" ".join(rule)}'
+        f' --snakefile {join(package_path(), "Snakefile")}'
+        f' --printshellcmds'
+        f' --directory {output_dir}'
+        f' -j {jobs}'
+        f'{" --rerun-incomplete " if rerun_incomplete or unlock else ""}' 
+        f'{cluster_param}'
+        f' --config {conf} '
     )
 
     if unlock:
