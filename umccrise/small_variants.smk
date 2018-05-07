@@ -3,7 +3,7 @@
 from umccrise import get_cancer_genes_ensg
 from python_utils import hpc
 
-# Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and non-passed calls.
+# Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and mitochondria, remove non-PASSed calls.
 # Suites for PCGR, but for all other processing steps too
 rule somatic_vcf_prep:  # {batch}
     input:
@@ -73,7 +73,7 @@ rule germline_vcf_subset:  # {batch}
         ' && bgzip {params.ungz}'
         ' && tabix -p vcf {output.vcf}'
 
-# Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and non-passed calls.
+# Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and mitochondria, remove non-PASSed calls.
 # Suites for PCGR, but for all other processing steps too
 rule germline_vcf_prep:
     input:

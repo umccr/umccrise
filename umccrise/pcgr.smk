@@ -47,121 +47,147 @@ rule pcgr_cns:
         '>> {output}'
 
 ######################
-###  Making tarballs
-
-rule somatic_tar_gz:
+### Running PCGR
+rule run_pcgr_local_somatic:
     input:
         vcf = rules.pcgr_somatic_vcf.output.vcf,
         tbi = rules.pcgr_somatic_vcf.output.tbi,
-        cns = rules.pcgr_cns.output[0],
-        toml = rules.prep_tomls.output.somatic
+        cns = rules.pcgr_cns.output[0]
     output:
-        '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.tar.gz'
+        '{batch}/pcgr/{batch}-somatic.pcgr_acmg.html'
     params:
-        basedir = '{batch}/pcgr/input/',
-        vcf = lambda wc, input: basename(input.vcf),
-        tbi = lambda wc, input: basename(input.tbi),
-        cns = lambda wc, input: basename(input.cns),
-        toml = lambda wc, input: basename(input.toml)
+        output_dir = '{batch}/pcgr',
+        genome_build = run.genome_build,
+        sample_name = '{batch}-somatic'
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 10000
     shell:
-        'tar -czf {output} -C {params.basedir} {params.vcf} {params.tbi} {params.cns} {params.toml}'
+        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name}'
 
-rule germline_tar_gz:
-    input:
-        vcf = rules.pcgr_germline_vcf.output.vcf,
-        tbi = rules.pcgr_germline_vcf.output.tbi,
-        toml = rules.prep_tomls.output.germline
-    output:
-        '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.tar.gz'
-    params:
-        basedir = '{batch}/pcgr/input/',
-        vcf = lambda wc, input: basename(input.vcf),
-        tbi = lambda wc, input: basename(input.tbi),
-        toml = lambda wc, input: basename(input.toml)
-    shell:
-        'tar -czf {output} -C {params.basedir} {params.vcf} {params.tbi} {params.toml}'
-
-######################
-###  Uploading tarballs
-
-upload_cmd = upload_proxy + 'aws s3 ls s3://pcgr/{params.fname}' \
-    ' && touch {output} && echo "Tarball already uploaded, or cannot access the bucket"' \
-    ' || ' + upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
-
-rule upload_somatic_to_pcgr:
-    priority: 50
-    input:
-        rules.somatic_tar_gz.output[0]
-    output:
-        '{batch}/pcgr/input/upload-somatic.done'
-    params:
-        fname = lambda w, output, input: basename(input[0])
-    shell:
-        upload_cmd
-
-rule upload_germline_to_pcgr:
-    priority: 50
-    input:
-        rules.germline_tar_gz.output[0]
-    output:
-        '{batch}/pcgr/input/upload-normal.done'
-    params:
-        fname = lambda w, output, input: basename(input[0])
-    shell:
-        upload_cmd
+# rule prep_tomls:
+#     input:
+#         somatic = join(package_path(), 'pcgr', 'pcgr_configuration_somatic.toml'),
+#         germline = join(package_path(), 'pcgr', 'pcgr_configuration_normal.toml')
+#     output:
+#         somatic = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.toml',
+#         germline = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.toml'
+#     shell:
+#         'cp {input.somatic} {output.somatic} && cp {input.germline} {output.germline}'
+#
+# ######################
+# ###  Making tarballs
+#
+# rule somatic_tar_gz:
+#     input:
+#         vcf = rules.pcgr_somatic_vcf.output.vcf,
+#         tbi = rules.pcgr_somatic_vcf.output.tbi,
+#         cns = rules.pcgr_cns.output[0],
+#         toml = rules.prep_tomls.output.somatic
+#     output:
+#         '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.tar.gz'
+#     params:
+#         basedir = '{batch}/pcgr/input/',
+#         vcf = lambda wc, input: basename(input.vcf),
+#         tbi = lambda wc, input: basename(input.tbi),
+#         cns = lambda wc, input: basename(input.cns),
+#         toml = lambda wc, input: basename(input.toml)
+#     shell:
+#         'tar -czf {output} -C {params.basedir} {params.vcf} {params.tbi} {params.cns} {params.toml}'
+#
+# rule germline_tar_gz:
+#     input:
+#         vcf = rules.pcgr_germline_vcf.output.vcf,
+#         tbi = rules.pcgr_germline_vcf.output.tbi,
+#         toml = rules.prep_tomls.output.germline
+#     output:
+#         '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.tar.gz'
+#     params:
+#         basedir = '{batch}/pcgr/input/',
+#         vcf = lambda wc, input: basename(input.vcf),
+#         tbi = lambda wc, input: basename(input.tbi),
+#         toml = lambda wc, input: basename(input.toml)
+#     shell:
+#         'tar -czf {output} -C {params.basedir} {params.vcf} {params.tbi} {params.toml}'
+#
+# ######################
+# ###  Uploading tarballs
+#
+# upload_cmd = upload_proxy + 'aws s3 ls s3://pcgr/{params.fname}' \
+#     ' && touch {output} && echo "Tarball already uploaded, or cannot access the bucket"' \
+#     ' || ' + upload_proxy + 'aws s3 cp {input} s3://pcgr && touch {output}'
+#
+# rule upload_somatic_to_pcgr:
+#     priority: 50
+#     input:
+#         rules.somatic_tar_gz.output[0]
+#     output:
+#         '{batch}/pcgr/input/upload-somatic.done'
+#     params:
+#         fname = lambda w, output, input: basename(input[0])
+#     shell:
+#         upload_cmd
+#
+# rule upload_germline_to_pcgr:
+#     priority: 50
+#     input:
+#         rules.germline_tar_gz.output[0]
+#     output:
+#         '{batch}/pcgr/input/upload-normal.done'
+#     params:
+#         fname = lambda w, output, input: basename(input[0])
+#     shell:
+#         upload_cmd
 
 ######################
 ###  Target rules
 
-rule pcgr_prep:
-    input:
-        expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys()),
-        expand(rules.germline_tar_gz.output, batch=batch_by_name.keys())
-    output:
-        temp(touch('pcgr_prep.done'))
+# rule pcgr_prep:
+#     input:
+#         expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys())
+#     output:
+#         temp(touch('pcgr_prep.done'))
 
 rule pcgr:
     input:
-        expand(rules.upload_somatic_to_pcgr.output, batch=batch_by_name.keys()),
-        expand(rules.upload_germline_to_pcgr.output, batch=batch_by_name.keys())
+        expand(rules.run_pcgr_local_somatic.output, batch=batch_by_name.keys())
     output:
         temp(touch('pcgr.done'))
 
-###################
-### Downloading results
-
-rule download_pcgr:
-    input:
-        expand(rules.igv_upload.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())\
-            if not config.get('pcgr_download')\
-            else []  # unless download_pcgr is set explicitly, run only after done with IGV - to make sure instance is finished
-    output:
-         # Even if failed, create some output anyway - we cannot be sure that PCGR has
-         # finished, so shouldn't just fail the run because of that.
-         temp('{batch}/pcgr/{batch}' + uuid_suffix + '-{phenotype}.pcgr.download_status')
-    # output:
-    #     (('{batch}/pcgr/{batch}' + uuid_suffix + '-{phenotype}.pcgr.html')
-    #      if config.get('download_pcgr')
-    #      else ('{batch}/pcgr/{batch}' + uid_suffix + '-{phenotype}.pcgr.download_status'))  # if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
-    params:
-        targz_folder = '{batch}/work/pcgr',
-        targz_fname = '{batch}' + uuid_suffix + '-{phenotype}-output.tar.gz',
-        untar_output_dirname = '{batch}' + uuid_suffix + '-{phenotype}-output',
-        final_output_folder = '{batch}/pcgr'
-    shell:
-        upload_proxy + 'aws s3 ls s3://pcgr/{params.targz_fname}'
-        ' && mkdir -p {params.targz_folder} '
-        ' && ' + upload_proxy + 'aws s3 cp s3://pcgr/{params.targz_fname} {params.targz_folder}'
-        ' && tar -xzf {params.targz_folder}/{params.targz_fname} -C {params.targz_folder}'
-        ' && mv {params.targz_folder}/{params.untar_output_dirname}/* {params.final_output_folder}'
-        ' && echo "ok" > {output}'
-        ' || echo "Cannot find the result tarball at s3://pcgr/{params.targz_fname}. PCGR is not finished?" >&2'
-        ' && echo "failed" > {output}'
-
-### Target rule for downloading
-rule pcgr_download:
-    input:
-        expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys())
-    output:
-        # 'if [ -f {input[0]} -a -f {input[1]} ] ; then rm {input} ; fi'
-        temp(touch('pcgr_download.done'))
+# ###################
+# ### Downloading results
+#
+# rule download_pcgr:
+#     input:
+#         expand(rules.igv_upload.output, phenotype=['tumor', 'normal'], batch=batch_by_name.keys())\
+#             if not config.get('pcgr_download')\
+#             else []  # unless download_pcgr is set explicitly, run only after done with IGV - to make sure instance is finished
+#     output:
+#          # Even if failed, create some output anyway - we cannot be sure that PCGR has
+#          # finished, so shouldn't just fail the run because of that.
+#          temp('{batch}/pcgr/{batch}' + uuid_suffix + '-{phenotype}.pcgr.download_status')
+#     # output:
+#     #     (('{batch}/pcgr/{batch}' + uuid_suffix + '-{phenotype}.pcgr.html')
+#     #      if config.get('download_pcgr')
+#     #      else ('{batch}/pcgr/{batch}' + uid_suffix + '-{phenotype}.pcgr.download_status'))  # if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
+#     params:
+#         targz_folder = '{batch}/work/pcgr',
+#         targz_fname = '{batch}' + uuid_suffix + '-{phenotype}-output.tar.gz',
+#         untar_output_dirname = '{batch}' + uuid_suffix + '-{phenotype}-output',
+#         final_output_folder = '{batch}/pcgr'
+#     shell:
+#         upload_proxy + 'aws s3 ls s3://pcgr/{params.targz_fname}'
+#         ' && mkdir -p {params.targz_folder} '
+#         ' && ' + upload_proxy + 'aws s3 cp s3://pcgr/{params.targz_fname} {params.targz_folder}'
+#         ' && tar -xzf {params.targz_folder}/{params.targz_fname} -C {params.targz_folder}'
+#         ' && mv {params.targz_folder}/{params.untar_output_dirname}/* {params.final_output_folder}'
+#         ' && echo "ok" > {output}'
+#         ' || echo "Cannot find the result tarball at s3://pcgr/{params.targz_fname}. PCGR is not finished?" >&2'
+#         ' && echo "failed" > {output}'
+#
+# ### Target rule for downloading
+# rule pcgr_download:
+#     input:
+#         expand(rules.download_pcgr.output, phenotype=['somatic', 'normal'], batch=batch_by_name.keys())
+#     output:
+#         # 'if [ -f {input[0]} -a -f {input[1]} ] ; then rm {input} ; fi'
+#         temp(touch('pcgr_download.done'))
