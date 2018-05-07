@@ -86,16 +86,20 @@ rule pcgr_symlink_somatic:
         rules.run_pcgr_local_somatic.output[0]
     output:
         '{batch}/{batch}-somatic.pcgr_acmg.html'
+    params:
+        source = 'pcgr/{batch}-somatic.pcgr_acmg.html'
     shell:
-        'ln -s {input} {output}'
+        'ln -s {params.source} {output}'
 
 rule pcgr_symlink_germline:
     input:
         rules.run_pcgr_local_germline.output[0]
     output:
         '{batch}/{batch}-normal.pcgr_acmg.html'
+    params:
+        source = 'pcgr/{batch}-normal.pcgr_acmg.html'
     shell:
-        'ln -s {input} {output}'
+        'ln -s {params.source} {output}'
 
 ######################
 ###  Target rules
