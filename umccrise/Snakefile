@@ -6,7 +6,7 @@ from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
-from ngs_utils.logger import critical
+from ngs_utils.logger import critical, info
 from python_utils.hpc import get_ref_file, get_loc
 
 
@@ -27,14 +27,23 @@ ref_fa = get_ref_file(run.genome_build)
 
 # Batch objects index by tumor sample names
 batches = [b for b in run.batch_by_name.values() if not b.is_germline()]
-name = config.get('batch') or config.get('sample')
-if name:
-    selected_batches = [b for b in batches if b.name == name or b.tumor.name == name]
+include_names = config.get('batch') or config.get('sample')
+if include_names:
+    include_names = include_names.split(',')
+    selected_batches = [b for b in batches if b.name in include_names or b.tumor.name in include_names]
     if len(selected_batches) == 0:
-        critical(f'Error: could not find a batch or a sample with the name {name}. '
+        critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
                  f'Known batches: {list(b.name for b in batches)}, '
                  f'known samples: {list(b.tumor.name for b in batches)}')
     batches = selected_batches
+exclude_names = config.get('exclude')
+if exclude_names:
+    exclude_names = exclude_names.split(',')
+    selected_batches = [b for b in batches if b.name not in exclude_names and b.tumor.name not in exclude_names]
+    if len(selected_batches) == 0:
+        critical(f'Error: no samples left with the exclusion of batch/sample name(s): {", ".join(exclude_names)}.')
+    batches = selected_batches
+    info(f'Excluding sample/batch name(s): {", ".join(exclude_names)}.')
 
 batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
 

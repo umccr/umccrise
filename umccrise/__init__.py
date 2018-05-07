@@ -24,14 +24,18 @@ def package_path():
 @click.argument('bcbio_project', type=click.Path(exists=True))
 @click.argument('rule', nargs=-1)
 @click.option('-o', 'output_dir', type=click.Path())
-@click.option('-j', '--jobs', 'jobs', default=1)
-@click.option('-s', '--sample', 'sample')
-@click.option('-b', '--batch', 'batch')
-@click.option('-c', '--cluster-auto', 'cluster', is_flag=True)
-@click.option('--cluster', '--cluster-cmd', 'cluster_cmd')
+@click.option('-j', '--jobs', 'jobs', default=1, help='Max number of cores to use at single time (works both for local '
+              'and cluster runs)')
+@click.option('-s', '--sample', 'sample', help='Process only these samples or batches (comma-separated)')
+@click.option('-e', '--exclude', 'exclude', help='Process only these samples or batches (comma-separated)')
+@click.option('-b', '--batch', 'batch', help='Exclude these samples or batches (comma-separated)')
+@click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
+@click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Submit jobs to cluster with the specified submission '
+              'script command line template (use {threads} and {resources.mem_mb}) to subsitute with the appropriate'
+              'parameters for each rule.')
 @click.option('--unlock', is_flag=True)
 @click.option('--rerun-incomplete', is_flag=True)
-def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, batch=None, unique_id=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False):
+def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None, unique_id=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False):
 
     output_dir = output_dir or 'umccrised'
     output_dir = abspath(output_dir)
@@ -49,6 +53,8 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
         conf += f' sample={sample}'
     if batch:
         conf += f' batch={batch}'
+    if exclude:
+        conf += f' exclude={exclude}'
 
     if 'pcgr_download' in rule or unique_id:
         conf += f' pcgr_download=yes'

@@ -60,7 +60,7 @@ rule run_pcgr_local_somatic:
         genome_build = run.genome_build,
         sample_name = '{batch}-somatic'
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 10000
+        mem_mb=10000
     shell:
         'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name}'
 

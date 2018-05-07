@@ -135,11 +135,17 @@ Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-i
 
 #### Run on selected samples
 
-By default, Umccrise will process all batches in the run in parallel. You can submit only one sample/batch using `--sample` or `--batch` arguments, e.g.:
+By default, Umccrise will process all batches in the run in parallel. You can submit only certain samples/batchs using `--sample` or `--batch` arguments, e.g.:
 
 ```
 umccrise /path/to/bcbio/project/final --batch cup-batch
-umccrise /path/to/bcbio/project/final --sample cup-tumor
+umccrise /path/to/bcbio/project/final --sample cup-tumor_1,cup-tumor_2
+```
+
+Or you might want to exclude certain samples/batches with `--exclude`:
+
+```
+umccrise /path/to/bcbio/project/final --exclude cup-tumor_1,cup-batch_2
 ```
 
 #### Use HPC cluster
