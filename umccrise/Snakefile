@@ -48,14 +48,6 @@ if exclude_names:
 batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
 
 
-# Generating unique ID for PCGR tarballs
-if 'unique_id' in config:
-    uuid_suffix = '.' + config['unique_id']
-    print(f'Reusing unique ID for PCGR (for downloading): {uuid_suffix}')
-else:
-    uuid_suffix = ''
-
-
 is_spartan = get_loc().name == 'spartan'
 is_raijin = get_loc().name == 'raijin'
 is_hpc = is_spartan or is_raijin
@@ -123,6 +115,6 @@ rule umccrise:
         rules.small_variants.output,
         rules.rmd.output,
         rules.igv.output,
-        (rules.pcgr.output if is_hpc else [])
+        rules.pcgr.output
     output:
         temp(touch('umccrised.done'))

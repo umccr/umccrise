@@ -18,8 +18,8 @@ rule pcgr_somatic_vcf:
         vcf = rules.somatic_vcf_pon_pass.output.vcf,
         tbi = rules.somatic_vcf_pon_pass.output.tbi
     output:
-        vcf = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.vcf.gz',
-        tbi = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/input/{batch}-somatic.vcf.gz',
+        tbi = '{batch}/pcgr/input/{batch}-somatic.vcf.gz.tbi'
     shell:
         'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
@@ -28,8 +28,8 @@ rule pcgr_germline_vcf:
         vcf = rules.germline_vcf_prep.output.vcf,
         tbi = rules.germline_vcf_prep.output.tbi
     output:
-        vcf = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.vcf.gz',
-        tbi = '{batch}/pcgr/input/{batch}' + uuid_suffix + '-normal.vcf.gz.tbi'
+        vcf = '{batch}/pcgr/input/{batch}-normal.vcf.gz',
+        tbi = '{batch}/pcgr/input/{batch}-normal.vcf.gz.tbi'
     shell:
         'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
 
@@ -38,7 +38,7 @@ rule pcgr_cns:
     input:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
-        '{batch}/pcgr/input/{batch}' + uuid_suffix + '-somatic.1-based.tsv'
+        '{batch}/pcgr/input/{batch}-somatic-cna.tsv'
     shell:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | '
         'grep -v ^chromosome | '
@@ -77,7 +77,7 @@ rule run_pcgr_local_germline:
     resources:
         mem_mb=10000
     shell:
-        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name}'
+        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline'
 
 localrules: pcgr_symlink_somatic, pcgr_symlink_germline
 
@@ -119,6 +119,10 @@ rule pcgr:
 
 
 
+
+
+#################################################
+############# Rules for AWS PCGR ################
 
 # rule prep_tomls:
 #     input:
