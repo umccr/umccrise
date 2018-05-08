@@ -7,12 +7,12 @@ Umccrise post-processess an output from [bcbio-nextgen](https://github.com/chapm
 
 - Filters small somatic calls with [panel of normals](https://github.com/umccr/vcf_stuff#panel-of-normals)
 - Filters small germline calls with key genes
-- Runs [PCGR](https://github.com/sigven/pcgr) using the [AWS runner](https://github.com/umccr/pcgr-deploy) for somatic, germline and structural variants
+- Runs [PCGR](https://github.com/sigven/pcgr) for somatic and germline variants
 - Generates an Rmd report with mutational signatures and strand bias analysis
 - QCs coverage for 300 key cancer genes
 - Filters CNV and plots a diagram
 - Filters SV and generates files to view in Ribbon
-- Generates minibams to view in IGV
+- Generates mini-bams to view in IGV
 - Copies MultiQC reports and summaries from bcbio
 
 Contents:
@@ -66,7 +66,14 @@ EOT
 Install PCGR
 
 ```
+# Clone the fork that is decoupled from Docker
 git clone https://github.com/vladsaveliev/pcgr
+
+# Download the data bundle
+gdrive download 1tOyPmzgXkSZjPJQOojFQxUP8JlQuQqLq  # hg19
+gdrive download 1cKq-rgSNCYPCUJ38pCi_xy6_PJH-FZWD  # hg38
+gunzip -c pcgr.databundle.grch37.20180422.tgz | tar xvf -
+gunzip -c pcgr.databundle.grch37.20180422.tgz | tar xvf -
 bash pcgr/install_no_docker/install.sh
 ```
 
