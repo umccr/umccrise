@@ -114,7 +114,7 @@ rule umccrise:
         rules.structural.output,
         rules.small_variants.output,
         rules.rmd.output,
-        rules.igv.output,
-        rules.pcgr.output
+        (rules.pcgr.output if is_hpc else rules.pcgr_prep.output),
+        rules.igv.output
     output:
         temp(touch('umccrised.done'))

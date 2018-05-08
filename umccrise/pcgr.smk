@@ -104,11 +104,13 @@ rule pcgr_symlink_germline:
 ######################
 ###  Target rules
 
-# rule pcgr_prep:
-#     input:
-#         expand(rules.somatic_tar_gz.output, batch=batch_by_name.keys())
-#     output:
-#         temp(touch('pcgr_prep.done'))
+rule pcgr_prep:
+    input:
+        expand(rules.pcgr_somatic_vcf.output, batch=batch_by_name.keys()),
+        expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
+        expand(rules.pcgr_germline_vcf.output, batch=batch_by_name.keys())
+    output:
+        temp(touch('pcgr_prep.done'))
 
 rule pcgr:
     input:
