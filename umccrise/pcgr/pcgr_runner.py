@@ -20,8 +20,9 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     loc = find_loc()
     pcgr_dir = loc.pcgr_dir
     if not pcgr_dir:
-        logger.critical(f'PCGR is not installed on the system {loc.name}.')
-
+        logger.critical(f'PCGR is not installed on the system "{loc.name}".'
+                        f' Please, pull it with `git clone https://github.com/vladsaveliev/pcgr`'
+                        f' and install with `bash pcgr/install_no_docker/install.sh`')
     output_dir = output_dir or 'pcgrred'
     output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
@@ -31,14 +32,17 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
 
     logger.init(log_fpath_=join(output_dir, 'pcgr.log'), save_previous=True)
 
-    cmd = (f'{join(pcgr_dir, "pcgr.py")} '
-           f'--input_vcf {abspath(vcf_path)} '
-           f'{("--input_cna " + abspath(cnv_path)) if cnv_path else ""} '
-           f'{pcgr_dir} '
-           f'{output_dir} '
-           f'{"grch38" if genome in ["hg38", "GRCh38"] else "grch37"} '
-           f'{somatic_toml} '
-           f'{sample or splitext_plus(basename(vcf_path))[0]}')
+    cmd = (f'{join(pcgr_dir, "pcgr.py")}'
+           f' --input_vcf {abspath(vcf_path)}'
+           f' {("--input_cna " + abspath(cnv_path)) if cnv_path else ""}'
+           f' {pcgr_dir}'
+           f' {output_dir}'
+           f' {"grch38" if genome in ["hg38", "GRCh38"] else "grch37"}'
+           f' {somatic_toml if not germline else germline_toml}'
+           f' {sample or splitext_plus(basename(vcf_path))[0]}'
+           f' --docker-uid root'
+           f' --force_overwrite'
+    )
 
     print(cmd)
     exit_code = subprocess.call(cmd, shell=True)
