@@ -20,6 +20,7 @@ dependencies:
   - click
   - cyvcf2
   - pandas
+  - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   #
   # Umccrise-specific
   - goleft
