@@ -1,8 +1,13 @@
+import os
+import shutil
 import sys
 from os import rename
-from os.path import isfile, join, dirname, abspath, basename
+
+from ngs_utils.call_process import run
+from os.path import isfile, join, dirname, abspath, basename, exists
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
 from ngs_utils import logger
+from ngs_utils.logger import info
 import click
 import subprocess
 from python_utils.hpc import find_loc
@@ -28,11 +33,16 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     output_dir = output_dir or 'pcgrred'
     output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
+    logger.init(log_fpath_=join(output_dir, 'pcgr.log'), save_previous=True)
+
+    r_pcgrr_dir_ori = join(pcgr_dir, 'src', 'R', 'pcgrr')
+    r_pcgrr_dir_dst = safe_mkdir(join(output_dir, 'work'))
+    info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: {r_pcgrr_dir_ori} -> {r_pcgrr_dir_dst}')
+    os.environ['R_LIBS'] = r_pcgrr_dir_dst + ':' + os.environ.get('R_LIBS', '')
+    run(f'R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
 
     somatic_toml = join(package_path(), 'pcgr', 'pcgr_configuration_somatic.toml')
     germline_toml = join(package_path(), 'pcgr', 'pcgr_configuration_normal.toml')
-
-    logger.init(log_fpath_=join(output_dir, 'pcgr.log'), save_previous=True)
 
     sample = sample or splitext_plus(basename(vcf_path))[0]
     pcgr_genome = "grch38" if genome in ["hg38", "GRCh38"] else "grch37"
@@ -50,8 +60,6 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
            f' {" --no-docker " if no_docker else " --docker-uid root"}'
            f' --force_overwrite'
     )
-    if isfile(expected_report_path):
-        rename(expected_report_path, renamed_report_path)
 
     print(cmd)
     exit_code = subprocess.call(cmd, shell=True)
@@ -59,3 +67,8 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
         sys.stderr.write('--------\n')
         sys.stderr.write(f'Error running PCGR.\n')
         sys.exit(exit_code)
+
+    if isfile(expected_report_path):
+        print(f'Renaming {expected_report_path} -> {renamed_report_path}')
+        rename(expected_report_path, renamed_report_path)
+
