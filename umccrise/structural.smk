@@ -62,7 +62,7 @@ rule ribbon_filter_manta:
     output:
         'work/{batch}/structural/ribbon/manta-pass.vcf'
     shell:
-        'bcftools view -f.,PASS {input.manta_vcf} > {output}'
+        'bcftools view {input.manta_vcf} > {output}'
 
 rule ribbon_filter_vcfbedtope_starts:
     input:
@@ -114,7 +114,7 @@ rule bedpe:
     params:
         vcftobedpe = vcftobedpe
     shell:
-        'bcftools view -f .,PASS {input.manta_vcf}'
+        'bcftools view {input.manta_vcf}'
         ' | {params.vcftobedpe}'
         ' | cut -f 1-7'
         ' > {output}'
