@@ -40,7 +40,7 @@ rule prep_sv_vcf:
     output:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta-pass.vcf'
     shell:
-        'bcftools view -f.,PASS {input.manta_vcf} > {output}'
+        'bcftools view -f.,PASS,REJECT {input.manta_vcf} > {output}'
 
 #### Bring in the prioritized SV calls from Manta. This should also include a basic plot at some stage.
 rule prep_sv_tsv:
