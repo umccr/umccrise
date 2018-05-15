@@ -45,10 +45,10 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     r_pcgrr_dir_ori = join(pcgr_dir, 'src', 'R', 'pcgrr')
     r_pcgrr_dir_dst = safe_mkdir(join(output_dir, 'work', sample))
     info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: {r_pcgrr_dir_ori} -> {r_pcgrr_dir_dst}')
-    os.environ['R_LIBS'] = r_pcgrr_dir_dst + ':' + os.environ.get('R_LIBS', '')
-    run(f'R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
+    run(f'R_LIBS={r_pcgrr_dir_dst} R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
 
-    cmd = (f'{join(pcgr_dir, "pcgr.py")}'
+    cmd = (f'R_LIBS={r_pcgrr_dir_dst}'
+           f' {join(pcgr_dir, "pcgr.py")}'
            f' --input_vcf {abspath(vcf_path)}'
            f' {("--input_cna " + abspath(cnv_path)) if cnv_path else ""}'
            f' {pcgr_dir}'

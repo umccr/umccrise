@@ -9,7 +9,7 @@ Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarba
 """
 
 
-localrules: pcgr_symlink_somatic, pcgr_symlink_germline, pcgr_prep, pcgr
+localrules: pcgr_somatic_vcf, pcgr_germline_vcf, pcgr_cns, pcgr_symlink_somatic, pcgr_symlink_germline, pcgr_prep, pcgr
 
 
 ######################
