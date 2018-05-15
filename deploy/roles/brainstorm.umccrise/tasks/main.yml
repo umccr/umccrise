@@ -1,0 +1,6 @@
+---
+- name: install umccrise 
+  become: False
+  with_items:
+#  - conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
+#  - source activate $(pwd)/miniconda/envs/umccrise

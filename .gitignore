@@ -15,3 +15,5 @@ umccrise_test_data
 .Rhistory
 load_umccrise.sh
 miniconda/
+.vagrant
+*.log
