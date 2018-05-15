@@ -1,5 +1,10 @@
 ## Cancer gene coverage
-# Looking at coverage for a limited set of (cancer) genes to assess overall reliability. 
+
+
+localrules: coverage
+
+
+# Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
 # Minimum coverage for normal is 10, 30 for cancer.
 # TODO: replace with mosdepth
 rule goleft_depth:

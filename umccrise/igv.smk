@@ -1,4 +1,9 @@
 ## IGV
+
+
+localrules: igv
+
+
 # Create BAM and VCF files suitable for moving around easily. Right now this only uses the AZ300 gene list. It also needs to include Sean's cancer predisposition list and create proper Mini-BAMs and VCFs that include regions with +/- 1kb around all somatic SNVs, CNVs and SVs.
 rule igv_bed:
     input:

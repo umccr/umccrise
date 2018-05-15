@@ -1,9 +1,14 @@
+from cyvcf2 import VCF
+
 """
 Structural variants
 ------------------
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
 vcftobedpe = 'vcfToBedpe'
+
+
+localrules: structural
 
 
 #######################
@@ -15,6 +20,7 @@ rule cnvkit_cleanup:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
     output:
         'work/{batch}/structural/{batch}-cnvkit-nolabels.cns'
+    group: "cnvkit_plot"
     shell:
         'cat {input}'
         ' | grep -v ^GL '
@@ -27,6 +33,7 @@ rule cnvkit_plot:
         rules.cnvkit_cleanup.output[0]
     output:
         '{batch}/structural/{batch}-cnvkit-diagram.pdf'
+    group: "cnvkit_plot"
     shell:
         'cnvkit.py diagram -s {input} -o {output}'
 
@@ -38,15 +45,26 @@ rule prep_sv_vcf:
     input:
         manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
     output:
-        vcf = '{batch}/structural/{batch}-sv-prioritize-manta-pass.vcf'
+        vcf = '{batch}/structural/{batch}-sv-prioritize-manta.vcf'
+    group: "sv_vcf"
     shell:
-        'bcftools view -f.,PASS,REJECT {input.manta_vcf} > {output}'
+        'bcftools view -f.,PASS,REJECT,Intergenic {input.manta_vcf} > {output}'
+
+rule filter_sv_vcf:
+    input:
+        vcf = rules.prep_sv_vcf.output.vcf
+    output:
+        vcf = '{batch}/structural/{batch}-sv-prioritize-manta-filter.vcf'
+    group: "sv_vcf"
+    run:
+        tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
+        shell('bcftools filter -i "(FORMAT/SR[' + str(tumor_id) + ':1]>=5 | FORMAT/PR[' + str(tumor_id) + ':1]>=5) & BPI_AF >= 0.1" {input.vcf} > {output.vcf}')
 
 #### Bring in the prioritized SV calls from Manta. This should also include a basic plot at some stage.
 rule prep_sv_tsv:
     input:
         sv_prio = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize.tsv'),
-        vcf = rules.prep_sv_vcf.output.vcf
+        vcf = rules.filter_sv_vcf.output.vcf
     output:
         '{batch}/structural/{batch}-sv-prioritize-manta-pass.tsv'
     shell:
@@ -58,9 +76,10 @@ rule prep_sv_tsv:
 
 rule ribbon_filter_manta:
     input:
-        manta_vcf = rules.prep_sv_vcf.output.vcf
+        manta_vcf = rules.filter_sv_vcf.output.vcf
     output:
-        'work/{batch}/structural/ribbon/manta-pass.vcf'
+        'work/{batch}/structural/ribbon/manta.vcf'
+    group: "ribbon"
     shell:
         'bcftools view {input.manta_vcf} > {output}'
 
@@ -69,9 +88,10 @@ rule ribbon_filter_vcfbedtope_starts:
         bed = rules.ribbon_filter_manta.output[0],
         fai = ref_fa + '.fai'
     output:
-        'work/{batch}/structural/ribbon/manta-pass-strats.bed'
+        'work/{batch}/structural/ribbon/manta-starts.bed'
     params:
         vcftobedpe = vcftobedpe
+    group: "ribbon"
     shell:
         'cat {input.bed} | {params.vcftobedpe}'
         ' | cut -f 1-3'
@@ -83,9 +103,10 @@ rule ribbon_filter_vcfbedtope_ends:
         bed = rules.ribbon_filter_manta.output[0],
         fai = ref_fa + '.fai'
     output:
-        'work/{batch}/structural/ribbon/manta-pass-ends.bed'
+        'work/{batch}/structural/ribbon/manta-ends.bed'
     params:
         vcftobedpe = vcftobedpe
+    group: "ribbon"
     shell:
         'cat {input.bed} | {params.vcftobedpe}'
         ' | cut -f 4-6'
@@ -98,9 +119,10 @@ rule ribbon:
         starts = rules.ribbon_filter_vcfbedtope_starts.output[0],
         ends = rules.ribbon_filter_vcfbedtope_ends.output[0]
     output:
-        '{batch}/structural/{batch}-sv-prioritize-manta-pass.ribbon.bed'
+        '{batch}/structural/{batch}-sv-prioritize-manta.ribbon.bed'
     params:
         vcftobedpe = vcftobedpe
+    group: "ribbon"
     shell:
         'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
 
@@ -108,9 +130,9 @@ rule ribbon:
 #### Convert matna VCF to bedpe ####
 rule bedpe:
     input:
-        manta_vcf = rules.prep_sv_vcf.output.vcf
+        manta_vcf = rules.filter_sv_vcf.output.vcf
     output:
-        '{batch}/structural/{batch}-sv-prioritize-manta-pass.bedpe'
+        '{batch}/structural/{batch}-sv-prioritize-manta.bedpe'
     params:
         vcftobedpe = vcftobedpe
     shell:

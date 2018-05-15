@@ -2,6 +2,9 @@ from python_utils.hpc import get_genomes_d, get_ref_file
 from umccrise import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
 
 
+localrules: rmd
+
+
 ## Allelic frequencies
 # AF is not yet integrated into PCGR or CGI. We can extract those from VarDict or Mutect2 for plotting purposes,
 # but still need to look up AF for genes of interest manually. Not entirely ideal but for a rough summary

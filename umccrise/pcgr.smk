@@ -1,11 +1,15 @@
+from os.path import relpath, basename
+from python_utils.hpc import get_loc
+from umccrise import package_path
+
 """
 PCGR
 -------------
 Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
 """
-from os.path import relpath, basename
-from python_utils.hpc import get_loc
-from umccrise import package_path
+
+
+localrules: pcgr_symlink_somatic, pcgr_symlink_germline, pcgr_prep, pcgr
 
 
 ######################
@@ -42,6 +46,7 @@ rule pcgr_cns:
     shell:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | '
         'grep -v ^chromosome | '
+        'grep -v ^GL | '
         'cut -f 1,2,3,5 | '
         'awk \'BEGIN {{OFS="\t"}} {{print $1, $2+1, $3, $4}} \''
         '>> {output}'
@@ -78,8 +83,6 @@ rule run_pcgr_local_germline:
         mem_mb=5000
     shell:
         'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline'
-
-localrules: pcgr_symlink_somatic, pcgr_symlink_germline
 
 rule pcgr_symlink_somatic:
     input:
