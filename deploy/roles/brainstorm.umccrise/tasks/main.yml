@@ -1,6 +1,8 @@
 ---
+- name: clone umccrise
+  git:
+    repo: 'https://github.com/umccr/umccrise'
+    dest: /home/ubuntu/umccrise
+
 - name: install umccrise 
-  become: False
-  with_items:
-#  - conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
-#  - source activate $(pwd)/miniconda/envs/umccrise
+  command: /usr/local/anaconda/bin/conda env create --file /home/ubuntu/umccrise/environment.yml
