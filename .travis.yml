@@ -78,10 +78,10 @@ install:
   - pip install -e .
 
 
-cache:
-  directories:
-  - $HOME/miniconda
-  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
+#cache:
+#  directories:
+#  - $HOME/miniconda
+#  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
 env:
   - TEST=test_umccrise.py:Test_umccrise.test_one

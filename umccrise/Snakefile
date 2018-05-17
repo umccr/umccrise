@@ -82,6 +82,9 @@ include: "pcgr.smk"
 include: "rmd.smk"
 
 
+localrules: copy_multiqc, copy_logs, umccrise
+
+
 rule copy_multiqc:  # {}
     input:
         join(run.date_dir, 'multiqc/multiqc_report.html')

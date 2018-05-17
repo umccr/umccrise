@@ -72,7 +72,10 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
     if cluster or cluster_cmd:
         if not cluster_cmd:
             loc = get_loc()
-            cluster_cmd = f'{loc.submit_job_cmd} -J umccrise'
+            if not loc.submit_job_cmd:
+                logger.critical(f'Automatic cluster submission is not supported for the machine "{loc.name}"')
+            cluster_wrapper = join(package_path(), 'submit.py')
+            cluster_cmd = f'python {cluster_wrapper}'
         cluster_param = f' --cluster "{cluster_cmd}"'
 
     cmd = (f'snakemake '

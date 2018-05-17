@@ -1,5 +1,10 @@
 ## Cancer gene coverage
-# Looking at coverage for a limited set of (cancer) genes to assess overall reliability. 
+
+
+localrules: coverage
+
+
+# Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
 # Minimum coverage for normal is 10, 30 for cancer.
 # TODO: replace with mosdepth
 rule goleft_depth:
@@ -13,6 +18,8 @@ rule goleft_depth:
     output:
         '{batch}/coverage/{batch}-{phenotype}.depth.bed'
     threads: max(1, threads_max // len(batch_by_name))
+    resources:
+        mem_mb=2000
     shell:
         'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
 
@@ -26,6 +33,8 @@ rule goleft_plots:
         xchr = 'X' if run.genome_build == 'GRCh37' else 'chrX'
     output:
         '{batch}/coverage/{batch}-indexcov/index.html'
+    resources:
+        mem_mb=2000
     shell:
         'goleft indexcov --directory {params.directory} {input.bam} --sex {params.xchr}'
 

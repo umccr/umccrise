@@ -214,11 +214,17 @@ umccrised/
 
 ## Version history
 
+0.6.0:
+- Use snakemake groups to optimize execution on cluster
+- Use submission wrapper to automate cluster resources
+- Filter structural variants: BPI_AF>=10% and read support>=5
+- Keep sv-prioritize hard-filtered variants
+
 0.5.0:
 - PCGR is deployed directly on Spartan, so no AWS dependency.
   - Add pcgr wrapper: `pcgr variants.vcf.gz cnv.tsv -o results [-g hg38]`
 - Correctly providing memory resources on HPC to avoid oom-kill
-- On Spartan, support --cluster-auto to automatically substitute proper cluster parameters
+- On Spartan, support `--cluster-auto` to automatically substitute proper cluster parameters
 
 0.4.0: 
 - Propagate snakemake's cluster options to the wrapper

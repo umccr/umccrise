@@ -35,21 +35,21 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     safe_mkdir(output_dir)
     logger.init(log_fpath_=join(output_dir, 'pcgr.log'), save_previous=True)
 
-    r_pcgrr_dir_ori = join(pcgr_dir, 'src', 'R', 'pcgrr')
-    r_pcgrr_dir_dst = safe_mkdir(join(output_dir, 'work'))
-    info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: {r_pcgrr_dir_ori} -> {r_pcgrr_dir_dst}')
-    os.environ['R_LIBS'] = r_pcgrr_dir_dst + ':' + os.environ.get('R_LIBS', '')
-    run(f'R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
-
     somatic_toml = join(package_path(), 'pcgr', 'pcgr_configuration_somatic.toml')
     germline_toml = join(package_path(), 'pcgr', 'pcgr_configuration_normal.toml')
-
     sample = sample or splitext_plus(basename(vcf_path))[0]
     pcgr_genome = "grch38" if genome in ["hg38", "GRCh38"] else "grch37"
     expected_report_path = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}.html')
     renamed_report_path = join(output_dir, f'{sample}.pcgr_acmg.html')
 
-    cmd = (f'{join(pcgr_dir, "pcgr.py")}'
+    r_pcgrr_dir_ori = join(pcgr_dir, 'src', 'R', 'pcgrr')
+    r_pcgrr_dir_dst = safe_mkdir(join(output_dir, 'work', sample))
+    info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: {r_pcgrr_dir_ori} -> {r_pcgrr_dir_dst}')
+    os.environ['R_LIBS'] = r_pcgrr_dir_dst + ':' + os.environ.get('R_LIBS', '')
+    run(f'R_LIBS={r_pcgrr_dir_dst} R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
+
+    cmd = (f'R_LIBS={r_pcgrr_dir_dst}'
+           f' {join(pcgr_dir, "pcgr.py")}'
            f' --input_vcf {abspath(vcf_path)}'
            f' {("--input_cna " + abspath(cnv_path)) if cnv_path else ""}'
            f' {pcgr_dir}'
