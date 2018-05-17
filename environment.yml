@@ -15,6 +15,7 @@ dependencies:
   - bedtools
   - vcfanno
   - vcflib  # for VCF normalisation
+  - svtools # for vcftobedpe
   - snakemake>=4.3.1vlad
   - pythonpy
   - click

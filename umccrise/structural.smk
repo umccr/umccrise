@@ -3,8 +3,6 @@ Structural variants
 ------------------
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
-vcftobedpe = 'vcfToBedpe'
-
 
 #######################
 ######### CNV #########
@@ -70,10 +68,8 @@ rule ribbon_filter_vcfbedtope_starts:
         fai = ref_fa + '.fai'
     output:
         'work/{batch}/structural/ribbon/manta-pass-strats.bed'
-    params:
-        vcftobedpe = vcftobedpe
     shell:
-        'cat {input.bed} | {params.vcftobedpe}'
+        'cat {input.bed} | vcftobedpe'
         ' | cut -f 1-3'
         ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
         ' > {output}'
@@ -84,10 +80,8 @@ rule ribbon_filter_vcfbedtope_ends:
         fai = ref_fa + '.fai'
     output:
         'work/{batch}/structural/ribbon/manta-pass-ends.bed'
-    params:
-        vcftobedpe = vcftobedpe
     shell:
-        'cat {input.bed} | {params.vcftobedpe}'
+        'cat {input.bed} | vcftobedpe'
         ' | cut -f 4-6'
         ' | grep -v \'CHROM\''
         ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
@@ -99,8 +93,6 @@ rule ribbon:
         ends = rules.ribbon_filter_vcfbedtope_ends.output[0]
     output:
         '{batch}/structural/{batch}-sv-prioritize-manta-pass.ribbon.bed'
-    params:
-        vcftobedpe = vcftobedpe
     shell:
         'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
 
@@ -111,11 +103,9 @@ rule bedpe:
         manta_vcf = rules.prep_sv_vcf.output.vcf
     output:
         '{batch}/structural/{batch}-sv-prioritize-manta-pass.bedpe'
-    params:
-        vcftobedpe = vcftobedpe
     shell:
         'bcftools view {input.manta_vcf}'
-        ' | {params.vcftobedpe}'
+        ' | vcftobedp'
         ' | cut -f 1-7'
         ' > {output}'
 
