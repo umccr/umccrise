@@ -1,7 +1,8 @@
 ---
 - name: clone umccrise
   git:
-    repo: 'https://github.com/umccr/umccrise'
+    repo: "https://github.com/brainstorm/umccrise"
+    version: "deploy"
     dest: /home/ubuntu/umccrise
 
 - name: install umccrise 
