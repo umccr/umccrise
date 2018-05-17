@@ -10,7 +10,7 @@ localrules: coverage
 rule goleft_depth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        az300 = az300,
+        bed = key_genes_bed,
         ref_fa = ref_fa
     params:
         prefix = lambda wc, output: output[0].replace('.depth.bed', ''),
@@ -21,7 +21,7 @@ rule goleft_depth:
     resources:
         mem_mb=2000
     shell:
-        'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {az300} --stats --mincov {params.cutoff} --prefix {params.prefix}'
+        'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {input.bed} --stats --mincov {params.cutoff} --prefix {params.prefix}'
 
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):

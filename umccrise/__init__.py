@@ -121,4 +121,7 @@ def get_suppressors():
     return verify_file(join(package_path(), 'rmd_files', 'suppressors.txt'))
 
 def get_cancer_genes_ensg():
-    return verify_file(join(package_path(), 'cancer_genes_ENSG.txt'))
+    return verify_file(join(package_path(), 'ref_data', 'predisposition_genes_engs.txt'))
+
+def get_key_genes_bed(genome):
+    return verify_file(join(package_path(), 'ref_data', 'generated', 'key_genes.' + genome + '.bed'))

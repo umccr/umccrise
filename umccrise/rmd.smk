@@ -58,7 +58,7 @@ rule afs:
 rule afs_az300:
     input:
         vcf = rules.split_multiallelic.output[0],
-        az300 = az300
+        az300 = key_genes_bed
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:

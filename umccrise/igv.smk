@@ -4,17 +4,19 @@
 localrules: igv
 
 
-# Create BAM and VCF files suitable for moving around easily. Right now this only uses the AZ300 gene list. It also needs to include Sean's cancer predisposition list and create proper Mini-BAMs and VCFs that include regions with +/- 1kb around all somatic SNVs, CNVs and SVs.
+# Create BAM and VCF files suitable for moving around easily. Right now this only uses 300 key genes list.
+# It also needs to include Sean's cancer predisposition list and create proper Mini-BAMs and VCFs that include regions
+# with +/- 1kb around all somatic SNVs, CNVs and SVs.
 rule igv_bed:
     input:
-        az300 = az300,
+        az300 = key_genes_bed,
         small_variant_vcf = rules.somatic_vcf_pon_pass.output[0],
         structural_bed = rules.ribbon.output[0]
     output:
         '{batch}/igv/{batch}-roi.bed'
     shell:
         '{{ '
-        'gunzip -c {input.az300} | cut -f1-3'
+        'cat {input.az300} | cut -f1-3'
         ' ; '
         'bcftools view -H {input.small_variant_vcf} -Ov | awk -v OFS="\\t" \'{{print $1, $2, $2}}\''
         ' ; '
