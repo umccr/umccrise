@@ -105,7 +105,7 @@ rule bedpe:
         '{batch}/structural/{batch}-sv-prioritize-manta-pass.bedpe'
     shell:
         'bcftools view {input.manta_vcf}'
-        ' | vcftobedp'
+        ' | vcftobedpe'
         ' | cut -f 1-7'
         ' > {output}'
 
