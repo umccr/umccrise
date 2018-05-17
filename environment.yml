@@ -15,7 +15,6 @@ dependencies:
   - bedtools
   - vcfanno
   - vcflib  # for VCF normalisation
-  - snakemake>=5.0.0vlad
   - pythonpy
   - click
   - cyvcf2
@@ -47,9 +46,11 @@ dependencies:
   - r-readr
   - r-stringr
   - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
+  - snakemake
   #
   # Actively developed accompanying libraries
   - pip:
     - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "--editable=git+https://github.com/umccr/python_utils#egg=python_utils"
     - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
+    - "--editable=git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
