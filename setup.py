@@ -14,7 +14,7 @@ setup(
         'umccrise',
     ],
     scripts=[
-        'scripts/vcfToBedpe',
+        'vendor/vcfToBedpe',
     ],
     entry_points = {
         'console_scripts': [

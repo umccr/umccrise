@@ -16,3 +16,4 @@ umccrise_test_data
 load_umccrise.sh
 miniconda/
 work/
+src/
