@@ -1,0 +1,9 @@
+---
+- name: clone umccrise
+  git:
+    repo: "https://github.com/brainstorm/umccrise"
+    version: "deploy"
+    dest: /home/ubuntu/umccrise
+
+- name: install umccrise 
+  command: /usr/local/anaconda/bin/conda env create --file /home/ubuntu/umccrise/environment.yml

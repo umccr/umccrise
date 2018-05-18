@@ -1,0 +1,3 @@
+---
+# defaults file for bash
+bash_completion_d: /etc/bash_completion.d

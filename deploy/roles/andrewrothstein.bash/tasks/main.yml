@@ -1,0 +1,30 @@
+---
+- name: resolve platform specific vars
+  include_vars: '{{item}}'
+  with_first_found:
+    - files:
+        - '{{ansible_distribution}}-{{ansible_distribution_release}}.yml'
+        - '{{ansible_distribution}}.yml'
+        - '{{ansible_os_family}}.yml'
+      skip: true
+      paths:
+        - '{{role_path}}/vars'
+
+- name: install bash
+  become: '{{bash_privilege_escalation|default(True)}}'
+  become_user: root
+  with_items:
+    - bash
+    - bash-completions
+    - bc
+  package:
+    name: bash
+    state: present
+
+- name: ensure the bash completions directory exists
+  become: '{{bash_privilege_escalation|default(True)}}'
+  become_user: root
+  file:
+    path: '{{bash_completion_d}}'
+    state: directory
+    mode: 0755
