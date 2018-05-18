@@ -41,11 +41,12 @@ dependencies:
   - bioconductor-bsgenome.hsapiens.ucsc.hg38
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
   - bioconductor-genomeinfodbdata
-  - bioconductor-iranges>=2.14.10  # pinning this to address https://github.com/hbc/bcbioRNASeq/issues/100
-  - bioconductor-genomicranges
-  - bioconductor-genomeinfodb
-  - bioconductor-variantannotation
-  - bioconductor-xvector
+  # Pinning these bioconductor libraries to try to avoid https://github.com/hbc/bcbioRNASeq/issues/100
+  - bioconductor-iranges==2.12.0
+  - bioconductor-genomicranges==1.30.0
+  - bioconductor-genomeinfodb==1.14.0
+  - bioconductor-variantannotation==1.24.1
+  - bioconductor-xvector==0.18.0
   - r-devtools
   - r-readr
   - r-stringr
