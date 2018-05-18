@@ -72,7 +72,10 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
     if cluster or cluster_cmd:
         if not cluster_cmd:
             loc = get_loc()
-            cluster_cmd = f'{loc.submit_job_cmd} -J umccrise'
+            if not loc.submit_job_cmd:
+                logger.critical(f'Automatic cluster submission is not supported for the machine "{loc.name}"')
+            cluster_wrapper = join(package_path(), 'submit.py')
+            cluster_cmd = f'python {cluster_wrapper}'
         cluster_param = f' --cluster "{cluster_cmd}"'
 
     cmd = (f'snakemake '
@@ -118,4 +121,7 @@ def get_suppressors():
     return verify_file(join(package_path(), 'rmd_files', 'suppressors.txt'))
 
 def get_cancer_genes_ensg():
-    return verify_file(join(package_path(), 'cancer_genes_ENSG.txt'))
+    return verify_file(join(package_path(), 'ref_data', 'predisposition_genes_engs.txt'))
+
+def get_key_genes_bed(genome):
+    return verify_file(join(package_path(), 'ref_data', 'generated', 'key_genes.' + genome + '.bed'))

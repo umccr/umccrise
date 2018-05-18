@@ -8,7 +8,7 @@ from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
 from ngs_utils.logger import critical, info
 from python_utils.hpc import get_ref_file, get_loc
-
+from umccrise import package_path, get_key_genes_bed
 
 shell.executable("bash")
 shell.prefix("")
@@ -21,9 +21,8 @@ threads_max = 32  # Use up to 32 cores at once, if available
 run = BcbioProject(config.get('run_dir', abspath(os.getcwd())))
 project_id = splitext(basename(run.bcbio_yaml_fpath))[0]
 
-
-az300 = get_ref_file(run.genome_build, 'az300')
 ref_fa = get_ref_file(run.genome_build)
+key_genes_bed = get_key_genes_bed(run.genome_build)
 
 # Batch objects index by tumor sample names
 batches = [b for b in run.batch_by_name.values() if not b.is_germline()]
@@ -46,7 +45,6 @@ if exclude_names:
     info(f'Excluding sample/batch name(s): {", ".join(exclude_names)}.')
 
 batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
-
 
 is_spartan = get_loc().name == 'spartan'
 is_raijin = get_loc().name == 'raijin'
@@ -80,6 +78,9 @@ include: "structural.smk"
 include: "igv.smk"
 include: "pcgr.smk"
 include: "rmd.smk"
+
+
+localrules: copy_multiqc, copy_logs, umccrise
 
 
 rule copy_multiqc:  # {}

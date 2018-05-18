@@ -3,6 +3,10 @@
 from umccrise import get_cancer_genes_ensg
 from python_utils import hpc
 
+
+localrules: small_variants
+
+
 # Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and mitochondria, remove non-PASSed calls.
 # Suites for PCGR, but for all other processing steps too
 rule somatic_vcf_prep:  # {batch}

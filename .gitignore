@@ -17,3 +17,4 @@ load_umccrise.sh
 miniconda/
 .vagrant
 *.log
+work/

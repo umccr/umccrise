@@ -2,6 +2,9 @@ from python_utils.hpc import get_genomes_d, get_ref_file
 from umccrise import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
 
 
+localrules: rmd
+
+
 ## Allelic frequencies
 # AF is not yet integrated into PCGR or CGI. We can extract those from VarDict or Mutect2 for plotting purposes,
 # but still need to look up AF for genes of interest manually. Not entirely ideal but for a rough summary
@@ -55,7 +58,7 @@ rule afs:
 rule afs_az300:
     input:
         vcf = rules.split_multiallelic.output[0],
-        az300 = az300
+        az300 = key_genes_bed
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
