@@ -18,3 +18,4 @@ miniconda/
 .vagrant
 *.log
 work/
+src/
