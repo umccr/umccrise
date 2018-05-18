@@ -89,8 +89,6 @@ rule ribbon_filter_vcfbedtope_starts:
         fai = ref_fa + '.fai'
     output:
         'work/{batch}/structural/ribbon/manta-starts.bed'
-    params:
-        vcftobedpe = vcftobedpe
     group: "ribbon"
     shell:
         'cat {input.bed} | {params.vcftobedpe}'
@@ -104,8 +102,6 @@ rule ribbon_filter_vcfbedtope_ends:
         fai = ref_fa + '.fai'
     output:
         'work/{batch}/structural/ribbon/manta-ends.bed'
-    params:
-        vcftobedpe = vcftobedpe
     group: "ribbon"
     shell:
         'cat {input.bed} | {params.vcftobedpe}'
@@ -120,8 +116,6 @@ rule ribbon:
         ends = rules.ribbon_filter_vcfbedtope_ends.output[0]
     output:
         '{batch}/structural/{batch}-sv-prioritize-manta.ribbon.bed'
-    params:
-        vcftobedpe = vcftobedpe
     group: "ribbon"
     shell:
         'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
