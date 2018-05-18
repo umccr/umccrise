@@ -40,21 +40,17 @@ dependencies:
   - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
   - bioconductor-bsgenome.hsapiens.ucsc.hg38
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
+  - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
-  # Pinning these bioconductor libraries to try to avoid https://github.com/hbc/bcbioRNASeq/issues/100
-  - bioconductor-iranges==2.12.0
-  - bioconductor-genomicranges==1.30.0
-  - bioconductor-genomeinfodb==1.14.0
-  - bioconductor-variantannotation==1.24.1
-  - bioconductor-xvector==0.18.0
   - r-devtools
   - r-readr
   - r-stringr
   - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
-  - snakemake>=5.0.0vlad
+  - snakemake
   #
   # Actively developed accompanying libraries
   - pip:
     - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "--editable=git+https://github.com/umccr/python_utils#egg=python_utils"
     - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
+    - "--editable=git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
