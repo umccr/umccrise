@@ -22,20 +22,23 @@ def package_path():
 
 @click.command()
 @click.argument('bcbio_project', type=click.Path(exists=True))
-@click.argument('rule', nargs=-1)
-@click.option('-o', 'output_dir', type=click.Path())
-@click.option('-j', '--jobs', 'jobs', default=1, help='Max number of cores to use at single time (works both for local '
+@click.argument('target_rule', nargs=-1)
+@click.option('-o', 'output_dir', type=click.Path(), help='Output directory (default is "umccrise")')
+@click.option('-j', '--jobs', 'jobs', default=1, help='Maximum number of cores to use at single time (works both for local '
               'and cluster runs)')
-@click.option('-s', '--sample', 'sample', help='Process only these samples or batches (comma-separated)')
-@click.option('-e', '--exclude', 'exclude', help='Process only these samples or batches (comma-separated)')
-@click.option('-b', '--batch', 'batch', help='Exclude these samples or batches (comma-separated)')
+@click.option('-s', '--sample', 'sample', help='Comma-separated list of samples or batches to process')
+@click.option('-b', '--batch', 'batch', help='Comma-separated list of samples or batches to process')
+@click.option('-e', '--exclude', 'exclude', help='Comma-separated list of samples or batches to ignore')
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
-@click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Submit jobs to cluster with the specified submission '
-              'script command line template (use {threads} and {resources.mem_mb}) to subsitute with the appropriate'
-              'parameters for each rule.')
-@click.option('--unlock', is_flag=True)
-@click.option('--rerun-incomplete', is_flag=True)
-def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None, unique_id=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False):
+@click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
+@click.option('--unlock', is_flag=True, help='Propagaded to snakemake')
+@click.option('--rerun-incomplete', is_flag=True, help='Propagaded to snakemake')
+def main(bcbio_project, target_rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None, unique_id=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False):
+    """
+Umccrise (post-process) a bcbio project.\n
+BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
+TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_variants rmd igv
+"""
 
     output_dir = output_dir or 'umccrised'
     output_dir = abspath(output_dir)
@@ -43,7 +46,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
 
     logger.init(log_fpath_=join(output_dir, 'umccrise.log'), save_previous=True)
 
-    rule = list(rule)
+    target_rule = list(target_rule)
 
     bcbio_project = os.path.abspath(bcbio_project)
 
@@ -56,7 +59,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
     if exclude:
         conf += f' exclude={exclude}'
 
-    if 'pcgr_download' in rule or unique_id:
+    if 'pcgr_download' in target_rule or unique_id:
         conf += f' pcgr_download=yes'
     # if 'pcgr_download' in rule and not unique_id:
     #     sys.stderr.write(f'Error: when you run pcgr_download, provide the unique id with --uid option so umccrise can find the tarballs:\n')
@@ -79,7 +82,7 @@ def main(bcbio_project, rule=list(), output_dir=None, jobs=None, sample=None, ba
         cluster_param = f' --cluster "{cluster_cmd}"'
 
     cmd = (f'snakemake '
-        f'{" ".join(rule)}'
+        f'{" ".join(target_rule)}'
         f' --snakefile {join(package_path(), "Snakefile")}'
         f' --printshellcmds'
         f' --directory {output_dir}'
