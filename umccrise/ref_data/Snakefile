@@ -15,15 +15,24 @@ rule all:
         expand('generated/key_genes.{genome}.bed', genome=GENOMES)
 
 
+rule gene_list:
+    input:
+        'az_key_genes.300.txt',
+        'umccr_extra_key_genes.txt'
+    output:
+        'generated/key_genes.txt'
+    shell:
+        'cat {input} > {output}
+
+
 rule extract_transcripts:
     input:
-        az_gene_file = 'az_key_genes.300.txt',
-        umccr_gene_file = 'umccr_extra_key_genes.txt'
+        rules.gene_list.output
     output:
         temp('generated/key_genes.{genome}.transcripts.unmerged.bed')
     run:
         info(f'Getting coordinates for key/target genes for {wildcards.genome}')
-        gene_names = get_genes_from_file(input.az_gene_file) | get_genes_from_file(input.umccr_gene_file)
+        gene_names = get_genes_from_file(input.gene_list)
 
         gtf_fpath = get_ref_file(wildcards.genome, key='gtf')
         info('Reading the GTF database')
