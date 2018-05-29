@@ -22,7 +22,8 @@ before_install:
     fi
 
   # Cloning the test data
-  - ln -s $HOME/seq umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
+  - git clone https://github.com/umccr/umccrise_test_data tests/umccrise_test_data
+  - ln -s $HOME/seq tests/umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
 
 
 ####################################################

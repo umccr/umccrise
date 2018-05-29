@@ -92,7 +92,7 @@ conda env update -f environment.yml                                  # if depend
 
 ```
 source load_umccrise.sh
-nosetests -s tests
+nosetests -s tests/test.py
 ```
 
 ## Loading
