@@ -1,15 +1,16 @@
+#!/usr/bin/env python
+
 import os
-import shutil
 import sys
 from os import rename
+from os.path import isfile, join, dirname, abspath, basename, exists
+import click
+import subprocess
 
 from ngs_utils.call_process import run
-from os.path import isfile, join, dirname, abspath, basename, exists
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
 from ngs_utils import logger
 from ngs_utils.logger import info
-import click
-import subprocess
 from python_utils.hpc import find_loc
 from umccrise import package_path
 
@@ -72,3 +73,6 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
         print(f'Renaming {expected_report_path} -> {renamed_report_path}')
         rename(expected_report_path, renamed_report_path)
 
+
+if __name__ == '__main__':
+    main()
