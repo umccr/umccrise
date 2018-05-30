@@ -49,7 +49,7 @@ Install umccrise
 
 ```
 conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
-source activate $(pwd)/miniconda/envs/umccrise
+conda activate $(pwd)/miniconda/envs/umccrise
 pip install -e .
 ```
 
@@ -59,7 +59,7 @@ To automate sourcing in the future, you can create a loader script
 cat <<EOT > load_umccrise.sh
 SCRIPTPATH=\$(readlink -e $(pwd))
 . \$SCRIPTPATH/miniconda/etc/profile.d/conda.sh
-source activate \$SCRIPTPATH/miniconda/envs/umccrise
+conda activate \$SCRIPTPATH/miniconda/envs/umccrise
 EOT
 ```
 
