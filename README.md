@@ -41,8 +41,8 @@ Install conda
 
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-bash miniconda.sh -b -p ./miniconda
-export PATH=$(pwd)/miniconda/bin:$PATH
+bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
+. miniconda/etc/profile.d/conda.sh
 ```
 
 Install umccrise
@@ -57,8 +57,8 @@ To automate sourcing in the future, you can create a loader script
 
 ```
 cat <<EOT > load_umccrise.sh
-SCRIPTPATH=\$(dirname \$(readlink -e $(pwd)))
-export PATH=\$SCRIPTPATH/miniconda/bin:\$PATH
+SCRIPTPATH=\$(readlink -e $(pwd))
+. \$SCRIPTPATH/miniconda/etc/profile.d/conda.sh
 source activate \$SCRIPTPATH/miniconda/envs/umccrise
 EOT
 ```
