@@ -14,6 +14,8 @@ from ngs_utils.logger import info
 from python_utils.hpc import find_loc
 from umccrise import package_path
 
+from ngs_utils.utils import set_locale
+set_locale()
 
 @click.command()
 @click.argument('vcf_path', type=click.Path(exists=True))

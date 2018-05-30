@@ -10,13 +10,8 @@ from ngs_utils.file_utils import verify_file, safe_mkdir
 from ngs_utils import logger
 from umccrise import package_path
 
-
-import locale
-try:
-    if 'UTF-8' not in locale.getlocale(locale.LC_ALL):
-        locale.setlocale(locale.LC_ALL, 'en_AU.UTF-8')
-except TypeError:
-    pass
+from ngs_utils.utils import set_locale
+set_locale()
 
 
 '''

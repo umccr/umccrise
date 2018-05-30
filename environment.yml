@@ -47,7 +47,7 @@ dependencies:
   - r-stringr
   - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
   - snakemake>=5.1.2vlad
-  - ngs_utils
+  - ngs_utils>=2.0.4
   #
   # Actively developed accompanying libraries
   - pip:
