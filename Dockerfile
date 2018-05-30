@@ -25,7 +25,7 @@ RUN conda install -c bioconda -y pybedtools
 # Install environemnt
 COPY environment.yml .
 RUN conda env create -n umccrise --file environment.yml && \
-    /bin/bash -c "source activate umccrise" && \
+    source activate umccrise && \
     conda info -a
 
 # Download the reference data
@@ -33,13 +33,15 @@ RUN wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh
     tar -xzvpf GRCh37-seq.tar.gz --directory / && \
     gunzip -c /seq/GRCh37.fa.gz > /seq/GRCh37.fa
 
+# Clone the test data
+RUN git clone https://github.com/umccr/umccrise_test_data tests/umccrise_test_data && \
+    ln -s /seq tests/umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
+
 # Copy and install source
 COPY . umccrise
 RUN pip install -e umccrise
 
-# Clone the test data
-RUN git clone https://github.com/umccr/umccrise_test_data && \
-    ln -s /seq umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
+RUN apt-get install nano
 
 # Clean up
 RUN rm -rf umccrise/.git && \
