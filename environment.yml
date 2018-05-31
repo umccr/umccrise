@@ -11,13 +11,13 @@ dependencies:
   - python>=3.6
   - bcftools
   - tabix
-  - bedops
   - bedtools
   - vcfanno
   - vcflib  # for VCF normalisation
   - pythonpy
   - click
   - cyvcf2
+  - numpy
   - pandas
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   #
@@ -48,6 +48,18 @@ dependencies:
   - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
   - snakemake>=5.1.2vlad
   - ngs_utils>=2.0.4
+  #
+  # Matplotlib deps (without QT)
+#  - cycler >=0.10
+#  - python-dateutil
+#  - freetype 2.8.*
+#  - pytz
+#  - pyparsing
+#  - libpng >=1.6.32,<1.6.35
+#  - tk 8.6.*
+#  - icu 58.*
+#  - tornado
+#  - kiwisolver
   #
   # Actively developed accompanying libraries
   - pip:

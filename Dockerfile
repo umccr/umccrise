@@ -28,6 +28,11 @@ RUN hash -r && \
 COPY environment.yml .
 RUN conda env create -n umccrise --file environment.yml
 
+# Instead of `conda activate umccrise`:
+ENV PATH /miniconda/envs/umccrise/bin:$PATH
+ENV CONDA_PREFIX /miniconda/envs/umccrise
+ENV CONDA_DEFAULT_ENV umccrise
+
 # Download the reference data
 RUN wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz && \
     tar -xzvpf GRCh37-seq.tar.gz --directory / && \
@@ -37,18 +42,13 @@ RUN wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh
 RUN git clone https://github.com/umccr/umccrise_test_data umccrise/tests/umccrise_test_data && \
     ln -s /seq umccrise/tests/umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
 
-# Instead of `conda activate umccrise`
-ENV PATH /miniconda/envs/umccrise/bin:$PATH
-ENV CONDA_PREFIX /miniconda/envs/umccrise
-ENV CONDA_DEFAULT_ENV umccrise
-
 RUN conda info -a
 
 # Copy and install source
 COPY . umccrise
 RUN pip install -e umccrise
 
- Clean up
+# Clean up
 RUN rm -rf umccrise/.git && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* && \
     conda clean --yes --tarballs && \
