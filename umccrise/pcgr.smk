@@ -40,7 +40,7 @@ rule pcgr_germline_vcf:
 # PCGR also wants a slightly different format for the CNS data:
 rule pcgr_cns:
     input:
-        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit.cns')
+        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
     output:
         '{batch}/pcgr/input/{batch}-somatic-cna.tsv'
     shell:

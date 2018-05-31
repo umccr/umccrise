@@ -55,3 +55,4 @@ RUN rm -rf umccrise/.git && \
     cd /usr/local && apt-get clean && \
     rm -rf /.cpanm
 
+ENV HOSTNAME umccrise_docker

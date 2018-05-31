@@ -98,7 +98,9 @@ rule sig_rmd:
         sv = rules.prep_sv_tsv.output[0],
         sig_rmd = get_sig_rmd_file(),
         sig_probs = get_signatures_probabilities(),
-        suppressors = get_suppressors()
+        suppressors = get_suppressors(),
+        cnvkit_calls = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns'),
+        manta_vcf = rules.filter_sv_vcf.output[0]
     params:
         rmd_tmp = 'work/{batch}/rmd/sig.Rmd',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
@@ -116,6 +118,8 @@ rule sig_rmd:
         'af_freqs_az300=\'{input.afs_az300}\', '
         'vcf_fname=\'{input.vcf}\', '
         'sv_fname=\'{input.sv}\', '
+        'cnvkit_calls=\'{input.cnvkit_calls}\', '
+        'manta_vcf=\'{input.manta_vcf}\', '
         'tumor_name=\'{params.tumor_name}\', '
         'sig_probs=\'{input.sig_probs}\', '
         'suppressors=\'{input.suppressors}\', '

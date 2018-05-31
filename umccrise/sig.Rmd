@@ -16,6 +16,8 @@ params:
   af_freqs: 'af/af_tumor.txt'
   af_freqs_az300: 'af/af_tumor_az300.txt'
   sv_fname: 'sv-prioritize-manta-pass.tsv'
+  cnvkit_calls: 'cnvkit-call.cns'
+  manta_vcf: 'manta.vcf'
   tumor_name: '17MHP031Tmr'
   sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/rmd_files/signatures_probabilities.txt'
   suppressors: '/Users/vsaveliev/git/umccr/umccrise/umccrise/patient_analysis/rmd_files/suppressors.txt'
@@ -34,6 +36,7 @@ library(MutationalPatterns)
 library(BSgenome)
 library(devtools)
 library(stringr)
+library(rock)
 ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
 library(ref_genome, character.only = TRUE)
 tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
@@ -178,6 +181,20 @@ cnv_all <- readr::read_tsv(params$sv_fname, col_names = TRUE, col_types = col_ty
 
 DT::datatable(cnv_all, rownames = FALSE)
 ```
+
+
+##
+```{r circos}
+require(rock)
+
+sv <- rock::prep_manta_vcf(params$manta_vcf)
+cnv <- rock::prep_cnvkit_seg(params$cnvkit_calls)
+rock::plot_circos(sv = sv, cnv = cnv)
+#plot_circos(sv = sv) # no cnv file
+#plot_circos(cnv = cnv) # no sv file
+dev.off()
+```
+
 
 ## Loss of function in tumor suppressors
 
