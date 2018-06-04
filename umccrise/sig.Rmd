@@ -183,16 +183,22 @@ DT::datatable(cnv_all, rownames = FALSE)
 ```
 
 
-##
-```{r circos}
-require(rock)
+## Circos plot showing Manta SVs and CNVkit CNVs
 
-sv <- rock::prep_manta_vcf(params$manta_vcf)
-cnv <- rock::prep_cnvkit_seg(params$cnvkit_calls)
-rock::plot_circos(sv = sv, cnv = cnv)
+* For the internal lines:
+    - The interchromosomal links take the chromosome colour of mate1 of each breakend pair.
+    - The intrachromosomal lines are coloured according to the variant type:
+        - Deletions: Red
+        - Duplications: Green
+        - Insertions: Purple
+        - Inversions: Orange
+
+```{r circos-manta-cnvkit, fig.width=7, fig.height=7}
+sv <- prep_manta_vcf(params$manta_vcf)
+cnv <- prep_cnvkit_seg(params$cnvkit_calls)
+plot_circos(sv = sv, cnv = cnv)
 #plot_circos(sv = sv) # no cnv file
 #plot_circos(cnv = cnv) # no sv file
-dev.off()
 ```
 
 
