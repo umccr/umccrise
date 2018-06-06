@@ -41,40 +41,42 @@ Install conda
 
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-bash miniconda.sh -b -p ./miniconda
-export PATH=$(pwd)/miniconda/bin:$PATH
+bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
+. miniconda/etc/profile.d/conda.sh
 ```
 
 Install umccrise
 
 ```
 conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
-source activate $(pwd)/miniconda/envs/umccrise
+conda activate $(pwd)/miniconda/envs/umccrise
 pip install -e .
 ```
 
-Create a loader script
+To automate sourcing in the future, you can create a loader script
 
 ```
 cat <<EOT > load_umccrise.sh
-SCRIPTPATH=\$(dirname \$(readlink -e $(pwd)))
-export PATH=\$SCRIPTPATH/miniconda/bin:\$PATH
-source activate \$SCRIPTPATH/miniconda/envs/umccrise
+SCRIPTPATH=\$(readlink -e $(pwd))
+. \$SCRIPTPATH/miniconda/etc/profile.d/conda.sh
+conda activate \$SCRIPTPATH/miniconda/envs/umccrise
 EOT
 ```
 
 Install PCGR
 
 ```
-# Clone the fork that is decoupled from Docker
+# Clone the fork that is decoupled from Docker and install
 git clone https://github.com/vladsaveliev/pcgr
+cd pcgr
+bash install_no_docker/install.sh
 
 # Download the data bundle
-gdrive download 1tOyPmzgXkSZjPJQOojFQxUP8JlQuQqLq  # hg19
-gdrive download 1cKq-rgSNCYPCUJ38pCi_xy6_PJH-FZWD  # hg38
-gunzip -c pcgr.databundle.grch37.20180422.tgz | tar xvf -
-gunzip -c pcgr.databundle.grch37.20180422.tgz | tar xvf -
-bash pcgr/install_no_docker/install.sh
+git clone https://github.com/circulosmeos/gdown.pl
+gdown.pl/gdown.pl https://drive.google.com/file/d/1cGBAmAh5t4miIeRrrd0zHsPCFToOr0Lf/view pcgr.databundle.grch37.tgz  # hg19
+gdown.pl/gdown.pl https://drive.google.com/file/d/12q3rr7xpdBfaefRi0ysFHbH34kehNZOV/view pcgr.databundle.grch38.tgz  # hg38
+gunzip -c pcgr.databundle.grch37.tgz | tar xvf -
+gunzip -c pcgr.databundle.grch38.tgz | tar xvf -
 ```
 
 ## Updating
@@ -90,8 +92,7 @@ conda env update -f environment.yml                                  # if depend
 
 ```
 source load_umccrise.sh
-git clone https://github.com/umccr/umccrise_test_data
-nosetests -s umccrise_test_data/test_umccrise.py
+nosetests -s tests/test.py
 ```
 
 ## Loading

@@ -22,8 +22,8 @@ before_install:
     fi
 
   # Cloning the test data
-  - git clone https://github.com/umccr/umccrise_test_data
-  - ln -s $HOME/seq umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
+  - git clone https://github.com/umccr/umccrise_test_data tests/umccrise_test_data
+  - ln -s $HOME/seq tests/umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
 
 
 ####################################################
@@ -80,14 +80,12 @@ install:
 
 #cache:
 #  directories:
-#  - $HOME/miniconda
+#  - $HOME/seq
+#  # - $HOME/miniconda
 #  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
-env:
-  - TEST=test_umccrise.py:Test_umccrise.test_one
-
 script:
-  - nosetests --nocapture umccrise_test_data/$TEST
+  - nosetests --nocapture tests/test.py
 
 #notifications:
 #  on_success: always

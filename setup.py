@@ -15,13 +15,8 @@ setup(
     ],
     scripts=[
         'vendor/vcfToBedpe',
+        'scripts/umccrise',
+        'scripts/pcgr',
     ],
-    entry_points = {
-        'console_scripts': [
-            'umccrise=umccrise:main',
-            'umccrize=umccrise:main',
-            'pcgr=umccrise.pcgr.pcgr_runner:main',
-        ],
-    },
     include_package_data=True,
 )
