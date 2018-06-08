@@ -65,18 +65,16 @@ EOT
 
 Install PCGR
 
-```
+```bash
 # Clone the fork that is decoupled from Docker and install
 git clone https://github.com/vladsaveliev/pcgr
 cd pcgr
 bash install_no_docker/install.sh
 
-# Download the data bundle
-git clone https://github.com/circulosmeos/gdown.pl
-gdown.pl/gdown.pl https://drive.google.com/file/d/1cGBAmAh5t4miIeRrrd0zHsPCFToOr0Lf/view pcgr.databundle.grch37.tgz  # hg19
-gdown.pl/gdown.pl https://drive.google.com/file/d/12q3rr7xpdBfaefRi0ysFHbH34kehNZOV/view pcgr.databundle.grch38.tgz  # hg38
-gunzip -c pcgr.databundle.grch37.tgz | tar xvf -
-gunzip -c pcgr.databundle.grch38.tgz | tar xvf -
+# Download the data bundles
+pip install gdown
+gdown https://drive.google.com/uc?id=1cGBAmAh5t4miIeRrrd0zHsPCFToOr0Lf -O - | tar xvfz - # hg19
+gdown https://drive.google.com/uc?id=12q3rr7xpdBfaefRi0ysFHbH34kehNZOV -O - | tar xvfz - # hg38
 ```
 
 ## Updating
