@@ -24,7 +24,7 @@ rule cnvkit_cleanup:
     shell:
         'cat {input}'
         ' | grep -v ^GL '
-        ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\'] + x.split()[4] + [\'.\'] + x.split()[-3:]) if not x.startswith(\'chromosome\') else x.split())"'
+        ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\', x.split()[4]]) if not x.startswith(\'chromosome\') else x.split()[:5])"'
         ' > {output}'
 
 #### Plot
