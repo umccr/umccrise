@@ -6,11 +6,9 @@
       state: latest
       update_cache: yes
   with_items:
-      - docker.io 
-      - python3-docker
       - python3-pip
 
-- name: Make sure vital python packages are installed on a python3 venv
+- name: Make sure vital python packages are installed system-wide 
   become: true
   pip:
     name: "{{ item }}"
@@ -40,6 +38,7 @@
 
 # http://www.pesikov.tk/blog/failed-restart-docker-service-unit-docker-service-masked/
 # https://github.com/geerlingguy/ansible-role-docker/issues/60
+# https://github.com/docker/for-linux/issues/290#issuecomment-393605253
 - name: enable service httpd and ensure it is not masked
   become: true
   systemd:
@@ -54,8 +53,14 @@
     enabled: yes
     masked: no
 
-- name: Pull PCGR docker image for UMCCRISE"
+- name: Add user to docker group
   become: true
+  user:
+      name: ubuntu
+      groups: docker
+      append: yes
+
+- name: Pull PCGR docker image for UMCCRISE"
   docker_image:
     name: umccr/umccrise
     state: present
