@@ -29,7 +29,9 @@ batches = [b for b in run.batch_by_name.values() if not b.is_germline()]
 include_names = config.get('batch') or config.get('sample')
 if include_names:
     include_names = include_names.split(',')
-    selected_batches = [b for b in batches if b.name in include_names or b.tumor.name in include_names]
+    selected_batches = [b for b in batches if b.name in include_names
+                                           or b.tumor.name in include_names
+                                           or b.name + '__' + b.tumor.name in include_names]
     if len(selected_batches) == 0:
         critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
                  f'Known batches: {list(b.name for b in batches)}, '
@@ -38,7 +40,9 @@ if include_names:
 exclude_names = config.get('exclude')
 if exclude_names:
     exclude_names = exclude_names.split(',')
-    selected_batches = [b for b in batches if b.name not in exclude_names and b.tumor.name not in exclude_names]
+    selected_batches = [b for b in batches if b.name not in exclude_names
+                                          and b.tumor.name not in exclude_names
+                                          and b.name + '__' + b.tumor.name not in include_names]
     if len(selected_batches) == 0:
         critical(f'Error: no samples left with the exclusion of batch/sample name(s): {", ".join(exclude_names)}.')
     batches = selected_batches

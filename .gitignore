@@ -19,3 +19,4 @@ miniconda/
 *.log
 work/
 src/
+*.retry

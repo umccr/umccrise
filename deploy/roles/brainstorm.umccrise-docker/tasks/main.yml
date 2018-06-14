@@ -1,0 +1,62 @@
+---
+- name: install python and docker essentials
+  become: true
+  package:
+      name: "{{ item }}"
+      state: latest
+      update_cache: yes
+  with_items:
+      - docker.io 
+      - python3-docker
+      - python3-pip
+
+- name: Make sure vital python packages are installed on a python3 venv
+  become: true
+  pip:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+      - docker-py
+      - boto3
+      - awscli
+
+- name: "Adding SSH UMCCR team public keys to the instance"
+  become: false
+  shell: |
+      org_ssh_keys=$(curl -s https://api.github.com/orgs/umccr/members | jq -r .[].html_url | sed 's/$/.keys/')
+      echo $org_ssh_keys
+      for ssh_key in $org_ssh_keys
+      do
+              wget $ssh_key -O - >> ~/.ssh/authorized_keys
+      done
+  async: 45
+  poll: 0
+
+- name: clone umccrise
+  git:
+    repo: "https://github.com/brainstorm/umccrise"
+    version: "deploy"
+    dest: /home/ubuntu/umccrise
+
+# http://www.pesikov.tk/blog/failed-restart-docker-service-unit-docker-service-masked/
+# https://github.com/geerlingguy/ansible-role-docker/issues/60
+- name: enable service httpd and ensure it is not masked
+  become: true
+  systemd:
+    name: docker.service
+    enabled: yes
+    masked: no
+
+- name: enable service httpd and ensure it is not masked
+  become: true
+  systemd:
+    name: docker.socket
+    enabled: yes
+    masked: no
+
+- name: Pull PCGR docker image for UMCCRISE"
+  become: true
+  docker_image:
+    name: umccr/umccrise
+    state: present
+    tag: "latest"

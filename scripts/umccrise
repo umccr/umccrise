@@ -91,7 +91,8 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         f' --printshellcmds'
         f' --directory {output_dir}'
         f' -j {jobs}'
-        f'{" --rerun-incomplete " if rerun_incomplete or unlock else ""}' 
+        # f'{" --rerun-incomplete " if rerun_incomplete or unlock else ""}' 
+        f' --rerun-incomplete ' 
         f'{cluster_param}'
         f' --config {conf} '
     )

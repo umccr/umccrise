@@ -24,7 +24,7 @@ rule cnvkit_cleanup:
     shell:
         'cat {input}'
         ' | grep -v ^GL '
-        ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\'] + x.split()[4] + [\'.\'] + x.split()[-3:]) if not x.startswith(\'chromosome\') else x.split())"'
+        ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\', x.split()[4]]) if not x.startswith(\'chromosome\') else x.split()[:5])"'
         ' > {output}'
 
 #### Plot
@@ -48,7 +48,7 @@ rule prep_sv_vcf:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta.vcf'
     group: "sv_vcf"
     shell:
-        'bcftools view -f.,PASS,REJECT,Intergenic {input.manta_vcf} > {output}'
+        'bcftools view -f.,PASS,REJECT,Intergenic,MissingAnn {input.manta_vcf} > {output}'
 
 rule filter_sv_vcf:
     input:

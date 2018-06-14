@@ -42,6 +42,7 @@ dependencies:
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
+  - bioconductor-omiccircos  # for peter's circos rock
   - r-devtools
   - r-readr
   - r-stringr
