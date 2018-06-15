@@ -1,5 +1,13 @@
 sudo: required
 
+services:
+  - docker
+addons:
+  apt:
+    packages:
+      - docker-ce
+
+
 language: python
 python:
   # We don't actually use the Travis Python (since we are on conda), but this keeps it organized.
@@ -18,7 +26,9 @@ before_install:
   - if [ ! -f $HOME/seq/GRCh37.fa ]; then
       wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz ;
       tar -xzvpf GRCh37-seq.tar.gz --directory $HOME ;
+      rm -f GRCh37-seq.tar.gz ;
       gunzip -c $HOME/seq/GRCh37.fa.gz > $HOME/seq/GRCh37.fa ;
+      rm -f $HOME/seq/GRCh37.fa.gz ;
     fi
 
   # Cloning the test data
@@ -86,6 +96,12 @@ install:
 
 script:
   - nosetests --nocapture tests/test.py
+  - docker version
+  - docker build -t umccr/umccrise:latest -f Dockerfile .
+  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
+  - docker push umccr/umccrise:latest
+  - docker build -t umccr/umccrise:withdata -f Dockerfile.withdata .
+  - docker push umccr/umccrise:withdata
 
 #notifications:
 #  on_success: always
