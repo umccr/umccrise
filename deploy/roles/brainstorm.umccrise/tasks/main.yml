@@ -1,4 +1,14 @@
 ---
+- name: install python devel
+  become: true
+  package:
+      name: "{{ item }}"
+      state: latest
+      update_cache: yes
+  with_items:
+      - build-essential
+      - python-dev
+
 - name: clone umccrise
   git:
     repo: "https://github.com/brainstorm/umccrise"

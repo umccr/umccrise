@@ -11,8 +11,8 @@ Vagrant.configure("2") do |config|
  
   config.vm.hostname = "localhost"
   config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "./deploy/site.yml"
-#    ansible.verbose = 'vvvv'
+    ansible.playbook = "./deploy/docker.yml"
+    ansible.verbose = 'vvvv'
     ansible.extra_vars = { ansible_ssh_user: 'vagrant', ansible_python_interpreter: '/usr/bin/python3' }
 	ansible.compatibility_mode = "2.0"
   end
