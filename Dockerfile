@@ -3,10 +3,12 @@ MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 ENV HOSTNAME umccrise_docker
 ENV TEST_DATA_PATH=/umccrise/tests/umccrise_test_data
-ENV REF_DATA_PATH=/ref
+ENV BCBIO_GENOMES_PATH=/genomes
+ENV PON_PATH=/panel_of_normals
 
 VOLUME $TEST_DATA_PATH
-VOLUME $REF_DATA_PATH
+VOLUME $BCBIO_GENOMES_PATH
+VOLUME $PON_PATH
 
 # Setup a base system
 RUN apt-get update && \

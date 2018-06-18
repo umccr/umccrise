@@ -1,0 +1,11 @@
+FROM umccr/umccrise:latest
+MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
+
+# Copy the test data into the container
+COPY /Users/vsaveliev/git/umccr/umccrise_test_data $TEST_DATA_PATH
+
+# Move the reference data to corresponding mount
+RUN mv $TEST_DATA_PATH/data/genomes $BCBIO_GENOMES_PATH
+
+# Move the panel of normals to corresponding mount
+RUN mv $TEST_DATA_PATH/data/panel_of_normals $PON_PATH

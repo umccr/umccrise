@@ -37,9 +37,16 @@ TODO:
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 @click.option('--unlock', is_flag=True, help='Propagaded to snakemake')
 @click.option('--rerun-incomplete', is_flag=True, help='Propagaded to snakemake')
+
 @click.option('--dockerized', is_flag=True, help='Pull umccr/umccrise docker image and use it instead')
+@click.option('--pon', '--panel-of-normals', help='Path to panel of normals folder '
+              '(see https://github.com/umccr/vcf_stuff#building-the-panel on how to prepare it)')
+@click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data '
+              '(seq/{genome}.fa and validation/giab-NA12878/truth_regions.bed are used)')
+
 def main(bcbio_project, target_rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None,
-         cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, dockerized=False):
+         cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, dockerized=False,
+         panel_of_normals=None, bcbio_genomes=None):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -78,10 +85,15 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if dockerized:
         cmd = (
             f'docker run -t vladsaveliev/umccrise '
+            f'--cpus {jobs + 1} '
             f'-v={bcbio_project}:/bcbio_project '
             f'-v={output_dir}:/output_dir '
-            f'--cpus {jobs + 1} '
         )
+        if panel_of_normals:
+            cmd += '-v={panel_of_normals}:/panel_of_normals '
+        if bcbio_genomes:
+            cmd += '-v={bcbio_genomes}:/bcbio_genomes '
+
     cmd += (
         f'snakemake '
         f'{" ".join(target_rule)} '
