@@ -43,6 +43,7 @@ dependencies:
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
   - bioconductor-omiccircos  # for peter's circos rock
+  - r-vcfr
   - r-devtools
   - r-readr
   - r-stringr
