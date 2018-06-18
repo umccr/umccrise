@@ -1,0 +1,5 @@
+FROM umccr/umccrise:latest
+MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
+
+# Copy the test data into the container
+COPY tests/umccrise_test_data $TEST_DATA_PATH
