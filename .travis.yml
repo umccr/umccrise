@@ -96,12 +96,12 @@ install:
 
 script:
   - nosetests --nocapture tests/test.py
-  - docker version
-  - docker build -t umccr/umccrise:latest -f Dockerfile .
-  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
-  - docker push umccr/umccrise:latest
-  - docker build -t umccr/umccrise:withdata -f Dockerfile.withdata .
-  - docker push umccr/umccrise:withdata
+#  - docker version
+#  - docker build -t umccr/umccrise:latest -f Dockerfile .
+#  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
+#  - docker push umccr/umccrise:latest
+#  - docker build -t umccr/umccrise:withdata -f Dockerfile.withdata .
+#  - docker push umccr/umccrise:withdata
 
 #notifications:
 #  on_success: always
