@@ -17,7 +17,7 @@ set_locale()
 '''
 TODO:
 - wrapper that does not need any dependencies except for basic ones
-- with --docker, pulls vladsaveliev/umccrise docker image and runs
+- with --docker, pulls umccr/umccrise docker image and runs
 - automatically maps paths for inputs and outputs
 - get_loc knows that we are in docker and aware of location
 -
@@ -37,7 +37,9 @@ TODO:
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 @click.option('--unlock', is_flag=True, help='Propagaded to snakemake')
 @click.option('--rerun-incomplete', is_flag=True, help='Propagaded to snakemake')
-def main(bcbio_project, target_rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None, unique_id=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False):
+@click.option('--dockerized', is_flag=True, help='Pull umccr/umccrise docker image and use it instead')
+def main(bcbio_project, target_rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None,
+         cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, dockerized=False):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -47,36 +49,23 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     output_dir = output_dir or 'umccrised'
     output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
-
     logger.init(log_fpath_=join(output_dir, 'umccrise.log'), save_previous=True)
-
-    target_rule = list(target_rule)
 
     bcbio_project = os.path.abspath(bcbio_project)
 
-    conf = f'run_dir={bcbio_project}'
-
+    conf = f'run_dir={bcbio_project if not dockerized else "/bcbio_project"}'
     if sample:
         conf += f' sample={sample}'
     if batch:
         conf += f' batch={batch}'
     if exclude:
         conf += f' exclude={exclude}'
-
-    if 'pcgr_download' in target_rule or unique_id:
+    target_rule = list(target_rule)
+    if 'pcgr_download' in target_rule:
         conf += f' pcgr_download=yes'
-    # if 'pcgr_download' in rule and not unique_id:
-    #     sys.stderr.write(f'Error: when you run pcgr_download, provide the unique id with --uid option so umccrise can find the tarballs:\n')
-    #     sys.stderr.write('\n')
-    #     args = ' '.join(sys.argv)
-    #     sys.stderr.write(f'    {args} --uid XXXXXX\n')
-    #     sys.stderr.write('\n')
-    #     sys.exit(1)
-    if unique_id:
-        conf += f' unique_id="{unique_id}"'
 
     cluster_param = ''
-    if cluster or cluster_cmd:
+    if not dockerized and (cluster or cluster_cmd):
         if not cluster_cmd:
             loc = get_loc()
             if not loc.submit_job_cmd:
@@ -85,16 +74,24 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
             cluster_cmd = f'python {cluster_wrapper}'
         cluster_param = f' --cluster "{cluster_cmd}"'
 
-    cmd = (f'snakemake '
-        f'{" ".join(target_rule)}'
-        f' --snakefile {join(package_path(), "Snakefile")}'
-        f' --printshellcmds'
-        f' --directory {output_dir}'
-        f' -j {jobs}'
-        # f'{" --rerun-incomplete " if rerun_incomplete or unlock else ""}' 
-        f' --rerun-incomplete ' 
-        f'{cluster_param}'
-        f' --config {conf} '
+    cmd = ''
+    if dockerized:
+        cmd = (
+            f'docker run -t vladsaveliev/umccrise '
+            f'-v={bcbio_project}:/bcbio_project '
+            f'-v={output_dir}:/output_dir '
+            f'--cpus {jobs + 1} '
+        )
+    cmd += (
+        f'snakemake '
+        f'{" ".join(target_rule)} '
+        f'--snakefile {join(package_path(), "Snakefile") if not dockerized else "/umccrise/umccrise/Snakefile"} '
+        f'--printshellcmds '
+        f'--directory {output_dir if not dockerized else "/output_dir"} '
+        f'-j {jobs} '
+        f'--rerun-incomplete ' 
+        f'{cluster_param} '
+        f'--config {conf} '
     )
 
     if unlock:
