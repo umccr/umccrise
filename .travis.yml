@@ -24,7 +24,7 @@ before_install:
 
   # Download the reference data
   - if [ ! -f $HOME/seq/GRCh37.fa ]; then
-      wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz ;
+      wget -nv --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz ;
       tar -xzvpf GRCh37-seq.tar.gz --directory $HOME ;
       rm -f GRCh37-seq.tar.gz ;
       gunzip -c $HOME/seq/GRCh37.fa.gz > $HOME/seq/GRCh37.fa ;
@@ -68,7 +68,7 @@ install:
   - if [ -d $HOME/miniconda ]; then echo "ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;
   - if [ ! -d $HOME/miniconda/bin ] ; then
       if [ -d $HOME/miniconda ] ; then rm -rf $HOME/miniconda ; fi ;
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
+      wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
       bash miniconda.sh -b -p $HOME/miniconda ;
       export PATH=$HOME/miniconda/bin:$PATH ;
       hash -r ;
