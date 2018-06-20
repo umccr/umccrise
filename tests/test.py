@@ -34,15 +34,27 @@ class Test_umccrise(BaseTestCase):
 
     def setUp(self):
         assert os.system(f'which {self.script}') == 0, 'Umccrise is not installed. Refer to the README.md for installation'
+
         if not isdir(test_data_clone):
             print('Cloning tests data...')
             subprocess.run(['git', 'clone', 'https://github.com/umccr/umccrise_test_data', test_data_clone])
+
+        ref_fasta_path = join(test_data_clone, 'data/genomes/Hsapiens/GRCh37/seq/GRCh37.fa')
+        if not isfile(ref_fasta_path):
+            print('Downloading GRCh37 genome...')
+            subprocess.run(f'''wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz && 
+tar -xzvpf GRCh37-seq.tar.gz --directory {test_data_clone}/data/genomes/Hsapiens/GRCh37 && 
+rm -f GRCh37-seq.tar.gz && 
+gunzip {ref_fasta_path}.gz''', shell=True)
+
         BaseTestCase.setUp(self)
 
     def _run_umccrise(self, bcbio_dirname, parallel=False):
         results_dir = join(self.results_dir, bcbio_dirname)
         bcbio_dir = join(self.data_dir, bcbio_dirname)
-        cmdl = f'{self.script} {bcbio_dir} -o {results_dir}'
+        cmdl = (f'{self.script} {bcbio_dir} -o {results_dir} ' +
+                f'--bcbio-genomes {test_data_clone}/data/genomes ' +
+                f'--pon {test_data_clone}/data/panel_of_normals')
         if parallel:
             cmdl += ' -j 10'
         self._run_cmd(cmdl, bcbio_dir, results_dir)

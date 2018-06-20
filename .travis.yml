@@ -22,19 +22,6 @@ before_install:
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
 
-  # Download the reference data
-  - if [ ! -f $HOME/seq/GRCh37.fa ]; then
-      wget -nv --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz ;
-      tar -xzvpf GRCh37-seq.tar.gz --directory $HOME ;
-      rm -f GRCh37-seq.tar.gz ;
-      gunzip -c $HOME/seq/GRCh37.fa.gz > $HOME/seq/GRCh37.fa ;
-      rm -f $HOME/seq/GRCh37.fa.gz ;
-    fi
-
-  # Cloning the test data
-  - git clone https://github.com/umccr/umccrise_test_data tests/umccrise_test_data
-  - ln -s $HOME/seq tests/umccrise_test_data/data/genomes/Hsapiens/GRCh37/seq
-
 
 ####################################################
 ## If you want to install miniconda from scratch: ##
