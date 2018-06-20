@@ -1,0 +1,6 @@
+---
+- hosts: all
+  become: yes
+
+  roles:
+    - ubuntu-ecs-agent

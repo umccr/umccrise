@@ -7,3 +7,4 @@
   roles:
     - geerlingguy.docker
     - brainstorm.umccrise-docker
+    - brainstorm.ubuntu-ecs-agent

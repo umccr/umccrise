@@ -1,0 +1,31 @@
+---
+sudo: required
+language: python
+python: "3.6"
+
+# Install ansible
+addons:
+  apt:
+    packages:
+    - python-pip
+
+install:
+  # Install ansible
+  - pip install ansible>=2.2 
+
+  # Check ansible version
+  - ansible --version
+
+  # Create ansible.cfg with correct roles_path
+  - printf '[defaults]\nroles_path=../' >ansible.cfg
+
+  # Install dependencies
+  - ansible-galaxy install -r requirements.yml
+
+script:
+  # Basic role syntax check
+  - ansible-playbook -i hosts --syntax-check docker.yml
+  - ansible-playbook -i hosts --connection=local --sudo -vvvv docker.yml
+
+# notifications:
+  # webhooks: https://galaxy.ansible.com/api/v1/notifications/
