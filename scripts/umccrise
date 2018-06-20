@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-
 import os
 import sys
 from os.path import isfile, join, dirname, abspath
 import click
 import subprocess
+import json
 from python_utils.hpc import get_loc
-from ngs_utils.file_utils import verify_file, safe_mkdir
+from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
 from umccrise import package_path
 
@@ -38,7 +38,7 @@ TODO:
 @click.option('--unlock', is_flag=True, help='Propagaded to snakemake')
 @click.option('--rerun-incomplete', is_flag=True, help='Propagaded to snakemake')
 
-@click.option('--dockerized', is_flag=True, help='Pull umccr/umccrise docker image and use it instead')
+@click.option('--docker', '--dockerized', is_flag=True, help='Pull umccr/umccrise docker image and use it instead')
 @click.option('--pon', '--panel-of-normals', help='Path to panel of normals folder '
               '(see https://github.com/umccr/vcf_stuff#building-the-panel on how to prepare it)')
 @click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data '
@@ -54,11 +54,11 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 """
 
     output_dir = output_dir or 'umccrised'
-    output_dir = abspath(output_dir)
+    output_dir = verify_dir(output_dir)
     safe_mkdir(output_dir)
     logger.init(log_fpath_=join(output_dir, 'umccrise.log'), save_previous=True)
 
-    bcbio_project = os.path.abspath(bcbio_project)
+    bcbio_project = verify_dir(bcbio_project)
 
     conf = f'run_dir={bcbio_project if not dockerized else "/bcbio_project"}'
     if sample:
@@ -71,9 +71,11 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if 'pcgr_download' in target_rule:
         conf += f' pcgr_download=yes'
     if bcbio_genomes:
-        conf += f' bcbio_genomes={bcbio_genomes}'
+        bcbio_genomes = verify_dir(bcbio_genomes)
+        conf += f' bcbio_genomes={bcbio_genomes if not dockerized else "/bcbio_genomes"}'
     if panel_of_normals:
-        conf += f' pon={panel_of_normals}'
+        panel_of_normals = verify_dir(panel_of_normals)
+        conf += f' pon={panel_of_normals if not dockerized else "/panel_of_normals"}'
 
     cluster_param = ''
     if not dockerized and (cluster or cluster_cmd):
@@ -87,16 +89,25 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 
     cmd = ''
     if dockerized:
+        machine_info = json.loads(subprocess.check_output(['docker-machine', 'inspect']).decode())
+        cpus_avail = machine_info['Driver']['CPU']
+        if jobs > cpus_avail:
+            click.echo(click.style(
+                f'Warning: the number of jobs requested {jobs} is higher than then number of available CPUs '
+                f'for the docker machine {cpus_avail}. Downgrading requested jobs to {cpus_avail}.', fg='red'))
+            jobs = cpus_avail
+
         cmd = (
-            f'docker run -t vladsaveliev/umccrise '
-            f'--cpus {jobs + 1} '
+            f'docker run -t '
+            f'--cpus {jobs} '
             f'-v={bcbio_project}:/bcbio_project '
-            f'-v={output_dir}:/output_dir '
-        )
+            f'-v={output_dir}:/output_dir ')
         if panel_of_normals:
-            cmd += '-v={panel_of_normals}:/panel_of_normals '
+            cmd += f'-v={panel_of_normals}:/panel_of_normals '
         if bcbio_genomes:
-            cmd += '-v={bcbio_genomes}:/bcbio_genomes '
+            cmd += f'-v={bcbio_genomes}:/bcbio_genomes '
+
+        cmd += f'umccr/umccrise:latest '
 
     cmd += (
         f'snakemake '

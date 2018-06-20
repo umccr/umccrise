@@ -20,6 +20,8 @@ dependencies:
   - numpy
   - pandas
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
+  - snakemake>=5.1.2vlad
+  - ngs_utils>=2.0.4
   #
   # Umccrise-specific
   - goleft
@@ -48,8 +50,6 @@ dependencies:
   - r-readr
   - r-stringr
   - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
-  - snakemake>=5.1.2vlad
-  - ngs_utils>=2.0.4
   #
   # Matplotlib deps (without QT)
 #  - cycler >=0.10
