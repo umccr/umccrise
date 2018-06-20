@@ -3,16 +3,26 @@
 import os
 import sys
 from os.path import join, abspath, dirname, isfile, basename, splitext
-from ngs_utils.file_utils import splitext_plus
+from cyvcf2 import VCF
+from ngs_utils.file_utils import splitext_plus, verify_file
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.file_utils import add_suffix, get_ungz_gz
 from ngs_utils.logger import critical, info
-from python_utils.hpc import get_ref_file, get_loc
+from python_utils.hpc import get_loc, get_ref_file
 from umccrise import package_path, get_key_genes_bed
+from umccrise import get_cancer_genes_ensg
+from umccrise import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
 
 shell.executable("bash")
 shell.prefix("")
 
+
+is_spartan = get_loc().name == 'spartan'
+is_raijin = get_loc().name == 'raijin'
+is_hpc = is_spartan or is_raijin
+upload_proxy = ''
+if is_spartan:
+    upload_proxy = 'HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000 '
 
 pcgr_url = config.get('pcgr_url', 'ec2-13-55-18-20')
 cov_by_phenotype = config.get('cov_by_phenotype', {'tumor': 30, 'normal': 10})  # For goleft regions coverage, use minimum coverage 10 for normal, 30 for tumor
@@ -21,8 +31,24 @@ threads_max = 32  # Use up to 32 cores at once, if available
 run = BcbioProject(config.get('run_dir', abspath(os.getcwd())))
 project_id = splitext(basename(run.bcbio_yaml_fpath))[0]
 
-ref_fa = get_ref_file(run.genome_build)
 key_genes_bed = get_key_genes_bed(run.genome_build)
+
+bcbio_genomes_dir = config.get('bcbio_genomes')
+if bcbio_genomes_dir:
+    ref_fa = join(bcbio_genomes_dir, f'Hsapiens/{run.genome_build}/seq/{run.genome_build}.fa')
+    verify_file(ref_fa, description='Reference fasta file in bcbio genomes directory', is_critical=True)
+    truth_regions = join(bcbio_genomes_dir, f'Hsapiens/{run.genome_build}/validation/giab-NA12878/truth_regions.bed')
+    verify_file(truth_regions, description='GiaB truth regions file in bcbio genomes directory', is_critical=True)
+else:
+    ref_fa = get_ref_file(run.genome_build)
+    truth_regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
+
+pon_dir = config.get('pon_dir')
+if pon_dir:
+    verify_file('panel_of_normals.snps.vcf.gz', is_critical=True, description='Panel of normals SNPs file in user provided folder')
+    verify_file('panel_of_normals.indels.vcf.gz', is_critical=True, description='Panel of normals indels file in user provided folder')
+else:
+    pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
 
 # Batch objects index by tumor sample names
 batches = [b for b in run.batch_by_name.values() if not b.is_germline()]
@@ -49,13 +75,6 @@ if exclude_names:
     info(f'Excluding sample/batch name(s): {", ".join(exclude_names)}.')
 
 batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
-
-is_spartan = get_loc().name == 'spartan'
-is_raijin = get_loc().name == 'raijin'
-is_hpc = is_spartan or is_raijin
-upload_proxy = ''
-if is_spartan:
-    upload_proxy = 'HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000 '
 
 
 rule all:

@@ -70,6 +70,10 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     target_rule = list(target_rule)
     if 'pcgr_download' in target_rule:
         conf += f' pcgr_download=yes'
+    if bcbio_genomes:
+        conf += f' bcbio_genomes={bcbio_genomes}'
+    if panel_of_normals:
+        conf += f' pon={panel_of_normals}'
 
     cluster_param = ''
     if not dockerized and (cluster or cluster_cmd):

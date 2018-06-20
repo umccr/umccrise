@@ -1,7 +1,3 @@
-from python_utils.hpc import get_genomes_d, get_ref_file
-from umccrise import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
-
-
 localrules: rmd
 
 
@@ -29,7 +25,7 @@ rule subset_to_giab:
     input:
         vcf = rules.pcgr_somatic_vcf.output.vcf
     params:
-        regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
+        regions = truth_regions
     output:
         'work/{batch}/rmd/afs/ensemble-confident.vcf.gz'
     shell:

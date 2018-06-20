@@ -1,7 +1,5 @@
 #################
 #### Somatic ####
-from umccrise import get_cancer_genes_ensg
-from python_utils import hpc
 
 
 localrules: small_variants
@@ -38,13 +36,12 @@ rule somatic_vcf_pon:  # {batch}
         tbi = rules.somatic_vcf_filter_af.output.tbi
     params:
         genome_build = run.genome_build,
-        pon_exists = hpc.ref_file_exists(run.genome_build, 'panel_of_normals_dir'),
         ht = 1
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz',
         tbi = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz.tbi'
     run:
-        if params.pon_exists:
+        if pon_dir:
             shell('pon_anno {input.vcf} -h {params.ht} -o {output.vcf} -g {params.genome_build} && tabix -p vcf {output.vcf}')
         else:
             shell('cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}')
