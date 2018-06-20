@@ -54,7 +54,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 """
 
     output_dir = output_dir or 'umccrised'
-    output_dir = verify_dir(output_dir)
+    output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
     logger.init(log_fpath_=join(output_dir, 'umccrise.log'), save_previous=True)
 

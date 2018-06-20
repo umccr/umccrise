@@ -42,7 +42,7 @@ class Test_umccrise(BaseTestCase):
         ref_fasta_path = join(test_data_clone, 'data/genomes/Hsapiens/GRCh37/seq/GRCh37.fa')
         if not isfile(ref_fasta_path):
             print('Downloading GRCh37 genome...')
-            subprocess.run(f'''wget --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz && 
+            subprocess.run(f'''wget -nv --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz && 
 tar -xzvpf GRCh37-seq.tar.gz --directory {test_data_clone}/data/genomes/Hsapiens/GRCh37 && 
 rm -f GRCh37-seq.tar.gz && 
 gunzip {ref_fasta_path}.gz''', shell=True)
