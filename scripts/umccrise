@@ -16,11 +16,7 @@ set_locale()
 
 '''
 TODO:
-- wrapper that does not need any dependencies except for basic ones
-- with --docker, pulls umccr/umccrise docker image and runs
-- automatically maps paths for inputs and outputs
-- get_loc knows that we are in docker and aware of location
--
+- get rid of ngs-utils dependency
 '''
 
 

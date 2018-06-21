@@ -177,6 +177,19 @@ umccrise /path/to/bcbio/project/final -j 30 --cluster-cmd "sbatch -p vccc -n {th
 Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use at single moment.
 
 
+#### Custom reference data
+
+By default, umccr recognizes Spartan and NCI environments. However, if you want to run it outside, use the following 
+options to set paths to bcbio genomes folder (`--bcbio-genomes`) and panel of normals (`--pon`, the folder must 
+contain panel_of_normals.snps.vcf.gz and panel_of_normals.indels.vcf.gz which are built with `Snakefile.prep_normals` 
+at https://github.com/umccr/vcf_stuff/tree/master/vcf_stuff/panel_of_normals)
+
+```
+umccrise /path/to/bcbio/project/final \
+    --bcbio-genomes tests/umccrise_test_data/data/genomes \
+    --pon tests/umccrise_test_data/data/panel_of_normals
+```
+
 ## Output explanation
 
 ```
@@ -216,6 +229,42 @@ umccrised/
     {project-name}-multiqc_report.html     # - Project-level MultiQC summary report: coverage stats and more
 ```
 
+## Dockerized installation
+
+Download conda
+
+```
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
+. miniconda/etc/profile.d/conda.sh
+```
+
+Create minimal environment
+
+```
+conda env create --file environment_dockerized.yml
+conda activate umccrise
+pip install -e .
+```
+
+Pull docker
+
+```
+docker pull umccr/umccrise:latest
+```
+
+To test, build and run the test docker:
+
+```
+docker build -t umccr/umccrise:with_test_data -f Dockerfile.with_test_data .
+
+umccrise --docker \
+    tests/umccrise_test_data/data/bcbio_test_project \
+    -o tests/umccrise_test_data/results/dockerized \
+    -j 2 \
+    --bcbio-genomes tests/umccrise_test_data/data/genomes \
+    --pon tests/umccrise_test_data/data/panel_of_normals
+```
 
 ## Version history
 
