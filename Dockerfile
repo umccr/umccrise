@@ -19,14 +19,9 @@ RUN hash -r && \
     conda config --set always_yes yes --set changeps1 no && \
     conda update -q conda
 
-#RUN apt-get update && \
-#    apt-get install -y make g++
-#    apt-get upgrade -y libstdc++6
-#-t vieux/apache:2.0
-
 # Install environemnt
 COPY environment.yml .
-RUN conda env create -vvv -n umccrise --file environment.yml
+RUN conda env create -n umccrise --file environment.yml
 RUN conda info -a
 
 # Instead of `conda activate umccrise`:
@@ -37,20 +32,19 @@ ENV CONDA_DEFAULT_ENV umccrise
 # Install Peter's circos library
 RUN R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
 
+# Setting locales and timezones, based on https://github.com/jacksoncage/node-docker/blob/master/Dockerfile
 ENV LANGUAGE en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
-
-# Setting locales
 RUN apt-get update && \
-    apt-get install -y locales language-pack-en && \
+    apt-get install -y locales && \
     locale-gen en_US.UTF-8 && \
     dpkg-reconfigure locales
-
-# Setting timezones
+# (setting UTC for readr expecting UTC https://rdrr.io/github/tidyverse/readr/src/R/locale.R)
 RUN apt-get update && \
     apt-get install -y tzdata && \
-    ln -fs /usr/share/zoneinfo/Etc/ETC$offset /etc/localtime
+    echo "Etc/UTC" > /etc/timezone && \
+    dpkg-reconfigure -f noninteractive tzdata
 
 # Copy and install source
 COPY umccrise umccrise/umccrise
@@ -73,6 +67,3 @@ ENV HOSTNAME umccrise_docker
 ENV TEST_DATA_PATH=/umccrise/tests/umccrise_test_data
 ENV BCBIO_GENOMES_PATH=/genomes
 ENV PON_PATH=/panel_of_normals
-
-#VOLUME $BCBIO_GENOMES_PATH
-#VOLUME $PON_PATH
