@@ -253,11 +253,15 @@ Pull docker
 docker pull umccr/umccrise:latest
 ```
 
-To test, build and run the test docker:
+Testing
 
 ```
-docker build -t umccr/umccrise:with_test_data -f Dockerfile.with_test_data .
+nosestests -s tests/test.py -a docker
+```
 
+Usage
+
+```
 umccrise --docker \
     tests/umccrise_test_data/data/bcbio_test_project \
     -o tests/umccrise_test_data/results/dockerized \

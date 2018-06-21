@@ -82,7 +82,7 @@ install:
 #  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
 script:
-  - nosetests --nocapture tests/test.py
+  - nosetests --nocapture tests/test.py -a normal
   - rm -rf $HOME/miniconda
   - docker version
   - docker build -t umccr/umccrise:latest -f Dockerfile .
