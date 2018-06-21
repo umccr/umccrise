@@ -13,9 +13,8 @@ from umccrise import package_path, get_key_genes_bed
 from umccrise import get_cancer_genes_ensg
 from umccrise import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
 
-shell.executable("bash")
+shell.executable(os.environ['SHELL'])
 shell.prefix("")
-
 
 is_spartan = get_loc().name == 'spartan'
 is_raijin = get_loc().name == 'raijin'
