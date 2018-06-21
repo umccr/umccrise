@@ -8,6 +8,7 @@ try:
     from ngs_utils.testing import BaseTestCase, info, check_call, vcf_ignore_lines, swap_output
     from ngs_utils.utils import is_az, is_local, is_travis, is_spartan
     from ngs_utils.file_utils import safe_mkdir
+    from python_utils import hpc
 except ImportError as e:
     traceback.print_exc()
     sys.stderr.write('\nUmccrise is not installed. Refer to the README.md for installation\n')
@@ -19,15 +20,14 @@ BATCHES = ['cup']
 PROJECT = 'cup_sc932'
 
 
-test_data_clone = join(dirname(__file__), 'umccrise_test_data')
-
-
 class Test_umccrise(BaseTestCase):
     script = 'umccrise'
 
+    test_data_clone = join(dirname(__file__), 'umccrise_test_data')
     data_dir = join(test_data_clone, BaseTestCase.data_dir)
     results_dir = join(test_data_clone, BaseTestCase.results_dir)
     gold_standard_dir = join(test_data_clone, BaseTestCase.gold_standard_dir)
+    loc = hpc.find_loc()
 
     reuse = False  # Run on top of existing latest results. Also controlled with TEST_REUSE
     only_diff = False  # Do not run, just diff the latest results against the gold standard. Also controlled with TEST_ONLY_DIFF
@@ -35,15 +35,17 @@ class Test_umccrise(BaseTestCase):
     def setUp(self):
         assert os.system(f'which {self.script}') == 0, 'Umccrise is not installed. Refer to the README.md for installation'
 
-        if not isdir(test_data_clone):
+        if not isdir(Test_umccrise.test_data_clone):
             print('Cloning tests data...')
-            subprocess.run(['git', 'clone', 'https://github.com/umccr/umccrise_test_data', test_data_clone])
+            subprocess.run(['git', 'clone', 'https://github.com/umccr/umccrise_test_data', Test_umccrise.test_data_clone])
 
-        ref_fasta_path = join(test_data_clone, 'data/genomes/Hsapiens/GRCh37/seq/GRCh37.fa')
-        if not isfile(ref_fasta_path):
-            print('Downloading GRCh37 genome...')
-            subprocess.run(f'''wget -nv --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz && 
-tar -xzvpf GRCh37-seq.tar.gz --directory {test_data_clone}/data/genomes/Hsapiens/GRCh37 && 
+        if not Test_umccrise.loc or Test_umccrise.loc.name == 'travis':
+            info('Server is not recognized, downloaded the reference data')
+            ref_fasta_path = join(Test_umccrise.test_data_clone, 'data/genomes/Hsapiens/GRCh37/seq/GRCh37.fa')
+            if not isfile(ref_fasta_path):
+                print('Downloading GRCh37 genome...')
+                subprocess.run(f'''wget -nv --no-check-certificate -c https://s3.amazonaws.com/biodata/genomes/GRCh37-seq.tar.gz && 
+tar -xzvpf GRCh37-seq.tar.gz --directory {Test_umccrise.test_data_clone}/data/genomes/Hsapiens/GRCh37 && 
 rm -f GRCh37-seq.tar.gz && 
 gunzip {ref_fasta_path}.gz''', shell=True)
 
@@ -52,9 +54,10 @@ gunzip {ref_fasta_path}.gz''', shell=True)
     def _run_umccrise(self, bcbio_dirname, parallel=False):
         results_dir = join(self.results_dir, bcbio_dirname)
         bcbio_dir = join(self.data_dir, bcbio_dirname)
-        cmdl = (f'{self.script} {bcbio_dir} -o {results_dir} ' +
-                f'--bcbio-genomes {test_data_clone}/data/genomes ' +
-                f'--pon {test_data_clone}/data/panel_of_normals')
+        cmdl = f'{self.script} {bcbio_dir} -o {results_dir} '
+        if not Test_umccrise.loc:
+            cmdl += f'--bcbio-genomes {Test_umccrise.test_data_clone}/data/genomes '
+            cmdl += f'--pon {Test_umccrise.test_data_clone}/data/panel_of_normals'
         if parallel:
             cmdl += ' -j 10'
         self._run_cmd(cmdl, bcbio_dir, results_dir)
