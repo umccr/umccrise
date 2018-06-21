@@ -85,8 +85,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 
     cmd = ''
     if dockerized:
-        machine_info = json.loads(subprocess.check_output(['docker-machine', 'inspect']).decode())
-        cpus_avail = machine_info['Driver']['CPU']
+        cpus_avail = int(subprocess.check_output('docker system info | grep CPUs', shell=True).decode().split(': ')[1])
         if jobs > cpus_avail:
             click.echo(click.style(
                 f'Warning: the number of jobs requested {jobs} is higher than then number of available CPUs '
