@@ -5,7 +5,6 @@ from os.path import isfile, join, dirname, abspath
 import click
 import subprocess
 import json
-from python_utils.hpc import get_loc
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
 from umccrise import package_path
@@ -76,6 +75,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     cluster_param = ''
     if not dockerized and (cluster or cluster_cmd):
         if not cluster_cmd:
+            from python_utils.hpc import get_loc
             loc = get_loc()
             if not loc.submit_job_cmd:
                 logger.critical(f'Automatic cluster submission is not supported for the machine "{loc.name}"')
