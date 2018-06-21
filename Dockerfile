@@ -37,7 +37,7 @@ ENV LANGUAGE en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 RUN apt-get update && \
-    apt-get install -y locales && \
+    apt-get install -y locales language-pack-en && \
     locale-gen en_US.UTF-8 && \
     dpkg-reconfigure locales
 # (setting UTC for readr expecting UTC https://rdrr.io/github/tidyverse/readr/src/R/locale.R)
