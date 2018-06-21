@@ -83,12 +83,13 @@ install:
 
 script:
   - nosetests --nocapture tests/test.py
-#  - docker version
-#  - docker build -t umccr/umccrise:latest -f Dockerfile .
-#  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
-#  - docker push umccr/umccrise:latest
-#  - docker build -t umccr/umccrise:with_test_data -f Dockerfile.with_test_data .
-#  - docker push umccr/umccrise:with_test_data
+  - rm -rf $HOME/miniconda
+  - docker version
+  - docker build -t umccr/umccrise:latest -f Dockerfile .
+  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
+  - docker push umccr/umccrise:latest
+  - docker build -t umccr/umccrise:with_test_data -f Dockerfile.with_test_data .
+  - docker push umccr/umccrise:with_test_data
 
 #notifications:
 #  on_success: always
