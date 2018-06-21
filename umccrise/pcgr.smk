@@ -63,7 +63,7 @@ rule run_pcgr_local_somatic:
     resources:
         mem_mb=5000
     shell:
-        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name}'
+        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --no-docker'
 
 rule run_pcgr_local_germline:
     input:
@@ -78,7 +78,7 @@ rule run_pcgr_local_germline:
     resources:
         mem_mb=5000
     shell:
-        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline'
+        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline --no-docker'
 
 rule pcgr_symlink_somatic:
     input:
