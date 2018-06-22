@@ -21,13 +21,17 @@ dependencies:
   - pandas
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake>=5.1.2vlad
-  - ngs_utils>=2.0.4
+  - ngs_utils>=2.0.5
+  - nose
   #
   # Umccrise-specific
   - goleft
   - awscli
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - cnvkit
+  - multiqc     # for reports
+  - networkx    # for reports
+  - pygraphviz  # for reports
   # R libraries
   - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - r
