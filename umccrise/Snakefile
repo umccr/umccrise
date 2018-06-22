@@ -74,9 +74,6 @@ def prep_inputs(config_):
 run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed = prep_inputs(config)
 
 
-report: "report/workflow.rst"
-
-
 rule all:
     input: 'umccrised.done'
     # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.

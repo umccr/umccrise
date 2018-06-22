@@ -95,12 +95,15 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 
         cmd += f'umccr/umccrise:latest '
 
+    snakefile = join(package_path(), "Snakefile") if not dockerized else "/umccrise/umccrise/Snakefile"
+    output_dir = output_dir if not dockerized else "/output_dir"
     cmd += (
         f'snakemake '
         f'{" ".join(target_rule)} '
-        f'--snakefile {join(package_path(), "Snakefile") if not dockerized else "/umccrise/umccrise/Snakefile"} '
+        f'--snakefile {snakefile} '
         f'--printshellcmds '
-        f'--directory {output_dir if not dockerized else "/output_dir"} '
+        f'--report {output_dir}/log/snakemake_report.html '
+        f'--directory {output_dir} '
         f'-j {jobs} '
         f'--rerun-incomplete ' 
         f'{cluster_param} '
