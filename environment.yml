@@ -21,8 +21,9 @@ dependencies:
   - pandas
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake>=5.1.2vlad
-  - ngs_utils>=2.0.5
   - nose
+  - ngs_utils>=2.0.5
+  - natsort    # for bcbio.py in ngs_utils
   #
   # Umccrise-specific
   - goleft
