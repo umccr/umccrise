@@ -1,5 +1,7 @@
 #################
 #### Somatic ####
+from ngs_utils.file_utils import get_ungz_gz
+from umccrise import get_cancer_genes_ensg
 
 
 localrules: small_variants

@@ -3,6 +3,8 @@ Structural variants
 ------------------
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
+from cyvcf2 import VCF
+
 vcftobedpe = 'vcfToBedpe'
 
 

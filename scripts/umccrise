@@ -4,19 +4,10 @@ import sys
 from os.path import isfile, join, dirname, abspath
 import click
 import subprocess
-import json
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
 from umccrise import package_path
-
-from ngs_utils.utils import set_locale
-set_locale()
-
-
-'''
-TODO:
-- get rid of ngs-utils dependency
-'''
+from ngs_utils.utils import set_locale; set_locale()
 
 
 @click.command()
@@ -125,9 +116,10 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     print(cmd)
     exit_code = subprocess.call(cmd, shell=True)
     if exit_code != 0:
-        sys.stderr.write('--------\n')
-        sys.stderr.write(f'Error running Umccrise: snakemake returned a non-zero status.\n')
+        logger.error('--------')
+        logger.error(f'Error running Umccrise: snakemake returned a non-zero status. Working directory: {output_dir}')
         sys.exit(exit_code)
+    logger.info(f'Output directory: {output_dir}')
 
     # Cleanup
     # work_dir = join(output_dir, 'work')
