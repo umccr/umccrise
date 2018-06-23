@@ -10,8 +10,8 @@ channels:
 dependencies:
   - python>=3.6
   - bcftools
-  - tabix
   - bedtools
+  - samtools
   - vcfanno
   - vcflib  # for VCF normalisation
   - pythonpy
@@ -20,19 +20,25 @@ dependencies:
   - numpy
   - pandas
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
-  - snakemake>=5.1.2vlad
+  - snakemake>=5.1.4vlad
   - nose
   - ngs_utils>=2.0.5
-  - natsort    # for bcbio.py in ngs_utils
+  - pip:
+    - "--editable=git+https://github.com/umccr/python_utils#egg=python_utils"
+    - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
   #
   # Umccrise-specific
+  - natsort  # for bcbio.py in ngs_utils
+  # - pybedtools  # for ref data generation
+  # - sambamba  # for test data generation
+  # - tabix     # for test data generation
   - goleft
   - awscli
-  - pyasn1  # for awscli - for some reason doesn't install automatically on macos
+  - pyasn1 # for awscli - for some reason doesn't install automatically on macos
   - cnvkit
-  - multiqc     # for reports
-  - networkx    # for reports
-  - pygraphviz  # for reports
+  - multiqc
+  - networkx   # for snakemake report
+  - pygraphviz # for snakemake report
   # R libraries
   - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - r
@@ -55,20 +61,3 @@ dependencies:
   - r-readr
   - r-stringr
   - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
-  #
-  # Matplotlib deps (without QT)
-#  - cycler >=0.10
-#  - python-dateutil
-#  - freetype 2.8.*
-#  - pytz
-#  - pyparsing
-#  - libpng >=1.6.32,<1.6.35
-#  - tk 8.6.*
-#  - icu 58.*
-#  - tornado
-#  - kiwisolver
-  #
-  # Actively developed accompanying libraries
-  - pip:
-    - "--editable=git+https://github.com/umccr/python_utils#egg=python_utils"
-    - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"

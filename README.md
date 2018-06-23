@@ -129,7 +129,7 @@ umccrise /path/to/bcbio/project/final -o umccrised_results
 
 #### Run selected steps
 
-Umccrise workflow consists of the following steps: `pcgr`, `coverage`, `structural`, `small_variants`, `rmd`, `copy_multiqc`, `copy_logs`, `igv`.
+Umccrise workflow consists of the following steps: `pcgr`, `coverage`, `structural`, `small_variants`, `rmd`, `multiqc`, `copy_logs`, `igv`.
 
 To run just a particular step (or steps), use:
 
@@ -242,7 +242,7 @@ bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
 Create minimal environment
 
 ```
-conda env create --file environment_dockerized.yml
+conda env create --file dev_extras/environment_wrapper.yml
 conda activate umccrise
 pip install -e .
 ```

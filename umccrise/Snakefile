@@ -100,16 +100,18 @@ include: "pcgr.smk"
 include: "rmd.smk"
 
 
-localrules: copy_multiqc, copy_logs, umccrise
+localrules: multiqc, copy_logs, umccrise
 
 
-rule copy_multiqc:  # {}
+rule multiqc:  # {}
     input:
         join(run.date_dir, 'multiqc/multiqc_report.html')
     output:
         run.project_name + '-multiqc_report.html'
     shell:
         'cp {input} {output}'
+        # generate proper mutliqc_umccrise
+
 
 
 ## Additional information
@@ -129,7 +131,7 @@ rule copy_logs:  # {}
 
 rule umccrise:
     input:  # Copy here inputs of the "milestone" rules (rules without output defined in the end of each Snakemake.* file)
-        rules.copy_multiqc.output,
+        rules.multiqc.output,
         rules.copy_logs.output,
         rules.coverage.output,
         rules.structural.output,

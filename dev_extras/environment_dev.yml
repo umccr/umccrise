@@ -1,0 +1,13 @@
+name: umccrise
+
+channels:
+  - vladsaveliev
+  - bioconda
+  - conda-forge
+  - defaults
+  - anaconda
+
+dependencies:
+  - pybedtools  # for ref data generation
+  - sambamba    # for test data generation
+  - tabix       # for test data generation
