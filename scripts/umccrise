@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 import os
 import sys
+from glob import glob
 from os.path import isfile, join, dirname, abspath
+import shutil
 import click
 import subprocess
+
+from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
 from umccrise import package_path
@@ -40,9 +44,9 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 """
 
     output_dir = output_dir or 'umccrised'
-    output_dir = abspath(output_dir)
-    safe_mkdir(output_dir)
-    logger.init(log_fpath_=join(output_dir, 'umccrise.log'), save_previous=True)
+    output_dir = safe_mkdir(abspath(output_dir))
+    log_dir = safe_mkdir(join(output_dir, 'log'))
+    logger.init(log_fpath_=join(log_dir, 'umccrise.log'), save_previous=True)
 
     bcbio_project = verify_dir(bcbio_project)
 
@@ -102,7 +106,6 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         f'{" ".join(target_rule)} '
         f'--snakefile {snakefile} '
         f'--printshellcmds '
-        f'--report {output_dir}/log/snakemake_report.html '
         f'--directory {output_dir} '
         f'-j {jobs} '
         f'--rerun-incomplete ' 
@@ -112,19 +115,27 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 
     if unlock:
         print('* Unlocking previous run... *')
-        print(cmd + ' --unlock')
-        subprocess.call(cmd + ' --unlock', shell=True)
+        run_simple(cmd + ' --unlock')
         print('* Now rerunning *')
 
-    print(cmd)
-    exit_code = subprocess.call(cmd, shell=True)
-    if exit_code != 0:
+    try:
+        run_simple(cmd)
+    except subprocess.CalledProcessError:
         logger.error('--------')
         logger.error(f'Error running Umccrise: snakemake returned a non-zero status. Working directory: {output_dir}')
-        sys.exit(exit_code)
-    logger.info(f'Output directory: {output_dir}')
+        raise
 
-    # Cleanup
+    logger.info('Generating snakemake benchmark report...')
+    run_simple(cmd + f' --report {log_dir}/snakemake_report.html')
+
+    logger.error('--------')
+    logger.info(f'Finished. Output directory: {output_dir}')
+
+    logger.info('Cleaning up...', ending=' ')
+    slurm_log_dir = safe_mkdir(join(log_dir, 'slurm'))
+    for slurm_log in glob(f'{output_dir}/slurm-*.out'):
+        shutil.move(slurm_log, slurm_log_dir)
+    logger.info('Done.', print_date=False)
     # work_dir = join(output_dir, 'work')
     # if isdir(work_dir):
     #     shutils.rmtree(work_dir)
