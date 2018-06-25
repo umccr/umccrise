@@ -2,7 +2,7 @@
 """
 import os
 from os.path import join, abspath, dirname, isfile, basename, splitext
-from ngs_utils.file_utils import splitext_plus, verify_file
+from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.logger import critical, info
 from python_utils.hpc import get_loc, get_ref_file
@@ -22,28 +22,71 @@ if is_spartan:
 
 
 def prep_inputs(config_):
-    run = BcbioProject(config_.get('run_dir', abspath(os.getcwd())))
+    run = BcbioProject(config_.get('bcbio_project', abspath(os.getcwd())))
     run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
 
     key_genes_bed = get_key_genes_bed(run.genome_build)
 
+    ############################################
+    #### Reference files provided directly? ####
+    ############################################
+    ref_fa = config_.get('ref_fasta')
+    truth_regions = config_.get('truth_regions')
+    pon_dir = config_.get('panel_of_normals')
+
+    ##################################################
+    #### Bcbio reference genomes folder provided? ####
+    ##################################################
     bcbio_genomes_dir = config_.get('bcbio_genomes')
     if bcbio_genomes_dir:
-        ref_fa = join(bcbio_genomes_dir, f'Hsapiens/{run.genome_build}/seq/{run.genome_build}.fa')
-        verify_file(ref_fa, description='Reference fasta file in bcbio genomes directory', is_critical=True)
-        truth_regions = join(bcbio_genomes_dir, f'Hsapiens/{run.genome_build}/validation/giab-NA12878/truth_regions.bed')
-        verify_file(truth_regions, description='GiaB truth regions file in bcbio genomes directory', is_critical=True)
-    else:
-        ref_fa = get_ref_file(run.genome_build)
-        truth_regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
+        # Looking for reference fasta
+        for fp in [
+            join(bcbio_genomes_dir, f'Hsapiens/{run.genome_build}/seq/{run.genome_build}.fa'),
+            join(bcbio_genomes_dir, f'{run.genome_build}/seq/{run.genome_build}.fa'),
+            join(bcbio_genomes_dir, f'seq/{run.genome_build}.fa')]:
+            if isfile(fp):
+                ref_fa = fp
+        if not ref_fa:
+            critical(f'Not found {run.genome_build}.fa in bcbio genomes directory {bcbio_genomes_dir}')
 
-    pon_dir = config_.get('pon_dir')
-    if pon_dir:
-        verify_file('panel_of_normals.snps.vcf.gz', is_critical=True, description='Panel of normals SNPs file in user provided folder')
-        verify_file('panel_of_normals.indels.vcf.gz', is_critical=True, description='Panel of normals indels file in user provided folder')
-    else:
+        # Looking for truth regions
+        for fp in [
+            join(bcbio_genomes_dir, f'Hsapiens/{run.genome_build}/validation/giab-NA12878/truth_regions.bed'),
+            join(bcbio_genomes_dir, f'{run.genome_build}/validation/giab-NA12878/truth_regions.bed'),
+            join(bcbio_genomes_dir, f'validation/giab-NA12878/truth_regions.bed')]:
+            if isfile(fp):
+                truth_regions = fp
+        if not truth_regions:
+            critical(f'Not found GiaB truth regions in bcbio genomes directory {bcbio_genomes_dir}')
+
+    #################################################################
+    #### Reference files not provided, but we are on known host? ####
+    #################################################################
+    if not ref_fa:
+        ref_fa = get_ref_file(run.genome_build)
+    if not truth_regions:
+        truth_regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
+    if not pon_dir:
         pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
 
+    ###########################################################
+    #### Done looking for refernece files, now some checks ####
+    ###########################################################
+    truth_regions = verify_file(truth_regions, is_critical=True, description='GiaB truth regions')
+
+    ref_fa = verify_file(ref_fa, is_critical=True, description='Reference fasta')
+    verify_file(ref_fa + '.fai', is_critical=True, description='Reference fasta fai index')
+
+    if pon_dir:
+        verify_dir(pon_dir, 'Panel of normals directory', is_critical=True)
+        verify_file(join(pon_dir, 'panel_of_normals.snps.vcf.gz'), is_critical=True, description='Panel of normals SNPs file in user provided folder')
+        verify_file(join(pon_dir, 'panel_of_normals.snps.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
+        verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz'), is_critical=True, description='Panel of normals indels file in user provided folder')
+        verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
+
+    #############################
+    #### Non-path parameters ####
+    #############################
     # Batch objects index by tumor sample names
     batches = [b for b in run.batch_by_name.values() if not b.is_germline()]
     include_names = config_.get('batch') or config_.get('sample')

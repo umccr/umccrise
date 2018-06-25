@@ -179,10 +179,19 @@ Make sure to use `-j` outside of that template: this options tells snakemake how
 
 #### Custom reference data
 
-By default, umccr recognizes Spartan and NCI environments. However, if you want to run it outside, use the following 
-options to set paths to bcbio genomes folder (`--bcbio-genomes`) and panel of normals (`--pon`, the folder must 
-contain panel_of_normals.snps.vcf.gz and panel_of_normals.indels.vcf.gz which are built with `Snakefile.prep_normals` 
-at https://github.com/umccr/vcf_stuff/tree/master/vcf_stuff/panel_of_normals)
+Umccrise recognizes Spartan and NCI environments. You can alternatively provide your own reference data:
+
+* `--ref-fasta` - path to reference fasta (e.g. /genomes/hg19.fa); .fai file should exist;
+
+* `--truth-regions` - path to GiaB truth regions;
+
+* `--bcbio-genomes` - alternatively you can specify the path to full bcbio genomes installation, 
+e.g. ` --bcbio-genomes /bcbio/genomes` or ` --bcbio-genomes /bcbio/genomes/Hsapiens/hg38`;
+
+* `--pon` - panel of normals directory, should contain `panel_of_normals.snps.vcf.gz(.tbi)` and `panel_of_normals.indels.vcf.gz(.tbi)`
+which are built with `Snakefile.prep_normals` at https://github.com/umccr/vcf_stuff/tree/master/vcf_stuff/panel_of_normals
+
+Example:
 
 ```
 umccrise /path/to/bcbio/project/final \
