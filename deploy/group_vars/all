@@ -1,1 +1,2 @@
 docker_apt_release_channel: edge
+ubuntu_ecs_agent_cluster_name: umccr_aws_batch_dev_Batch_efe48e90-32bc-3aff-b6a3-cf3a639a831b
