@@ -8,7 +8,7 @@ from ngs_utils.logger import critical, info
 from python_utils.hpc import get_loc, get_ref_file
 from umccrise import get_key_genes_bed
 
-shell.executable(os.environ['SHELL'])
+shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
 threads_max = 32  # Use up to 32 cores at once, if available
 
