@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from setuptools import setup
 
-version = '0.7'
+with open('VERSION.txt') as f:
+    version = f.read().strip().split('\n')[0]
 
 setup(
     name='umccrise',
