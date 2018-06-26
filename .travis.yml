@@ -1,4 +1,5 @@
 sudo: required
+dist: precise
 
 services:
   - docker
@@ -21,34 +22,51 @@ before_install:
   - sudo rm -rf /dev/shm
   - sudo ln -s /run/shm /dev/shm
 
+install:
+  ##########################################
+  ## To pull cached miniconda and update: ##
+  ##########################################
+  # Get and install anaconda (https://conda.io/docs/travis.html) and packages
+  - if [ -d $HOME/miniconda ]; then echo "ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;
+  - if [ ! -d $HOME/miniconda/bin ] ; then
+      if [ -d $HOME/miniconda ] ; then rm -rf $HOME/miniconda ; fi ;
+      wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
+      bash miniconda.sh -b -p $HOME/miniconda ;
+      export PATH=$HOME/miniconda/bin:$PATH ;
+      hash -r ;
+      conda config --set always_yes yes --set changeps1 no ;
+      conda update -q conda ;
+      conda env create -n umccrise --file environment.yml ;
+    else
+      export PATH=$HOME/miniconda/bin:$PATH ;
+      echo "else ls HOME/miniconda:" ; ls $HOME/miniconda ;
+      conda config --set always_yes yes --set changeps1 no ;
+      conda env update -f environment.yml ;
+    fi
+  - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
+  - source activate umccrise
+  # Useful for debugging any issues with conda
+  - conda info -a
+  # Installing the codebase (source code was automatically cloned into CWD by Travis)
+  - pip install -e .
+
 jobs:
   include:
     - stage: install
-      script:
-      # Get and install anaconda (https://conda.io/docs/travis.html)
-      - wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-      - bash miniconda.sh -b -p $HOME/miniconda
-      - export PATH=$HOME/miniconda/bin:$PATH
-      - hash -r
-      - conda config --set always_yes yes --set changeps1 no
-      - conda update -q conda
-      # Installing umccrise packages
-      - conda env create -n umccrise --file environment.yml
-      - source activate umccrise
-      # Useful for debugging any issues with conda
-      - conda info -a
-      # Installing the codebase (source code was automatically cloned into CWD by Travis)
-      - pip install -e .
-      - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
-
+      script: true  # to trigger installation
     - stage: test
-      script:
-      - nosetests --nocapture tests/test.py -a normal
+      script: nosetests --nocapture tests/test.py -a normal
+
+# Skip caching for now so we can remove miniconda folder and save space for deploy. Consider
+cache:
+  directories:
+  - $HOME/miniconda
+  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
 deploy:
   provider: script
   script:
-    - rm -rf $HOME/miniconda
+#    - rm -rf $HOME/miniconda
     - docker version
     - docker build -t $DOCKER_USER/umccrise:$(cat VERSION.txt) -f Dockerfile .
     - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
