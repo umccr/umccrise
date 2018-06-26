@@ -1,5 +1,4 @@
 sudo: required
-dist: precise
 
 services:
   - docker
@@ -55,6 +54,7 @@ jobs:
     - stage: install
       script: true  # to trigger installation
     - stage: test
+      install: skip
       script: nosetests --nocapture tests/test.py -a normal
 
 # Skip caching for now so we can remove miniconda folder and save space for deploy. Consider
