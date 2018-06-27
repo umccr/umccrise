@@ -35,10 +35,10 @@ install:
   - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
 
 # Skip caching for now so we can remove miniconda folder and save space for deploy. Consider
-cache:
-  directories:
-  - $HOME/miniconda
-  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
+#cache:
+#  directories:
+#  - $HOME/miniconda
+#  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
 script:
   - nosetests --nocapture tests/test.py -a normal
@@ -52,6 +52,7 @@ addons:
 
 after_success:
   - rm -rf $HOME/miniconda
+  - rm -rf tests/umccrise_test_data/results
   - docker version
   - docker build -t $DOCKER_USER/umccrise:$(cat VERSION.txt) -f Dockerfile .
   - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
