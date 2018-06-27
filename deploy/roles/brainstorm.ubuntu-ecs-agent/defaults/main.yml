@@ -2,6 +2,7 @@
 # defaults file for ubuntu-ecs-agent
 # Based on a subset of options available at http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-config.html
 
+ubuntu_ecs_agent_data_path: /data
 ubuntu_ecs_agent_loglevel: info
 ubuntu_ecs_agent_cluster_name: default
 ubuntu_ecs_agent_enable_iam_role: true

@@ -33,7 +33,7 @@ Vagrant.configure("2") do |config|
         ansible.playbook = "tests/vagrant.yml"
         ansible.galaxy_role_file = "requirements.yml"
         ansible.verbose = "vv"
-        ansible.compatibility_mode = 2
+        ansible.compatibility_mode = "2.0"
       end
     end
   end
