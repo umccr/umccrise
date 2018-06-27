@@ -12,8 +12,12 @@ job_properties = read_job_properties(job_cmd)
 
 submit_cmd = submit_cmd.replace('{threads}', str(job_properties.get('threads', 1)))
 submit_cmd = submit_cmd.replace('{resources.mem_mb}', str(job_properties.get('resources', {}).get('mem_mb', 2000)))
+
 job_name = job_properties.get('rule') or job_properties.get('groupid') or 'umccrise'
+job_name += '.' + '__'.join(job_properties['wildcards'].values())
+
 submit_cmd = submit_cmd.replace('{job_name}', job_name)
+submit_cmd = submit_cmd.replace('{log_file}', job_name + '.cluster.log')
 
 cmd = f'{submit_cmd} {job_cmd}'
 sys.stderr.write(cmd + '\n')

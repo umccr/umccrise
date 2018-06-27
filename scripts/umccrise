@@ -117,7 +117,6 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
             cluster_cmd = f'python {cluster_wrapper}'
         cluster_param = f' --cluster "{cluster_cmd}"'
 
-
     ###############################
     #### Building command line ####
     ###############################
@@ -151,6 +150,10 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         f'--config {" ".join(k + "=" + v for k, v in conf.items())} '
     )
 
+    #################
+    #### Running ####
+    #################
+
     if unlock:
         print('* Unlocking previous run... *')
         run_simple(cmd + ' --unlock')
@@ -166,17 +169,18 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     logger.info('Generating snakemake benchmark report...')
     run_simple(cmd + f' --report {log_dir}/snakemake_report.html')
 
+    #####################
+    #### Wrapping up ####
+    #####################
+
     logger.error('--------')
     logger.info(f'Finished. Output directory: {output_dir}')
 
-    logger.info('Cleaning up...', ending=' ')
-    slurm_log_dir = safe_mkdir(join(log_dir, 'slurm'))
-    for slurm_log in glob(f'{output_dir}/slurm-*.out'):
-        shutil.move(slurm_log, slurm_log_dir)
-    logger.info('Done.', print_date=False)
-    # work_dir = join(output_dir, 'work')
-    # if isdir(work_dir):
-    #     shutils.rmtree(work_dir)
+    if cluster_cmd:
+        slurm_log_dir = safe_mkdir(join(log_dir, 'cluster'))
+        logger.info(f'Moving cluster logs to {slurm_log_dir}')
+        for slurm_log in glob(f'{output_dir}/*.cluster.log'):
+            shutil.move(slurm_log, slurm_log_dir)
 
 
 if __name__ == '__main__':
