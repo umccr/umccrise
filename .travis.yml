@@ -1,25 +1,10 @@
 sudo: required
-
-services:
-  - docker
-addons:
-  apt:
-    packages:
-      - docker-ce
+dist: trusty
 
 language: python
 python:
   # We don't actually use the Travis Python (since we are on conda), but this keeps it organized.
   - "3.6"
-
-before_install:
-  # Temporal fix for networking problem: https://github.com/travis-ci/travis-ci/issues/1484
-  - echo "127.0.1.1 "`hostname` | sudo tee /etc/hosts
-
-  # The next couple lines fix a crash with multiprocessing on Travis and
-  # are not specific to using Miniconda
-  - sudo rm -rf /dev/shm
-  - sudo ln -s /run/shm /dev/shm
 
 install:
   ##########################################
@@ -42,20 +27,12 @@ install:
       conda config --set always_yes yes --set changeps1 no ;
       conda env update -f environment.yml ;
     fi
-  - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
   - source activate umccrise
   # Useful for debugging any issues with conda
   - conda info -a
   # Installing the codebase (source code was automatically cloned into CWD by Travis)
   - pip install -e .
-
-jobs:
-  include:
-    - stage: install
-      script: true  # to trigger installation
-    - stage: test
-      install: skip
-      script: nosetests --nocapture tests/test.py -a normal
+  - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
 
 # Skip caching for now so we can remove miniconda folder and save space for deploy. Consider
 cache:
@@ -63,14 +40,20 @@ cache:
   - $HOME/miniconda
   timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
-deploy:
-  provider: script
-  script:
+script:
+  - nosetests --nocapture tests/test.py -a normal
+
+services:
+  - docker
+addons:
+  apt:
+    packages:
+      - docker-ce
+
+after_success:
 #    - rm -rf $HOME/miniconda
-    - docker version
-    - docker build -t $DOCKER_USER/umccrise:$(cat VERSION.txt) -f Dockerfile .
-    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
-    - docker images
-    - docker push $DOCKER_USER/umccrise:$(cat VERSION.txt)
-  on:
-    branch: master
+  - docker version
+  - docker build -t $DOCKER_USER/umccrise:$(cat VERSION.txt) -f Dockerfile .
+  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
+  - docker images
+  - docker push $DOCKER_USER/umccrise:$(cat VERSION.txt)
