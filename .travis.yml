@@ -51,7 +51,7 @@ addons:
       - docker-ce
 
 after_success:
-#    - rm -rf $HOME/miniconda
+  - rm -rf $HOME/miniconda
   - docker version
   - docker build -t $DOCKER_USER/umccrise:$(cat VERSION.txt) -f Dockerfile .
   - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
