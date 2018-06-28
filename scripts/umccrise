@@ -11,8 +11,8 @@ import subprocess
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
-from umccrise import package_path
 from ngs_utils.utils import set_locale; set_locale()
+from umccrise import package_path
 
 
 @click.command()
@@ -108,17 +108,28 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     #########################
 
     cluster_param = ''
-    if not docker_wrapper_mode and (cluster or cluster_cmd):
-        if not cluster_cmd:
+    if (cluster or cluster_cmd) and not docker_wrapper_mode:
+        if cluster_cmd:
+            cluster_param = f' --cluster "{cluster_cmd}"'
+        else:
             from python_utils.hpc import get_loc
             loc = get_loc()
-            if not loc.submit_job_cmd:
+            if not loc.cluster:
                 logger.critical(f'Automatic cluster submission is not supported for the machine "{loc.name}"')
-            cluster_wrapper = join(package_path(), 'submit.py')
+
+            cluster_submitter = join(package_path(), 'submit.py')
             timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
             slurm_log_dir = safe_mkdir(join(log_dir, 'cluster'))
-            cluster_cmd = f'python {cluster_wrapper} {timestamp} {slurm_log_dir}'
-        cluster_param = f' --cluster "{cluster_cmd}"'
+            cluster_cmd = f'python {cluster_submitter} {timestamp} {slurm_log_dir}'
+            cluster_param = f' --cluster "{cluster_cmd}"'
+
+            # Also overriding jobscript?
+            jobscript = loc.cluster.get('jobscript')
+            if jobscript:
+                fixed_jobscript = join(safe_mkdir(join(output_dir, 'work')), 'jobscript.sh')
+                with open(jobscript) as f_in, open(fixed_jobscript, 'w') as f_out:
+                    f_out.write(f_in.read().replace('{path}', os.environ["PATH"]))
+                cluster_param += f' --jobscript "{fixed_jobscript}"'
 
     ###############################
     #### Building command line ####

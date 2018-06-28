@@ -4,7 +4,7 @@ from python_utils.hpc import get_loc
 from snakemake.utils import read_job_properties
 
 loc = get_loc()
-submit_cmd = loc.submit_job_cmd
+submit_cmd = loc.cluster['submit_cmd']
 
 timestamp = sys.argv[1]
 logs_dir = sys.argv[2]
