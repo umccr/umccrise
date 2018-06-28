@@ -1,7 +1,7 @@
 ## IGV
 
 
-localrules: igv
+localrules: igv, igv_upload
 
 
 # Create BAM and VCF files suitable for moving around easily. Right now this only uses 300 key genes list.
