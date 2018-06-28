@@ -36,7 +36,13 @@ Please consult http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-ag
   vars:
     - ubuntu_ecs_agent_cluster_name: TestCluster
   roles:
-    - ubuntu-ecs-agent
+    - ecs-agent
+```
+
+Run it with python3 interpreter in newer distributions like this:
+
+```bash
+ansible-playbook site.yml -i ec2-13-236-6-185.ap-southeast-2.compute.amazonaws.com, -e 'ansible_python_interpreter=/usr/bin/python3'
 ```
 
 ## License

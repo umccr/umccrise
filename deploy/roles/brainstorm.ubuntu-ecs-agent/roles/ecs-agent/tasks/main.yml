@@ -2,7 +2,6 @@
 # Based on the instructions at http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-install.html
 
 - name: Make sure vital python packages are installed beforehand
-  become: true
   pip:
     name: "{{ item }}"
     state: latest
@@ -61,7 +60,6 @@
     privileged: yes # otherwise we get: [WARN] Disabling TaskCPUMemLimit because agent /sys/fs/cgroup/systemd/ecs: read-only file system
     env: #XXX: better to read from j2 template file in here?
       ECS_LOGFILE: /log/ecs-agent.log
-      ECS_AVAILABLE_LOGGING_DRIVERS: ["json-file","awslogs"]
       ECS_DATADIR: "{{ ubuntu_ecs_agent_data_path }}"
       ECS_LOGLEVEL: "{{ ubuntu_ecs_agent_loglevel }}"
       ECS_CLUSTER: "{{ ubuntu_ecs_agent_cluster_name }}"
