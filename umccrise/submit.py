@@ -17,7 +17,8 @@ submit_cmd = submit_cmd\
     .replace('{resources.mem_mb}', str(job_properties.get('resources', {}).get('mem_mb', 2000)))
 
 job_name = job_properties.get('rule') or job_properties.get('groupid') or 'umccrise'
-job_name += '.' + '__'.join(job_properties['wildcards'].values())
+if 'wildcards' in job_properties:
+    job_name += '.' + '__'.join(job_properties['wildcards'].values())
 
 submit_cmd = submit_cmd\
     .replace('{job_name}', job_name)\
