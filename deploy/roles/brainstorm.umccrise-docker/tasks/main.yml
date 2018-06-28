@@ -25,10 +25,8 @@
       echo $org_ssh_keys
       for ssh_key in $org_ssh_keys
       do
-              wget $ssh_key -O - >> ~/.ssh/authorized_keys
+              wget $ssh_key -O - >> $HOME/.ssh/authorized_keys
       done
-  async: 45
-  poll: 0
 
 - name: clone umccrise
   git:
