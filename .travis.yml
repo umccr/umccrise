@@ -54,7 +54,7 @@ after_success:
   - rm -rf $HOME/miniconda
   - rm -rf tests/umccrise_test_data/results
   - docker version
-  - docker build -t $DOCKER_USER/umccrise:$(cat VERSION.txt) -f Dockerfile .
+  - docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
   - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
   - docker images
-  - docker push $DOCKER_USER/umccrise:$(cat VERSION.txt)
+  - docker push umccr/umccrise:$(cat VERSION.txt)
