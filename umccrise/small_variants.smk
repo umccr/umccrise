@@ -1,5 +1,7 @@
 #################
 #### Somatic ####
+from ngs_utils.file_utils import get_ungz_gz
+from umccrise import get_cancer_genes_ensg
 
 
 localrules: small_variants
@@ -42,7 +44,8 @@ rule somatic_vcf_pon:  # {batch}
         tbi = '{batch}/small_variants/{batch}-somatic-ensemble-pon_softfiltered.vcf.gz.tbi'
     run:
         if pon_dir:
-            shell('pon_anno {input.vcf} -h {params.ht} -o {output.vcf} -g {params.genome_build} && tabix -p vcf {output.vcf}')
+            shell('pon_anno {input.vcf} -h {params.ht} -o {output.vcf} --pon-dir ' + pon_dir + ' '
+                  '&& tabix -p vcf {output.vcf}')
         else:
             shell('cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}')
 

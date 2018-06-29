@@ -3,6 +3,8 @@ Structural variants
 ------------------
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
+from cyvcf2 import VCF
+
 vcftobedpe = 'vcfToBedpe'
 
 
@@ -55,7 +57,10 @@ rule filter_sv_vcf:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta-filter.vcf'
     group: "sv_vcf"
     run:
+        print(f'VCF samples: {VCF(input.vcf).samples}')
+        print(f'Bcbio batch tumor name:: {batch_by_name[wildcards.batch].tumor.name}')
         tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
+        print(f'Derived tumor VCF index: {tumor_id}')
         shell('bcftools filter -i "(FORMAT/SR[' + str(tumor_id) + ':1]>=5 | FORMAT/PR[' + str(tumor_id) + ':1]>=5) & BPI_AF >= 0.1" {input.vcf} > {output.vcf}')
 
 #### Bring in the prioritized SV calls from Manta. This should also include a basic plot at some stage.
@@ -66,9 +71,10 @@ rule prep_sv_tsv:
     output:
         '{batch}/structural/{batch}-sv-prioritize-manta-pass.tsv'
     shell:
-        'head -n1 {input.sv_prio} > {output} && '
-        'grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) >> {output}'
-
+        'if [ $(bcftools view -H {input.vcf} | wc -l) -gt 0 ] ; '  # checking if VCF has records, because otherwise grep will return non-0
+        'then head -n1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) >> {output} ; '
+        'else touch {output} ; '
+        'fi'
 
 #### At least for the most conservative manta calls generate a file for viewing in Ribbon ###
 

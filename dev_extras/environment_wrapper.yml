@@ -5,9 +5,9 @@ channels:
   - bioconda
   - conda-forge
   - defaults
-  - anaconda
 
 dependencies:
   - python>=3.6
   - click
   - ngs_utils>=2.0.4
+  - nose

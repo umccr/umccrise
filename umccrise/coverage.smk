@@ -14,7 +14,7 @@ rule goleft_depth:
         ref_fa = ref_fa
     params:
         prefix = lambda wc, output: output[0].replace('.depth.bed', ''),
-        cutoff = lambda wc: cov_by_phenotype[wc.phenotype]
+        cutoff = lambda wc: {'tumor': 30, 'normal': 10}[wc.phenotype]
     output:
         '{batch}/coverage/{batch}-{phenotype}.depth.bed'
     threads: max(1, threads_max // len(batch_by_name))
