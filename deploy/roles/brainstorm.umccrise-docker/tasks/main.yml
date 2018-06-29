@@ -58,8 +58,7 @@
       groups: docker
       append: yes
 
-- name: Pull PCGR docker image for UMCCRISE"
+- name: Pull docker image for UMCCRISE"
   docker_image:
     name: umccr/umccrise
     state: present
-    tag: "latest"
