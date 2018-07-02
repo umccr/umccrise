@@ -22,10 +22,10 @@ dependencies:
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake>=5.1.4vlad
   - nose
-  - ngs_utils>=2.1
   - pip:
     - "--editable=git+https://github.com/umccr/python_utils#egg=python_utils"
     - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
+    - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
   #
   # Umccrise-specific
   - natsort  # for bcbio.py in ngs_utils
