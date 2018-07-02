@@ -8,6 +8,7 @@
   with_items:
       - build-essential
       - python-dev
+      - jq
 
 - name: clone umccrise
   git:

@@ -6,6 +6,7 @@
       state: latest
       update_cache: yes
   with_items:
+      - jq
       - python3-pip
 
 - name: Make sure vital python packages are installed system-wide 
