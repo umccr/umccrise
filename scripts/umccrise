@@ -38,10 +38,12 @@ from umccrise import package_path
 @click.option('--truth-regions', help='Path to regions to subset calls, e.g. giab truth regions (e.g. '
                                       'validation/giab-NA12878/truth_regions.bed)')
 @click.option('--docker', '--docker-wrapper-mode', is_flag=True, help='Pull umccr/umccrise docker image and use it instead')
+@click.option('--pcgr', help='Path to the PCGR reference data folder (for dockeriszed version) '
+                             'or path to PCGR installation dir (otherwise)')
 
 def main(bcbio_project, target_rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None,
-         cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, docker_wrapper_mode=False,
-         pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None):
+         cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False,
+         pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None, docker_wrapper_mode=False, pcgr=None):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -91,6 +93,14 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         conf['truth_regions'] = verify_file(truth_regions, is_critical=True)
         if docker_wrapper_mode:
             conf['truth_regions'] = docker_mounts[truth_regions] = '/truth_regions.bed'
+
+    if pcgr:
+        if docker_wrapper_mode:
+            pcgr = verify_dir(pcgr, is_critical=True, description='PCGR data directory')
+            docker_mounts[pcgr] = '/pcgr/data'
+        else:
+            conf['pcgr'] = verify_dir(pcgr, is_critical=True, description='PCGR installation directory')
+            verify_dir(join(pcgr, 'data'), is_critical=True, description='PCGR data directory')
 
     #####################################
     #### Setting non-path parameters ####
