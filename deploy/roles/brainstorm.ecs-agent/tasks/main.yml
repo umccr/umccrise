@@ -6,7 +6,7 @@
     name: "{{ item }}"
     state: latest
   with_items:
-      - docker-py
+      - docker
 
 - name: Set route_localnet
   sysctl:

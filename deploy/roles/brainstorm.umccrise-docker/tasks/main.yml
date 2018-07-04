@@ -15,7 +15,7 @@
     name: "{{ item }}"
     state: latest
   with_items:
-      - docker-py
+      - docker
       - boto3
       - awscli
 
