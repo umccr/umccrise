@@ -55,10 +55,6 @@ COPY VERSION.txt umccrise/VERSION.txt
 RUN pip install -e umccrise && \
     R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
 
-# Install PCGR
-RUN git clone https://github.com/vladsaveliev/pcgr /pcgr && \
-    bash /pcgr/install_no_docker/install.sh
-
 # Clean up
 RUN rm -rf umccrise/.git && \
     rm -rf /var/lib/apt/lists/* && \
