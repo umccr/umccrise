@@ -52,9 +52,14 @@ addons:
 
 after_success:
   - rm -rf $HOME/miniconda
-  - rm -rf tests/umccrise_test_data/results
+  - rm -rf tests/umccrise_test_data
   - docker version
-  - docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
   - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
+  # Building docker image
+  - docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
   - docker images
   - docker push umccr/umccrise:$(cat VERSION.txt)
+  # Building a version with PCGR
+  - docker build -t umccr/umccrise_with_pcgr:$(cat VERSION.txt) -f Dockerfile.with_pcgr .
+  - docker images
+  - docker push umccr/umccrise_with_pcgr:$(cat VERSION.txt)
