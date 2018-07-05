@@ -11,10 +11,8 @@ from ngs_utils.call_process import run
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
 from ngs_utils import logger
 from ngs_utils.logger import info
-from python_utils.hpc import find_loc
-from umccrise import package_path
-
 from ngs_utils.utils import set_locale; set_locale()
+from umccrise import package_path
 
 @click.command()
 @click.argument('vcf_path', type=click.Path(exists=True))
@@ -24,14 +22,18 @@ from ngs_utils.utils import set_locale; set_locale()
 @click.option('-s', 'sample')
 @click.option('--germline', is_flag=True)
 @click.option('--no-docker', is_flag=True)
-def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, no_docker=False):
+@click.option('--pcgr-dir', type=click.Path(exists=True), help='Path to PCGR installation (defaults are known for spartan and raijin)')
+def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, no_docker=False, pcgr_dir=None):
 
-    loc = find_loc()
-    pcgr_dir = loc.pcgr_dir
     if not pcgr_dir:
-        logger.critical(f'PCGR is not installed on the system "{loc.name}".'
-                        f' Please, pull it with `git clone https://github.com/vladsaveliev/pcgr`'
-                        f' and install with `bash pcgr/install_no_docker/install.sh`')
+        from python_utils.hpc import find_loc
+        loc = find_loc()
+        pcgr_dir = loc.pcgr_dir
+        if not pcgr_dir:
+            logger.critical(f'PCGR is not found on the system "{loc.name}".'
+                            f' Please, provide the path to PCGR installation with --pcgr-dir. '
+                            f' To install it, pull `git clone https://github.com/vladsaveliev/pcgr`'
+                            f' and run `bash pcgr/install_no_docker/install.sh`')
     output_dir = output_dir or 'pcgrred'
     output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
