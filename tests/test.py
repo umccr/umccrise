@@ -56,9 +56,7 @@ gunzip {ref_fasta_path}.gz''')
 
         BaseTestCase.setUp(self)
 
-    def _run_umccrise(self, bcbio_dirname, parallel=False, docker=False, docker_with_pcgr=False):
-        if docker_with_pcgr:
-            docker = True
+    def _run_umccrise(self, bcbio_dirname, parallel=False, docker=False, pcgr=False):
         results_dir = join(self.results_dir, bcbio_dirname)
         bcbio_dir = join(self.data_dir, bcbio_dirname)
         cmdl = f'{self.script} {bcbio_dir} -o {results_dir}'
@@ -69,8 +67,8 @@ gunzip {ref_fasta_path}.gz''')
             cmdl += ' -j 10'
         if docker:
             cmdl += ' --docker'
-        if docker_with_pcgr:
-            cmdl += ' --docker-with-pcgr'
+        if pcgr and docker:
+            cmdl += f' --pcgr-data {Test_umccrise.loc.pcgr_dir}/data'
         self._run_cmd(cmdl, bcbio_dir, results_dir)
         return results_dir
 
@@ -86,8 +84,8 @@ gunzip {ref_fasta_path}.gz''')
         return diff_failed
 
     @attr('normal')
-    def test(self, docker=False, docker_with_pcgr=False):
-        results_dir = self._run_umccrise(bcbio_dirname='bcbio_test_project', parallel=False, docker=docker, docker_with_pcgr=docker_with_pcgr)
+    def test(self, docker=False, pcgr=False):
+        results_dir = self._run_umccrise(bcbio_dirname='bcbio_test_project', parallel=False, docker=docker, pcgr=pcgr)
 
         failed = False
         failed = self._check_file(failed, f'{results_dir}/log/{PROJECT}-config/{PROJECT}-template.yaml'                                                 )
@@ -138,7 +136,7 @@ gunzip {ref_fasta_path}.gz''')
     def test_docker(self):
         self.test(docker=True)
 
-    # @attr('docker_with_pcgr')
-    # def test_docker(self):
-    #     self.test(docker_with_pcgr=True)
+    @attr('docker_with_pcgr')
+    def test_docker(self):
+        self.test(docker=True, pcgr=True)
 
