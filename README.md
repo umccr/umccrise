@@ -75,6 +75,11 @@ bash install_no_docker/install.sh
 pip install gdown
 gdown https://drive.google.com/uc?id=1cGBAmAh5t4miIeRrrd0zHsPCFToOr0Lf -O - | tar xvfz - # hg19
 gdown https://drive.google.com/uc?id=12q3rr7xpdBfaefRi0ysFHbH34kehNZOV -O - | tar xvfz - # hg38
+
+# (Optional) if you are running on AWS, upload the PCGR data bundles to S3 like this:
+gdown https://drive.google.com/uc?id=1cGBAmAh5t4miIeRrrd0zHsPCFToOr0Lf -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/GRCh37/PCGR/pcgr.databundle.grch37.20180509.tgz
+
+gdown https://drive.google.com/uc?id=12q3rr7xpdBfaefRi0ysFHbH34kehNZOV -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.20180509.tgz
 ```
 
 Install R circos scripts on top
