@@ -72,15 +72,6 @@
       - /var/lib/ecs/data:/data
     env_file: /etc/default/ecs
     privileged: yes # otherwise we get: [WARN] Disabling TaskCPUMemLimit because agent /sys/fs/cgroup/systemd/ecs: read-only file system
-    env:
-      ECS_LOGFILE: /log/ecs-agent.log
-      ECS_DATADIR: "{{ ubuntu_ecs_agent_data_path }}"
-      ECS_LOGLEVEL: "{{ ubuntu_ecs_agent_loglevel }}"
-      ECS_CLUSTER: "{{ ubuntu_ecs_agent_cluster_name }}"
-      ECS_ENABLE_TASK_IAM_ROLE: "{{ ubuntu_ecs_agent_enable_iam_role }}"
-      ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST: "{{ ubuntu_ecs_agent_enable_task_iam_role_network_host }}"
-      ECS_RESERVED_PORTS: "{{ ubuntu_ecs_agent_reserved_ports }}"
-      ECS_CONTAINER_STOP_TIMEOUT: "{{ ubuntu_ecs_agent_container_stop_timeout }}"
 
 # https://docs.aws.amazon.com/batch/latest/userguide/create-batch-ami.html
 - name: Remove the persistent data checkpoint file from ecs-agent

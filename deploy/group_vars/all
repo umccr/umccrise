@@ -1,2 +1,0 @@
-docker_apt_release_channel: edge
-ubuntu_ecs_agent_cluster_name: umccrise_compute_env_dev_Batch_e3c543e0-f07a-32fa-94c2-9c14c21a394e
