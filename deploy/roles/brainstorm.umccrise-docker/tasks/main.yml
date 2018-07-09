@@ -7,6 +7,7 @@
       update_cache: yes
   with_items:
       - jq
+      - parallel
       - python3-pip
 
 - name: Make sure vital python packages are installed system-wide 
