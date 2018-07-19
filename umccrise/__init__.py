@@ -1,5 +1,6 @@
 from os.path import isfile, join, dirname, abspath
 from ngs_utils.file_utils import verify_file
+from ngs_utils.key_genes_utils import get_genes_from_file
 
 
 def package_path():
@@ -23,3 +24,9 @@ def get_cancer_genes_ensg():
 
 def get_key_genes_bed(genome):
     return verify_file(join(package_path(), 'ref_data', 'generated', 'key_genes.' + genome + '.bed'))
+
+def get_key_genes_set():
+    return \
+        get_genes_from_file(join(package_path(), 'ref_data', 'az_key_genes.300.txt')) | \
+        get_genes_from_file(join(package_path(), 'ref_data', 'umccr_extra_key_genes.txt'))
+
