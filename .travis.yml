@@ -33,6 +33,8 @@ install:
   # Installing the codebase (source code was automatically cloned into CWD by Travis)
   - pip install -e .
   - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock', ref = 'umccrise')"
+  # Clone the test data
+  - git clone https://github.com/umccr/umccrise_test_data
 
 # Skip caching for now so we can remove miniconda folder and save space for deploy. Consider
 #cache:
@@ -41,7 +43,7 @@ install:
 #  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
 script:
-  - nosetests --nocapture tests/test.py -a normal
+  - nosetests --nocapture umccrise_test_data/test.py -a normal
 
 services:
   - docker
@@ -52,7 +54,7 @@ addons:
 
 after_success:
   - rm -rf $HOME/miniconda
-  - rm -rf tests/umccrise_test_data
+  - rm -rf umccrise_test_data
   - docker version
   - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
   # Building docker image

@@ -98,9 +98,12 @@ conda env update -f environment.yml                                  # if depend
 
 ## Testing
 
+Tests are stored in a separate repository https://github.com/umccr/umccrise_test_data
+
 ```
 source load_umccrise.sh
-nosetests -s tests/test.py
+git clone https://github.com/umccr/umccrise_test_data
+nosetests -s umccrise_test_data/test.py -a normal
 ```
 
 ## Loading
@@ -269,18 +272,19 @@ docker pull umccr/umccrise:latest
 Testing
 
 ```
-nosestests -s tests/test.py -a docker
+git clone https://github.com/umccr/umccrise_test_data
+nosestests -s umccrise_test_data/test.py -a docker
 ```
 
 Usage
 
 ```
 umccrise --docker \
-    tests/umccrise_test_data/data/bcbio_test_project \
-    -o tests/umccrise_test_data/results/dockerized \
+    umccrise_test_data/data/bcbio_test_project \
+    -o umccrise_test_data/results/dockerized \
     -j 2 \
-    --bcbio-genomes tests/umccrise_test_data/data/genomes \
-    --pon tests/umccrise_test_data/data/panel_of_normals
+    --bcbio-genomes umccrise_test_data/data/genomes \
+    --pon umccrise_test_data/data/panel_of_normals
 ```
 
 

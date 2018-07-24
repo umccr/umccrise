@@ -2,7 +2,7 @@ FROM ubuntu:16.04
 MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 ENV HOSTNAME umccrise_docker
-ENV TEST_DATA_PATH=/umccrise/tests/umccrise_test_data
+ENV TEST_DATA_PATH=/umccrise/umccrise_test_data
 ENV BCBIO_GENOMES_PATH=/genomes
 ENV PON_PATH=/panel_of_normals
 
@@ -49,7 +49,6 @@ ENV CONDA_DEFAULT_ENV umccrise
 COPY umccrise umccrise/umccrise
 COPY scripts umccrise/scripts
 COPY vendor umccrise/vendor
-COPY tests/test.py umccrise/tests/test.py
 COPY setup.py umccrise/setup.py
 COPY VERSION.txt umccrise/VERSION.txt
 RUN pip install -e umccrise && \
