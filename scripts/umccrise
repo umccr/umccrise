@@ -38,12 +38,13 @@ from umccrise import package_path
 @click.option('--truth-regions', help='Path to regions to subset calls, e.g. giab truth regions (e.g. '
                                       'validation/giab-NA12878/truth_regions.bed)')
 @click.option('--docker', '--docker-wrapper-mode', is_flag=True, help='Pull umccr/umccrise docker image and use it instead')
-@click.option('--pcgr', help='Path to the PCGR reference data folder (for dockeriszed version) '
-                             'or path to PCGR installation dir (otherwise)')
+@click.option('--pcgr-data', help='Path to the PCGR reference data folder (for dockerized version only)')
+@click.option('--pcgr', help='Path to PCGR installation dir')
 
 def main(bcbio_project, target_rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None,
          cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False,
-         pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None, docker_wrapper_mode=False, pcgr=None):
+         pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None,
+         docker_wrapper_mode=False, pcgr_data=None, pcgr=None):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -94,13 +95,21 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         if docker_wrapper_mode:
             conf['truth_regions'] = docker_mounts[truth_regions] = '/truth_regions.bed'
 
+    if pcgr_data:
+        assert docker_wrapper_mode, '--pcgr-data is only for dockerized more (set the --docker flag)'
+        pcgr_data = verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
+        logger.info(f'Running PCGR in a dockerized mode, assuming that {pcgr_data} if a path to PCGR data directory')
+        docker_mounts[pcgr_data] = '/pcgr/data'
+        conf['pcgr'] = '/pcgr'
     if pcgr:
-        if docker_wrapper_mode:
-            pcgr = verify_dir(pcgr, is_critical=True, description='PCGR data directory')
-            docker_mounts[pcgr] = '/pcgr/data'
-        else:
-            conf['pcgr'] = verify_dir(pcgr, is_critical=True, description='PCGR installation directory')
-            verify_dir(join(pcgr, 'data'), is_critical=True, description='PCGR data directory')
+        conf['pcgr'] = verify_dir(pcgr, is_critical=True, description='PCGR installation directory')
+        verify_dir(join(pcgr, 'data'), is_critical=True, description='PCGR data directory')
+
+    if docker_wrapper_mode:
+        if not bcbio_genomes and not ref_fasta:
+            logger.critical('Reference fasta path is required when running in a dockerized mode. Please provide it with --ref-fasta or path to bcbio folder with --bcbio-genomes')
+        if not bcbio_genomes and not truth_regions:
+            logger.critical('Truth region path required when running in a dockerized mode. Please provide it with --truth-regions or path to bcbio folder with --bcbio-genomes')
 
     #####################################
     #### Setting non-path parameters ####
@@ -140,11 +149,15 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
                 f'for the docker machine {cpus_avail}. Downgrading requested jobs to {cpus_avail}.', fg='red'))
             jobs = cpus_avail
 
+        docker_tag = 'umccr/umccrise'
+        if pcgr_data:
+            docker_tag = 'umccr/umccrise_with_pcgr'
+
         cmd = (
             f'docker run -t ' +
             f'--cpus {jobs} ' +
             ''.join(f'-v={k}:{v} ' for k, v in docker_mounts.items()) +
-            f'umccr/umccrise:latest '
+            f'{docker_tag} '
         )
 
     snakefile = join(package_path(), 'Snakefile') if not docker_wrapper_mode else '/umccrise/umccrise/Snakefile'
@@ -178,8 +191,8 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
             logger.error(f'Review cluster job logs in {cluster_log_dir}')
         sys.exit(1)
 
-    logger.info('Generating snakemake benchmark report...')
-    run_simple(cmd + f' --report {log_dir}/snakemake_report.html')
+    # logger.info('Generating snakemake benchmark report...')
+    # run_simple(cmd + f' --report {log_dir}/snakemake_report.html')
 
     #####################
     #### Wrapping up ####

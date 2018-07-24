@@ -64,7 +64,7 @@ rule somatic_vcf_pon_pass:  # {batch}
 # Annotate any events found in Sean's 105/106 cancer predisposition gene set.
 rule germline_vcf_subset:  # {batch}
     input:
-        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}-ensemble-annotated.vcf.gz'),
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}-germline-ensemble-annotated.vcf.gz'),
         ensg = get_cancer_genes_ensg()
     output:
         vcf = '{batch}/work/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz',

@@ -9,6 +9,7 @@ channels:
 
 dependencies:
   - python>=3.6
+  - cython
   - bcftools
   - bedtools
   - samtools
@@ -55,7 +56,8 @@ dependencies:
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
-  - bioconductor-omiccircos  # for peter's circos rock
+  - bioconductor-omiccircos  # for Peter's circos rock
+  - libgfortran-ng           # for Peter's circos rock
   - r-vcfr
   - r-devtools
   - r-readr

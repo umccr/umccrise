@@ -1,0 +1,15 @@
+FROM umccr/umccrise
+MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
+
+# Install PCGR
+RUN git clone https://github.com/vladsaveliev/pcgr /pcgr && \
+    bash /pcgr/install_no_docker/install.sh --skip-validation
+
+# Clean up
+RUN rm -rf /pcgr/.git && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /var/tmp/* && \
+    conda clean --yes --tarballs && \
+    cd /usr/local && \
+    apt-get clean && \
+    rm -rf /.cpanm

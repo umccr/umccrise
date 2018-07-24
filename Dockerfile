@@ -53,11 +53,11 @@ COPY tests/test.py umccrise/tests/test.py
 COPY setup.py umccrise/setup.py
 COPY VERSION.txt umccrise/VERSION.txt
 RUN pip install -e umccrise && \
-    R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
+    R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock', ref = 'umccrise')"
 
 # Install PCGR
 RUN git clone https://github.com/vladsaveliev/pcgr /pcgr && \
-    bash /pcgr/install_no_docker/install.sh
+    bash /pcgr/install_no_docker/install.sh --skip-validation
 
 # Clean up
 RUN rm -rf umccrise/.git && \

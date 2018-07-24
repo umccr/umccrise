@@ -68,8 +68,7 @@ Install PCGR
 ```bash
 # Clone the fork that is decoupled from Docker and install
 git clone https://github.com/vladsaveliev/pcgr
-cd pcgr
-bash install_no_docker/install.sh
+bash -x pcgr/install_no_docker/install.sh
 
 # Download the data bundles
 pip install gdown
@@ -85,7 +84,7 @@ gdown https://drive.google.com/uc?id=12q3rr7xpdBfaefRi0ysFHbH34kehNZOV -O - | aw
 Install R circos scripts on top
 
 ```
-R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
+R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock', ref = 'umccrise')"
 ```
 
 ## Updating

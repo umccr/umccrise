@@ -56,17 +56,19 @@ gunzip {ref_fasta_path}.gz''')
 
         BaseTestCase.setUp(self)
 
-    def _run_umccrise(self, bcbio_dirname, parallel=False, dockerized=False):
+    def _run_umccrise(self, bcbio_dirname, parallel=False, docker=False, pcgr=False):
         results_dir = join(self.results_dir, bcbio_dirname)
         bcbio_dir = join(self.data_dir, bcbio_dirname)
-        cmdl = f'{self.script} {bcbio_dir} -o {results_dir} '
-        if not Test_umccrise.loc or dockerized:
-            cmdl += f'--bcbio-genomes {Test_umccrise.test_data_clone}/data/genomes '
-            cmdl += f'--pon {Test_umccrise.test_data_clone}/data/panel_of_normals'
+        cmdl = f'{self.script} {bcbio_dir} -o {results_dir}'
+        if not Test_umccrise.loc or docker:
+            cmdl += f' --bcbio-genomes {Test_umccrise.test_data_clone}/data/genomes'
+            cmdl += f' --pon {Test_umccrise.test_data_clone}/data/panel_of_normals'
         if parallel:
             cmdl += ' -j 10'
-        if dockerized:
-            cmdl += ' --dockerized'
+        if docker:
+            cmdl += ' --docker'
+        if pcgr and docker:
+            cmdl += f' --pcgr-data {Test_umccrise.loc.pcgr_dir}/data'
         self._run_cmd(cmdl, bcbio_dir, results_dir)
         return results_dir
 
@@ -82,8 +84,8 @@ gunzip {ref_fasta_path}.gz''')
         return diff_failed
 
     @attr('normal')
-    def test(self, dockerized=False):
-        results_dir = self._run_umccrise(bcbio_dirname='bcbio_test_project', parallel=False, dockerized=dockerized)
+    def test(self, docker=False, pcgr=False):
+        results_dir = self._run_umccrise(bcbio_dirname='bcbio_test_project', parallel=False, docker=docker, pcgr=pcgr)
 
         failed = False
         failed = self._check_file(failed, f'{results_dir}/log/{PROJECT}-config/{PROJECT}-template.yaml'                                                 )
@@ -132,4 +134,9 @@ gunzip {ref_fasta_path}.gz''')
 
     @attr('docker')
     def test_docker(self):
-        self.test(dockerized=True)
+        self.test(docker=True)
+
+    @attr('docker_with_pcgr')
+    def test_docker(self):
+        self.test(docker=True, pcgr=True)
+

@@ -53,7 +53,8 @@ rule run_pcgr_local_somatic:
     input:
         vcf = rules.pcgr_somatic_vcf.output.vcf,
         tbi = rules.pcgr_somatic_vcf.output.tbi,
-        cns = rules.pcgr_cns.output[0]
+        cns = rules.pcgr_cns.output[0],
+        pcgr_dir = pcgr_installation
     output:
         '{batch}/pcgr/{batch}-somatic.pcgr_acmg.html'
     params:
@@ -63,12 +64,14 @@ rule run_pcgr_local_somatic:
     resources:
         mem_mb=5000
     shell:
-        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --no-docker'
+        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} ' \
+        '--no-docker --pcgr-dir {input.pcgr_dir}'
 
 rule run_pcgr_local_germline:
     input:
         vcf = rules.pcgr_germline_vcf.output.vcf,
-        tbi = rules.pcgr_germline_vcf.output.tbi
+        tbi = rules.pcgr_germline_vcf.output.tbi,
+        pcgr_dir = pcgr_installation
     output:
         '{batch}/pcgr/{batch}-normal.pcgr_acmg.html'
     params:
@@ -78,7 +81,8 @@ rule run_pcgr_local_germline:
     resources:
         mem_mb=5000
     shell:
-        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline --no-docker'
+        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline ' \
+        '--no-docker --pcgr-dir {input.pcgr_dir}'
 
 rule pcgr_symlink_somatic:
     input:

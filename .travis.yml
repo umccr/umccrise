@@ -32,7 +32,7 @@ install:
   - conda info -a
   # Installing the codebase (source code was automatically cloned into CWD by Travis)
   - pip install -e .
-  - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock')"
+  - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock', ref = 'umccrise')"
 
 # Skip caching for now so we can remove miniconda folder and save space for deploy. Consider
 #cache:
@@ -52,9 +52,10 @@ addons:
 
 after_success:
   - rm -rf $HOME/miniconda
-  - rm -rf tests/umccrise_test_data/results
+  - rm -rf tests/umccrise_test_data
   - docker version
-  - docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
   - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin
+  # Building docker image
+  - docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
   - docker images
   - docker push umccr/umccrise:$(cat VERSION.txt)
