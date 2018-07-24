@@ -1,4 +1,7 @@
-from umccrise import get_sig_rmd_file, get_signatures_probabilities, get_suppressors
+from os.path import join
+from ngs_utils.reference_data import get_suppressors
+from umccrise import get_sig_rmd_file, get_signatures_probabilities
+
 
 localrules: rmd
 
