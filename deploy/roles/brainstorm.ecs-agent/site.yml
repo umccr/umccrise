@@ -1,6 +1,6 @@
 ---
 - hosts: all 
-  remote_user: ubuntu
+  remote_user: root
   become: true
   roles:
-    - ecs-agent
+    - ansible-ubuntu-ecs-agent

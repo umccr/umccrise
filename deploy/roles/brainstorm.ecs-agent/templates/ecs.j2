@@ -1,11 +1,11 @@
 ECS_LOGFILE=/log/ecs-agent.log
 ECS_AVAILABLE_LOGGING_DRIVERS=["json-file","awslogs"]
-ECS_DATADIR="{{ ubuntu_ecs_agent_data_path }}"
+ECS_DATADIR={{ ubuntu_ecs_agent_data_path }}
 ECS_LOGLEVEL="{{ ubuntu_ecs_agent_loglevel }}"
 ECS_CLUSTER="{{ ubuntu_ecs_agent_cluster_name }}"
 ECS_ENABLE_TASK_IAM_ROLE="{{ ubuntu_ecs_agent_enable_iam_role }}"
 ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST="{{ ubuntu_ecs_agent_enable_task_iam_role_network_host }}"
-ECS_RESERVED_PORTS="{{ ubuntu_ecs_agent_reserved_ports }}"
-ECS_CONTAINER_STOP_TIMEOUT="{{ ubuntu_ecs_agent_container_stop_timeout }}"
+ECS_RESERVED_PORTS={{ ubuntu_ecs_agent_reserved_ports }}
+ECS_CONTAINER_STOP_TIMEOUT={{ ubuntu_ecs_agent_container_stop_timeout }}
 ECS_ENGINE_AUTH_TYPE={{ ubuntu_ecs_agent_auth_type }}
 ECS_ENGINE_AUTH_DATA={{ ubuntu_ecs_agent_auth_data }}

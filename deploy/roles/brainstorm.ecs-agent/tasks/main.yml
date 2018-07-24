@@ -1,6 +1,14 @@
 ---
 # Based on the instructions at http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-install.html
 
+- name: Make sure python3 pip3 are installed
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - python3-pip
+    - python-pip
+
 - name: Make sure vital python packages are installed beforehand
   pip:
     name: "{{ item }}"
@@ -44,7 +52,7 @@
     group=root
     mode=0644
 
-# # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/example_user_data_scripts.html
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/example_user_data_scripts.html
 # - name: create systemd docker service for ecs-agent
 #   template:
 #     src=docker-container@ecs-agent.service.j2
@@ -57,6 +65,12 @@
 #   systemd:
 #     name: docker-container@ecs-agent
 #     enabled: yes
+
+# https://docs.aws.amazon.com/batch/latest/userguide/create-batch-ami.html
+- name: Remove the persistent data checkpoint file from ecs-agent
+  file:
+    state: absent
+    path: "/var/lib/ecs/data/ecs_agent_data.json"
 
 - name: Configure and run the ecs-agent container
   docker_container:
@@ -72,9 +86,3 @@
       - /var/lib/ecs/data:/data
     env_file: /etc/default/ecs
     privileged: yes # otherwise we get: [WARN] Disabling TaskCPUMemLimit because agent /sys/fs/cgroup/systemd/ecs: read-only file system
-
-# https://docs.aws.amazon.com/batch/latest/userguide/create-batch-ami.html
-- name: Remove the persistent data checkpoint file from ecs-agent
-  file:
-    state: absent
-    path: "/var/lib/ecs/data/ecs_agent_data.json"

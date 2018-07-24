@@ -7,7 +7,7 @@ ubuntu_ecs_agent_loglevel: info
 ubuntu_ecs_agent_cluster_name: default
 ubuntu_ecs_agent_enable_iam_role: true
 ubuntu_ecs_agent_enable_task_iam_role_network_host: true
-ubuntu_ecs_agent_reserved_ports: "[22, 2375, 2376, 51678]"
+ubuntu_ecs_agent_reserved_ports: [22, 2375, 2376, 51678]
 ubuntu_ecs_agent_container_stop_timeout: 30s
 ubuntu_ecs_agent_auth_type: ""
 ubuntu_ecs_agent_auth_data: ""

@@ -3,4 +3,4 @@
   become: yes
 
   roles:
-    - ecs-agent
+    - ubuntu-ecs-agent
