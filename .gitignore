@@ -20,3 +20,5 @@ miniconda/
 work/
 src/
 *.retry
+
+.circleci

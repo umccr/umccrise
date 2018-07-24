@@ -51,7 +51,7 @@ rule afs:
     output:
         'work/{batch}/rmd/afs/af_tumor.txt'
     shell:
-        'bcftools view {input} -s {params.tumor_name} -Ou | bcftools query -f "%INFO/TUMOR_AF\\n" > {output}'
+        'bcftools view {input} -s {params.tumor_name} -Ou | bcftools query -f "%INFO/TUMOR_AF\\n" > {output} && [[ -s {output} ]]'
 
 rule afs_az300:
     input:
@@ -64,7 +64,7 @@ rule afs_az300:
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.az300} -header'
-        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\\n" > {output}'
+        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\\n" > {output} && [[ -s {output} ]]'
 
 ## Mutational signatures VCF
 #
