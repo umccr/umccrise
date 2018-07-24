@@ -62,5 +62,5 @@
 
 - name: Pull docker image for UMCCRISE"
   docker_image:
-    name: umccr/umccrise
+    name: umccr/umccrise_with_pcgr
     state: present
