@@ -60,12 +60,13 @@ rule run_pcgr_local_somatic:
     params:
         output_dir = '{batch}/pcgr',
         genome_build = run.genome_build,
-        sample_name = '{batch}-somatic'
+        sample_name = '{batch}-somatic',
+        opt='--no-docker' if not get_loc().name == 'vlad' else ''
     resources:
         mem_mb=5000
     shell:
         'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} ' \
-        '--no-docker --pcgr-dir {input.pcgr_dir}'
+        '{params.opt} --pcgr-dir {input.pcgr_dir}'
 
 rule run_pcgr_local_germline:
     input:
@@ -77,12 +78,13 @@ rule run_pcgr_local_germline:
     params:
         output_dir = '{batch}/pcgr',
         genome_build = run.genome_build,
-        sample_name = '{batch}-normal'
+        sample_name = '{batch}-normal',
+        opt='--no-docker' if not get_loc().name == 'vlad' else ''
     resources:
         mem_mb=5000
     shell:
         'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline ' \
-        '--no-docker --pcgr-dir {input.pcgr_dir}'
+        '{params.opt} --pcgr-dir {input.pcgr_dir}'
 
 rule pcgr_symlink_somatic:
     input:

@@ -186,7 +186,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         run_simple(cmd)
     except subprocess.CalledProcessError:
         logger.error('--------')
-        logger.error(f'Error running Umccrise: snakemake returned a non-zero status. Working directory: {output_dir}.')
+        logger.error(f'Error running Umccrise: snakemake returned a non-zero status. Working directory: {output_dir}')
         if cluster_log_dir:
             logger.error(f'Review cluster job logs in {cluster_log_dir}')
         sys.exit(1)
