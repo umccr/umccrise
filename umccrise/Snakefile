@@ -6,7 +6,7 @@ from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.logger import critical, info
 from python_utils.hpc import get_loc, get_ref_file
-from umccrise import get_key_genes_bed
+from ngs_utils.reference_data import get_key_genes_bed
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
