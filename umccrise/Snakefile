@@ -125,7 +125,12 @@ def prep_inputs(config_):
 
     return run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, pcgr_installation
 
+
 run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, pcgr_installation = prep_inputs(config)
+GERMLINE_SUFFIX = '-germline'
+if any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-ensemble-annotated.vcf.gz'))
+       for b in batch_by_name.keys()):
+    GERMLINE_SUFFIX = ''
 
 
 rule all:
