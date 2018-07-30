@@ -1,0 +1,37 @@
+
+/*#bcbio-fraction-coverage-all, #bcbio-fraction-coverage-all-nav {*/
+    /*display: none;*/
+/*}*/
+
+.wrap-word, .side-nav-title {
+    /* These are technically the same, but use both */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+
+    -ms-word-break: break-all;
+    /* This is the dangerous one in WebKit, as it breaks things wherever */
+    word-break: break-all;
+    /* Instead use this non-standard one: */
+    word-break: break-word;
+
+    /* Adds a hyphen where the word breaks, if supported (No Blink) */
+    -ms-hyphens: auto;
+    -moz-hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+}
+
+.side-nav .side-nav-title a {
+    padding: 15px 8px;
+}
+
+.hs {
+  margin-left: 0.2em; }
+
+.rhs {
+  font-size: 50%;
+  line-height: 1; }
+
+.mqc_table tbody tr td[class*="Sample_Type"] .wrapper {
+    z-index: 0;
+}

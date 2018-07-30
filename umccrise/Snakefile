@@ -11,6 +11,10 @@ from ngs_utils import logger as ngs_utils_logger
 from hpc_utils.hpc import find_loc, get_ref_file
 from umccrise import package_path
 
+from umccrise.prep_multiqc import make_report_metadata, multiqc_prep_data
+
+from hpc_utils.hpc import get_loc, get_ref_file
+
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
 threads_max = 28  # Use up to 32 cores at once, if available
@@ -183,15 +187,40 @@ include: "purple.smk"
 localrules: multiqc, copy_logs, umccrise
 
 
+rule prep_multiqc_data:
+    input:
+        bcbio_mq_filelist = join(run.date_dir, 'multiqc/list_files_final.txt'),
+        bcbio_mq_yaml     = join(run.date_dir, 'multiqc/multiqc_config.yaml'),
+        bcbio_final_dir   = join(run.final_dir)
+    output:
+        filelist        = 'multiqc_data/multiqc_filelist.txt',
+        conf_yaml       = 'multiqc_data/umccr_multiqc_config.yaml',
+        bcbio_conf_yaml = 'multiqc_data/bcbio_multiqc_config.yaml'
+    params:
+        data_dir        = 'multiqc_data'
+    run:
+        conf, additional_files = make_report_metadata(run, base_dirpath=abspath('.'))
+        multiqc_prep_data(bcbio_mq_filelist=input.bcbio_mq_filelist,
+                          bcbio_mq_yaml=input.bcbio_mq_yaml,
+                          bcbio_final_dir=input.bcbio_final_dir,
+                          new_mq_data_dir=params.data_dir,
+                          conf=conf,
+                          filelist_file=output.filelist,
+                          conf_yaml=output.conf_yaml,
+                          new_bcbio_mq_yaml=output.bcbio_conf_yaml,
+                          additional_files=additional_files)
+
+
 rule multiqc:  # {}
     input:
-        join(run.date_dir, 'multiqc/multiqc_report.html')
+        filelist        = 'multiqc_data/multiqc_filelist.txt',
+        conf_yaml       = 'multiqc_data/umccr_multiqc_config.yaml',
+        bcbio_conf_yaml = 'multiqc_data/bcbio_multiqc_config.yaml'
     output:
-        run.project_name + '-multiqc_report.html'
+        html_file       = run.project_name + '-multiqc_report.html'
     shell:
-        'cp {input} {output}'
-        # generate proper mutliqc_umccrise
-
+        'multiqc -f -v -o . -l {input.filelist} -c {input.conf_yaml} -c {input.bcbio_conf_yaml}'
+        ' --filename {output.html_file}'
 
 ## Additional information
 # TODO: link it to MultiQC

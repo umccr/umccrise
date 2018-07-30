@@ -1,0 +1,60 @@
+max_table_rows: 500
+plots_flat_numseries: 300
+no_version_check: True
+template: 'umccr'
+#read_count_multiplier: 0.001
+#read_count_prefix: 'k'
+#read_count_desc: ' thousand'
+base_count_multiplier: 0.000000001
+base_count_prefix: 'Gb'
+base_count_desc: 'gigabases'
+make_data_dir: False
+
+
+# Overwrite the defaults of which table columns are visible by default
+table_columns_visible:
+    FastQC:
+        percent_gc: False
+        percent_duplicates: False                 # is also set in bcbio/__init__.py
+        total_sequences: False                    # is also set in bcbio/__init__.py
+        avg_sequence_length: False                # is also set in bcbio/__init__.py
+    QualiMap:
+        reads_aligned: False
+        percentage_aligned: False                 # is also set in bcbio/__init__.py
+        median_coverage: False                    # is also set in bcbio/__init__.py
+    Samtools Stats:
+        non-primary_alignments: False             # is also set in bcbio/__init__.py
+        reads_mapped: False                       # is also set in bcbio/__init__.py
+        reads_mapped_percent: False               # is also set in bcbio/__init__.py
+        raw_total_sequences: False                # is also set in bcbio/__init__.py
+        error_rate: False                         # is also set in bcbio/__init__.py
+    bcbio:
+        Ontarget_padded_pct: True
+        Average_insert_size: False
+    SnpEff:
+        Change_rate: False                        # is also set in bcbio/__init__.py
+        Ts_Tv_ratio: False                        # is also set in bcbio/__init__.py
+        Number_of_variants_before_filter: False   # is also set in bcbio/__init__.py
+    Bcftools Stats:
+        number_of_SNPs: True
+        number_of_indels: True
+        tstv: True
+        number_of_records: False
+        variations_hom: False
+        variations_het: False
+        number_of_MNPs: False
+        number_of_others: False
+    Peddy:
+        family_id: False
+        ancestry-prediction: False
+        sex_het_ratio: False
+        error: False
+
+preseq:
+    notrim: True
+
+bcftools:
+    collapse_complementary_changes: False
+
+qualimap:
+    general_stats_coverage: 1, 5, 10, 30, 100

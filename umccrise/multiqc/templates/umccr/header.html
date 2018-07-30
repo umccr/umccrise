@@ -1,0 +1,96 @@
+{# #######################
+  header.html
+##########################
+
+This block gives the introduction content at the top of each report.
+That is, the page title, welcome message, details of where the report
+was generated and the button that launches the welcome tour.
+
+#}
+
+<style type="text/css">{{ include_file('assets/css/multiqc_umccr.css') }}</style>
+
+<h1 id="page_title">
+  <a class="pull-right" href="https://umccr.github.io/" target="_blank">
+    <img src="data:image/png;base64,{{ include_file('assets/img/umccr_logo.jpeg', b64=True) }}" title="UMCCR">
+  </a>
+  <a href="http://multiqc.info" target="_blank">
+    <img src="data:image/png;base64,{{ include_file('assets/img/MultiQC_logo.png', b64=True) }}" title="MultiQC">
+  </a>
+</h1>
+
+{% if config.report_comment and config.report_comment | length > 0 %}
+  <blockquote class="report_comment">{{ config.report_comment }}</blockquote>
+{% endif %}
+
+
+<div class="well">
+    <dl class="dl-horizontal" style="margin-bottom:0;">
+      {% if report.az %}
+        {{ '<dt>Project:</dt><dd>' + config.title + '</dd>' }}
+        {{ '<dt>Creation date:</dt><dd>' + config.umccr.run_section.run_date
+          + ('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.program_versions if report.umccr.run_section.program_versions else '')
+          + ('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.data_versions if report.umccr.run_section.data_versions else '')
+          + '</dd>' }}
+        {{ '<dt>Analysis directory:</dt><dd>' + config.umccr.run_section.analysis_dir + '</dd>' }}
+      {% endif %}
+      {% if config.report_header_info and config.report_header_info | length > 0 %}
+        {% for d in config.report_header_info %}{% for k, v in d.items() %}
+          <dt>{{ k }}</dt><dd>{{ v }}</dd>
+        {% endfor %}{% endfor %}
+      {% endif %}
+    </dl>
+</div>
+
+{% if report.umccr %}
+<div style="margin-left: 5px; margin-bottom: 5px;">
+    <!-- {{ '<b>Mutations:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(report.az.mutations_links) + '</br>'
+        if report.az.mutations_links }} -->
+    {{ '<b>Expression:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(report.umccr.expression_links) + '</br>'
+        if report.umccr.expression_links }}
+</div>
+{% endif %}
+
+<hr id="mqc_header_hr" style="margin-bottom: 10px;">
+
+{% if report.umccr and report.umccr.metric_names %}
+<div id="general_stats_table_container" class="mqc_table_container">
+    <div class="table-responsive">
+        <table id="general_stats_table" class="table table-condensed mqc_table">
+            <thead>
+            <tr class="top_row_tr">
+                <th class="rowheader header">Sample Name</th>
+                {% for metric_name in report.umccr.metric_names %}
+                <th class="header"><b>{{ metric_name }}</b></th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+                {% for sample_report in report.umccr.sample_reports %}
+                <tr>
+                    <td class="rowheader" id="{{ sample_report.sample_name }}"><a name="{{ sample_report.sample_name }}"></a>
+                        {{ sample_report.sample_name }}</td>
+                    {% for rec in sample_report.records %}
+                        <td class=""><span {{ 'data-toggle="tooltip" title="' + rec.description + '"' if rec.description }}>
+                            {{ rec.contents }}</span></td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{#<hr id="mqc_header_hr">#}
+
+{% if report.num_hc_plots > 0 and report.general_stats_data | length > config.num_datasets_plot_limit %}
+<div id="mqc-warning-many-samples" class="alert alert-warning alert-dismissible hidden-print">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span>
+  Because this report contains a lot of samples, you may need to click 'Show plot' to see some graphs.
+  <button id="mqc-render-all-plots" class="btn btn-default btn-sm">Render all plots</button>
+</div>
+{% endif %}
+
+{{ report.umccr['sample_match_on_hover_js'] if report.umccr and 'sample_match_on_hover_js' in report.umccr }}
