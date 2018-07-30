@@ -190,16 +190,11 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         if cluster_log_dir:
             logger.error(f'Review cluster job logs in {cluster_log_dir}')
         sys.exit(1)
-
-    # logger.info('Generating snakemake benchmark report...')
-    # run_simple(cmd + f' --report {log_dir}/snakemake_report.html')
-
-    #####################
-    #### Wrapping up ####
-    #####################
-
-    logger.error('--------')
-    logger.info(f'Finished. Output directory: {output_dir}')
+    else:
+        logger.error('--------')
+        logger.info(f'Finished. Output directory: {output_dir}')
+    finally:
+        os.system(f'chmod a+r {log_dir}')
 
 
 if __name__ == '__main__':
