@@ -70,11 +70,9 @@ rule prep_sv_tsv:
         vcf = rules.filter_sv_vcf.output.vcf
     output:
         '{batch}/structural/{batch}-sv-prioritize-manta-pass.tsv'
-    shell:
-        'if [ $(bcftools view -H {input.vcf} | wc -l) -gt 0 ] ; '  # checking if VCF has records, because otherwise grep will return non-0
-        'then head -n1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(cut -f1,2 {input.vcf}) >> {output} ; '
-        'else touch {output} ; '
-        'fi'
+    shell: """
+        head -n1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(grep -v ^# {input.vcf} | cut -f1,2) | cat >> {output}
+    """
 
 #### At least for the most conservative manta calls generate a file for viewing in Ribbon ###
 
