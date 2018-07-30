@@ -4,6 +4,7 @@ import os
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir
 from ngs_utils.bcbio import BcbioProject
+from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info
 from python_utils.hpc import get_loc, get_ref_file
 from ngs_utils.reference_data import get_key_genes_bed
@@ -24,10 +25,39 @@ upload_igv = is_hpc
 
 
 def prep_inputs(config_):
-    run = BcbioProject(config_.get('bcbio_project', abspath(os.getcwd())))
+
+    ###############################
+    #### Parsing bcbio project ####
+    ###############################
+
+    # Parsing bcbio project and including/excluding samples
+    include_names = config_.get('batch') or config_.get('sample')
+    if include_names:
+        include_names = include_names.split(',')
+        include_names = flatten([sn.split('__') for sn in include_names])  # support "batch__sample" notation
+    exclude_names = config_.get('exclude')
+    if exclude_names:
+        exclude_names = exclude_names.split(',')
+        exclude_names = flatten([sn.split('__') for sn in exclude_names])  # support "batch__sample" notation
+
+    run = BcbioProject(config_.get('bcbio_project', abspath(os.getcwd())),
+                       exclude_samples=exclude_names,
+                       include_samples=include_names)
     run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
 
-    key_genes_bed = get_key_genes_bed(run.genome_build)
+    if len(run.batch_by_name) == 0:
+        if include_names:
+            critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
+                     f'Check yaml file for available options: {run.bcbio_yaml_fpath}')
+        if exclude_names:
+            critical(f'Error: no samples left with the exclusion of batch/sample name(s): {", ".join(exclude_names)}.'
+                     f'Check yaml file for available options: {run.bcbio_yaml_fpath}.')
+        critical(f'Error: could not parse any batch or samples in bcbio project. '
+                 f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}.')
+
+    # Batch objects index by tumor sample names
+    batches = [b for b in run.batch_by_name.values() if not b.is_germline()]
+    batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
 
     ############################################
     #### Reference files provided directly? ####
@@ -94,34 +124,10 @@ def prep_inputs(config_):
         verify_dir(join(pcgr_installation, 'data'), is_critical=True, description='PCGR data directory')
         info('Running with PCGR')
 
-    #############################
-    #### Non-path parameters ####
-    #############################
-    # Batch objects index by tumor sample names
-    batches = [b for b in run.batch_by_name.values() if not b.is_germline()]
-    include_names = config_.get('batch') or config_.get('sample')
-    if include_names:
-        include_names = include_names.split(',')
-        selected_batches = [b for b in batches if b.name in include_names
-                                               or b.tumor.name in include_names
-                                               or b.name + '__' + b.tumor.name in include_names]
-        if len(selected_batches) == 0:
-            critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
-                     f'Known batches: {list(b.name for b in batches)}, '
-                     f'known samples: {list(b.tumor.name for b in batches)}')
-        batches = selected_batches
-    exclude_names = config_.get('exclude')
-    if exclude_names:
-        exclude_names = exclude_names.split(',')
-        selected_batches = [b for b in batches if b.name not in exclude_names
-                                              and b.tumor.name not in exclude_names
-                                              and b.name + '__' + b.tumor.name not in include_names]
-        if len(selected_batches) == 0:
-            critical(f'Error: no samples left with the exclusion of batch/sample name(s): {", ".join(exclude_names)}.')
-        batches = selected_batches
-        info(f'Excluding sample/batch name(s): {", ".join(exclude_names)}.')
-
-    batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
+    ####################################
+    #### Also loading key genes bed ####
+    ####################################
+    key_genes_bed = get_key_genes_bed(run.genome_build)
 
     return run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, pcgr_installation
 
