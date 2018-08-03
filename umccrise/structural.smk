@@ -61,7 +61,9 @@ rule filter_sv_vcf:
         print(f'Bcbio batch tumor name:: {batch_by_name[wildcards.batch].tumor.name}')
         tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
-        shell('bcftools filter -i "(FORMAT/SR[' + str(tumor_id) + ':1]>=5 | FORMAT/PR[' + str(tumor_id) + ':1]>=5) & BPI_AF >= 0.1" {input.vcf} > {output.vcf}')
+        shell('bcftools filter -i '
+              '"(FORMAT/SR[{tumor_id}:1]>=5 | FORMAT/PR[{tumor_id}:1]>=5) & BPI_AF[0] >= 0.1 & BPI_AF[1] >= 0.1" '
+              '{input.vcf} > {output.vcf}')
 
 #### Bring in the prioritized SV calls from Manta. This should also include a basic plot at some stage.
 rule prep_sv_tsv:
