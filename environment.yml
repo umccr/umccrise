@@ -21,7 +21,7 @@ dependencies:
   - numpy
   - pandas
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
-  - snakemake>=5.1.4vlad
+  - snakemake-minimal>=5.2.2vlad
   - nose
   - pip:
     - "--editable=git+https://github.com/umccr/python_utils#egg=python_utils"
