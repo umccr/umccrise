@@ -183,15 +183,17 @@ rule multiqc:  # {}
 # TODO: link it to MultiQC
 rule copy_logs:  # {}
     input:
-        join(run.date_dir, 'data_versions.csv'), 
-        join(run.date_dir, 'programs.txt'), 
-        run.config_dir
+        versions = join(run.date_dir, 'data_versions.csv'),
+        programs = join(run.date_dir, 'programs.txt'),
+        conf_dir = run.config_dir
     output:
-        'log/' + run.project_name + '-data_versions.csv',
-        'log/' + run.project_name + '-programs.txt',
-        'log/' + run.project_name + '-config'
+        versions = 'log/' + run.project_name + '-data_versions.csv',
+        programs = 'log/' + run.project_name + '-programs.txt',
+        conf_dir = directory(join('log/' + run.project_name + '-config'))
     shell:
-        'cp -r {input[0]} {output[0]} && cp -r {input[1]} {output[1]} && cp -r {input[2]} {output[2]}'
+        'cp -r {input.versions} {output.versions} && ' \
+        'cp -r {input.programs} {output.programs} && ' \
+        'cp -r {input.conf_dir} {output.conf_dir}'
 
 
 rule umccrise:
