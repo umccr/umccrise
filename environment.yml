@@ -18,7 +18,7 @@ dependencies:
   - pythonpy
   - click
   - cyvcf2
-  - numpy
+  - numpy==1.15.0
   - pandas
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake>=5.2.2vlad
@@ -27,6 +27,7 @@ dependencies:
     - "--editable=git+https://github.com/umccr/python_utils#egg=python_utils"
     - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
     - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
+    - "cyvcf2==0.10.0"
   #
   # Umccrise-specific
   - natsort  # for bcbio.py in ngs_utils
@@ -47,6 +48,7 @@ dependencies:
   - r-ggplot2
   - r-tidyr
   - r-dt
+  - r-stringi>=1.1.7  # for pcgrr
   - bioconductor-delayedarray
   - bioconductor-summarizedexperiment>=1.8
   - bioconductor-mutationalpatterns
