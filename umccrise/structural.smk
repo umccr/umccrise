@@ -72,8 +72,7 @@ rule filter_sv_vcf:
         print(f'Derived tumor VCF index: {tumor_id}')
         shell('''cat {input.vcf} |
 bcftools filter -e "FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" |
-bcftools filter -e "FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" |
- > {output.vcf}
+bcftools filter -e "FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" > {output.vcf}
 ''')
 
 #### Bring in the prioritized SV calls from Manta. This should also include a basic plot at some stage.
