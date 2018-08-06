@@ -52,7 +52,7 @@ rule prep_sv_vcf:
     group: "sv_vcf"
     shell: """
 zcat {input.manta_vcf} | 
-py -x "x if x.startswith('#') or any(filt_val in ['PASS', '.', 'Intergenic', 'MissingAnn'] for filt_val in x.split('\\t')[6].split(';')) else None" | 
+py -x "x if x.startswith('#') or all(filt_val in ['PASS', '.', 'Intergenic', 'MissingAnn'] for filt_val in x.split('\\t')[6].split(';')) else None" | 
 py -x "x if x.startswith('#') or not x.startswith('GL') else None" \
 > {output}
 """
