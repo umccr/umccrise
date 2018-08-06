@@ -42,15 +42,24 @@ rule cnvkit_plot:
 ######### SV ##########
 
 rule prep_sv_vcf:
+    """ Keep variants with the FILTER values *only* in PASS, Intergenic, or MissingAnn
+        `bcftools view -f .,PASS,Intergenic,MissingAnn` doesn't work because it keep variants with other values in FILTER too.
+    """
     input:
         manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
     output:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta.vcf'
     group: "sv_vcf"
-    shell:
-        'bcftools view -f.,PASS,REJECT,Intergenic,MissingAnn {input.manta_vcf} > {output}'
+    shell: """
+zcat {input.manta_vcf} | 
+py -x "x if x.startswith('#') or any(filt_val in ['PASS', '.', 'Intergenic', 'MissingAnn'] for filt_val in x.split('\\t')[6].split(';')) else None" | 
+py -x "x if x.startswith('#') or not x.startswith('GL') else None" \
+> {output}
+"""
 
 rule filter_sv_vcf:
+    """ Keep all with read support above 10x; or allele frequency above 10%, but only if read support is above 5x
+    """
     input:
         vcf = rules.prep_sv_vcf.output.vcf
     output:
@@ -61,9 +70,11 @@ rule filter_sv_vcf:
         print(f'Bcbio batch tumor name:: {batch_by_name[wildcards.batch].tumor.name}')
         tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
-        shell('bcftools filter -i '
-              '"(FORMAT/SR[{tumor_id}:1]>=5 | FORMAT/PR[{tumor_id}:1]>=5) & BPI_AF[0] >= 0.1 & BPI_AF[1] >= 0.1" '
-              '{input.vcf} > {output.vcf}')
+        shell('''cat {input.vcf} |
+bcftools filter -e "FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" |
+bcftools filter -e "FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" |
+ > {output.vcf}
+''')
 
 #### Bring in the prioritized SV calls from Manta. This should also include a basic plot at some stage.
 rule prep_sv_tsv:
@@ -73,7 +84,7 @@ rule prep_sv_tsv:
     output:
         '{batch}/structural/{batch}-sv-prioritize-manta-pass.tsv'
     shell: """
-        head -n1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(grep -v ^# {input.vcf} | cut -f1,2) | cat >> {output}
+head -n1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(grep -v ^# {input.vcf} | cut -f1,2) | cat >> {output}
     """
 
 #### At least for the most conservative manta calls generate a file for viewing in Ribbon ###
