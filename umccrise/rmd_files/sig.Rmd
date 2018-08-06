@@ -223,9 +223,14 @@ if (!is.null(sv_all)) {
 ```{r circos-manta-cnvkit, fig.width=7, fig.height=7}
 sv <- prep_manta_vcf(params$manta_vcf)
 cnv <- prep_cnvkit_seg(params$cnvkit_calls)
-plot_circos(sv = sv, cnv = cnv)
-#plot_circos(sv = sv) # no cnv file
-#plot_circos(cnv = cnv) # no sv file
+
+err <- NULL
+tryCatch( { plot_circos(sv = sv, cnv = cnv) }
+          , error = function(e) {an.error <<- e})
+if (!is.null(err)) {
+  warning('Error in circos plot')
+  warning(err)
+}
 ```
 
 
