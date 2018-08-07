@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 git pull
 cd src/ngs-utils && git pull && cd ..
 cd src/python-utils && git pull && cd ..

@@ -1,3 +1,14 @@
+0.8 (7 Aug 2018)
+
+- SV filtering: require all of FILTER fields to be PASS or rejected by sv-prioritizer
+- SV filtering: always keep SR or PR above 10x regardless of BPI_AF (but above 5x only if BPI_AF>10%)
+- SV filtering: check BPI_AF in both breakends
+- Add option --no-s3 to skip IGV upload; use it in tests
+- Restart failed jobs tree times (helps with PCGR random issues)
+- Exlcuding/including samples: perform before check for correct YAML
+- Exlcuding/including samples: support {batch}__{sample} identifiers
+- Sopport the new and old germline VCF bcbio naming (<normal>-<caller>.vcf.gz and <normal>-germline-<caller>.vcf.gz)
+
 0.7 (26 Jun 2018)
 
 - Dockerized version with --docker
