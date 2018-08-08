@@ -26,7 +26,7 @@
 0.5 (7 May 2018)
 
 - PCGR is deployed directly on Spartan, so no AWS dependency.
-  - Add pcgr wrapper: `pcgr variants.vcf.gz cnv.tsv -o results [-g hg38]`
+- Add PCGR wrapper: `pcgr variants.vcf.gz cnv.tsv -o results [-g hg38]`
 - Correctly providing memory resources on HPC to avoid oom-kill
 - On Spartan, support `--cluster-auto` to automatically substitute proper cluster parameters
 
