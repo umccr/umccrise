@@ -62,5 +62,6 @@
 
 - name: Pull docker image for UMCCRISE"
   docker_image:
-    name: umccr/umccrise_with_pcgr
+    name: umccr/umccrise
+    tag: 0.8
     state: present
