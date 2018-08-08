@@ -6,8 +6,8 @@ from ngs_utils.utils import flatten
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.utils import flatten
-from ngs_utils import logger
 from ngs_utils.logger import critical, info, debug
+from ngs_utils import logger as ngs_utils_logger
 from hpc_utils.hpc import get_loc, get_ref_file
 from ngs_utils.reference_data import get_key_genes_bed
 
@@ -45,11 +45,11 @@ def prep_inputs(config_):
         exclude_names = str(exclude_names).split(',')
         exclude_names = [v for v in flatten([sn.split('__') for sn in exclude_names])]  # support "batch__sample" notation
 
-    logger.is_silent = within_sub_workflow  # to avoid redundant logging in cluster sub-executions of the Snakefile
+    ngs_utils_logger.is_silent = within_sub_workflow  # to avoid redundant logging in cluster sub-executions of the Snakefile
     run = BcbioProject(config_.get('bcbio_project', abspath(os.getcwd())),
                        exclude_samples=exclude_names,
                        include_samples=include_names)
-    logger.is_silent = False
+    ngs_utils_logger.is_silent = False
     run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
 
     if len(run.batch_by_name) == 0:
