@@ -61,4 +61,4 @@ rule igv:
         expand((rules.igv_upload.output if upload_igv else rules.igv_bam.output),
                phenotype=['tumor', 'normal'], batch=batch_by_name.keys())
     output:
-        temp(touch('igv.done'))
+        temp(touch('log/igv.done'))

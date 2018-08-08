@@ -44,4 +44,4 @@ rule coverage:
         expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
         expand(rules.goleft_plots.output[0], batch=batch_by_name.keys())
     output:
-        temp(touch('coverage.done'))
+        temp(touch('log/coverage.done'))

@@ -135,4 +135,4 @@ rule rmd:
     input:
         expand(rules.sig_rmd.output[0], batch=batch_by_name.keys())
     output:
-        temp(touch('rmd.done'))
+        temp(touch('log/rmd.done'))

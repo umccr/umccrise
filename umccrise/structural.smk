@@ -163,4 +163,4 @@ rule structural:
         expand(rules.prep_sv_tsv.output, batch=batch_by_name.keys()),
         expand(rules.cnvkit_plot.output, batch=batch_by_name.keys())
     output:
-        temp(touch('structural.done'))
+        temp(touch('log/structural.done'))

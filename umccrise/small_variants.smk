@@ -99,4 +99,4 @@ rule small_variants:
         expand(rules.somatic_vcf_pon_pass.output, batch=batch_by_name.keys()),
         expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys())
     output:
-        temp(touch('small_variants.done'))
+        temp(touch('log/small_variants.done'))

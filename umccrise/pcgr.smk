@@ -115,14 +115,14 @@ rule pcgr_prep:
         expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
         expand(rules.pcgr_germline_vcf.output, batch=batch_by_name.keys())
     output:
-        temp(touch('pcgr_prep.done'))
+        temp(touch('log/pcgr_prep.done'))
 
 rule pcgr:
     input:
         expand(rules.pcgr_symlink_somatic.output, batch=batch_by_name.keys()),
         expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
     output:
-        temp(touch('pcgr.done'))
+        temp(touch('log/pcgr.done'))
 
 
 

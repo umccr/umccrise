@@ -130,7 +130,7 @@ def prep_inputs(config_):
         verify_dir(pcgr_installation, is_critical=True, description='PCGR installation directory')
         verify_dir(join(pcgr_installation, 'data'), is_critical=True, description='PCGR data directory')
         if not within_sub_workflow:
-            info('Running with PCGR')
+            info('PCGR is available')
 
     ####################################
     #### Also loading key genes bed ####
@@ -148,7 +148,7 @@ if any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-ensemble-annot
 
 
 rule all:
-    input: 'umccrised.done'
+    input: 'log/umccrised.done'
     # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
 
 # TODO: try subworkflows here? http://snakemake.readthedocs.io/en/stable/snakefiles/modularization.html#sub-workflows
@@ -158,7 +158,7 @@ subworkflow small_variants:
     snakefile: 'Snakefile.small_variants'
 
 rule all:
-    input:  small_variants('small_variants.done')
+    input:  small_variants('log/small_variants.done')
     output: ...
     shell:  ...
 """
@@ -215,4 +215,4 @@ rule umccrise:
         (rules.pcgr.output if pcgr_installation else rules.pcgr_prep.output),
         rules.igv.output
     output:
-        temp(touch('umccrised.done'))
+        temp(touch('log/umccrised.done'))
