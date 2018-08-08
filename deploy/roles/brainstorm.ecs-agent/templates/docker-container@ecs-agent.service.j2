@@ -1,0 +1,13 @@
+[Unit]
+Description=Docker Container %I
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+ExecStartPre=-/usr/bin/docker rm -f %i
+ExecStart=/usr/bin/docker run --privileged --name %i --restart=on-failure:10 --volume=/var/run:/var/run --volume=/var/log/ecs/:/log --volume=/var/lib/ecs/data:/data --volume=/etc/default/ecs:/etc/ecs --net=host --env-file=/etc/default/ecs amazon/amazon-ecs-agent:latest
+ExecStop=/usr/bin/docker stop %i
+
+[Install]
+WantedBy=default.target

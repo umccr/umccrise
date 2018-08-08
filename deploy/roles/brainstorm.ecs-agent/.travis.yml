@@ -7,11 +7,12 @@ python: "3.6"
 addons:
   apt:
     packages:
-    - python-pip
+      - python-pip
+      - python3-pip
 
 install:
   # Install ansible
-  - pip install ansible>=2.2 
+  - pip3 install ansible>=2.2
 
   # Check ansible version
   - ansible --version
@@ -24,8 +25,8 @@ install:
 
 script:
   # Basic role syntax check
-  - ansible-playbook -i hosts --syntax-check docker.yml
-  - ansible-playbook -i hosts --connection=local --sudo -vvvv docker.yml
+  - ansible-playbook -i hosts --syntax-check site.yml
+  - ansible-playbook -i hosts --connection=local -vvvv site.yml
 
 # notifications:
   # webhooks: https://galaxy.ansible.com/api/v1/notifications/

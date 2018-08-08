@@ -6,6 +6,8 @@
       state: latest
       update_cache: yes
   with_items:
+      - jq
+      - parallel
       - python3-pip
 
 - name: Make sure vital python packages are installed system-wide 
@@ -14,7 +16,7 @@
     name: "{{ item }}"
     state: latest
   with_items:
-      - docker-py
+      - docker
       - boto3
       - awscli
 
@@ -25,10 +27,8 @@
       echo $org_ssh_keys
       for ssh_key in $org_ssh_keys
       do
-              wget $ssh_key -O - >> ~/.ssh/authorized_keys
+              wget $ssh_key -O - >> $HOME/.ssh/authorized_keys
       done
-  async: 45
-  poll: 0
 
 - name: clone umccrise
   git:
@@ -60,8 +60,7 @@
       groups: docker
       append: yes
 
-- name: Pull PCGR docker image for UMCCRISE"
+- name: Pull docker image for UMCCRISE"
   docker_image:
-    name: umccr/umccrise
+    name: umccr/umccrise_with_pcgr
     state: present
-    tag: "latest"
