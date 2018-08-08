@@ -26,7 +26,7 @@ from umccrise import package_path
 def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, no_docker=False, pcgr_dir=None):
 
     if not pcgr_dir:
-        from python_utils.hpc import find_loc
+        from hpc_utils.hpc import find_loc
         loc = find_loc()
         pcgr_dir = loc.pcgr_dir
         if not pcgr_dir:

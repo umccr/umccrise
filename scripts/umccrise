@@ -137,7 +137,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
             cluster_param = f' --cluster "{cluster_cmd}"'
         else:
             cluster_log_dir = safe_mkdir(join(log_dir, 'cluster'))
-            cluster_param = snakemake_utils.make_cluster_cmdl(cluster_log_dir)
+            cluster_param = snakemake_utils.make_cluster_cmdl(cluster_log_dir, 'umccrise')
 
     ###############################
     #### Building command line ####
