@@ -8,7 +8,6 @@ import yaml
 
 from ngs_utils import logger
 from ngs_utils.bcbio import BcbioProject
-from ngs_utils.bed_utils import get_total_bed_size
 from ngs_utils.call_process import run
 from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transaction
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
@@ -58,18 +57,6 @@ def make_report_metadata(bcbio_proj, base_dirpath,
     # Sample-level details
     if pcgr_report_by_sample:
         conf['umccr']['pcgr_report_by_sample'] = pcgr_report_by_sample
-
-    # # Preseq
-    # preseq_files, preseq_config = _add_preseq_data(bcbio_proj)
-    # if preseq_files:
-    #     additional_files.extend(preseq_files)
-    # if preseq_config:
-    #     conf['preseq'] = preseq_config
-
-    # # QC DE FA
-    # for l in bcbio_proj.postproc_mqc_files:
-    #     additional_files.append(l)
-    #     print('QC DE FA ' + l)
 
     return conf, additional_files
 
@@ -238,87 +225,3 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None):
     return run_info_dict
 
 
-def _add_preseq_data(proj):
-    preseq_files = []
-    samples = []
-    for s in proj.samples:
-        fp = join(join(s.dirpath, 'preseq'), s.name + '.txt')
-        if verify_file(fp, silent=True):
-            preseq_files.append(fp)
-            samples.append(s)
-    if not samples:
-        return [], None
-
-    work_dir = safe_mkdir(proj.work_dir, 'preseq')
-    actual_counts_file = join(work_dir, 'preseq_real_counts.txt')
-
-    preseq_config = dict()
-
-    if proj.coverage_bed:
-        target_size = get_total_bed_size(proj.coverage_bed)
-        debug('target_size: ' + str(target_size))
-
-        ontarget_counts = []
-        ontarget_unique_counts = []
-        ontarget_unique_depths = []
-        ontarget_alignments_avg_lengths = []
-        for s in samples:
-            u_dp = s.get_avg_depth()
-            ontarget_unique_depths.append(u_dp)
-
-            cnt = sambamba.number_mapped_reads_on_target(work_dir, bed=proj.coverage_bed, bam=s.bam, dedup=False)
-            ontarget_counts.append(cnt)
-            if s.is_dedupped():
-                u_cnt = sambamba.number_mapped_reads_on_target(work_dir, bed=proj.coverage_bed, bam=s.bam, dedup=True)
-                ontarget_unique_counts.append(u_cnt)
-            else:
-                u_cnt = cnt
-                ontarget_unique_counts.append(None)
-
-            # avg depth ~~ unique mapped reads on target (usable reads) * on target aln length / target_size
-            read_len = u_dp * target_size // u_cnt
-            ontarget_alignments_avg_lengths.append(read_len)
-
-        avg_ontarget_alignments_avg_length = mean(ontarget_alignments_avg_lengths)
-
-        debug('ontarget_counts: ' + str(ontarget_counts))
-        debug('ontarget_unique_counts: ' + str(ontarget_counts))
-        debug('ontarget_unique_depths: ' + str(ontarget_unique_depths))
-        debug('ontarget_alignments_avg_lengths: ' + str(ontarget_alignments_avg_lengths))
-        debug('avg_ontarget_alignments_avg_length: ' + str(avg_ontarget_alignments_avg_length))
-
-        with open(actual_counts_file, 'w') as f:
-            for i, s in enumerate(samples):
-                line = s.name + '\t' + str(ontarget_counts[i])
-                if s.is_dedupped():
-                    line += '\t' + str(ontarget_unique_counts[i])
-                line += '\n'
-                f.write(line)
-
-        preseq_config['genome_size'] = target_size
-        preseq_config['read_length'] = avg_ontarget_alignments_avg_length
-
-    else:  # WGS
-        preseq_config['genome_size'] = proj.genome_build
-        try:
-            read_lengths = [int(s.get_metric('Sequence length').split('-')[-1]) for s in samples]
-        except:
-            pass
-        else:
-            preseq_config['read_length'] = mean(read_lengths)
-            debug('read_lengths: ' + str(read_lengths))
-            debug('mean(read_lengths): ' + str(mean(read_lengths)))
-
-        with open(actual_counts_file, 'w') as f:
-            for s in samples:
-                count = s.get_reads_count()
-                line = s.name + '\t' + str(count)
-                if s.is_dedupped():
-                    dup_count = s.get_metric('Duplicates')
-                    unique_count = s.get_reads_count() - dup_count
-                    line += '\t' + str(unique_count)
-                line += '\n'
-                f.write(line)
-
-    preseq_files = [fp for fp in preseq_files if fp] + [actual_counts_file]
-    return preseq_files, preseq_config
