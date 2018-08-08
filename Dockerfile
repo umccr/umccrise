@@ -51,7 +51,11 @@ COPY scripts umccrise/scripts
 COPY vendor umccrise/vendor
 COPY setup.py umccrise/setup.py
 COPY VERSION.txt umccrise/VERSION.txt
-RUN pip install -e umccrise && \
+
+RUN pip install -e umccrise
+
+# Symlinking gtar to fix the installation with devtools
+RUN ln -s /bin/tar /bin/gtar && \
     R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock', ref = 'umccrise')"
 
 # Install PCGR
