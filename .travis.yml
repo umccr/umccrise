@@ -54,13 +54,13 @@ addons:
 
 after_success:
   # Building docker image
-  - test $TRAVIS_BRANCH = "master" &&
+  - test $TRAVIS_BRANCH = "master" && grep -qv dev VERSION.txt &&
     docker version &&
     rm -rf $HOME/miniconda umccrise_test_data &&
     docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
 
   # Pushing docker image
-  - test $TRAVIS_BRANCH = "master" &&
+  - test $TRAVIS_BRANCH = "master" && grep -qv dev VERSION.txt &&
     docker images &&
     echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
     docker push umccr/umccrise:$(cat VERSION.txt)
