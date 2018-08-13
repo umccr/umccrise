@@ -36,6 +36,7 @@ dependencies:
   - goleft
   - awscli
   - pyasn1 # for awscli - for some reason doesn't install automatically on macos
+  - parallel
   - cnvkit
   - multiqc
   - networkx   # for snakemake report
