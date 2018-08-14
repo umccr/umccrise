@@ -30,23 +30,17 @@
               wget $ssh_key -O - >> $HOME/.ssh/authorized_keys
       done
 
-- name: clone umccrise
-  git:
-    repo: "https://github.com/brainstorm/umccrise"
-    version: "deploy"
-    dest: /home/ubuntu/umccrise
-
 # http://www.pesikov.tk/blog/failed-restart-docker-service-unit-docker-service-masked/
 # https://github.com/geerlingguy/ansible-role-docker/issues/60
 # https://github.com/docker/for-linux/issues/290#issuecomment-393605253
-- name: enable service httpd and ensure it is not masked
+- name: enable docker service and ensure it is not masked
   become: true
   systemd:
     name: docker.service
     enabled: yes
     masked: no
 
-- name: enable service httpd and ensure it is not masked
+- name: enable docker socket and ensure it is not masked
   become: true
   systemd:
     name: docker.socket
