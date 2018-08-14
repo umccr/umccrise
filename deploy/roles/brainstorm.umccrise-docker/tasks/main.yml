@@ -60,8 +60,22 @@
       groups: docker
       append: yes
 
+- name: Avoid citation hurdles with GNU parallel when deploying the instance
+  become: true
+  file:
+    state: present
+    path: "/root/.parallel/will-cite"
+
+- name: copy instance bootstrap script to cloud-init
+  template:
+    src=files/bootstrap-instance.sh
+    dest=/var/lib/cloud/scripts/per-boot/bootstrap-instance.sh
+    owner=root
+    group=root
+    mode=0644
+
 - name: Pull docker image for UMCCRISE"
   docker_image:
     name: umccr/umccrise
-    tag: 0.8.1
+    tag: 0.8.2
     state: present
