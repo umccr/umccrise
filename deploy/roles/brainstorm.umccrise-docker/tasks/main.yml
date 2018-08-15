@@ -57,7 +57,7 @@
 - name: copy instance bootstrap script to cloud-init
   copy:
     remote_src=false
-    src=bootstrap_instance.sh
+    src=bootstrap-instance.sh
     dest=/var/lib/cloud/scripts/per-boot/bootstrap-instance.sh
     owner=root
     group=root
