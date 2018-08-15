@@ -54,12 +54,6 @@
       groups: docker
       append: yes
 
-- name: Avoid citation hurdles with GNU parallel when deploying the instance
-  become: true
-  file:
-    state: present
-    path: "/root/.parallel/will-cite"
-
 - name: copy instance bootstrap script to cloud-init
   template:
     src=files/bootstrap-instance.sh
