@@ -56,7 +56,7 @@
 
 - name: copy instance bootstrap script to cloud-init
   template:
-    src=files/bootstrap-instance.sh
+    src=bootstrap-instance.sh
     dest=/var/lib/cloud/scripts/per-boot/bootstrap-instance.sh
     owner=root
     group=root
