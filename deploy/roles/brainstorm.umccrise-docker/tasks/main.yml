@@ -61,7 +61,7 @@
     dest=/var/lib/cloud/scripts/per-boot/bootstrap-instance.sh
     owner=root
     group=root
-    mode=0644
+    mode=0755
 
 - name: Pull docker image for UMCCRISE"
   docker_image:
