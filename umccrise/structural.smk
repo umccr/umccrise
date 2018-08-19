@@ -43,19 +43,17 @@ rule cnvkit_plot:
 
 rule prep_sv_vcf:
     """ Keep variants with the FILTER values *only* in PASS, Intergenic, or MissingAnn
-        `bcftools view -f .,PASS,Intergenic,MissingAnn` doesn't work because it keep variants with other values in FILTER too.
+        Note: `bcftools view -f .,PASS,Intergenic,MissingAnn` doesn't work because it keep variants 
+        with other values in FILTER too. That's why we remove those FILTER values.
     """
     input:
-        manta_vcf = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
     output:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta.vcf'
     group: "sv_vcf"
-    shell: """
-gunzip -c {input.manta_vcf} | 
-py -x "x if x.startswith('#') or all(filt_val in ['PASS', '.', 'Intergenic', 'MissingAnn'] for filt_val in x.split('\\t')[6].split(';')) else None" | 
-py -x "x if x.startswith('#') or not x.startswith('GL') else None" \
-> {output}
-"""
+    shell:
+        'bcftools annotate -x "FILTER/Intergenic,FILTER/MissingAnn" {input} | '
+        'bcftools view -f .,PASS > {output}'
 
 rule filter_sv_vcf:
     """ Keep all with read support above 10x; or allele frequency above 10%, but only if read support is above 5x
