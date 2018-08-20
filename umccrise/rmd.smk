@@ -44,7 +44,8 @@ rule split_multiallelic:
     output:
         'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz'
     shell:
-        "bcftools annotate -x ^INFO/ANN,^INFO/TUMOR_AF -Ob {input.vcf} | bcftools norm -m '-' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}"
+        "bcftools annotate -x ^INFO/ANN,^INFO/TUMOR_AF -Ob {input.vcf} | "
+        "bcftools norm -m '-' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}"
 
 rule afs:
     input:
@@ -54,7 +55,8 @@ rule afs:
     output:
         'work/{batch}/rmd/afs/af_tumor.txt'
     shell:
-        'bcftools view {input} -s {params.tumor_name} -Ou | bcftools query -f "%INFO/TUMOR_AF\\n" > {output} && [[ -s {output} ]]'
+        'bcftools view {input} -s {params.tumor_name} -Ou | '
+        'bcftools query -f "%INFO/TUMOR_AF\\n" > {output} && test -e {output}'
 
 rule afs_az300:
     input:
@@ -67,7 +69,8 @@ rule afs_az300:
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.az300} -header'
-        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\\n" > {output} && [[ -s {output} ]]'
+        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\\n"'
+        ' > {output} && test -e {output}'
 
 ## Mutational signatures VCF
 #
@@ -110,6 +113,8 @@ rule sig_rmd:
         rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build
     output:
         '{batch}/{batch}-rmd_report.html'
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000
     shell:
         'cp {input.sig_rmd} {params.rmd_tmp} && ' \
         'Rscript -e "rmarkdown::render(\'{params.rmd_tmp}\', '
