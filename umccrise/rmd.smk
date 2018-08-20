@@ -33,39 +33,43 @@ rule subset_to_giab:
         regions = truth_regions
     output:
         'work/{batch}/rmd/afs/ensemble-confident.vcf.gz'
+    # group: "subset_for_af"
     shell:
         'bcftools view {input.vcf} -T {params.regions} -Oz -o {output}'
 
 # Split multiallelics to avoid R parsing issues
 rule split_multiallelic:
     input:
-        vcf = rules.subset_to_giab.output[0],
+        vcf = 'work/{batch}/rmd/afs/ensemble-confident.vcf.gz',
         ref_fa = ref_fa
     output:
         'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz'
+    # group: "subset_for_af"
     shell:
         "bcftools annotate -x ^INFO/ANN,^INFO/TUMOR_AF -Ob {input.vcf} | "
         "bcftools norm -m '-' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}"
 
 rule afs:
     input:
-        rules.split_multiallelic.output[0]
+        'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz'
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
         'work/{batch}/rmd/afs/af_tumor.txt'
+    # group: "subset_for_af"
     shell:
         'bcftools view {input} -s {params.tumor_name} -Ou | '
         'bcftools query -f "%INFO/TUMOR_AF\\n" > {output} && test -e {output}'
 
 rule afs_az300:
     input:
-        vcf = rules.split_multiallelic.output[0],
+        vcf = 'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz',
         az300 = key_genes_bed
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
         'work/{batch}/rmd/afs/af_tumor_az300.txt'
+    # group: "subset_for_af"
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.az300} -header'
@@ -83,6 +87,7 @@ rule somatic_to_hg19:
         rules.pcgr_somatic_vcf.output.vcf
     output:
         'work/{batch}/rmd/ensemble-with_chr_prefix.vcf'
+    # group: "subset_for_af"
     run:
         if run.genome_build == 'GRCh37':
             shell('gunzip -c {input}'
@@ -115,23 +120,23 @@ rule sig_rmd:
         '{batch}/{batch}-rmd_report.html'
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 4000
-    shell:
-        'cp {input.sig_rmd} {params.rmd_tmp} && ' \
-        'Rscript -e "rmarkdown::render(\'{params.rmd_tmp}\', '
-        'output_file=\'{params.output_file}\', '
-        'params=list('
-        'af_freqs=\'{input.afs}\', '
-        'af_freqs_az300=\'{input.afs_az300}\', '
-        'vcf_fname=\'{input.vcf}\', '
-        'sv_fname=\'{input.sv}\', '
-        'cnvkit_calls=\'{input.cnvkit_calls}\', '
-        'manta_vcf=\'{input.manta_vcf}\', '
-        'tumor_name=\'{params.tumor_name}\', '
-        'sig_probs=\'{input.sig_probs}\', '
-        'suppressors=\'{input.suppressors}\', '
-        'workdir=\'{params.workdir}\', '
-        'genome_build=\'{params.rmd_genome_build}\''
-        '))"'
+    shell: """cp {input.sig_rmd} {params.rmd_tmp} && 
+Rscript -e "rmarkdown::render('{params.rmd_tmp}', 
+output_file='{params.output_file}', 
+params=list(
+af_freqs='{input.afs}', 
+af_freqs_az300='{input.afs_az300}', 
+vcf_fname='{input.vcf}', 
+sv_fname='{input.sv}', 
+cnvkit_calls='{input.cnvkit_calls}', 
+manta_vcf='{input.manta_vcf}', 
+tumor_name='{params.tumor_name}', 
+sig_probs='{input.sig_probs}', 
+suppressors='{input.suppressors}', 
+workdir='{params.workdir}', 
+genome_build='{params.rmd_genome_build}'
+))"
+"""
 
 
 #############
