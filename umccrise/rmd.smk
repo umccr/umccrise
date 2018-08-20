@@ -121,20 +121,20 @@ rule sig_rmd:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 4000
     shell: """cp {input.sig_rmd} {params.rmd_tmp} && 
-Rscript -e "rmarkdown::render('{params.rmd_tmp}', 
-output_file='{params.output_file}', 
-params=list(
-af_freqs='{input.afs}', 
-af_freqs_az300='{input.afs_az300}', 
-vcf_fname='{input.vcf}', 
-sv_fname='{input.sv}', 
-cnvkit_calls='{input.cnvkit_calls}', 
-manta_vcf='{input.manta_vcf}', 
-tumor_name='{params.tumor_name}', 
-sig_probs='{input.sig_probs}', 
-suppressors='{input.suppressors}', 
-workdir='{params.workdir}', 
-genome_build='{params.rmd_genome_build}'
+Rscript -e "rmarkdown::render('{params.rmd_tmp}', \
+output_file='{params.output_file}', \
+params=list( \
+af_freqs='{input.afs}', \
+af_freqs_az300='{input.afs_az300}', \
+vcf_fname='{input.vcf}', \
+sv_fname='{input.sv}', \
+cnvkit_calls='{input.cnvkit_calls}', \
+manta_vcf='{input.manta_vcf}', \
+tumor_name='{params.tumor_name}', \
+sig_probs='{input.sig_probs}', \
+suppressors='{input.suppressors}', \
+workdir='{params.workdir}', \
+genome_build='{params.rmd_genome_build}' \
 ))"
 """
 
