@@ -77,8 +77,10 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
         sys.exit(exit_code)
 
     if isfile(expected_report_path):
-        print(f'Renaming {expected_report_path} -> {renamed_report_path}')
+        print(f'Result generated as {expected_report_path}. Renaming to {renamed_report_path}')
         rename(expected_report_path, renamed_report_path)
+    if isfile(renamed_report_path):
+        print(f'PCGR report: {renamed_report_path}')
 
 
 if __name__ == '__main__':
