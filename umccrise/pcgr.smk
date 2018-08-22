@@ -63,7 +63,7 @@ rule run_pcgr_local_somatic:
         sample_name = '{batch}-somatic',
         opt='--no-docker' if not get_loc().name == 'vlad' else ''
     resources:
-        mem_mb=5000
+        mem_mb=lambda wildcards, attempt: attempt * 10000
     shell:
         'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} ' \
         '{params.opt} --pcgr-dir {input.pcgr_dir}'
@@ -81,7 +81,7 @@ rule run_pcgr_local_germline:
         sample_name = '{batch}-normal',
         opt='--no-docker' if not get_loc().name == 'vlad' else ''
     resources:
-        mem_mb=5000
+        mem_mb=lambda wildcards, attempt: attempt * 2000
     shell:
         'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline ' \
         '{params.opt} --pcgr-dir {input.pcgr_dir}'
