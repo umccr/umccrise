@@ -4,8 +4,10 @@ PCGR
 Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
 """
 
-
 localrules: pcgr_somatic_vcf, pcgr_germline_vcf, pcgr_cns, pcgr_symlink_somatic, pcgr_symlink_germline, pcgr_prep, pcgr
+
+
+from ngs_utils.file_utils import which
 
 
 ######################
@@ -61,7 +63,7 @@ rule run_pcgr_local_somatic:
         output_dir = '{batch}/pcgr',
         genome_build = run.genome_build,
         sample_name = '{batch}-somatic',
-        opt='--no-docker' if not get_loc().name == 'vlad' else ''
+        opt='--no-docker' if not which('docker') else ''
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
     shell:
@@ -79,7 +81,7 @@ rule run_pcgr_local_germline:
         output_dir = '{batch}/pcgr',
         genome_build = run.genome_build,
         sample_name = '{batch}-normal',
-        opt='--no-docker' if not get_loc().name == 'vlad' else ''
+        opt='--no-docker' if not which('docker') else ''
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 2000
     shell:
