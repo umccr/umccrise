@@ -64,6 +64,8 @@ def prep_inputs(config_):
 
     # Batch objects index by tumor sample names
     batches = [b for b in run.batch_by_name.values() if not b.is_germline() and b.tumor and b.normal]
+    assert batches
+
     batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
 
     ############################################
