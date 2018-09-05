@@ -119,7 +119,8 @@ rule sig_rmd:
     output:
         '{batch}/{batch}-rmd_report.html'
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000
+        mem_mb=lambda wildcards, attempt: attempt * 10000
+        # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
     shell: """cp {input.sig_rmd} {params.rmd_tmp} && 
 Rscript -e "rmarkdown::render('{params.rmd_tmp}', \
 output_file='{params.output_file}', \

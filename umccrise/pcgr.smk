@@ -65,7 +65,8 @@ rule run_pcgr_local_somatic:
         sample_name = '{batch}-somatic',
         opt='--no-docker' if not which('docker') else ''
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 10000
+        mem_mb=lambda wildcards, attempt: attempt * 20000
+        # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
     shell:
         'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} ' \
         '{params.opt} --pcgr-dir {input.pcgr_dir}'
