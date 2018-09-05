@@ -11,6 +11,7 @@ import subprocess
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
+from ngs_utils.logger import warn, info
 from ngs_utils.utils import set_locale; set_locale()
 from ngs_utils import snakemake_utils
 from umccrise import package_path
@@ -130,6 +131,11 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if 'pcgr_download' in target_rule:
         conf['pcgr_download'] = 'yes'
 
+    if not no_s3:
+        if os.environ.get('AWS_PROFILE') != 'umccr':
+            warn('To upload minibams to s3://umccr-igv, please set AWS_PROFILE=umccr')
+            info()
+            no_s3 = True
     conf['no_s3'] = 'yes' if no_s3 else 'no'
 
     #########################
