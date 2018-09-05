@@ -20,7 +20,7 @@ rule cnvkit_cleanup:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
     output:
         'work/{batch}/structural/{batch}-cnvkit-nolabels.cns'
-    group: "cnvkit_plot"
+    group: "cnvkit"
     shell:
         'cat {input}'
         ' | grep -v ^GL '
@@ -33,7 +33,7 @@ rule cnvkit_plot:
         rules.cnvkit_cleanup.output[0]
     output:
         '{batch}/structural/{batch}-cnvkit-diagram.pdf'
-    group: "cnvkit_plot"
+    group: "cnvkit"
     shell:
         'cnvkit.py diagram -s {input} -o {output}'
 
