@@ -325,7 +325,7 @@ a type of cancer-specific antigen – that may allow for a more robust immune re
 and therefore a more durable response to immunotherapy.
 
 ```{r tmb}
-vcf <-  read.vcfR("~/Documents/UMCCR/data/vcfs/MH17T001P004-somatic-ensemble-pon_hardfiltered.vcf.gz", verbose =  FALSE) 
+vcf <-  read.vcfR(params$vcf_fname, verbose =  FALSE) 
 
 #Calculating mutations per megabase
 fix <- getFIX(vcf)
