@@ -36,7 +36,7 @@ library(MutationalPatterns)
 library(BSgenome)
 library(devtools)
 library(stringr)
-library(rock)
+library(rock, lib.loc = "~/rock/umccrise")
 ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
 library(ref_genome, character.only = TRUE)
 tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
@@ -50,14 +50,15 @@ options(width = 140)
 
 ```{r render_interactively, eval=FALSE, echo=FALSE}
 render_me <- function() {
+  dd <- "/Users/pdiakumis/Desktop/projects/umccr/umccrise_test_data"
   rmarkdown::render("sig.Rmd", params = list(
-    workdir = '/Users/pdiakumis/Desktop/tmp/umccrise',
-    vcf_fname = '../../../umccrise_test_data/gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/ensemble-with_chr_prefix.vcf',
-    af_freqs = '../../../umccrise_test_data/gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor.txt',
-    af_freqs_az300 = '../../../umccrise_test_data/gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor_az300.txt',
-    sv_fname = '../../../umccrise_test_data/gold_standard/bcbio_test_project/cup__cup_tissue/structural/cup__cup_tissue-sv-prioritize-manta-pass.tsv',
-    cnvkit_calls = '../../../umccrise_test_data/data/bcbio_test_project/final/cup_tissue/cup-cnvkit-call.cns',
-    manta_vcf = '../../../umccrise_test_data/gold_standard/bcbio_test_project/work/cup__cup_tissue/structural/ribbon/manta.vcf',
+    workdir = '/Users/pdiakumis/Desktop/projects/umccr/umccrise/umccrise/rmd_files',
+    vcf_fname = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/ensemble-with_chr_prefix.vcf'),
+    af_freqs = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor.txt'),
+    af_freqs_az300 = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor_az300.txt'),
+    sv_fname = file.path(dd, 'gold_standard/bcbio_test_project/cup__cup_tissue/structural/cup__cup_tissue-sv-prioritize-manta-pass.tsv'),
+    cnvkit_calls = file.path(dd, 'data/bcbio_test_project/final/cup_tissue/cup-cnvkit-call.cns'),
+    manta_vcf = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/structural/ribbon/manta.vcf'),
     tumor_name = '17MHP031Tmr',
     sig_probs = 'signatures_probabilities.txt',
     suppressors = '/Users/pdiakumis/Desktop/projects/umccr/vcf_stuff/src/ngs-utils/ngs_utils/reference_data/suppressors.txt',
@@ -232,7 +233,7 @@ if (!is.null(sv_all)) {
 }
 ```
 
-## Circos plot showing Manta SVs and CNVkit CNVs
+## OmicCircos plot showing Manta SVs and CNVkit CNVs
 
 * For the internal lines:
     - The interchromosomal links take the chromosome colour of mate1 of each breakend pair.
@@ -255,9 +256,20 @@ if (!is.null(err)) {
 }
 ```
 
+## Perl Circos plot 
+
+```{r circos-prep}
+circos_prep(outdir = "circos", manta = params$manta_vcf, cnv = params$cnvkit_calls)
+plot_circos2(outdir = "circos", name = "foo")
+```
+
+```{r circos-manta-cnvkit2, out.width='80%'}
+knitr::include_graphics("circos/foo_circos_cnvkit_manta.png")
+```
 
 
 ## Transcriptional strand bias analysis
+
 We can determine if a gene mutation is on the transcribed or non-transcribed
 strand, which can be used to evaluate the involvement of transcription-coupled
 repair. By convention base substitutions are regarded as C>X or T>X, so we try
@@ -295,6 +307,7 @@ plot_strand_bias(strand_bias)
 
 
 ## Replicative strand bias analysis
+
 The involvement of replication-associated mechanisms can be evaluated by
 testing for a mutational bias between the leading and lagging strand.
 The replication strand is dependent on the locations of replication
