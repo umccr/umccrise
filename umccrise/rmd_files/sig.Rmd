@@ -41,6 +41,7 @@ ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
 library(ref_genome, character.only = TRUE)
 tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
 library(tx_ref_genome, character.only = TRUE)
+library(vcfR)
 ```
 
 ```{r setup, include=FALSE}
@@ -310,6 +311,20 @@ strand_bias_rep <- strand_bias_test(strand_counts_rep)
 plot_strand(strand_counts_rep, mode = "relative")
 plot_strand_bias(strand_bias_rep)
 ```
+
+## Tumour mutational burden analysis
+
+Tumour mutational burden (TMB) "measures the quantity of mutations found in a tumor". 
+Also, it is defined as "a quantitative measure of the total number of mutations per 
+coding area of a tumor genome." This type of biomarker is currently under study to 
+evaluate whether it may help predict the likelihood a patient's response to 
+immunotherapy in a range of advanced cancers. 
+
+Tumors that have higher levels of TMB are believed to express more neoantigens – 
+a type of cancer-specific antigen – that may allow for a more robust immune response 
+and therefore a more durable response to immunotherapy.
+
+
 
 ## Addendum
 
