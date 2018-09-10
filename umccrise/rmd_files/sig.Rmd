@@ -324,7 +324,39 @@ Tumors that have higher levels of TMB are believed to express more neoantigens â
 a type of cancer-specific antigen â€“ that may allow for a more robust immune response 
 and therefore a more durable response to immunotherapy.
 
+```{r tmb}
+vcf <-  read.vcfR("~/Documents/UMCCR/data/vcfs/MH17T001P004-somatic-ensemble-pon_hardfiltered.vcf.gz", verbose =  FALSE) 
 
+#Calculating mutations per megabase
+fix <- getFIX(vcf)
+vcf_number_rows <- nrow(fix)
+mutations_megabase <- round(vcf_number_rows/3200, digits = 2)
+
+#Summarizing annotations for variants in the vcf
+ann <- vcfR::extract.info(vcf, "ANN")
+region_ann <- sapply(ann, function(x){
+  y <- strsplit(x, "\\|")[[1]][2]
+})
+variant_annotation <- unname(region_ann)
+
+#Creating a nice table output for annotations summary
+region_ann_df <- data.frame(table(variant_annotation))
+kable(region_ann_df, caption = "Table summarizing all annotations in the vcf and the total number of variants suppporting these annotations", format = "markdown")
+
+#Calculating mutations per megabase in coding region
+coding_variants = 0
+coding_variants <- region_ann %in% c("frameshift_variant", "missense_variant", "missense_variant&splice_region_variant")
+coding_variants <- table(coding_variants)
+mutations_megabase_coding <- round(as.vector(coding_variants[2])/40, digits = 2) 
+#40MB is the estimated size of coding region in human genome - as used by PCGR as well. 
+#We can use 36MB if we go with exact calculations, as only 1.2% of the total genome is considered coding. 
+#total genome * percent protein coding = 3,000,000,000 * 0.012 = 36,000,000 ~36MB
+```
+
+* The _total number of mutations_ in the vcf are **`r vcf_number_rows`** and 
+* Number of mutations per megabase are **`r mutations_megabase`**.
+* The _total number of mutations in the coding region_ are **`r as.vector(coding_variants[2])`**
+* Number of mutations per megabase in the coding region are **`r mutations_megabase_coding`**
 
 ## Addendum
 
