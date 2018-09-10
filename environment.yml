@@ -65,3 +65,6 @@ dependencies:
   - r-readr
   - r-stringr
   - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
+  - circos=0.69.6         # for circos
+  - libgd=2.2.5           # for circos
+  - perl=5.22.0           # for circos
