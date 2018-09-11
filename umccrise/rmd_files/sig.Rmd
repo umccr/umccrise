@@ -41,6 +41,7 @@ ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
 library(ref_genome, character.only = TRUE)
 tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
 library(tx_ref_genome, character.only = TRUE)
+library(vcfR)
 ```
 
 ```{r setup, include=FALSE}
@@ -345,6 +346,52 @@ strand_bias_rep <- strand_bias_test(strand_counts_rep)
 plot_strand(strand_counts_rep, mode = "relative")
 plot_strand_bias(strand_bias_rep)
 ```
+
+## Tumour mutational burden analysis
+
+Tumour mutational burden (TMB) "measures the quantity of mutations found in a tumor". 
+Also, it is defined as "a quantitative measure of the total number of mutations per 
+coding area of a tumor genome." This type of biomarker is currently under study to 
+evaluate whether it may help predict the likelihood a patient's response to 
+immunotherapy in a range of advanced cancers. 
+
+Tumors that have higher levels of TMB are believed to express more neoantigens – 
+a type of cancer-specific antigen – that may allow for a more robust immune response 
+and therefore a more durable response to immunotherapy.
+
+```{r tmb}
+vcf <-  read.vcfR(params$vcf_fname, verbose =  FALSE) 
+
+#Calculating mutations per megabase
+fix <- getFIX(vcf)
+vcf_number_rows <- nrow(fix)
+mutations_megabase <- round(vcf_number_rows/3200, digits = 2)
+
+#Summarizing annotations for variants in the vcf
+ann <- vcfR::extract.info(vcf, "ANN")
+region_ann <- sapply(ann, function(x){
+  y <- strsplit(x, "\\|")[[1]][2]
+})
+variant_annotation <- unname(region_ann)
+
+#Creating a nice table output for annotations summary
+region_ann_df <- data.frame(table(variant_annotation))
+kable(region_ann_df, caption = "Table summarizing all annotations in the vcf and the total number of variants suppporting these annotations", format = "markdown")
+
+#Calculating mutations per megabase in coding region
+coding_variants = 0
+coding_variants <- region_ann %in% c("frameshift_variant", "missense_variant", "missense_variant&splice_region_variant")
+coding_variants <- table(coding_variants)
+mutations_megabase_coding <- round(as.vector(coding_variants[2])/40, digits = 2) 
+#40MB is the estimated size of coding region in human genome - as used by PCGR as well. 
+#We can use 36MB if we go with exact calculations, as only 1.2% of the total genome is considered coding. 
+#total genome * percent protein coding = 3,000,000,000 * 0.012 = 36,000,000 ~36MB
+```
+
+* The _total number of mutations_ in the vcf are **`r vcf_number_rows`** and 
+* Number of mutations per megabase are **`r mutations_megabase`**.
+* The _total number of mutations in the coding region_ are **`r as.vector(coding_variants[2])`**
+* Number of mutations per megabase in the coding region are **`r mutations_megabase_coding`**
 
 ## Addendum
 
