@@ -2,7 +2,6 @@
 """
 import os
 from os.path import join, abspath, dirname, isfile, basename, splitext
-from ngs_utils.utils import flatten
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.utils import flatten
