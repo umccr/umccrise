@@ -2,6 +2,7 @@ name: umccrise
 
 channels:
   - vladsaveliev
+  - pdiakumis
   - bioconda
   - conda-forge
   - defaults
@@ -59,7 +60,8 @@ dependencies:
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
   - bioconductor-omiccircos  # for Peter's circos rock
-  - libgfortran-ng           # for Peter's circos rock
+  - libgfortran-ng
+  - r-rock                 # from pdiakumis channel
   - r-vcfr
   - r-devtools
   - r-readr
