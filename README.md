@@ -81,12 +81,6 @@ gdown https://drive.google.com/uc?id=1cGBAmAh5t4miIeRrrd0zHsPCFToOr0Lf -O - | aw
 gdown https://drive.google.com/uc?id=12q3rr7xpdBfaefRi0ysFHbH34kehNZOV -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.20180509.tgz
 ```
 
-Install R circos scripts on top
-
-```
-R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock', ref = 'umccrise')"
-```
-
 ## Updating
 
 ```
