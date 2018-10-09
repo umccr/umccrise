@@ -35,7 +35,7 @@ from umccrise import package_path
 @click.option('--rerun-incomplete', is_flag=True, help='Propagaded to snakemake')
 @click.option('--restart-times', default=3, help='Propagaded to snakemake. Default is 3.')
 
-@click.option('--pon', '--panel-of-normals', '--pon-dir', help='Path to panel of normals folder '
+@click.option('--pon', '--panel-of-normals', '--pon-dir', 'pon_dir', help='Path to panel of normals folder '
               '(see https://github.com/umccr/vcf_stuff#building-the-panel on how to prepare it)')
 @click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data (e.g. /bcbio/genomes; '
               'Hsapiens/{genome}/seq/{genome}.fa(.fai) and Hsapiens/{genome}/validation/giab-NA12878/truth_regions.bed '
