@@ -386,12 +386,15 @@ mutations_megabase_coding <- round(as.vector(coding_variants[2])/40, digits = 2)
 #40MB is the estimated size of coding region in human genome - as used by PCGR as well. 
 #We can use 36MB if we go with exact calculations, as only 1.2% of the total genome is considered coding. 
 #total genome * percent protein coding = 3,000,000,000 * 0.012 = 36,000,000 ~36MB
-```
 
-* The _total number of mutations_ in the vcf are **`r vcf_number_rows`** and 
-* Number of mutations per megabase are **`r mutations_megabase`**.
-* The _total number of mutations in the coding region_ are **`r as.vector(coding_variants[2])`**
-* Number of mutations per megabase in the coding region are **`r mutations_megabase_coding`**
+#Displaying results in a table
+region <- c("Wholegenome", "Coding")
+total_mutations <- c(vcf_number_rows, as.vector(coding_variants[2]))
+mutations_mb <- c(mutations_megabase, mutations_megabase_coding)
+
+result_display <- data.frame(region, total_mutations, mutations_mb) 
+kable(result_display,  caption = "Table summarizing somatic burden result")
+```
 
 ## Addendum
 
