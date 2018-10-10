@@ -22,7 +22,7 @@ dependencies:
   - numpy>=1.15.0
   - pandas
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
-  - snakemake>=5.2.2vlad
+  - snakemake-minimal
   - nose
   - pip:
     - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
