@@ -56,7 +56,7 @@ RUN pip install -e umccrise
 
 
 # Install PCGR
-RUN git clone https://github.com/vladsaveliev/pcgr /pcgr && \
+RUN git clone https://github.com/vladsaveliev/pcgr -b before_september /pcgr && \
     bash /pcgr/install_no_docker/install.sh --skip-validation
 
 # Clean up
