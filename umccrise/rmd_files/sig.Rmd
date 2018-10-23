@@ -192,8 +192,8 @@ plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 
 ```{r sv_prioritize}
 col_types <- "ccciicccccc"
-sv_all = NULL
-if (length(readLines(params$sv_fname, 2)) > 1) {
+# sv_all = NULL
+if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
   sv_all <- readr::read_tsv(params$sv_fname, col_names = TRUE, col_types = col_types) %>%
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # Unpack multiple annotations per region
     tidyr::separate(annotation,
@@ -211,7 +211,7 @@ if (length(readLines(params$sv_fname, 2)) > 1) {
 }
 ```
 
-### Loss of function in tumor suppressors
+### LoF in tumor suppressors
 
 ```{r sv_suppressors}
 if (!is.null(sv_all)) {
@@ -238,7 +238,7 @@ if (!is.null(sv_all)) {
 }
 ```
 
-## OmicCircos plot (Manta + CNVkit)
+## OmicCircos (Manta + CNVkit)
 
 * For the internal lines:
     - The interchromosomal links take the chromosome colour of mate1 of each breakend pair.
@@ -254,15 +254,16 @@ cnv <- prep_cnvkit_seg(params$cnvkit_calls)
 plot_circos(sv = sv, cnv = cnv)
 ```
 
-## Perl Circos plot 
+## PerlCircos (Manta + CNVkit)
 
-```{r circos-prep, eval=FALSE, message=FALSE, warning=FALSE}
-circos_prep(outdir = file.path(params$workdir, "circos"), manta = params$manta_vcf, cnv = params$cnvkit_calls)
-plot_circos2(outdir = "circos", name = params$tumor_name)
+```{r circos-prep, eval=TRUE, message=TRUE, warning=TRUE}
+out_dir <- file.path(params$workdir, "circos", params$tumor_name)
+circos_prep(outdir = out_dir, manta = params$manta_vcf, cnv = params$cnvkit_calls)
+plot_circos2(outdir = out_dir, name = params$tumor_name)
 ```
 
 ```{r circos-manta-cnvkit2, out.width='80%'}
-knitr::include_graphics(file.path(params$workdir, "circos", paste0(params$tumor_name, "_circos_cnvkit_manta.png")))
+knitr::include_graphics(file.path(out_dir, paste0(params$tumor_name, "_circos_cnvkit_manta.png")))
 ```
 
 
@@ -305,7 +306,6 @@ plot_strand_bias(strand_bias)
 
 
 ## Replicative strand bias analysis
-
 The involvement of replication-associated mechanisms can be evaluated by
 testing for a mutational bias between the leading and lagging strand.
 The replication strand is dependent on the locations of replication
@@ -345,7 +345,6 @@ plot_strand_bias(strand_bias_rep)
 ```
 
 ## Tumour mutational burden analysis
-
 Tumour mutational burden (TMB) "measures the quantity of mutations found in a tumor".
 Also, it is defined as "a quantitative measure of the total number of mutations per 
 coding area of a tumor genome." This type of biomarker is currently under study to 
