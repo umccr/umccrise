@@ -6,7 +6,6 @@ channels:
   - bioconda
   - conda-forge
   - defaults
-  - anaconda
 
 dependencies:
   - python>=3.6
