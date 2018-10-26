@@ -31,7 +31,7 @@ rule somatic_vcf_filter_af:  # {batch}
         vcf = '{batch}/work/small_variants/somatic-ensemble-prep-min_af.vcf.gz',
         tbi = '{batch}/work/small_variants/somatic-ensemble-prep-min_af.vcf.gz.tbi'
     shell:
-        'bcftools filter -e "TUMOR_AF<0.1" {input.vcf} -Oz -o {output.vcf} && tabix {output.vcf}'
+        'bcftools filter -e "TUMOR_AF<{params.min_af}" {input.vcf} -Oz -o {output.vcf} && tabix {output.vcf}'
 
 rule somatic_vcf_pon:  # {batch}
     input:

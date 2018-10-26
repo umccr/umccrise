@@ -35,7 +35,7 @@ from umccrise import package_path
 @click.option('--rerun-incomplete', is_flag=True, help='Propagaded to snakemake')
 @click.option('--restart-times', default=3, help='Propagaded to snakemake. Default is 3.')
 
-@click.option('--pon', '--panel-of-normals', '--pon-dir', help='Path to panel of normals folder '
+@click.option('--pon', '--panel-of-normals', '--pon-dir', 'pon_dir', help='Path to panel of normals folder '
               '(see https://github.com/umccr/vcf_stuff#building-the-panel on how to prepare it)')
 @click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data (e.g. /bcbio/genomes; '
               'Hsapiens/{genome}/seq/{genome}.fa(.fai) and Hsapiens/{genome}/validation/giab-NA12878/truth_regions.bed '
@@ -43,14 +43,14 @@ from umccrise import package_path
 @click.option('--ref-fasta', help='Path to reference fasta (e.g. /genomes/hg19.fa); .fai file should exist')
 @click.option('--truth-regions', help='Path to regions to subset calls, e.g. giab truth regions (e.g. '
                                       'validation/giab-NA12878/truth_regions.bed)')
-@click.option('--docker', '--docker-wrapper-mode', is_flag=True, help='Pull umccr/umccrise docker image and use it '
-                                                                      'instead of the main codebase')
+@click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
+              help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 @click.option('--pcgr-data', help='Path to the PCGR reference data folder (for dockerized version only)')
 @click.option('--pcgr', help='Path to PCGR installation dir')
 @click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
 
-def main(bcbio_project, target_rule=list(), output_dir=None, jobs=None, sample=None, batch=None, exclude=None,
-         cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
+def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
+         jobs=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
          pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None,
          docker_wrapper_mode=False, pcgr_data=None, pcgr=None, no_s3=None):
     """
@@ -203,13 +203,13 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     except subprocess.CalledProcessError:
         logger.error('--------')
         logger.error(f'Error running Umccrise: snakemake returned a non-zero status. Working directory: {output_dir}')
-        run_simple(f'chmod a+r {log_dir}')
+        run_simple(f'chmod -R a+r {log_dir}')
         if cluster_log_dir:
             logger.error(f'Review cluster job logs in {cluster_log_dir}')
         sys.exit(1)
     else:
         logger.error('--------')
-        run_simple(f'chmod a+r {log_dir}')
+        run_simple(f'chmod -R a+r {log_dir}')
         logger.info(f'Finished. Output directory: {output_dir}')
 
 

@@ -21,9 +21,9 @@ from umccrise import package_path
 @click.option('-o', 'output_dir', type=click.Path())
 @click.option('-s', 'sample')
 @click.option('--germline', is_flag=True)
-@click.option('--no-docker', is_flag=True)
+@click.option('--docker/--no-docker', 'use_docker', is_flag=True, default=None)
 @click.option('--pcgr-dir', type=click.Path(exists=True), help='Path to PCGR installation (defaults are known for spartan and raijin)')
-def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, no_docker=False, pcgr_dir=None):
+def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, use_docker=None, pcgr_dir=None):
 
     if not pcgr_dir:
         from hpc_utils.hpc import find_loc
@@ -46,8 +46,22 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     expected_report_path = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}.html')
     renamed_report_path = join(output_dir, f'{sample}.pcgr_acmg.html')
 
+    print('use_docker:', use_docker)
+    if use_docker is None:
+        check_docker_command = 'docker images -q sigven/pcgr'
+        try:
+            output = subprocess.check_output(check_docker_command, stderr=subprocess.STDOUT, shell=True)
+        except subprocess.CalledProcessError:
+            logger.warn('Docker is not installed, trying running in --no-docker mode')
+        else:
+            if len(output) == 0:
+                logger.warn('Docker image sigven/pcgr not found, trying running in --no-docker mode')
+                use_docker = False
+            else:
+                use_docker = True
+
     rlibs_env = ''
-    if no_docker:
+    if not use_docker:
         r_pcgrr_dir_ori = join(pcgr_dir, 'src', 'R', 'pcgrr')
         r_pcgrr_dir_dst = safe_mkdir(join(output_dir, 'work', sample))
         info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: '
@@ -65,7 +79,7 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
            f' {pcgr_genome}'
            f' {somatic_toml if not germline else germline_toml}'
            f' {sample}'
-           f' {" --no-docker " if no_docker else " --docker-uid root"}'
+           f' {" --docker-uid root" if use_docker else " --no-docker"}'
            f' --force_overwrite'
     )
 
