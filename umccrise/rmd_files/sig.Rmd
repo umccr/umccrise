@@ -372,7 +372,8 @@ variant_annotation <- unname(region_ann)
 
 #Creating a nice table output for annotations summary
 region_ann_df <- data.frame(table(variant_annotation))
-kable(region_ann_df, caption = "Table summarizing all annotations in the vcf and the total number of variants suppporting these annotations", format = "markdown")
+kable(region_ann_df, caption = "Table summarizing all annotations in the vcf and the total number of variants suppporting these annotations") %>%
+  kable_styling(font_size = 12, "striped", "bordered")
 
 #Calculating mutations per megabase in coding region
 coding_variants = 0
@@ -389,7 +390,8 @@ total_mutations <- c(vcf_number_rows, as.vector(coding_variants[2]))
 mutations_mb <- c(mutations_megabase, mutations_megabase_coding)
 
 result_display <- data.frame(region, total_mutations, mutations_mb) 
-kable(result_display,  caption = "Table summarizing somatic burden result")
+kable(result_display,  caption = "Table summarizing somatic burden result") %>%
+  kable_styling(font_size = 12, "striped", "bordered")
 ```
 
 ## Software Used
