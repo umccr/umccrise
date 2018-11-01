@@ -42,24 +42,30 @@ Install conda
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
-. miniconda/etc/profile.d/conda.sh
+source miniconda/etc/profile.d/conda.sh
 ```
 
 Install umccrise
 
 ```
-conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
-conda activate $(pwd)/miniconda/envs/umccrise
+ENV_NAME=umccrise_dev
+
+conda env create -p $(pwd)/miniconda/envs/${ENV_NAME} --file environment.yml
+conda activate $(pwd)/miniconda/envs/${ENV_NAME}
 pip install -e .
 ```
 
 To automate sourcing in the future, you can create a loader script
 
 ```
+ENV_NAME=umccrise_dev
+
 cat <<EOT > load_umccrise.sh
-SCRIPTPATH=\$(readlink -e $(pwd))
-. \$SCRIPTPATH/miniconda/etc/profile.d/conda.sh
-conda activate \$SCRIPTPATH/miniconda/envs/umccrise
+unset PYTHONPATH
+unset PERL5LIB
+MC=\$(readlink -e $(pwd))/miniconda
+source \${MC}/etc/profile.d/conda.sh
+conda activate \${MC}/envs/${ENV_NAME}
 EOT
 ```
 
@@ -85,9 +91,9 @@ gdown https://drive.google.com/uc?id=12q3rr7xpdBfaefRi0ysFHbH34kehNZOV -O - | aw
 
 ```
 source load_umccrise.sh
-git pull                                                             # if the code base changed
-conda env update -f environment.yml                                  # if dependencies changed
-./setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
+git pull                                                                  # if the code base changed
+conda env update -f environment.yml                                       # if dependencies changed
+python setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
 ```
 
 ## Testing
