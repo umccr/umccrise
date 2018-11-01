@@ -1,0 +1,15 @@
+# Environment for dockerized umccrise version (envoked with `--docker`) and runs snakemake pipeline withing container
+
+name: umccrise
+
+channels:
+  - vladsaveliev
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python==3.6
+  - click
+  - ngs_utils>=2.0.4
+  - nose

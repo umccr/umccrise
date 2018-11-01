@@ -259,7 +259,7 @@ bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
 Create minimal environment
 
 ```
-conda env create --file dev_extras/environment_wrapper.yml
+conda env create --file deploy/env_docker_wrapper.yml
 conda activate umccrise
 pip install -e .
 ```
@@ -287,7 +287,6 @@ umccrise --docker \
     --bcbio-genomes umccrise_test_data/data/genomes \
     --pon umccrise_test_data/data/panel_of_normals
 ```
-
 
 
 
