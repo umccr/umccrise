@@ -3,8 +3,8 @@ name: umccrise
 channels:
   - vladsaveliev
   - pdiakumis
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 
 dependencies:
@@ -35,12 +35,12 @@ dependencies:
   # - tabix     # for test data generation
   - goleft
   - awscli
-  - pyasn1 # for awscli - for some reason doesn't install automatically on macos
+  - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - parallel
   - cnvkit
   - multiqc
-  - networkx   # for snakemake report
-  - pygraphviz # for snakemake report
+  # - networkx   # for snakemake report
+  # - pygraphviz # for snakemake report
   # R libraries
   - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - r
