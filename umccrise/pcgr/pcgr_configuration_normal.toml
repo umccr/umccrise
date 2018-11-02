@@ -155,3 +155,4 @@ n_vcfanno_proc = 4
 n_vep_forks = 4
 ## omit intergenic variants during VEP processing
 vep_skip_intergenic = false
+vcf2maf = true

@@ -16,7 +16,7 @@ setup(
     url='https://github.com/umccr/umccrise',
     license='GPLv3',
     package_data={
-        name: setup_utils.find_package_files('', name)
+        name: setup_utils.find_package_files('', name),
     },
     packages=find_packages(),
     scripts=[
