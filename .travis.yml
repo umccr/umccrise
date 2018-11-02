@@ -3,44 +3,29 @@ dist: trusty
 
 language: python
 python:
-  # We don't actually use the Travis Python (since we are on conda), but this keeps it organized.
-  - "3.6"
+  - "3.6"  # used below as $TRAVIS_PYTHON_VERSION in conda install command
+
+before_install:
+  - export PACKAGE_NAME=umccrise
+
+  # Get and install anaconda (https://conda.io/docs/travis.html)
+  - wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH=$HOME/miniconda/bin:$PATH
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a  # Useful for debugging any issues with conda
+  - conda config --set always_yes true
+  - conda config --set anaconda_upload no
 
 install:
-  ##########################################
-  ## To pull cached miniconda and update: ##
-  ##########################################
-  # Get and install anaconda (https://conda.io/docs/travis.html) and packages
-  - if [ -d $HOME/miniconda ]; then echo "ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;
-  - if [ ! -d $HOME/miniconda/bin ] ; then
-      if [ -d $HOME/miniconda ] ; then rm -rf $HOME/miniconda ; fi ;
-      wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
-      bash miniconda.sh -b -p $HOME/miniconda ;
-      export PATH=$HOME/miniconda/bin:$PATH ;
-      hash -r ;
-      conda config --set always_yes yes --set changeps1 no ;
-      conda update -q conda ;
-      conda env create -n umccrise --file environment.yml ;
-    else
-      export PATH=$HOME/miniconda/bin:$PATH ;
-      echo "else ls HOME/miniconda:" ; ls $HOME/miniconda ;
-      conda config --set always_yes yes --set changeps1 no ;
-      conda env update -f environment.yml ;
-    fi
+  - conda env create -n umccrise --file environment.yml
   - source activate umccrise
-  # Useful for debugging any issues with conda
-  - conda info -a
   # Installing the codebase (source code was automatically cloned into CWD by Travis)
   - pip install -e .
-  - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock', ref = 'umccrise')"
   # Clone the test data
   - git clone https://github.com/umccr/umccrise_test_data
-
-# Skip caching for now so we can remove miniconda folder and save space for deploy. Consider
-#cache:
-#  directories:
-#  - $HOME/miniconda
-#  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
 script:
   - nosetests --nocapture umccrise_test_data/test.py -a normal
