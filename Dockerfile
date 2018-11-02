@@ -54,8 +54,10 @@ COPY VERSION.txt umccrise/VERSION.txt
 
 RUN pip install -e umccrise
 
-
-# Install PCGR
+### Install PCGR
+# for R's devtools:
+ln -s /bin/tar /bin/gtar
+sudo ln -s /bin/gzip /usr/bin/gzip
 RUN git clone https://github.com/vladsaveliev/pcgr -b before_september /pcgr && \
     bash /pcgr/install_no_docker/install.sh --skip-validation
 
