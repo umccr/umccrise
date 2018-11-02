@@ -9,6 +9,7 @@ channels:
 
 dependencies:
   - python==3.6
+  - ngs_utils
   - cython
   - bcftools>=1.9
   - bedtools
@@ -24,9 +25,9 @@ dependencies:
   - snakemake-minimal
   - nose
   - pip:
+    - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
     - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
-    - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
   #
   # Umccrise-specific
   - natsort  # for bcbio.py in ngs_utils
