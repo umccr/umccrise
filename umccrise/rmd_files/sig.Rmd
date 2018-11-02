@@ -37,7 +37,6 @@ library(MutationalPatterns)
 library(BSgenome)
 library(devtools)
 library(stringr)
-library(rock)
 ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
 library(ref_genome, character.only = TRUE)
 tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
@@ -255,16 +254,16 @@ plot_circos(sv = sv, cnv = cnv)
 ```
 
 ## PerlCircos (Manta + CNVkit)
-
-```{r circos-prep, eval=TRUE, message=TRUE, warning=TRUE}
-out_dir <- file.path(params$workdir, "circos", params$tumor_name)
-circos_prep(outdir = out_dir, manta = params$manta_vcf, cnv = params$cnvkit_calls)
-plot_circos2(outdir = out_dir, name = params$tumor_name)
-```
-
-```{r circos-manta-cnvkit2, out.width='80%'}
-knitr::include_graphics(file.path(out_dir, paste0(params$tumor_name, "_circos_cnvkit_manta.png")))
-```
+#
+# ```{r circos-prep, eval=TRUE, message=TRUE, warning=TRUE}
+# out_dir <- file.path(params$workdir, "circos", params$tumor_name)
+# circos_prep(outdir = out_dir, manta = params$manta_vcf, cnv = params$cnvkit_calls)
+# plot_circos2(outdir = out_dir, name = params$tumor_name)
+# ```
+#
+# ```{r circos-manta-cnvkit2, out.width='80%'}
+# knitr::include_graphics(file.path(out_dir, paste0(params$tumor_name, "_circos_cnvkit_manta.png")))
+# ```
 
 
 ## Transcriptional strand bias analysis
