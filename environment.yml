@@ -60,8 +60,7 @@ dependencies:
   - bioconductor-genomeinfodbdata
   - bioconductor-omiccircos  # for Peter's circos rock
   - libgfortran-ng
-  - r-rock                 # from pdiakumis channel
-  - r-kableextra                 # from pdiakumis channel
+  - r-kableextra             # from pdiakumis channel
   - r-vcfr
   - r-devtools
   - r-readr
