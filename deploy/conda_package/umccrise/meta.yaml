@@ -14,12 +14,14 @@ build:
 
 requirements:
   build:
-    - python
+    - python ==3.6
+    - ngs_utils >=2.3.16
     - pip
     - setuptools
     - numpy
   run:
-    - python==3.6
+    - python ==3.6
+    - ngs_utils >=2.3.16
     - cython
     - bcftools>=1.9
     - bedtools
