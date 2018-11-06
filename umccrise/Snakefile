@@ -60,7 +60,7 @@ def prep_inputs(config_):
             critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
                      f'Check yaml file for available options: {run.bcbio_yaml_fpath}')
         critical(f'Error: could not parse any batch or samples in the bcbio project. '
-                 f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}.')
+                 f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}')
 
     # Batch objects index by tumor sample names
     batches = [b for b in run.batch_by_name.values() if not b.is_germline() and b.tumor and b.normal]
