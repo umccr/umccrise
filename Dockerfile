@@ -56,10 +56,10 @@ RUN pip install -e umccrise
 
 ### Install PCGR
 # for R's devtools:
-RUN ln -s /bin/tar /bin/gtar && \
-    ln -s /bin/gzip /usr/bin/gzip && \
-    git clone https://github.com/vladsaveliev/pcgr -b before_september /pcgr && \
-    bash /pcgr/install_no_docker/install.sh --skip-validation
+#RUN ln -s /bin/tar /bin/gtar && \
+#    ln -s /bin/gzip /usr/bin/gzip && \
+#    git clone https://github.com/vladsaveliev/pcgr -b before_september /pcgr && \
+#    bash /pcgr/install_no_docker/install.sh --skip-validation
 
 # Clean up
 RUN rm -rf umccrise/.git && \

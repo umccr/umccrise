@@ -74,10 +74,6 @@ Install PCGR
 The PCGR data bundle gets refreshed every release, so please select the appropriate one from [PCGR's README](https://github.com/sigven/pcgr#step-2-download-pcgr-and-data-bundle)!
 
 ```bash
-# Clone the fork that is decoupled from Docker and install
-git clone https://github.com/vladsaveliev/pcgr
-bash -x pcgr/install_no_docker/install.sh
-
 # Download the data bundles
 pip install gdown
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | tar xvfz - # hg19
