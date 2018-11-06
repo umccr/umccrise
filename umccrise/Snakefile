@@ -173,6 +173,7 @@ include: "structural.smk"
 include: "igv.smk"
 include: "pcgr.smk"
 include: "rmd.smk"
+include: "purple.smk"
 
 
 localrules: multiqc, copy_logs, umccrise
@@ -215,6 +216,7 @@ rule umccrise:
         rules.small_variants.output,
         rules.rmd.output,
         (rules.pcgr.output if pcgr_installation else rules.pcgr_prep.output),
-        rules.igv.output
+        rules.igv.output,
+        rules.purple.output,
     output:
         temp(touch('log/umccrised.done'))

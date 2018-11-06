@@ -27,7 +27,7 @@ rule goleft_depth:
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
 rule goleft_plots:
     input:
-        bam = lambda wc: batch_by_name[wc.batch].tumor.bam
+        bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
     params:
         directory = '{batch}/coverage/{batch}-indexcov',
         xchr = 'X' if run.genome_build == 'GRCh37' else 'chrX'
