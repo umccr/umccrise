@@ -217,6 +217,6 @@ rule umccrise:
         rules.rmd.output,
         (rules.pcgr.output if pcgr_installation else rules.pcgr_prep.output),
         rules.igv.output,
-        rules.purple.output,
+        (rules.purple.output if loc.get('purple') else []),
     output:
         temp(touch('log/umccrised.done'))
