@@ -42,14 +42,13 @@ from umccrise import package_path
                                       'validation/giab-NA12878/truth_regions.bed)')
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
-@click.option('--pcgr-data', help='Path to the PCGR reference data folder (for dockerized version only)')
-@click.option('--pcgr', help='Path to PCGR installation dir')
+@click.option('--pcgr-data', help='Path to the PCGR reference data folder')
 @click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
 
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
          jobs=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
          pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None,
-         docker_wrapper_mode=False, pcgr_data=None, pcgr=None, no_s3=None):
+         docker_wrapper_mode=False, pcgr_data=None, no_s3=None):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -101,14 +100,9 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
             conf['truth_regions'] = docker_mounts[truth_regions] = '/truth_regions.bed'
 
     if pcgr_data:
-        assert docker_wrapper_mode, '--pcgr-data is only for dockerized more (set the --docker flag)'
-        pcgr_data = verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
-        logger.info(f'Running PCGR in a dockerized mode, assuming that {pcgr_data} if a path to PCGR data directory')
-        docker_mounts[pcgr_data] = '/pcgr/data'
-        conf['pcgr'] = '/pcgr'
-    if pcgr:
-        conf['pcgr'] = verify_dir(pcgr, is_critical=True, description='PCGR installation directory')
-        verify_dir(join(pcgr, 'data'), is_critical=True, description='PCGR data directory')
+        conf['pcgr_data'] = verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
+        if docker_wrapper_mode:
+            conf['pcgr_data'] = docker_mounts[pcgr_data] = '/pcgr/data'
 
     if docker_wrapper_mode:
         if not bcbio_genomes and not ref_fasta:

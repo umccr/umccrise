@@ -9,10 +9,12 @@ from ngs_utils.logger import critical, info, debug
 from ngs_utils import logger as ngs_utils_logger
 from hpc_utils.hpc import find_loc, get_ref_file
 from ngs_utils.reference_data import get_key_genes_bed
+from umccrise import package_path
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
 threads_max = 32  # Use up to 32 cores at once, if available
+conda_cmd = 'source ${{CONDA_PREFIX}}/../../etc/profile.d/conda.sh && conda activate ${{CONDA_PREFIX}}_'
 
 
 loc = find_loc()
@@ -74,7 +76,7 @@ def prep_inputs(config_):
     ref_fa = config_.get('ref_fasta')
     truth_regions = config_.get('truth_regions')
     pon_dir = config_.get('panel_of_normals')
-    pcgr_installation = config_.get('pcgr')
+    pcgr_data = config_.get('pcgr_data')
 
     ##################################################
     #### Bcbio reference genomes folder provided? ####
@@ -110,8 +112,8 @@ def prep_inputs(config_):
         truth_regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
     if not pon_dir:
         pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
-    if not pcgr_installation and loc:
-        pcgr_installation = loc.pcgr_dir
+    if not pcgr_data and loc:
+        pcgr_data = loc.pcgr_data
 
     ###########################################################
     #### Done looking for refernece files, now some checks ####
@@ -128,9 +130,8 @@ def prep_inputs(config_):
         verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz'), is_critical=True, description='Panel of normals indels file in user provided folder')
         verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
 
-    if pcgr_installation:
-        verify_dir(pcgr_installation, is_critical=True, description='PCGR installation directory')
-        verify_dir(join(pcgr_installation, 'data'), is_critical=True, description='PCGR data directory')
+    if pcgr_data:
+        verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
         if not within_sub_workflow:
             info('PCGR is available')
 
@@ -139,10 +140,10 @@ def prep_inputs(config_):
     ####################################
     key_genes_bed = get_key_genes_bed(run.genome_build)
 
-    return run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, pcgr_installation
+    return run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, pcgr_data
 
 
-run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, pcgr_installation = prep_inputs(config)
+run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, pcgr_data = prep_inputs(config)
 GERMLINE_SUFFIX = '-germline'
 if any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-ensemble-annotated.vcf.gz'))
        for b in batch_by_name.keys()):
@@ -215,8 +216,8 @@ rule umccrise:
         rules.structural.output,
         rules.small_variants.output,
         rules.rmd.output,
-        (rules.pcgr.output if pcgr_installation else rules.pcgr_prep.output),
+        (rules.pcgr.output if pcgr_data else rules.pcgr_prep.output),
         rules.igv.output,
-        (rules.purple.output if loc.get('purple') else []),
+        rules.purple.output,
     output:
         temp(touch('log/umccrised.done'))

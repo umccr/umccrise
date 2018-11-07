@@ -22,25 +22,25 @@ from umccrise import package_path
 @click.option('-s', 'sample')
 @click.option('--germline', is_flag=True)
 @click.option('--docker/--no-docker', 'use_docker', is_flag=True, default=None)
-@click.option('--pcgr-dir', type=click.Path(exists=True), help='Path to PCGR installation (defaults are known for spartan and raijin)')
-def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, use_docker=None, pcgr_dir=None):
+@click.option('--pcgr-data', type=click.Path(exists=True), help='Path to PCGR data directory (defaults are known for spartan and raijin)')
+def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, use_docker=None, pcgr_data=None):
+    # TODO: no need now for /data to be at the same folder as pcgr, can point to basedir of `data` directly and run pcgr as conda pacakge
 
-    if not pcgr_dir:
+    if not pcgr_data:
         from hpc_utils.hpc import find_loc
         loc = find_loc()
-        pcgr_dir = loc.pcgr_dir
-        if not pcgr_dir:
-            logger.critical(f'PCGR is not found on the system "{loc.name}".'
-                            f' Please, provide the path to PCGR installation with --pcgr-dir. '
-                            f' To install it, pull `git clone https://github.com/vladsaveliev/pcgr`'
-                            f' and run `bash pcgr/install_no_docker/install.sh`')
+        pcgr_data = loc.pcgr_data
+        if not pcgr_data:
+            logger.critical(f'PCGR data is not found on the system "{loc.name}".'
+                            f' Please, provide the path to PCGR data with --pcgr-data.'
+                            f' Follow `https://github.com/vladsaveliev/pcgr` to get it.')
     output_dir = output_dir or 'pcgrred'
     output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
     logger.init(log_fpath_=join(output_dir, 'pcgr.log'), save_previous=True)
 
-    somatic_toml = join(package_path(), 'pcgr', 'pcgr_configuration_somatic.toml')
-    germline_toml = join(package_path(), 'pcgr', 'pcgr_configuration_normal.toml')
+    pcgr_toml = join(package_path(), 'pcgr', 'pcgr.toml')
+    cpsr_toml = join(package_path(), 'pcgr', 'cpsr.toml')
     sample = sample or splitext_plus(basename(vcf_path))[0]
     pcgr_genome = "grch38" if genome in ["hg38", "GRCh38"] else "grch37"
     expected_report_path = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}.html')
@@ -61,27 +61,40 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
                 use_docker = True
 
     rlibs_env = ''
-    if not use_docker:
-        r_pcgrr_dir_ori = join(pcgr_dir, 'src', 'R', 'pcgrr')
-        r_pcgrr_dir_dst = safe_mkdir(join(output_dir, 'work', sample))
-        info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: '
-             f'{r_pcgrr_dir_ori} -> {r_pcgrr_dir_dst}')
-        os.environ['R_LIBS'] = r_pcgrr_dir_dst + ':' + os.environ.get('R_LIBS', '')
-        rlibs_env = f'R_LIBS={r_pcgrr_dir_dst}'
-        run(f'{rlibs_env} R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
+    # if not use_docker:
+    #     r_pcgrr_dir_ori = join(pcgr_dir, 'src', 'R', 'pcgrr')
+    #     r_pcgrr_dir_dst = safe_mkdir(join(output_dir, 'work', sample))
+    #     info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: '
+    #          f'{r_pcgrr_dir_ori} -> {r_pcgrr_dir_dst}')
+    #     os.environ['R_LIBS'] = r_pcgrr_dir_dst + ':' + os.environ.get('R_LIBS', '')
+    #     rlibs_env = f'R_LIBS={r_pcgrr_dir_dst}'
+    #     run(f'{rlibs_env} R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
 
-    cmd = (f'{rlibs_env}'
-           f' {join(pcgr_dir, "pcgr.py")}'
-           f' --input_vcf {abspath(vcf_path)}'
-           f' {("--input_cna " + abspath(cnv_path)) if cnv_path else ""}'
-           f' {pcgr_dir}'
-           f' {output_dir}'
-           f' {pcgr_genome}'
-           f' {somatic_toml if not germline else germline_toml}'
-           f' {sample}'
-           f' {" --docker-uid root" if use_docker else " --no-docker"}'
-           f' --force_overwrite'
-    )
+    if germline:
+        cmd = (f'{rlibs_env}'
+               f' pcgr.py'
+               f' --input_vcf {abspath(vcf_path)}'
+               f' {("--input_cna " + abspath(cnv_path)) if cnv_path else ""}'
+               f' {dirname(pcgr_data)}'
+               f' {output_dir}'
+               f' {pcgr_genome}'
+               f' {pcgr_toml}'
+               f' {sample}'
+               f' {" --docker-uid root" if use_docker else " --no-docker"}'
+               f' --force_overwrite'
+        )
+    else:
+        cmd = (f'{rlibs_env}'
+               f' cpsr.py'
+               f' --input_vcf {abspath(vcf_path)}'
+               f' {dirname(pcgr_data)}'
+               f' {output_dir}'
+               f' {pcgr_genome}'
+               f' {cpsr_toml}'
+               f' {sample}'
+               f' {" --docker-uid root" if use_docker else " --no-docker"}'
+               f' --force_overwrite'
+        )
 
     print(cmd)
     exit_code = subprocess.call(cmd, shell=True)

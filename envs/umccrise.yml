@@ -38,14 +38,14 @@ dependencies:
   - awscli
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - parallel
-  - cnvkit
   - multiqc
   # - networkx   # for snakemake report
   # - pygraphviz # for snakemake report
   # R libraries
-  - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
-  - r
-  - r-rmarkdown
+  # - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
+  - r-base
+  - pandoc
+  - r-rmarkdown >=1.6
   - r-ggplot2
   - r-tidyr
   - r-dt
@@ -67,10 +67,11 @@ dependencies:
   - r-readr
   - r-stringr
   - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
-  - circos=0.69.6         # for circos
-  - libgd=2.2.5=3         # for circos
-  - perl=5.22.0           # for circos
-  - bioconductor-copynumber=1.18.0   # for purple
-  - sambamba                         # for purple
-  - java-jdk                         # for purple
-  - pcgr
+#  - circos=0.69.6         # for circos
+#  - libgd=2.2.5=3         # for circos
+#  - perl                  # for circos
+#  - bioconductor-copynumber=1.18.0   # for purple
+#  - sambamba                         # for purple
+#  - java-jdk                         # for purple
+#  - pcgr  # [not osx]
+#  - toml  # [osx]

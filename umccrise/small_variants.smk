@@ -14,8 +14,8 @@ rule somatic_vcf_prep:  # {batch}
     input:
         vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-ensemble-annotated.vcf.gz')
     output:
-        vcf = '{batch}/work/small_variants/somatic-ensemble-prep.vcf.gz',
-        tbi = '{batch}/work/small_variants/somatic-ensemble-prep.vcf.gz.tbi'
+        vcf = 'work/{batch}/small_variants/somatic-ensemble-prep.vcf.gz',
+        tbi = 'work/{batch}/small_variants/somatic-ensemble-prep.vcf.gz.tbi'
     shell:
         'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -Oz -o {output.vcf}'
@@ -28,8 +28,8 @@ rule somatic_vcf_filter_af:  # {batch}
     params:
         min_af = 0.1
     output:
-        vcf = '{batch}/work/small_variants/somatic-ensemble-prep-min_af.vcf.gz',
-        tbi = '{batch}/work/small_variants/somatic-ensemble-prep-min_af.vcf.gz.tbi'
+        vcf = 'work/{batch}/small_variants/somatic-ensemble-prep-min_af.vcf.gz',
+        tbi = 'work/{batch}/small_variants/somatic-ensemble-prep-min_af.vcf.gz.tbi'
     shell:
         'bcftools filter -e "TUMOR_AF<{params.min_af}" {input.vcf} -Oz -o {output.vcf} && tabix {output.vcf}'
 
@@ -68,8 +68,8 @@ rule germline_vcf_subset:  # {batch}
         vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}{GERMLINE_SUFFIX}-ensemble-annotated.vcf.gz'),
         ensg = get_cancer_genes_ensg()
     output:
-        vcf = '{batch}/work/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz',
-        tbi = '{batch}/work/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz.tbi'
+        vcf = 'work/{batch}/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz',
+        tbi = 'work/{batch}/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz.tbi'
     params:
         ungz = lambda wc, output: get_ungz_gz(output[0])[0]
     shell:

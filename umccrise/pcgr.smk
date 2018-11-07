@@ -10,6 +10,9 @@ localrules: pcgr_somatic_vcf, pcgr_germline_vcf, pcgr_cns, pcgr_symlink_somatic,
 from ngs_utils.file_utils import which
 
 
+ENV = 'pcgr'
+
+
 ######################
 ### Preparing inputs
 
@@ -56,7 +59,7 @@ rule run_pcgr_local_somatic:
         vcf = rules.pcgr_somatic_vcf.output.vcf,
         tbi = rules.pcgr_somatic_vcf.output.tbi,
         cns = rules.pcgr_cns.output[0],
-        pcgr_dir = pcgr_installation
+        pcgr_data = pcgr_data
     output:
         '{batch}/pcgr/{batch}-somatic.pcgr_acmg.html'
     params:
@@ -68,14 +71,15 @@ rule run_pcgr_local_somatic:
         mem_mb=lambda wildcards, attempt: attempt * 20000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
     shell:
-        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} ' \
-        '{params.opt} --pcgr-dir {input.pcgr_dir}'
+        conda_cmd + ENV + ' && '
+        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} '
+        '{params.opt} --pcgr-data {input.pcgr_data}'
 
 rule run_pcgr_local_germline:
     input:
         vcf = rules.pcgr_germline_vcf.output.vcf,
         tbi = rules.pcgr_germline_vcf.output.tbi,
-        pcgr_dir = pcgr_installation
+        pcgr_data = pcgr_data
     output:
         '{batch}/pcgr/{batch}-normal.pcgr_acmg.html'
     params:
@@ -86,8 +90,9 @@ rule run_pcgr_local_germline:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 2000
     shell:
-        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline ' \
-        '{params.opt} --pcgr-dir {input.pcgr_dir}'
+        conda_cmd + ENV + ' && '
+        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
+        '{params.opt} --pcgr-data {input.pcgr_data}'
 
 rule pcgr_symlink_somatic:
     input:
@@ -234,7 +239,7 @@ rule pcgr:
 #     #      if config.get('download_pcgr')
 #     #      else ('{batch}/pcgr/{batch}' + uid_suffix + '-{phenotype}.pcgr.download_status'))  # if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
 #     params:
-#         targz_folder = '{batch}/work/pcgr',
+#         targz_folder = 'work/{batch}/pcgr',
 #         targz_fname = '{batch}' + uuid_suffix + '-{phenotype}-output.tar.gz',
 #         untar_output_dirname = '{batch}' + uuid_suffix + '-{phenotype}-output',
 #         final_output_folder = '{batch}/pcgr'

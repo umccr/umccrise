@@ -28,14 +28,14 @@ rule cnvkit_cleanup:
         ' > {output}'
 
 #### Plot
-rule cnvkit_plot:
-    input:
-        rules.cnvkit_cleanup.output[0]
-    output:
-        '{batch}/structural/{batch}-cnvkit-diagram.pdf'
-    group: "cnvkit"
-    shell:
-        'cnvkit.py diagram -s {input} -o {output}'
+# rule cnvkit_plot:
+#     input:
+#         rules.cnvkit_cleanup.output[0]
+#     output:
+#         '{batch}/structural/{batch}-cnvkit-diagram.pdf'
+#     group: "cnvkit"
+#     shell:
+#         'cnvkit.py diagram -s {input} -o {output}'
 
 
 #######################
@@ -161,6 +161,5 @@ rule structural:
         expand(rules.bedpe.output, batch=batch_by_name.keys()),
         expand(rules.ribbon.output, batch=batch_by_name.keys()),
         expand(rules.prep_sv_tsv.output, batch=batch_by_name.keys()),
-        expand(rules.cnvkit_plot.output, batch=batch_by_name.keys())
     output:
         temp(touch('log/structural.done'))

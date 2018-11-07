@@ -45,13 +45,16 @@ bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
 source miniconda/etc/profile.d/conda.sh
 ```
 
-Install umccrise
+Install environments
 
 ```
 ENV_NAME=umccrise_dev
 
-conda env create -p $(pwd)/miniconda/envs/${ENV_NAME} --file environment.yml
-conda activate $(pwd)/miniconda/envs/${ENV_NAME}
+conda env create -n ${ENV_NAME} --file envs/umccrise.yml
+conda env create -n ${ENV_NAME}_purple --file envs/purple.yml
+#conda env create -n ${ENV_NAME}_pcgr --file envs/pcgr_macos.yml    # macos
+conda env create -n ${ENV_NAME}_pcgr --file envs/pcgr_linux.yml    # linux
+conda activate ${ENV_NAME}
 pip install -e .
 ```
 
@@ -69,7 +72,7 @@ conda activate \${MC}/envs/${ENV_NAME}
 EOT
 ```
 
-Install PCGR
+Set up PCGR
 
 The PCGR data bundle gets refreshed every release, so please select the appropriate one from [PCGR's README](https://github.com/sigven/pcgr#step-2-download-pcgr-and-data-bundle)!
 
@@ -89,7 +92,7 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 ```
 source load_umccrise.sh
 git pull                                                                  # if the code base changed
-conda env update -f environment.yml                                       # if dependencies changed
+conda env update -f envs/umccrise.yml                                     # if dependencies changed
 python setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
 ```
 
