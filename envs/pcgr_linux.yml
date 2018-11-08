@@ -1,0 +1,13 @@
+name: pcgr
+
+channels:
+  - pcgr
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - pcgr
+  - cpsr
+  - pcgr_dockerized
+  - cpsr_dockerized

@@ -1,0 +1,17 @@
+name: purple
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - sambamba                         # for pileup
+  - samtools                         # for pileup
+  - java-jdk                         # for all purple tools
+  - bioconductor-copynumber=1.18.0   # for purple
+  - circos=0.69.6                    # for circos
+  - libgd=2.2.5=3                    # for circos
+  - perl=5.26.2                      # for circos
+  - hmftools-purple
+  - hmftools-cobalt
