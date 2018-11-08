@@ -8,25 +8,26 @@ tier_model = "pcgr_acmg"
 # If input VCF contains mix of germline/somatic (variants called with no matching control, i.e. tumor-only) set vcf_tumor_only to true
 vcf_tumor_only = false
 
-## if vcf_tumor_only = true, remove variants (SNVs/InDels) with minor allele frequency above the following population-specific thresholds
+## if vcf_tumor_only = true, exclude variants (SNVs/InDels) with minor allele frequency above the following population-specific thresholds
 ## 1000 Genomes Project - WGS data
-#maf_onekg_eur = 0.01
-#maf_onekg_amr = 0.01
-#maf_onekg_afr = 0.01
-#maf_onekg_sas = 0.01
-#maf_onekg_eas = 0.01
-#maf_onekg_global = 0.01
-#
-## remove variants with minor allele frequency above the following population-specific thresholds
+maf_onekg_eur = 0.01
+maf_onekg_amr = 0.01
+maf_onekg_afr = 0.01
+maf_onekg_sas = 0.01
+maf_onekg_eas = 0.01
+maf_onekg_global = 0.01
+
+## exclude variants with minor allele frequency above the following population-specific thresholds
 ## gnomAD - WES data
-#maf_gnomad_nfe = 0.01
-#maf_gnomad_amr = 0.01
-#maf_gnomad_afr = 0.01
-#maf_gnomad_sas = 0.01
-#maf_gnomad_eas = 0.01
-#maf_gnomad_fin = 0.01
-#maf_gnomad_oth = 0.01
-#maf_gnomad_global = 0.01
+maf_gnomad_nfe = 0.01
+maf_gnomad_asj = 0.01
+maf_gnomad_amr = 0.01
+maf_gnomad_afr = 0.01
+maf_gnomad_sas = 0.01
+maf_gnomad_eas = 0.01
+maf_gnomad_fin = 0.01
+maf_gnomad_oth = 0.01
+maf_gnomad_global = 0.01
 
 # exclude variants found in dbSNP (only those not that are not found
 # clinically related and somatic in ClinVar/DoCM)
@@ -67,16 +68,16 @@ mutational_burden = true
 ## Size of coding target region in megabases (defaults to exome ~ 36 Mb)
 ## Note: this should ideally denote the callable target size (i.e. reflecting variable
 ## sequencing depth)
-target_size_mb = 36
+target_size_mb = 36.0
 ## set upper limits to tumor mutational burden tertiles (mutations/Mb)
 tmb_low_limit = 5
 tmb_intermediate_limit = 20
 ## tmb_high = tmb > tmb_intermediate_limit
 
 [cna]
-# thresholds for determination of copy number gains and homozygous deletions
-logR_gain = 0.7
-logR_homdel = -1.1
+## log ratio thresholds for determination of copy number gains and homozygous deletions
+logR_gain = 0.8
+logR_homdel = -0.8
 
 ## mean percent overlap between copy number segment and gene transcripts for reporting of gains/losses in tumor suppressor genes/oncogenes
 cna_overlap_pct = 50
@@ -87,7 +88,7 @@ msi = true
 
 [mutational_signatures]
 ## Identify relative contribution of 30 known mutational signatures (COSMIC) through the deconstructSigs framework
-mutsignatures = false
+mutsignatures = true
 ## deconstructSigs option: number of mutational signatures to limit the search to ('signatures.limit' in whichSignatures)
 mutsignatures_signature_limit = 6
 ## deconstructSigs option: type of trimer count normalization for inference of known mutational signatures, see explanation at https://github.com/raerose01/deconstructSigs"
@@ -144,6 +145,11 @@ Vulvar_Vaginal_Cancer_NOS = false
 ## Choose visual theme of report, any of: "default", "cerulean", "journal", "flatly", "readable", "spacelab", "united", "cosmo", "lumen", "paper", "sandstone", "simplex", or "yeti" (https://bootswatch.com/)
 report_theme = "default"
 
+[custom_tags]
+## list VCF info tags that should be present in JSON and TSV output
+## tags should be comma separated, i.e. custom_tags = "MUTECT2_FILTER,STRELKA_FILTER"
+custom_tags = ""
+
 [other]
 ## Keep/skip VCF validation by https://github.com/EBIvariation/vcf-validator. The vcf-validator checks
 ## that the input VCF is properly encoded. Since the vcf-validator is strict, and with error messages
@@ -157,4 +163,5 @@ n_vcfanno_proc = 4
 n_vep_forks = 4
 ## omit intergenic variants during VEP processing
 vep_skip_intergenic = false
-vcf2maf = true
+## generate a MAF for input VCF using https://github.com/mskcc/vcf2maf
+vcf2maf = false
