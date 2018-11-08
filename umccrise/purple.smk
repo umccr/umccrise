@@ -3,9 +3,7 @@ localrules: purple, purple_symlink, purple_somatic_vcf
 
 import glob
 import shutil
-
-
-ENV = 'purple'
+import platform
 
 
 rule purple_pileup:
@@ -42,7 +40,7 @@ rule purple_amber:
     log:
         'log/purple/{batch}/{batch}.amber.log',
     shell:
-        conda_cmd + ENV + ' && '
+        conda_cmd + 'purple && '
         'java -jar {params.jar} '
         '-sample {wildcards.batch} '
         '-reference {input.normal_mpileup} '
@@ -64,7 +62,7 @@ rule purple_cobalt:
     threads:
         max(1, threads_max // len(batch_by_name))
     shell:
-        conda_cmd + ENV + ' && '
+        conda_cmd + 'purple && '
         'COBALT '
         '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
@@ -94,11 +92,16 @@ rule purple_run:
         somatic_vcf = rules.purple_somatic_vcf.output,
     output:
         'work/{batch}/purple/{batch}.purple.cnv',
+        'work/{batch}/purple/plot/{batch}.circos.png',
     params:
         rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
+        macos_patch = 'export PERL5LIB=' \
+            '$CONDA_PREFIX/lib/site_perl/5.26.2/darwin-thread-multi-2level:' \
+            '$CONDA_PREFIX/lib/perl5/site_perl/5.22.0 && '\
+            if platform.system() == 'Darwin' else ''
     threads:
         max(1, threads_max // len(batch_by_name))
     log:
@@ -106,7 +109,8 @@ rule purple_run:
     conda:
         'envs/purple.yml'
     shell:
-        conda_cmd + ENV + ' && '
+        conda_cmd + 'purple && '
+        '{params.macos_patch} '
         'PURPLE '
         '-run_dir {params.rundir} '
         '-output_dir {params.outdir} '
@@ -121,6 +125,7 @@ rule purple_run:
 rule purple_symlink:
     input:
         'work/{batch}/purple/{batch}.purple.cnv',
+        'work/{batch}/purple/plot/{batch}.circos.png',
     output:
         '{batch}/purple/{batch}.purple.cnv',
         '{batch}/purple/{batch}.purple.circos.png',
