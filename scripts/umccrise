@@ -43,12 +43,13 @@ from umccrise import package_path
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 @click.option('--pcgr-data', help='Path to the PCGR reference data folder')
+@click.option('--no-pcgr', is_flag=True, help='Skip running PCGR and CPSR')
 @click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
 
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
          jobs=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
          pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None,
-         docker_wrapper_mode=False, pcgr_data=None, no_s3=None):
+         docker_wrapper_mode=False, pcgr_data=None, no_pcgr=None, no_s3=None):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -128,6 +129,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
             info()
             no_s3 = True
     conf['no_s3'] = 'yes' if no_s3 else 'no'
+    conf['no_pcgr'] = 'yes' if no_pcgr else 'no'
 
     #########################
     #### Setting cluster ####

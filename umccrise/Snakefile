@@ -131,9 +131,12 @@ def prep_inputs(config_):
         verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
 
     if pcgr_data:
-        verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
-        if not within_sub_workflow:
-            info('PCGR is available')
+        if config_.get('no_pcgr', 'yes'):
+            pcgr_data = False
+        else:
+            verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
+            if not within_sub_workflow:
+                info('PCGR is available')
 
     ####################################
     #### Also loading key genes bed ####

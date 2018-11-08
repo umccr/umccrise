@@ -24,7 +24,6 @@ from umccrise import package_path
 @click.option('--docker/--no-docker', 'use_docker', is_flag=True, default=None)
 @click.option('--pcgr-data', type=click.Path(exists=True), help='Path to PCGR data directory (defaults are known for spartan and raijin)')
 def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, use_docker=None, pcgr_data=None):
-    # TODO: no need now for /data to be at the same folder as pcgr, can point to basedir of `data` directly and run pcgr as conda pacakge
 
     if not pcgr_data:
         from hpc_utils.hpc import find_loc
@@ -67,12 +66,12 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     #     info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: '
     #          f'{r_pcgrr_dir_ori} -> {r_pcgrr_dir_dst}')
     #     os.environ['R_LIBS'] = r_pcgrr_dir_dst + ':' + os.environ.get('R_LIBS', '')
-    #     rlibs_env = f'R_LIBS={r_pcgrr_dir_dst}'
-    #     run(f'{rlibs_env} R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
+    #     rlibs_env = f'R_LIBS={r_pcgrr_dir_dst} '
+    #     run(f'{rlibs_env}R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
 
     if germline:
         cmd = (f'{rlibs_env}'
-               f' pcgr.py'
+               f'pcgr.py'
                f' --input_vcf {abspath(vcf_path)}'
                f' {("--input_cna " + abspath(cnv_path)) if cnv_path else ""}'
                f' {dirname(pcgr_data)}'
@@ -85,7 +84,7 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
         )
     else:
         cmd = (f'{rlibs_env}'
-               f' cpsr.py'
+               f'cpsr.py'
                f' --input_vcf {abspath(vcf_path)}'
                f' {dirname(pcgr_data)}'
                f' {output_dir}'

@@ -10,9 +10,6 @@ localrules: pcgr_somatic_vcf, pcgr_germline_vcf, pcgr_cns, pcgr_symlink_somatic,
 from ngs_utils.file_utils import which
 
 
-ENV = 'pcgr'
-
-
 ######################
 ### Preparing inputs
 
@@ -52,85 +49,91 @@ rule pcgr_cns:
         'awk \'BEGIN {{OFS="\t"}} {{print $1, $2+1, $3, $4}} \''
         '>> {output}'
 
-######################
-### Running PCGR
-rule run_pcgr_local_somatic:
-    input:
-        vcf = rules.pcgr_somatic_vcf.output.vcf,
-        tbi = rules.pcgr_somatic_vcf.output.tbi,
-        cns = rules.pcgr_cns.output[0],
-        pcgr_data = pcgr_data
-    output:
-        '{batch}/pcgr/{batch}-somatic.pcgr_acmg.html'
-    params:
-        output_dir = '{batch}/pcgr',
-        genome_build = run.genome_build,
-        sample_name = '{batch}-somatic',
-        opt='--no-docker' if not which('docker') else ''
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000
-        # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
-    shell:
-        conda_cmd + ENV + ' && '
-        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} '
-        '{params.opt} --pcgr-data {input.pcgr_data}'
+if pcgr_data:
+    ######################
+    ### Running PCGR
+    rule run_pcgr_local_somatic:
+        input:
+            vcf = rules.pcgr_somatic_vcf.output.vcf,
+            tbi = rules.pcgr_somatic_vcf.output.tbi,
+            cns = rules.pcgr_cns.output[0],
+            pcgr_data = pcgr_data
+        output:
+            '{batch}/pcgr/{batch}-somatic.pcgr_acmg.html'
+        params:
+            output_dir = '{batch}/pcgr',
+            genome_build = run.genome_build,
+            sample_name = '{batch}-somatic',
+            opt='--no-docker' if not which('docker') else ''
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 20000
+            # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
+        shell:
+            conda_cmd + 'pcgr && '
+            'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} '
+            '{params.opt} --pcgr-data {input.pcgr_data}'
 
-rule run_pcgr_local_germline:
-    input:
-        vcf = rules.pcgr_germline_vcf.output.vcf,
-        tbi = rules.pcgr_germline_vcf.output.tbi,
-        pcgr_data = pcgr_data
-    output:
-        '{batch}/pcgr/{batch}-normal.pcgr_acmg.html'
-    params:
-        output_dir = '{batch}/pcgr',
-        genome_build = run.genome_build,
-        sample_name = '{batch}-normal',
-        opt='--no-docker' if not which('docker') else ''
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 2000
-    shell:
-        conda_cmd + ENV + ' && '
-        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
-        '{params.opt} --pcgr-data {input.pcgr_data}'
+    rule run_pcgr_local_germline:
+        input:
+            vcf = rules.pcgr_germline_vcf.output.vcf,
+            tbi = rules.pcgr_germline_vcf.output.tbi,
+            pcgr_data = pcgr_data
+        output:
+            '{batch}/pcgr/{batch}-normal.pcgr_acmg.html'
+        params:
+            output_dir = '{batch}/pcgr',
+            genome_build = run.genome_build,
+            sample_name = '{batch}-normal',
+            opt='--no-docker' if not which('docker') else ''
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 2000
+        shell:
+            conda_cmd + 'pcgr && '
+            'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
+            '{params.opt} --pcgr-data {input.pcgr_data}'
 
-rule pcgr_symlink_somatic:
-    input:
-        rules.run_pcgr_local_somatic.output[0]
-    output:
-        '{batch}/{batch}-somatic.pcgr_acmg.html'
-    params:
-        source = 'pcgr/{batch}-somatic.pcgr_acmg.html'
-    shell:
-        'ln -s {params.source} {output}'
+    rule pcgr_symlink_somatic:
+        input:
+            rules.run_pcgr_local_somatic.output[0]
+        output:
+            '{batch}/{batch}-somatic.pcgr_acmg.html'
+        params:
+            source = 'pcgr/{batch}-somatic.pcgr_acmg.html'
+        shell:
+            'ln -s {params.source} {output}'
 
-rule pcgr_symlink_germline:
-    input:
-        rules.run_pcgr_local_germline.output[0]
-    output:
-        '{batch}/{batch}-normal.pcgr_acmg.html'
-    params:
-        source = 'pcgr/{batch}-normal.pcgr_acmg.html'
-    shell:
-        'ln -s {params.source} {output}'
+    rule pcgr_symlink_germline:
+        input:
+            rules.run_pcgr_local_germline.output[0]
+        output:
+            '{batch}/{batch}-normal.pcgr_acmg.html'
+        params:
+            source = 'pcgr/{batch}-normal.pcgr_acmg.html'
+        shell:
+            'ln -s {params.source} {output}'
 
-######################
-###  Target rules
+    ######################
+    ###  Target rule
 
-rule pcgr_prep:
-    input:
-        expand(rules.pcgr_somatic_vcf.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_germline_vcf.output, batch=batch_by_name.keys())
-    output:
-        temp(touch('log/pcgr_prep.done'))
+    rule pcgr:
+        input:
+            expand(rules.pcgr_symlink_somatic.output, batch=batch_by_name.keys()),
+            expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
+        output:
+            temp(touch('log/pcgr.done'))
 
-rule pcgr:
-    input:
-        expand(rules.pcgr_symlink_somatic.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
-    output:
-        temp(touch('log/pcgr.done'))
+else:
+
+    ######################
+    ###  Target rule
+
+    rule pcgr_prep:
+        input:
+            expand(rules.pcgr_somatic_vcf.output, batch=batch_by_name.keys()),
+            expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
+            expand(rules.pcgr_germline_vcf.output, batch=batch_by_name.keys())
+        output:
+            temp(touch('log/pcgr_prep.done'))
 
 
 
