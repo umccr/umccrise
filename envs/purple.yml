@@ -7,6 +7,7 @@ channels:
 
 dependencies:
   - sambamba                         # for pileup
+  - ldc=1.11.0                       # for sambamba https://github.com/bioconda/bioconda-recipes/issues/11422
   - samtools                         # for pileup
   - java-jdk                         # for all purple tools
   - bioconductor-copynumber=1.18.0   # for purple
