@@ -1,4 +1,4 @@
-localrules: purple, purple_symlink, purple_somatic_vcf
+localrules: purple
 
 
 import glob
@@ -22,14 +22,13 @@ rule purple_pileup:
     shell:
         conda_cmd + 'purple && '
         'sambamba mpileup '
-        '-t {threads} '
         '-o {output} '
+        '-t{threads} '
         '-L <(gunzip -c {input.snp_bed}) '
         '{input.bam} '
-        '--samtools -q 1 '
+        '--samtools -q1 '
         '-f {input.fasta} '
-        '2>&1 | tee {log}'
-        # '2> {log}'
+        '2> >(tee -a {log} >&2)'
 
 rule purple_amber:
     input:
@@ -82,6 +81,7 @@ rule purple_somatic_vcf:
         'work/{batch}/purple/somatic.vcf',
     params:
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
+    group: 'purple_run'
     shell:
         'bcftools view -s {params.tumor_sname} {input} | '
         'bcftools reheader --samples <(echo {wildcards.batch}) > {output}'
@@ -105,6 +105,7 @@ rule purple_run:
             '$CONDA_PREFIX/lib/site_perl/5.26.2/darwin-thread-multi-2level:' \
             '$CONDA_PREFIX/lib/perl5/site_perl/5.22.0 && '\
             if platform.system() == 'Darwin' else ''
+    group: 'purple_run'
     threads:
         max(1, threads_max // len(batch_by_name))
     log:
@@ -135,6 +136,7 @@ rule purple_symlink:
     params:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
+    group: 'purple_run'
     run:
         for img_fpath in glob.glob(f'{params.purple_outdir}/plot/*.png'):
             new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')
