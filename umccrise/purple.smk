@@ -26,7 +26,9 @@ rule purple_pileup:
         '{input.bam} '
         '--samtools -q 1 '
         '-f {input.fasta} '
-        '> {output} 2> {log}'
+        '-o {output} '
+        '2>&1 | tee {log}'
+        # '2> {log}'
 
 rule purple_amber:
     input:
