@@ -23,11 +23,11 @@ rule purple_pileup:
         conda_cmd + 'purple && '
         'sambamba mpileup '
         '-t {threads} '
+        '-o {output} '
         '-L <(gunzip -c {input.snp_bed}) '
         '{input.bam} '
         '--samtools -q 1 '
         '-f {input.fasta} '
-        '-o {output} '
         '2>&1 | tee {log}'
         # '2> {log}'
 
