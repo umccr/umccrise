@@ -14,8 +14,6 @@ dependencies:
   - bcftools>=1.9
   - bedtools
   - samtools
-  - sambamba    # for purple
-  - ldc=1.11.0  # for sambamba https://github.com/bioconda/bioconda-recipes/issues/11422
   - vcfanno
   - vcflib  # for VCF normalisation
   - pythonpy

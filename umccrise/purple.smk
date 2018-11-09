@@ -20,6 +20,7 @@ rule purple_pileup:
     threads:
         max(1, threads_max // len(batch_by_name))
     shell:
+        conda_cmd + 'purple && '
         'sambamba mpileup '
         '-t {threads} '
         '-L <(gunzip -c {input.snp_bed}) '
