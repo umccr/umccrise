@@ -33,7 +33,7 @@ dependencies:
   - natsort  # for bcbio.py in ngs_utils
   # - pybedtools  # for ref data generation
   # - sambamba  # for test data generation
-  # - tabix     # for test data generation
+  - tabix
   - goleft
   - awscli
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
