@@ -1,3 +1,11 @@
+0.9 (10 Nov 2018)
+
+- Integrate Purple
+- Integrate CPSR (PCGR reports for germline variants)
+- Update PCGR
+- Use Arthur's [new list](https://trello.com/c/7j3KFMiL/184-umccr-cancer-genes) of cancer key genes
+- Version releases with `release`
+
 0.8 (7 Aug 2018)
 
 - SV filtering: require all of FILTER fields to be PASS or rejected by sv-prioritizer
