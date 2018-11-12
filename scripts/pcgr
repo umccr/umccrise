@@ -7,10 +7,10 @@ from os.path import isfile, join, dirname, abspath, basename, exists
 import click
 import subprocess
 
-from ngs_utils.call_process import run
+from ngs_utils.call_process import run, run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
 from ngs_utils import logger
-from ngs_utils.logger import info
+from ngs_utils.logger import info, critical, err
 from ngs_utils.utils import set_locale; set_locale()
 from umccrise import package_path
 
@@ -95,18 +95,21 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
                f' --force_overwrite'
         )
 
-    print(cmd)
-    exit_code = subprocess.call(cmd, shell=True)
-    if exit_code != 0:
-        sys.stderr.write('--------\n')
-        sys.stderr.write(f'Error running PCGR.\n')
-        sys.exit(exit_code)
+    try:
+        run_simple(cmd)
+    except subprocess.SubprocessError:
+        err('--------\n')
+        err(f'Error running PCGR.\n')
+        raise
 
     if isfile(expected_report_path):
-        print(f'Result generated as {expected_report_path}. Renaming to {renamed_report_path}')
+        info(f'Result generated as {expected_report_path}. Renaming to {renamed_report_path}')
         rename(expected_report_path, renamed_report_path)
     if isfile(renamed_report_path):
-        print(f'PCGR report: {renamed_report_path}')
+        info(f'PCGR report: {renamed_report_path}')
+    else:
+        err('--------\n')
+        critical('Error running PCGR: report is not produced')
 
 
 if __name__ == '__main__':
