@@ -59,7 +59,7 @@ if pcgr_data:
             cns = rules.pcgr_cns.output[0],
             pcgr_data = pcgr_data
         output:
-            '{batch}/pcgr/{batch}-somatic.pcgr_acmg.html'
+            '{batch}/pcgr/{batch}-somatic.pcgr.html'
         params:
             output_dir = '{batch}/pcgr',
             genome_build = run.genome_build,
@@ -79,7 +79,7 @@ if pcgr_data:
             tbi = rules.pcgr_germline_vcf.output.tbi,
             pcgr_data = pcgr_data
         output:
-            '{batch}/pcgr/{batch}-normal.pcgr_acmg.html'
+            '{batch}/pcgr/{batch}-normal.cpsr.html'
         params:
             output_dir = '{batch}/pcgr',
             genome_build = run.genome_build,
@@ -96,9 +96,9 @@ if pcgr_data:
         input:
             rules.run_pcgr_local_somatic.output[0]
         output:
-            '{batch}/{batch}-somatic.pcgr_acmg.html'
+            '{batch}/{batch}-somatic.pcgr.html'
         params:
-            source = 'pcgr/{batch}-somatic.pcgr_acmg.html'
+            source = 'pcgr/{batch}-somatic.pcgr.html'
         shell:
             'ln -s {params.source} {output}'
 
@@ -106,9 +106,9 @@ if pcgr_data:
         input:
             rules.run_pcgr_local_germline.output[0]
         output:
-            '{batch}/{batch}-normal.pcgr_acmg.html'
+            '{batch}/{batch}-normal.cpsr.html'
         params:
-            source = 'pcgr/{batch}-normal.pcgr_acmg.html'
+            source = 'pcgr/{batch}-normal.cpsr.html'
         shell:
             'ln -s {params.source} {output}'
 

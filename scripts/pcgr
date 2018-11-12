@@ -42,8 +42,6 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     cpsr_toml = join(package_path(), 'pcgr', 'cpsr.toml')
     sample = sample or splitext_plus(basename(vcf_path))[0]
     pcgr_genome = "grch38" if genome in ["hg38", "GRCh38"] else "grch37"
-    expected_report_path = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}.html')
-    renamed_report_path = join(output_dir, f'{sample}.pcgr_acmg.html')
 
     print('use_docker:', use_docker)
     if use_docker is None:
@@ -70,6 +68,8 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     #     run(f'{rlibs_env}R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
 
     if not germline:
+        expected_report_path = join(output_dir, f'{sample}.cpsr.{pcgr_genome}.html')
+        renamed_report_path = join(output_dir, f'{sample}.cpsr.html')
         cmd = (f'{rlibs_env}'
                f'pcgr.py'
                f' --input_vcf {abspath(vcf_path)}'
@@ -83,6 +83,8 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
                f' --force_overwrite'
         )
     else:
+        expected_report_path = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}.html')
+        renamed_report_path = join(output_dir, f'{sample}.pcgr.html')
         cmd = (f'{rlibs_env}'
                f'cpsr.py'
                f' --input_vcf {abspath(vcf_path)}'
