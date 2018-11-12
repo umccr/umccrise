@@ -51,7 +51,7 @@ rule purple_amber:
         mem_mb = 30000
     shell:
         conda_cmd.format('purple') +
-        'java -jar {params.jar} -Xms{params.xms}m -Xmx{params.xmx}m '
+        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
         '-sample {wildcards.batch} '
         '-reference {input.normal_mpileup} '
         '-tumor {input.tumor_mpileup} '
@@ -131,8 +131,8 @@ rule purple_run:
     resources:
         mem_mb = min(50000, 3500*threads_per_batch)
     shell:
-        'circos -modules ; circos -v ; '
         conda_cmd.format('purple') +
+        'circos -modules ; circos -v ; ' +
         '{params.macos_patch} '
         'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
         '-run_dir {params.rundir} '
