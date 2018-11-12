@@ -133,6 +133,7 @@ rule purple_run:
     resources:
         mem_mb = min(50000, 3500*threads_per_batch)
     shell:
+        'circos -modules ; circos -v ; '
         conda_cmd.format('purple') +
         '{params.macos_patch} '
         'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
