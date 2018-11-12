@@ -14,7 +14,9 @@ from umccrise import package_path
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
 threads_max = 32  # Use up to 32 cores at once, if available
-conda_cmd = 'source ${{CONDA_PREFIX}}/../../etc/profile.d/conda.sh && conda activate ${{CONDA_PREFIX}}_'
+
+conda_prefix = os.environ['CONDA_PREFIX']
+conda_cmd = f'source {conda_prefix}/../../etc/profile.d/conda.sh && conda activate {conda_prefix}_'
 
 
 loc = find_loc()
