@@ -69,7 +69,7 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     #     rlibs_env = f'R_LIBS={r_pcgrr_dir_dst} '
     #     run(f'{rlibs_env}R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
 
-    if germline:
+    if not germline:
         cmd = (f'{rlibs_env}'
                f'pcgr.py'
                f' --input_vcf {abspath(vcf_path)}'
