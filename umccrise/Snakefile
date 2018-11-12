@@ -131,7 +131,7 @@ def prep_inputs(config_):
         verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
 
     if pcgr_data:
-        if config_.get('no_pcgr', 'yes'):
+        if config_.get('no_pcgr', 'no') == 'yes':
             pcgr_data = False
         else:
             verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
