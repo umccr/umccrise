@@ -16,11 +16,11 @@ rule purple_pileup:
     log:
         'log/purple/{batch}/{batch}-{phenotype}.mpileup.log'
     benchmark:
-        'benchmarks/{batch}/purple/{batch}-{phenotype}.amber-mpileup.tsv'
+        'benchmarks/{batch}/purple/{batch}-{phenotype}.pileup.tsv'
     threads:
-        max(1, threads_max // len(batch_by_name))
+        threads_per_sample
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000
+        mem_mb = min(50000, 3500*threads_per_sample)
     shell:
         conda_cmd.format('purple') +
         'sambamba mpileup '
@@ -41,11 +41,19 @@ rule purple_amber:
     params:
         outdir = 'work/{batch}/purple/amber',
         jar = join(package_path(), 'amber.jar'),
+        xms = min(10000, 1000*threads_per_batch),
+        xmx = min(50000, 5000*threads_per_batch),
     log:
         'log/purple/{batch}/{batch}.amber.log',
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-amber.tsv'
+    threads:
+        threads_per_batch
+    resources:
+        mem_mb = min(50000, 5000*threads_per_batch)
     shell:
         conda_cmd.format('purple') +
-        'java -jar {params.jar} '
+        'java -jar {params.jar} -Xms{params.xms}m -Xmx{params.xmx}m '
         '-sample {wildcards.batch} '
         '-reference {input.normal_mpileup} '
         '-tumor {input.tumor_mpileup} '
@@ -61,13 +69,19 @@ rule purple_cobalt:
     params:
         outdir = 'work/{batch}/purple/cobalt',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
+        xms = min(10000, 750*threads_per_batch),
+        xmx = min(50000, 3500*threads_per_batch),
     log:
         'log/purple/{batch}/{batch}.cobalt.log'
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-cobalt.tsv'
     threads:
-        max(1, threads_max // len(batch_by_name))
+        threads_per_batch
+    resources:
+        mem_mb = min(50000, 3500*threads_per_batch)
     shell:
         conda_cmd.format('purple') +
-        'COBALT '
+        'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
         '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
         '-tumor {wildcards.batch} '
@@ -106,18 +120,22 @@ rule purple_run:
         macos_patch = 'export PERL5LIB=' \
             '$CONDA_PREFIX/lib/site_perl/5.26.2/darwin-thread-multi-2level:' \
             '$CONDA_PREFIX/lib/perl5/site_perl/5.22.0 && '\
-            if platform.system() == 'Darwin' else ''
+            if platform.system() == 'Darwin' else '',
+        xms = min(10000, 750*threads_per_batch),
+        xmx = min(50000, 3500*threads_per_batch),
     group: 'purple_run'
-    threads:
-        max(1, threads_max // len(batch_by_name))
     log:
         'log/purple/{batch}/{batch}.purple.log'
-    conda:
-        'envs/purple.yml'
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-purple.tsv'
+    threads:
+        threads_per_batch
+    resources:
+        mem_mb = min(50000, 3500*threads_per_batch)
     shell:
         conda_cmd.format('purple') +
         '{params.macos_patch} '
-        'PURPLE '
+        'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
         '-run_dir {params.rundir} '
         '-output_dir {params.outdir} '
         '-ref_sample {params.normal_sname} '
