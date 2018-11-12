@@ -168,6 +168,8 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
             f'{docker_tag} '
         )
 
+    conf["conda_prefix"] = os.environ['CONDA_PREFIX']
+
     snakefile = join(package_path(), 'Snakefile') if not docker_wrapper_mode else '/umccrise/umccrise/Snakefile'
     cmd += (
         f'snakemake '

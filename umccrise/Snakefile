@@ -15,10 +15,6 @@ shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
 threads_max = 32  # Use up to 32 cores at once, if available
 
-conda_prefix = os.environ['CONDA_PREFIX']
-conda_cmd = f'source {conda_prefix}/../../etc/profile.d/conda.sh && conda activate {conda_prefix}_'
-
-
 loc = find_loc()
 is_spartan = loc and loc.name == 'spartan'
 is_raijin = loc and loc.name == 'raijin'
@@ -29,8 +25,14 @@ if is_spartan:
 
 upload_igv = is_hpc and config.get('no_s3', 'no') == 'no'
 
+print('config: ', config.keys())
+print('CONDA_PREFIX: ', os.environ.get('CONDA_PREFIX'))
+
 within_sub_workflow = 'within_sub_workflow' in config
 config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster sub-executions of the Snakefile
+
+conda_sh = abspath(join(config["conda_prefix"], "../../etc/profile.d/conda.sh"))
+conda_cmd = f'source {conda_sh} && conda activate {config["conda_prefix"]}_{{}} && '
 
 
 def prep_inputs(config_):

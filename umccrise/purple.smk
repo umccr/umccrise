@@ -19,8 +19,10 @@ rule purple_pileup:
         'benchmarks/{batch}/purple/{batch}-{phenotype}.amber-mpileup.tsv'
     threads:
         max(1, threads_max // len(batch_by_name))
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000
     shell:
-        conda_cmd + 'purple && '
+        conda_cmd.format('purple') +
         'sambamba mpileup '
         '-o {output} '
         '-t{threads} '
@@ -42,7 +44,7 @@ rule purple_amber:
     log:
         'log/purple/{batch}/{batch}.amber.log',
     shell:
-        conda_cmd + 'purple && '
+        conda_cmd.format('purple') +
         'java -jar {params.jar} '
         '-sample {wildcards.batch} '
         '-reference {input.normal_mpileup} '
@@ -64,7 +66,7 @@ rule purple_cobalt:
     threads:
         max(1, threads_max // len(batch_by_name))
     shell:
-        conda_cmd + 'purple && '
+        conda_cmd.format('purple') +
         'COBALT '
         '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
@@ -113,7 +115,7 @@ rule purple_run:
     conda:
         'envs/purple.yml'
     shell:
-        conda_cmd + 'purple && '
+        conda_cmd.format('purple') +
         '{params.macos_patch} '
         'PURPLE '
         '-run_dir {params.rundir} '

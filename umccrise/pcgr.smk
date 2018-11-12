@@ -69,7 +69,7 @@ if pcgr_data:
             mem_mb=lambda wildcards, attempt: attempt * 20000
             # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
         shell:
-            conda_cmd + 'pcgr && '
+            conda_cmd.format('pcgr') +
             'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} '
             '{params.opt} --pcgr-data {input.pcgr_data}'
 
@@ -88,7 +88,7 @@ if pcgr_data:
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 2000
         shell:
-            conda_cmd + 'pcgr && '
+            conda_cmd.format('pcgr') +
             'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
             '{params.opt} --pcgr-data {input.pcgr_data}'
 
