@@ -50,12 +50,12 @@ Install environments
 ```
 ENV_NAME=umccrise_dev
 
-conda env create -n ${ENV_NAME} --file envs/umccrise.yml
-conda env create -n ${ENV_NAME}_purple --file envs/purple.yml
-#conda env create -n ${ENV_NAME}_pcgr --file envs/pcgr_macos.yml    # macos
-conda env create -n ${ENV_NAME}_pcgr --file envs/pcgr_linux.yml    # linux
+conda env create -n ${ENV_NAME} --file umccrise/envs/umccrise.yml
+conda env create -n ${ENV_NAME}_purple --file umccrise/envs/purple.yml
+#conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
+conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
 conda activate ${ENV_NAME}
-pip install -e .
+pip install -e umccrise
 ```
 
 To automate sourcing in the future, you can create a loader script

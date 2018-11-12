@@ -16,7 +16,6 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a  # Useful for debugging any issues with conda
-  - conda config --set always_yes true
   - conda config --set anaconda_upload no
 
 install:

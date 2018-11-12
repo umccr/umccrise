@@ -23,7 +23,7 @@ rule cnvkit_cleanup:
     group: "cnvkit"
     shell:
         'cat {input}'
-        ' | grep -v ^GL '
+        ' | grep -v ^GL'
         ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\', x.split()[4]]) if not x.startswith(\'chromosome\') else x.split()[:5])"'
         ' > {output}'
 
