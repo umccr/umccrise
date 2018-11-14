@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
-from ngs_utils import setup_utils
+from releazit import get_version, find_package_files
 
-name = 'umccrise'
+pkg = 'umccrise'
 
-version = setup_utils.get_cur_version(name)
+version = get_version(pkg)
 
 setup(
     name='umccrise',
@@ -16,7 +16,7 @@ setup(
     url='https://github.com/umccr/umccrise',
     license='GPLv3',
     package_data={
-        name: setup_utils.find_package_files('', name),
+        pkg: find_package_files('', pkg),
     },
     packages=find_packages(),
     scripts=[
