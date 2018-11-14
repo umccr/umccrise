@@ -38,15 +38,15 @@ rule pcgr_germline_vcf:
 # PCGR also wants a slightly different format for the CNS data:
 rule pcgr_cns:
     input:
-        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
+        '{batch}/purple/{batch}.purple.cnv',
+        # lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
     output:
         '{batch}/pcgr/input/{batch}-somatic-cna.tsv'
     shell:
         'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | '
-        'grep -v ^chromosome | '
+        'grep -v ^# | '
         'grep -v ^GL | '
-        'cut -f 1,2,3,5 | '
-        'awk \'BEGIN {{OFS="\t"}} {{print $1, $2+1, $3, $4}} \''
+        'cut -f 1,2,3,4 | '
         '>> {output}'
 
 if pcgr_data:
