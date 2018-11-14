@@ -210,6 +210,13 @@ WT1 = true
 XPA = true
 XPC = true
 XRCC2 = true
+KLLN = true
+MAP3K6 = true
+NEK1 = true
+NTRK1 = true
+RAD54L = true
+RHNO1 = true
+RTEL1 = true
 
 [maf_limits]
 ## choose upper MAF thresholds for report of unclassified variants
