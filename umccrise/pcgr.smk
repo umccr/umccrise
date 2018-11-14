@@ -43,11 +43,8 @@ rule pcgr_cns:
     output:
         '{batch}/pcgr/input/{batch}-somatic-cna.tsv'
     shell:
-        'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | '
-        'grep -v ^# | '
-        'grep -v ^GL | '
-        'cut -f 1,2,3,4 | '
-        '>> {output}'
+        'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && ' \
+        'cat {input} | grep -v ^# | grep -v ^GL | cut -f1,2,3,4 >> {output}'
 
 if pcgr_data:
     ######################
