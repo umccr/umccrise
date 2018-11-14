@@ -67,9 +67,23 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     #     rlibs_env = f'R_LIBS={r_pcgrr_dir_dst} '
     #     run(f'{rlibs_env}R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
 
-    if not germline:
+    if germline:
         expected_report_path = join(output_dir, f'{sample}.cpsr.{pcgr_genome}.html')
         renamed_report_path = join(output_dir, f'{sample}.cpsr.html')
+        cmd = (f'{rlibs_env}'
+               f'cpsr.py'
+               f' --input_vcf {abspath(vcf_path)}'
+               f' {dirname(pcgr_data)}'
+               f' {output_dir}'
+               f' {pcgr_genome}'
+               f' {cpsr_toml}'
+               f' {sample}'
+               f' {" --docker-uid root" if use_docker else " --no-docker"}'
+               f' --force_overwrite'
+        )
+    else:
+        expected_report_path = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}.html')
+        renamed_report_path = join(output_dir, f'{sample}.pcgr.html')
         cmd = (f'{rlibs_env}'
                f'pcgr.py'
                f' --input_vcf {abspath(vcf_path)}'
@@ -82,21 +96,6 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
         )
-    else:
-        expected_report_path = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}.html')
-        renamed_report_path = join(output_dir, f'{sample}.pcgr.html')
-        cmd = (f'{rlibs_env}'
-               f'cpsr.py'
-               f' --input_vcf {abspath(vcf_path)}'
-               f' {dirname(pcgr_data)}'
-               f' {output_dir}'
-               f' {pcgr_genome}'
-               f' {cpsr_toml}'
-               f' {sample}'
-               f' {" --docker-uid root" if use_docker else " --no-docker"}'
-               f' --force_overwrite'
-        )
-
     try:
         run_simple(cmd)
     except subprocess.SubprocessError:
