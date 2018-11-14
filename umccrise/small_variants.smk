@@ -2,7 +2,9 @@
 #### Somatic ####
 from os.path import isfile, join
 from ngs_utils.file_utils import get_ungz_gz
-from ngs_utils.reference_data import get_cancer_genes_ensg
+from umccrise import package_path
+import cyvcf2
+import toml
 
 
 localrules: small_variants
@@ -62,21 +64,27 @@ rule somatic_vcf_pon_pass:  # {batch}
 
 ##################
 #### Germline ####
-# Annotate any events found in Sean's 105/106 cancer predisposition gene set.
+# Annotate any events found in ~200 cancer predisposition gene set.
 rule germline_vcf_subset:  # {batch}
     input:
         vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}{GERMLINE_SUFFIX}-ensemble-annotated.vcf.gz'),
-        ensg = get_cancer_genes_ensg()
     output:
-        vcf = 'work/{batch}/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz',
-        tbi = 'work/{batch}/small_variants/raw_normal-ensemble-cancer_genes.vcf.gz.tbi'
+        vcf = 'work/{batch}/small_variants/raw_normal-ensemble-predispose_genes.vcf.gz',
+        tbi = 'work/{batch}/small_variants/raw_normal-ensemble-predispose_genes.vcf.gz.tbi'
     params:
         ungz = lambda wc, output: get_ungz_gz(output[0])[0]
-    shell:
-        'zgrep ^# {input.vcf} > {params.ungz}'
-        ' && zgrep -f {input.ensg} {input.vcf} >> {params.ungz}'
-        ' && bgzip {params.ungz}'
-        ' && tabix -p vcf {output.vcf}'
+    run:
+        pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
+        genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
+        inp_vcf = cyvcf2.VCF(input.vcf)
+        ungz = get_ungz_gz(output.vcf)[0]
+        out_vcf = cyvcf2.Writer(ungz, inp_vcf)
+        out_vcf.write_header()
+        for rec in inp_vcf:
+            if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
+                out_vcf.write_record(rec)
+        out_vcf.close()
+        shell('bgzip {ungz} && tabix -p vcf {output.vcf}')
 
 # Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and mitochondria, remove non-PASSed calls.
 # Suites for PCGR, but for all other processing steps too
@@ -84,8 +92,8 @@ rule germline_vcf_prep:
     input:
         vcf = rules.germline_vcf_subset.output.vcf
     output:
-        vcf = '{batch}/small_variants/{batch}-normal-ensemble-cancer_genes.vcf.gz',
-        tbi = '{batch}/small_variants/{batch}-normal-ensemble-cancer_genes.vcf.gz.tbi'
+        vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz',
+        tbi = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz.tbi'
     shell:
         'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -Oz -o {output.vcf}'
