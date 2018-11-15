@@ -91,7 +91,7 @@ if pcgr_data:
             conda_cmd.format('pcgr') +
             'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
             '{params.opt} --pcgr-data {input.pcgr_data} ' \
-            # '|| echo "Failed to run CPSR" >> {output}'
+            '|| echo "Failed to run CPSR" >> {output}'
 
     rule pcgr_symlink_somatic:
         input:

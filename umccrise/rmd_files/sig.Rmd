@@ -235,35 +235,6 @@ if (!is.null(sv_all)) {
 }
 ```
 
-## OmicCircos (Manta + CNVkit)
-
-# * For the internal lines:
-#     - The interchromosomal links take the chromosome colour of mate1 of each breakend pair.
-#     - The intrachromosomal lines are coloured according to the variant type:
-#         - Deletions: Red
-#         - Duplications: Green
-#         - Insertions: Purple
-#         - Inversions: Orange
-
-# ```{r circos-manta-cnvkit, fig.width=7, fig.height=7, warning=FALSE}
-# sv <- prep_manta_vcf(params$manta_vcf)
-# cnv <- prep_cnvkit_seg(params$cnvkit_calls)
-# plot_circos(sv = sv, cnv = cnv)
-# ```
-
-## PerlCircos (Manta + CNVkit)
-#
-# ```{r circos-prep, eval=TRUE, message=TRUE, warning=TRUE}
-# out_dir <- file.path(params$workdir, "circos", params$tumor_name)
-# circos_prep(outdir = out_dir, manta = params$manta_vcf, cnv = params$cnvkit_calls)
-# plot_circos2(outdir = out_dir, name = params$tumor_name)
-# ```
-#
-# ```{r circos-manta-cnvkit2, out.width='80%'}
-# knitr::include_graphics(file.path(out_dir, paste0(params$tumor_name, "_circos_cnvkit_manta.png")))
-# ```
-
-
 ## Transcriptional strand bias analysis
 
 We can determine if a gene mutation is on the transcribed or non-transcribed
