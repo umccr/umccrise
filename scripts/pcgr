@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import platform
 import sys
 from os import rename
 from os.path import isfile, join, dirname, abspath, basename, exists
@@ -49,7 +50,10 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
         try:
             output = subprocess.check_output(check_docker_command, stderr=subprocess.STDOUT, shell=True)
         except subprocess.CalledProcessError:
-            logger.warn('Docker is not installed, trying running in --no-docker mode')
+            if platform.system() == 'Darwin':
+                critical('Docker is not running. Cannot run PCGR without Docker on macOS.')
+            else:
+                logger.warn('Docker is not running Trying running in --no-docker mode.')
         else:
             if len(output) == 0:
                 logger.warn('Docker image sigven/pcgr not found, trying running in --no-docker mode')

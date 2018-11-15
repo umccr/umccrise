@@ -66,10 +66,11 @@ rule somatic_vcf_pon_pass:  # {batch}
 rule somatic_vcf_pon_pass_keygenes:
     input:
         vcf = rules.somatic_vcf_pon_pass.output.vcf,
+        key_genes_bed = key_genes_bed,
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-pon_hardfiltered.keygenes.vcf.gz',
     run:
-        genes = get_genes_from_file(key_genes_bed)
+        genes = get_genes_from_file(input.key_genes_bed)
         inp_vcf = cyvcf2.VCF(input.vcf)
         ungz = get_ungz_gz(output.vcf)[0]
         out_vcf = cyvcf2.Writer(ungz, inp_vcf)
