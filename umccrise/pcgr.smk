@@ -86,11 +86,12 @@ if pcgr_data:
             sample_name = '{batch}-normal',
             opt='--no-docker' if not which('docker') else ''
         resources:
-            mem_mb=lambda wildcards, attempt: attempt * 2000
+            mem_mb=lambda wildcards, attempt: attempt * 20000
         shell:
             conda_cmd.format('pcgr') +
             'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
-            '{params.opt} --pcgr-data {input.pcgr_data} || echo "Failed to run CPSR" >> {output}'
+            '{params.opt} --pcgr-data {input.pcgr_data} ' \
+            # '|| echo "Failed to run CPSR" >> {output}'
 
     rule pcgr_symlink_somatic:
         input:
