@@ -2,6 +2,7 @@ name: pcgr
 
 channels:
   - pcgr
+  - vladsaveliev
   - conda-forge
   - bioconda
   - defaults
@@ -9,3 +10,6 @@ channels:
 dependencies:
   - pcgr_dockerized
   - cpsr_dockerized
+  - bcftools
+  - click
+  - ngs_utils
