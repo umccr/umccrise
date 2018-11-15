@@ -3,10 +3,10 @@ PCGR
 -------------
 Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
 """
-
 localrules: pcgr_somatic_vcf, pcgr_germline_vcf, pcgr_cns, pcgr_symlink_somatic, pcgr_symlink_germline, pcgr_prep, pcgr
 
 
+import subprocess
 from ngs_utils.file_utils import which
 
 
@@ -18,12 +18,14 @@ from ngs_utils.file_utils import which
 rule pcgr_somatic_vcf:
     input:
         vcf = rules.somatic_vcf_pon_pass.output.vcf,
-        tbi = rules.somatic_vcf_pon_pass.output.tbi
+        keygenes_vcf = rules.somatic_vcf_pon_pass_keygenes.output.vcf,
     output:
         vcf = '{batch}/pcgr/input/{batch}-somatic.vcf.gz',
         tbi = '{batch}/pcgr/input/{batch}-somatic.vcf.gz.tbi'
-    shell:
-        'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
+    run:
+        total_vars = int(subprocess.check_output(f'bcftools view -H {input.vcf} | wc -l').strip())
+        vcf = input.vcf if total_vars <= 500_000 else input.keygenes_vcf  # to avoid PCGR choking on too many variants
+        shell(f'cp {vcf}* {dirname(output.vcf)}')
 
 rule pcgr_germline_vcf:
     input:

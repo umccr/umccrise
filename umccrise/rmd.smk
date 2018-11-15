@@ -28,7 +28,7 @@ localrules: rmd
 # Subset to GiaB confident intervals
 rule subset_to_giab:
     input:
-        vcf = rules.pcgr_somatic_vcf.output.vcf
+        vcf = rules.somatic_vcf_pon_pass.output.vcf
     params:
         regions = truth_regions
     output:
@@ -61,18 +61,19 @@ rule afs:
         'bcftools view {input} -s {params.tumor_name} -Ou | '
         'bcftools query -f "%INFO/TUMOR_AF\\n" > {output} && test -e {output}'
 
-rule afs_az300:
+# Intersect with cancer key genes CDS for a table in Rmd
+rule afs_keygenes:
     input:
         vcf = 'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz',
-        az300 = key_genes_bed
+        bed = key_genes_coding_bed
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
-        'work/{batch}/rmd/afs/af_tumor_az300.txt'
+        'work/{batch}/rmd/afs/af_tumor_keygenes.txt'
     group: "subset_for_af"
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
-        ' | bedtools intersect -a stdin -b {input.az300} -header'
+        ' | bedtools intersect -a stdin -b {input.bed} -header'
         ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\\n"'
         ' > {output} && test -e {output}'
 
@@ -102,7 +103,7 @@ rule somatic_to_hg19:
 rule sig_rmd:
     input:
         afs = rules.afs.output[0],
-        afs_az300 = rules.afs_az300.output[0],
+        afs_keygenes = rules.afs_keygenes.output[0],
         vcf = rules.somatic_to_hg19.output[0],
         sv = rules.prep_sv_tsv.output[0],
         sig_rmd = get_sig_rmd_file(),
@@ -126,7 +127,7 @@ Rscript -e "rmarkdown::render('{params.rmd_tmp}', \
 output_file='{params.output_file}', \
 params=list( \
 af_freqs='{input.afs}', \
-af_freqs_az300='{input.afs_az300}', \
+af_freqs_keygenes='{input.afs_keygenes}', \
 vcf_fname='{input.vcf}', \
 sv_fname='{input.sv}', \
 cnvkit_calls='{input.cnvkit_calls}', \

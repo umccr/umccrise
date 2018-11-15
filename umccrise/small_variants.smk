@@ -2,6 +2,7 @@
 #### Somatic ####
 from os.path import isfile, join
 from ngs_utils.file_utils import get_ungz_gz
+from ngs_utils.key_genes_utils import get_genes_from_file
 from umccrise import package_path
 import cyvcf2
 import toml
@@ -61,6 +62,23 @@ rule somatic_vcf_pon_pass:  # {batch}
     shell:
         'bcftools view -f.,PASS -Oz {input} -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
+
+rule somatic_vcf_pon_pass_keygenes:
+    input:
+        vcf = rules.somatic_vcf_pon_pass.output.vcf,
+    output:
+        vcf = '{batch}/small_variants/{batch}-somatic-ensemble-pon_hardfiltered.keygenes.vcf.gz',
+    run:
+        genes = get_genes_from_file(key_genes_bed)
+        inp_vcf = cyvcf2.VCF(input.vcf)
+        ungz = get_ungz_gz(output.vcf)[0]
+        out_vcf = cyvcf2.Writer(ungz, inp_vcf)
+        out_vcf.write_header()
+        for rec in inp_vcf:
+            if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
+                out_vcf.write_record(rec)
+        out_vcf.close()
+        shell('bgzip {ungz} && tabix -p vcf {output.vcf}')
 
 ##################
 #### Germline ####

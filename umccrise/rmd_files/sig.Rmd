@@ -14,7 +14,7 @@ params:
   workdir: '/path/to/tmp'
   vcf_fname: 'ensemble-with_chr_prefix.vcf'
   af_freqs: 'af/af_tumor.txt'
-  af_freqs_az300: 'af/af_tumor_az300.txt'
+  af_freqs_keygenes: 'af/af_tumor_keygenes.txt'
   sv_fname: 'sv-prioritize-manta-pass.tsv'
   cnvkit_calls: 'cnvkit-call.cns'
   manta_vcf: 'manta.vcf'
@@ -59,7 +59,7 @@ render_me <- function() {
       workdir = '/Users/pdiakumis/Desktop/projects/umccr/umccrise/umccrise/rmd_files',
       vcf_fname = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/ensemble-with_chr_prefix.vcf'),
       af_freqs = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor.txt'),
-      af_freqs_az300 = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor_az300.txt'),
+      af_freqs_keygenes = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor_keygenes.txt'),
       sv_fname = file.path(dd, 'gold_standard/bcbio_test_project/cup__cup_tissue/structural/cup__cup_tissue-sv-prioritize-manta-pass.tsv'),
       cnvkit_calls = file.path(dd, 'data/bcbio_test_project/final/cup_tissue/cup-cnvkit-call.cns'),
       manta_vcf = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/structural/ribbon/manta.vcf'),
@@ -75,7 +75,7 @@ render_me()
 
 ## Allelic frequencies
 We can compare the allelic frequencies of all detected somatic mutations (Global) 
-vs. those present in a subset of 300 known cancer genes (AZ300 panel). 
+vs. those present in a subset of ~1300 cancer genes.
 Frequencies are currently based on MuTect2 
 calls only and limited to 'high confidence' regions as determined by the 
 [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/).
@@ -85,14 +85,14 @@ calls only and limited to 'high confidence' regions as determined by the
 af_global <- readr::read_tsv(params$af_freqs, col_names = "af", col_types = "d") %>%
   dplyr::mutate(set = "Global")
 
-# AZ300 gene set AF
-af_az300 <- readr::read_tsv(params$af_freqs_az300, 
-                            col_names = c("chrom", "pos", "id", "ref", "alt", "af", "ann"), 
-                            col_types = "cicccdc") %>%
+# Coding regions in cancer key genes set AF
+af_keygenes <- readr::read_tsv(params$af_freqs_keygenes,
+                               col_names = c("chrom", "pos", "id", "ref", "alt", "af", "ann"),
+                               col_types = "cicccdc") %>%
   dplyr::select(af) %>% 
-  dplyr::mutate(set = 'AZ300')
+  dplyr::mutate(set = 'keygenes')
 
-af_both <- dplyr::bind_rows(af_global, af_az300)
+af_both <- dplyr::bind_rows(af_global, af_keygenes)
 
 ggplot(data = af_both, aes(af)) +
   geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#0047ab") +
