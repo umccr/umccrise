@@ -1,5 +1,5 @@
 from os.path import join
-from ngs_utils.reference_data import get_suppressors
+from ngs_utils.reference_data import get_suppressors, get_key_genes_bed
 from umccrise import get_sig_rmd_file, get_signatures_probabilities
 
 
@@ -65,7 +65,7 @@ rule afs:
 rule afs_keygenes:
     input:
         vcf = 'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz',
-        bed = key_genes_coding_bed
+        bed = get_key_genes_bed(run.genome_build, coding_only=True),
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:

@@ -8,7 +8,6 @@ from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug
 from ngs_utils import logger as ngs_utils_logger
 from hpc_utils.hpc import find_loc, get_ref_file
-from ngs_utils.reference_data import get_key_genes_bed
 from umccrise import package_path
 
 shell.executable(os.environ.get('SHELL', 'bash'))
@@ -142,16 +141,10 @@ def prep_inputs(config_):
             if not within_sub_workflow:
                 info('PCGR is available')
 
-    ####################################
-    #### Also loading key genes bed ####
-    ####################################
-    key_genes_bed = get_key_genes_bed(run.genome_build)
-    key_genes_coding_bed = get_key_genes_bed(run.genome_build, coding_only=True)
-
-    return run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, key_genes_coding_bed, pcgr_data
+    return run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data
 
 
-run, batch_by_name, ref_fa, truth_regions, pon_dir, key_genes_bed, key_genes_coding_bed, pcgr_data = prep_inputs(config)
+run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data = prep_inputs(config)
 GERMLINE_SUFFIX = '-germline'
 if any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-ensemble-annotated.vcf.gz'))
        for b in batch_by_name.keys()):

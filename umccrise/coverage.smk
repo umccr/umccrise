@@ -1,7 +1,9 @@
 ## Cancer gene coverage
 
-
 localrules: coverage
+
+
+from ngs_utils.reference_data import get_key_genes_bed
 
 
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
@@ -10,7 +12,7 @@ localrules: coverage
 rule goleft_depth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        bed = key_genes_bed,
+        bed = get_key_genes_bed(run.genome_build, coding_only=True),
         ref_fa = ref_fa
     params:
         prefix = lambda wc, output: output[0].replace('.depth.bed', ''),
