@@ -1,10 +1,11 @@
-0.9 (10 Nov 2018)
+0.9 (15 Nov 2018)
 
 - Integrate Purple
 - Integrate CPSR (PCGR reports for germline variants)
 - Update PCGR
-- Use Arthur's [new list](https://trello.com/c/7j3KFMiL/184-umccr-cancer-genes) of cancer key genes
-- Version releases with `release`
+- Use Arthur's [new list](https://trello.com/c/7j3KFMiL/184-umccr-cancer-genes) of cancer key genes for minibams
+    and coverage
+- Use Sigve's+Sean's predispodition gene lists for germline reporting
 
 0.8 (7 Aug 2018)
 

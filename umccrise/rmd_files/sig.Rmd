@@ -16,7 +16,6 @@ params:
   af_freqs: 'af/af_tumor.txt'
   af_freqs_keygenes: 'af/af_tumor_keygenes.txt'
   sv_fname: 'sv-prioritize-manta-pass.tsv'
-  cnvkit_calls: 'cnvkit-call.cns'
   manta_vcf: 'manta.vcf'
   tumor_name: '17MHP031Tmr'
   sig_probs: 'rmd_files/signatures_probabilities.txt'
@@ -61,7 +60,6 @@ render_me <- function() {
       af_freqs = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor.txt'),
       af_freqs_keygenes = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor_keygenes.txt'),
       sv_fname = file.path(dd, 'gold_standard/bcbio_test_project/cup__cup_tissue/structural/cup__cup_tissue-sv-prioritize-manta-pass.tsv'),
-      cnvkit_calls = file.path(dd, 'data/bcbio_test_project/final/cup_tissue/cup-cnvkit-call.cns'),
       manta_vcf = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/structural/ribbon/manta.vcf'),
       tumor_name = '17MHP031Tmr',
       sig_probs = 'signatures_probabilities.txt',

@@ -15,17 +15,17 @@ localrules: structural
 ######### CNV #########
 
 #### Drop gene labels
-rule cnvkit_cleanup:
-    input:
-        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
-    output:
-        'work/{batch}/structural/{batch}-cnvkit-nolabels.cns'
-    group: "cnvkit"
-    shell:
-        'cat {input}'
-        ' | grep -v ^GL'
-        ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\', x.split()[4]]) if not x.startswith(\'chromosome\') else x.split()[:5])"'
-        ' > {output}'
+# rule cnvkit_cleanup:
+#     input:
+#         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
+#     output:
+#         'work/{batch}/structural/{batch}-cnvkit-nolabels.cns'
+#     group: "cnvkit"
+#     shell:
+#         'cat {input}'
+#         ' | grep -v ^GL'
+#         ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\', x.split()[4]]) if not x.startswith(\'chromosome\') else x.split()[:5])"'
+#         ' > {output}'
 
 #### Plot
 # rule cnvkit_plot:
