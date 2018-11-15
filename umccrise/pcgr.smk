@@ -25,7 +25,8 @@ rule pcgr_somatic_vcf:
     run:
         total_vars = int(subprocess.check_output(f'bcftools view -H {input.vcf} | wc -l', shell=True).strip())
         vcf = input.vcf if total_vars <= 500_000 else input.keygenes_vcf  # to avoid PCGR choking on too many variants
-        shell(f'cp {vcf}* {dirname(output.vcf)}')
+        shell(f'cp {vcf} {output.vcf}')
+        shell(f'cp {vcf}.tbi {output.vcf}.tbi')
 
 rule pcgr_germline_vcf:
     input:
