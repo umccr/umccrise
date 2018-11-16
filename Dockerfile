@@ -32,13 +32,13 @@ ENV CONDA_ROOT /miniconda
 ENV CONDA_PYTHON_EXE /miniconda/bin/python
 
 # Install conda environments
-COPY envs .
+COPY envs envs
 RUN hash -r && \
     conda config --set always_yes yes --set changeps1 no && \
-    conda update -q conda && \
-    conda env create -n umccrise --file envs/umccrise.yml && \
-    conda env create -n umccrise_purple --file envs/purple.yml && \
-    conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
+    conda update -q conda
+RUN conda env create -n umccrise --file envs/umccrise.yml
+RUN conda env create -n umccrise_purple --file envs/purple.yml
+RUN conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
 
 # Instead of `conda activate umccrise`
 ENV PATH /miniconda/envs/umccrise/bin:$PATH

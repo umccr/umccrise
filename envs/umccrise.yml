@@ -2,26 +2,25 @@ name: umccrise
 
 channels:
   - vladsaveliev
-  - pdiakumis
   - conda-forge
   - bioconda
   - defaults
 
 dependencies:
-  - python==3.6
+  - python ==3.6
   - ngs_utils
   - cython
-  - bcftools>=1.9
+  - bcftools >=1.9
   - bedtools
   - samtools
   - vcfanno
   - vcflib  # for VCF normalisation
   - pythonpy
   - click
-  - cyvcf2>=0.10.0
-  - numpy>=1.15.0
+  - cyvcf2 >=0.10.0
+  - numpy >=1.15.0
   - pandas
-  - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
+  - curl >=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake-minimal
   - nose
   - versionpy
@@ -50,9 +49,9 @@ dependencies:
   - r-ggplot2
   - r-tidyr
   - r-dt
-  - r-stringi>=1.1.7  # for pcgrr
+  - r-stringi >=1.1.7  # for pcgrr
   - bioconductor-delayedarray
-  - bioconductor-summarizedexperiment>=1.8
+  - bioconductor-summarizedexperiment >=1.8
   - bioconductor-mutationalpatterns
   - bioconductor-bsgenome.hsapiens.ucsc.hg19
   - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
@@ -67,7 +66,7 @@ dependencies:
   - r-devtools
   - r-readr
   - r-stringr
-  - r-htmlwidgets>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
+  - r-htmlwidgets >=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
 #  - circos=0.69.6         # for circos
 #  - libgd=2.2.5=3         # for circos
 #  - perl                  # for circos
