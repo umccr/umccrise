@@ -28,19 +28,15 @@ from umccrise import package_path
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 
-@click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake')
-@click.option('--unlock', is_flag=True, help='Propagated to snakemake')
-@click.option('--rerun-incomplete', is_flag=True, help='Propagated to snakemake')
-@click.option('--restart-times', default=3, help='Propagated to snakemake [def: 3]')
+@click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
+@click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
+@click.option('--restart-times', default=2, help='Propagated to snakemake. Default is 2. Set to 0 to avoid any restarts.')
+@click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Just prints the rules and the commands '
+                                                             'to run without actually generating any files.')
 
-@click.option('--pon', '--panel-of-normals', '--pon-dir', 'pon_dir', help='Path to panel of normals folder '
-              '(see https://github.com/umccr/vcf_stuff#building-the-panel on how to prepare it)')
 @click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data (e.g. /bcbio/genomes; '
               'Hsapiens/{genome}/seq/{genome}.fa(.fai) and Hsapiens/{genome}/validation/giab-NA12878/truth_regions.bed '
               'are used)')
-@click.option('--ref-fasta', help='Path to reference fasta (e.g. /genomes/hg19.fa); .fai file should exist')
-@click.option('--truth-regions', help='Path to regions to subset calls, e.g. giab truth regions (e.g. '
-                                      'validation/giab-NA12878/truth_regions.bed)')
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 @click.option('--pcgr-data', help='Path to the PCGR reference data folder')
@@ -49,8 +45,7 @@ from umccrise import package_path
 
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
          jobs=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
-         pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None,
-         docker_wrapper_mode=False, pcgr_data=None, no_pcgr=None, no_s3=None, dryrun=False):
+         dryrun=False, bcbio_genomes=None, docker_wrapper_mode=False, pcgr_data=None, no_pcgr=None, no_s3=None):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -76,41 +71,15 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if docker_wrapper_mode:
         conf['bcbio_project'] = docker_mounts[bcbio_project] = '/bcbio_project'
 
-    if pon_dir:
-        verify_file(join(pon_dir, 'panel_of_normals.snps.vcf.gz'), is_critical=True, description='Panel of normals SNPs file in user provided folder')
-        verify_file(join(pon_dir, 'panel_of_normals.snps.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
-        verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz'), is_critical=True, description='Panel of normals indels file in user provided folder')
-        verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
-        conf['panel_of_normals'] = verify_dir(pon_dir, is_critical=True)
-        if docker_wrapper_mode:
-            conf['panel_of_normals'] = docker_mounts[pon_dir] = '/panel_of_normals'
-
     if bcbio_genomes:
         conf['bcbio_genomes'] = verify_dir(bcbio_genomes, is_critical=True)
         if docker_wrapper_mode:
             conf['bcbio_genomes'] = docker_mounts[bcbio_genomes] = '/bcbio_genomes'
 
-    if ref_fasta:
-        verify_file(ref_fasta + '.fai', is_critical=True)
-        conf['ref_fasta'] = verify_file(ref_fasta, is_critical=True)
-        if docker_wrapper_mode:
-            conf['ref_fasta'] = docker_mounts[ref_fasta] = '/ref.fa'
-
-    if truth_regions:
-        conf['truth_regions'] = verify_file(truth_regions, is_critical=True)
-        if docker_wrapper_mode:
-            conf['truth_regions'] = docker_mounts[truth_regions] = '/truth_regions.bed'
-
     if pcgr_data:
         conf['pcgr_data'] = verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
         if docker_wrapper_mode:
             conf['pcgr_data'] = docker_mounts[pcgr_data] = '/pcgr/data'
-
-    if docker_wrapper_mode:
-        if not bcbio_genomes and not ref_fasta:
-            logger.critical('Reference fasta path is required when running in a dockerized mode. Please provide it with --ref-fasta or path to bcbio folder with --bcbio-genomes')
-        if not bcbio_genomes and not truth_regions:
-            logger.critical('Truth region path required when running in a dockerized mode. Please provide it with --truth-regions or path to bcbio folder with --bcbio-genomes')
 
     #####################################
     #### Setting non-path parameters ####
