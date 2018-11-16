@@ -3,8 +3,6 @@ MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 ENV HOSTNAME umccrise_docker
 ENV TEST_DATA_PATH=/umccrise/umccrise_test_data
-ENV BCBIO_GENOMES_PATH=/genomes
-ENV PON_PATH=/panel_of_normals
 
 # Setup a base system
 RUN apt-get update && \
@@ -33,19 +31,21 @@ ENV CONDA_EXE /miniconda/bin/conda
 ENV CONDA_ROOT /miniconda
 ENV CONDA_PYTHON_EXE /miniconda/bin/python
 
-# Install conda environment
-COPY environment.yml .
+# Install conda environments
+COPY envs .
 RUN hash -r && \
     conda config --set always_yes yes --set changeps1 no && \
     conda update -q conda && \
-    conda env create -n umccrise --file environment.yml
+    conda env create -n umccrise --file envs/umccrise.yml && \
+    conda env create -n umccrise_purple --file envs/purple.yml && \
+    conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
 
 # Instead of `conda activate umccrise`
 ENV PATH /miniconda/envs/umccrise/bin:$PATH
 ENV CONDA_PREFIX /miniconda/envs/umccrise
 ENV CONDA_DEFAULT_ENV umccrise
 
-# Install source and Peter's circos library
+# Install source
 COPY umccrise umccrise/umccrise
 COPY scripts umccrise/scripts
 COPY vendor umccrise/vendor
@@ -53,13 +53,6 @@ COPY setup.py umccrise/setup.py
 COPY VERSION.txt umccrise/VERSION.txt
 
 RUN pip install -e umccrise
-
-### Install PCGR
-# for R's devtools:
-#RUN ln -s /bin/tar /bin/gtar && \
-#    ln -s /bin/gzip /usr/bin/gzip && \
-#    git clone https://github.com/vladsaveliev/pcgr -b before_september /pcgr && \
-#    bash /pcgr/install_no_docker/install.sh --skip-validation
 
 # Clean up
 RUN rm -rf umccrise/.git && \
