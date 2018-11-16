@@ -24,6 +24,7 @@ dependencies:
   - curl>=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake-minimal
   - nose
+  - versionpy
   - pip:
     - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
