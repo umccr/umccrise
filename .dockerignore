@@ -3,7 +3,7 @@
 !umccrise
 !scripts
 !vendor
-!tests/test.py
 !setup.py
 !VERSION.txt
-!environment.yml
+!README.md
+!envs

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
-from releazit import get_version, find_package_files
+from versionpy import get_version, find_package_files
 
 pkg = 'umccrise'
 
