@@ -1,105 +1,173 @@
+localrules: purple
 
-rule amber_pileup:
+
+import glob
+import shutil
+import platform
+
+
+rule purple_pileup:
     input:
-        bam = lambda wc: bam_from_alias(config, wc.batch, wc.alias) + '.bam'
+        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
+        snp_bed = get_ref_file(run.genome_build, 'purple_het'),
+        fasta = ref_fa,
     output:
-        mpileup = join(config['tools']['purple']['outdir'], '{batch}', 'amber/{alias}.mpileup')
-    params:
-        snp_bed = config['tools']['purple']['hmf_data']['snp_bed'],
-        fasta = config['HPC']['ref_fasta']
+        'work/{batch}/purple/pileup/{batch}-{phenotype}.mpileup'
     log:
-        log = join(config['woof']['final_dir'], 'logs', '{batch}/{alias}_amber-pileup.log')
-    threads: 32
+        'log/purple/{batch}/{batch}-{phenotype}.mpileup.log'
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-{phenotype}.pileup.tsv'
+    threads:
+        threads_per_sample
+    resources:
+        mem_mb = min(50000, 3500*threads_per_sample)
     shell:
-        'echo "[$(date)] start {rule} with wildcards: {wildcards}" > {log.log}; '
+        conda_cmd.format('purple') +
         'sambamba mpileup '
-        '-t {threads} '
-        '-L {params.snp_bed} '
+        '-o {output} '
+        '-t{threads} '
+        '-L <(gunzip -c {input.snp_bed}) '
         '{input.bam} '
-        '--samtools -q 1 '
-        '-f {params.fasta} '
-        '> {output.mpileup} 2>> {log.log}; '
-        'echo "[$(date)] end {rule} with wildcards: {wildcards}" >> {log.log}; '
+        '--samtools -q1 '
+        '-f {input.fasta} '
+        '2> >(tee -a {log} >&2)'
 
-rule amber_run:
+rule purple_amber:
     input:
-        normal_mpileup = lambda wc: join(config['tools']['purple']['outdir'], wc.batch, 'amber', alias_from_pheno(config, wc.batch, 'normal') + '.mpileup'),
-        tumor_mpileup = lambda wc: join(config['tools']['purple']['outdir'], wc.batch, 'amber', alias_from_pheno(config, wc.batch, 'tumor') + '.mpileup')
+        normal_mpileup = 'work/{batch}/purple/pileup/{batch}-normal.mpileup',
+        tumor_mpileup  = 'work/{batch}/purple/pileup/{batch}-tumor.mpileup',
     output:
-        tumor_amber = join(config['tools']['purple']['outdir'], '{batch}', 'amber/{tumor_alias}.amber.baf')
+        'work/{batch}/purple/amber/{batch}.amber.baf',
     params:
-        tumor_alias = lambda wc: alias_from_pheno(config, wc.batch, 'tumor'),
-        outdir = join(config['tools']['purple']['outdir'], '{batch}', 'amber'),
-        jar = config['tools']['purple']['amber']['jar']
+        outdir = 'work/{batch}/purple/amber',
+        jar = join(package_path(), 'amber.jar'),
+        xms = 2000,
+        xmx = 30000,
     log:
-        log = join(config['woof']['final_dir'], 'logs', '{batch}/{tumor_alias}_amber.log')
+        'log/purple/{batch}/{batch}.amber.log',
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-amber.tsv'
+    resources:
+        mem_mb = 30000
     shell:
-        'echo "[$(date)] start {rule} with wildcards: {wildcards}" > {log.log}; '
-        'java -jar {params.jar} '
-        '-sample {params.tumor_alias} '
+        conda_cmd.format('purple') +
+        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
+        '-sample {wildcards.batch} '
         '-reference {input.normal_mpileup} '
         '-tumor {input.tumor_mpileup} '
-        '-output_dir {params.outdir} >> {log.log} 2>&1; '
-        'echo "[$(date)] end {rule} with wildcards: {wildcards}" >> {log.log}; '
+        '-output_dir {params.outdir} 2>&1 | tee {log} '
 
-rule cobalt_run:
+rule purple_cobalt:
     input:
-        normal_bam = lambda wc: bam_from_pheno(config, wc.batch, 'normal') + '.bam',
-        tumor_bam = lambda wc: bam_from_pheno(config, wc.batch, 'tumor') + '.bam'
+        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        gc = get_ref_file(run.genome_build, 'purple_gc'),
     output:
-        tumor_cobalt = join(config['tools']['purple']['outdir'], '{batch}', 'cobalt/{tumor_alias}.cobalt')
+        'work/{batch}/purple/cobalt/{batch}.cobalt',
     params:
-        normal_alias = lambda wc: alias_from_pheno(config, wc.batch, 'normal'),
-        tumor_alias = lambda wc: alias_from_pheno(config, wc.batch, 'tumor'),
-        gc = config['tools']['purple']['hmf_data']['gc_profile'],
-        outdir = join(config['tools']['purple']['outdir'], '{batch}', 'cobalt'),
-        jar = config['tools']['purple']['cobalt']['jar']
+        outdir = 'work/{batch}/purple/cobalt',
+        normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
+        xms = 2000,
+        xmx = min(50000, 3500*threads_per_batch),
     log:
-        log = join(config['woof']['final_dir'], 'logs', '{batch}/{tumor_alias}_cobalt.log')
-    threads: 32
+        'log/purple/{batch}/{batch}.cobalt.log'
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-cobalt.tsv'
+    threads:
+        threads_per_batch
+    resources:
+        mem_mb = min(50000, 3500*threads_per_batch)
     shell:
-        'echo "[$(date)] start {rule} with wildcards: {wildcards}" > {log.log}; '
-        'java -jar {params.jar} '
-        '-reference {params.normal_alias} '
+        conda_cmd.format('purple') +
+        'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
+        '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
-        '-tumor {params.tumor_alias} '
+        '-tumor {wildcards.batch} '
         '-tumor_bam {input.tumor_bam} '
         '-threads {threads} '
-        '-gc_profile {params.gc} '
-        '-output_dir {params.outdir} >> {log.log} 2>&1; '
-        'echo "[$(date)] end {rule} with wildcards: {wildcards}" >> {log.log}; '
+        '-gc_profile {input.gc} '
+        '-output_dir {params.outdir} 2>&1 | tee {log} '
+
+rule purple_somatic_vcf:
+    input:
+        rules.somatic_vcf_pon_pass.output.vcf,
+    output:
+        'work/{batch}/purple/somatic.vcf',
+    params:
+        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
+    group: 'purple_run'
+    shell:
+        'bcftools view -s {params.tumor_sname} {input} | '
+        'bcftools reheader --samples <(echo {wildcards.batch}) > {output}'
 
 rule purple_run:
     input:
-        cobalt_dummy = lambda wc: join(config['tools']['purple']['outdir'], wc.batch, 'cobalt', alias_from_pheno(config, wc.batch, 'tumor') + '.cobalt'),
-        amber_dummy = lambda wc: join(config['tools']['purple']['outdir'], wc.batch, 'amber', alias_from_pheno(config, wc.batch, 'tumor') + '.amber.baf'),
-        manta_sv_filtered = lambda wc: join(config['tools']['purple']['outdir'], wc.batch, 'purple', alias_from_pheno(config, wc.batch, 'tumor') + '.manta_filtered.vcf')
+        cobalt_dummy = 'work/{batch}/purple/cobalt/{batch}.cobalt',
+        amber_dummy  = 'work/{batch}/purple/amber/{batch}.amber.baf',
+        manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
+        gc = get_ref_file(run.genome_build, 'purple_gc'),
+        somatic_vcf = rules.purple_somatic_vcf.output,
     output:
-        segs = join(config['tools']['purple']['outdir'], '{batch}', 'purple/{tumor_alias}.purple.cnv')
+        'work/{batch}/purple/{batch}.purple.cnv',
+        # 'work/{batch}/purple/plot/{batch}.circos.png',
     params:
-        rundir = join(config['tools']['purple']['outdir'], '{batch}'),
-        outdir = join(config['tools']['purple']['outdir'], '{batch}', 'purple'),
-        jar = config['tools']['purple']['purple']['jar'],
-        tumor_alias = lambda wc: alias_from_pheno(config, wc.batch, 'tumor'),
-        normal_alias = lambda wc: alias_from_pheno(config, wc.batch, 'normal'),
-        gc = config['tools']['purple']['hmf_data']['gc_profile'],
-        ensemble_snv = lambda wc: config['bcbio'][wc.batch]['ensemble']
-    threads:
-        2
+        rundir = 'work/{batch}/purple',
+        outdir = 'work/{batch}/purple',
+        normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
+        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
+        macos_patch = 'export PERL5LIB=' \
+            '$CONDA_PREFIX/lib/site_perl/5.26.2/darwin-thread-multi-2level:' \
+            '$CONDA_PREFIX/lib/perl5/site_perl/5.22.0 && '\
+            if platform.system() == 'Darwin' else '',
+        xms = 2000,
+        xmx = min(50000, 3500*threads_per_batch),
+    group: 'purple_run'
     log:
-        log = join(config['woof']['final_dir'], 'logs', '{batch}/{tumor_alias}_purple.log')
+        'log/purple/{batch}/{batch}.purple.log'
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-purple.tsv'
+    threads:
+        threads_per_batch
+    resources:
+        mem_mb = min(50000, 3500*threads_per_batch)
     shell:
-        'echo "[$(date)] start {rule} with wildcards: {wildcards}" > {log.log}; '
-        'circos_path=$(which circos); '
-        'java -jar {params.jar} '
+        conda_cmd.format('purple') +
+        'circos -modules ; circos -v ; ' +
+        '{params.macos_patch} '
+        'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
         '-run_dir {params.rundir} '
         '-output_dir {params.outdir} '
-        '-ref_sample {params.normal_alias} '
-        '-tumor_sample {params.tumor_alias} '
+        '-ref_sample {params.normal_sname} '
+        '-tumor_sample {wildcards.batch} '
         '-threads {threads} '
-        '-gc_profile {params.gc} '
+        '-gc_profile {input.gc} '
         '-structural_vcf {input.manta_sv_filtered} '
-        '-somatic_vcf {params.ensemble_snv} '
-        '-circos ${{circos_path}} >> {log.log} 2>&1; '
-        'echo "[$(date)] end {rule} with wildcards: {wildcards}" >> {log.log}; '
+        '-somatic_vcf {input.somatic_vcf} '
+        '-circos circos 2>&1 | tee {log} '
+
+rule purple_symlink:
+    input:
+        'work/{batch}/purple/{batch}.purple.cnv',
+        # 'work/{batch}/purple/plot/{batch}.circos.png',
+    output:
+        '{batch}/purple/{batch}.purple.cnv',
+        # '{batch}/purple/{batch}.purple.circos.png',
+    params:
+        tumor_sname = lambda wc: wc.batch,
+        purple_outdir = 'work/{batch}/purple',
+    group: 'purple_run'
+    run:
+        for img_fpath in glob.glob(f'{params.purple_outdir}/plot/*.png'):
+            new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')
+            shutil.copy(img_fpath, join(f'{wildcards.batch}/purple', new_name))
+
+        for fpath in glob.glob(f'{params.purple_outdir}/*.purple.*'):
+            new_name = basename(fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}')
+            shutil.copy(fpath, join(f'{wildcards.batch}/purple', new_name))
+
+rule purple:
+    input:
+        expand(rules.purple_symlink.output, batch=batch_by_name.keys())
+    output:
+        temp(touch('log/purple.done'))
 

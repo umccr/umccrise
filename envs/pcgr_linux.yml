@@ -1,0 +1,15 @@
+name: pcgr
+
+channels:
+  - pcgr
+  - vladsaveliev
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - pcgr
+  - cpsr
+  - bcftools
+  - click
+  - ngs_utils

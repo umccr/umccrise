@@ -3,10 +3,10 @@ PCGR
 -------------
 Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
 """
-
 localrules: pcgr_somatic_vcf, pcgr_germline_vcf, pcgr_cns, pcgr_symlink_somatic, pcgr_symlink_germline, pcgr_prep, pcgr
 
 
+import subprocess
 from ngs_utils.file_utils import which
 
 
@@ -18,12 +18,15 @@ from ngs_utils.file_utils import which
 rule pcgr_somatic_vcf:
     input:
         vcf = rules.somatic_vcf_pon_pass.output.vcf,
-        tbi = rules.somatic_vcf_pon_pass.output.tbi
+        keygenes_vcf = rules.somatic_vcf_pon_pass_keygenes.output.vcf,
     output:
         vcf = '{batch}/pcgr/input/{batch}-somatic.vcf.gz',
         tbi = '{batch}/pcgr/input/{batch}-somatic.vcf.gz.tbi'
-    shell:
-        'cp {input.vcf} {output.vcf} && cp {input.tbi} {output.tbi}'
+    run:
+        total_vars = int(subprocess.check_output(f'bcftools view -H {input.vcf} | wc -l', shell=True).strip())
+        vcf = input.vcf if total_vars <= 500_000 else input.keygenes_vcf  # to avoid PCGR choking on too many variants
+        shell(f'cp {vcf} {output.vcf}')
+        shell(f'cp {vcf}.tbi {output.vcf}.tbi')
 
 rule pcgr_germline_vcf:
     input:
@@ -38,94 +41,100 @@ rule pcgr_germline_vcf:
 # PCGR also wants a slightly different format for the CNS data:
 rule pcgr_cns:
     input:
-        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
+        '{batch}/purple/{batch}.purple.cnv',
+        # lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
     output:
         '{batch}/pcgr/input/{batch}-somatic-cna.tsv'
     shell:
-        'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && cat {input} | '
-        'grep -v ^chromosome | '
-        'grep -v ^GL | '
-        'cut -f 1,2,3,5 | '
-        'awk \'BEGIN {{OFS="\t"}} {{print $1, $2+1, $3, $4}} \''
-        '>> {output}'
+        'echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" > {output} && ' \
+        'cat {input} | grep -v ^# | grep -v ^GL | cut -f1,2,3,4 >> {output}'
 
-######################
-### Running PCGR
-rule run_pcgr_local_somatic:
-    input:
-        vcf = rules.pcgr_somatic_vcf.output.vcf,
-        tbi = rules.pcgr_somatic_vcf.output.tbi,
-        cns = rules.pcgr_cns.output[0],
-        pcgr_dir = pcgr_installation
-    output:
-        '{batch}/pcgr/{batch}-somatic.pcgr_acmg.html'
-    params:
-        output_dir = '{batch}/pcgr',
-        genome_build = run.genome_build,
-        sample_name = '{batch}-somatic',
-        opt='--no-docker' if not which('docker') else ''
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000
-        # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
-    shell:
-        'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} ' \
-        '{params.opt} --pcgr-dir {input.pcgr_dir}'
+if pcgr_data:
+    ######################
+    ### Running PCGR
+    rule run_pcgr_local_somatic:
+        input:
+            vcf = rules.pcgr_somatic_vcf.output.vcf,
+            tbi = rules.pcgr_somatic_vcf.output.tbi,
+            cns = rules.pcgr_cns.output[0],
+            pcgr_data = pcgr_data
+        output:
+            '{batch}/pcgr/{batch}-somatic.pcgr.html'
+        params:
+            output_dir = '{batch}/pcgr',
+            genome_build = run.genome_build,
+            sample_name = '{batch}-somatic',
+            opt='--no-docker' if not which('docker') else ''
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 20000
+            # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
+        shell:
+            conda_cmd.format('pcgr') +
+            'pcgr {input.vcf} {input.cns} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} '
+            '{params.opt} --pcgr-data {input.pcgr_data}'
 
-rule run_pcgr_local_germline:
-    input:
-        vcf = rules.pcgr_germline_vcf.output.vcf,
-        tbi = rules.pcgr_germline_vcf.output.tbi,
-        pcgr_dir = pcgr_installation
-    output:
-        '{batch}/pcgr/{batch}-normal.pcgr_acmg.html'
-    params:
-        output_dir = '{batch}/pcgr',
-        genome_build = run.genome_build,
-        sample_name = '{batch}-normal',
-        opt='--no-docker' if not which('docker') else ''
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 2000
-    shell:
-        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline ' \
-        '{params.opt} --pcgr-dir {input.pcgr_dir}'
+    rule run_pcgr_local_germline:
+        input:
+            vcf = rules.pcgr_germline_vcf.output.vcf,
+            tbi = rules.pcgr_germline_vcf.output.tbi,
+            pcgr_data = pcgr_data
+        output:
+            '{batch}/pcgr/{batch}-normal.cpsr.html'
+        params:
+            output_dir = '{batch}/pcgr',
+            genome_build = run.genome_build,
+            sample_name = '{batch}-normal',
+            opt='--no-docker' if not which('docker') else ''
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 20000
+        shell:
+            conda_cmd.format('pcgr') +
+            'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
+            '{params.opt} --pcgr-data {input.pcgr_data} ' \
+            '|| echo "Failed to run CPSR" >> {output}'
 
-rule pcgr_symlink_somatic:
-    input:
-        rules.run_pcgr_local_somatic.output[0]
-    output:
-        '{batch}/{batch}-somatic.pcgr_acmg.html'
-    params:
-        source = 'pcgr/{batch}-somatic.pcgr_acmg.html'
-    shell:
-        'ln -s {params.source} {output}'
+    rule pcgr_symlink_somatic:
+        input:
+            rules.run_pcgr_local_somatic.output[0]
+        output:
+            '{batch}/{batch}-somatic.pcgr.html'
+        params:
+            source = 'pcgr/{batch}-somatic.pcgr.html'
+        shell:
+            'ln -s {params.source} {output}'
 
-rule pcgr_symlink_germline:
-    input:
-        rules.run_pcgr_local_germline.output[0]
-    output:
-        '{batch}/{batch}-normal.pcgr_acmg.html'
-    params:
-        source = 'pcgr/{batch}-normal.pcgr_acmg.html'
-    shell:
-        'ln -s {params.source} {output}'
+    rule pcgr_symlink_germline:
+        input:
+            rules.run_pcgr_local_germline.output[0]
+        output:
+            '{batch}/{batch}-normal.cpsr.html'
+        params:
+            source = 'pcgr/{batch}-normal.cpsr.html'
+        shell:
+            'ln -s {params.source} {output}'
 
-######################
-###  Target rules
+    ######################
+    ###  Target rule
 
-rule pcgr_prep:
-    input:
-        expand(rules.pcgr_somatic_vcf.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_germline_vcf.output, batch=batch_by_name.keys())
-    output:
-        temp(touch('log/pcgr_prep.done'))
+    rule pcgr:
+        input:
+            expand(rules.pcgr_symlink_somatic.output, batch=batch_by_name.keys()),
+            expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
+        output:
+            temp(touch('log/pcgr.done'))
 
-rule pcgr:
-    input:
-        expand(rules.pcgr_symlink_somatic.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
-    output:
-        temp(touch('log/pcgr.done'))
+else:
+
+    ######################
+    ###  Target rule
+
+    rule pcgr_prep:
+        input:
+            expand(rules.pcgr_somatic_vcf.output, batch=batch_by_name.keys()),
+            expand(rules.pcgr_cns.output, batch=batch_by_name.keys()),
+            expand(rules.pcgr_germline_vcf.output, batch=batch_by_name.keys())
+        output:
+            temp(touch('log/pcgr_prep.done'))
 
 
 
@@ -234,7 +243,7 @@ rule pcgr:
 #     #      if config.get('download_pcgr')
 #     #      else ('{batch}/pcgr/{batch}' + uid_suffix + '-{phenotype}.pcgr.download_status'))  # if failed, create some output anyway - we cannot be sure that PCGR has finished, so shouldn't just crash
 #     params:
-#         targz_folder = '{batch}/work/pcgr',
+#         targz_folder = 'work/{batch}/pcgr',
 #         targz_fname = '{batch}' + uuid_suffix + '-{phenotype}-output.tar.gz',
 #         untar_output_dirname = '{batch}' + uuid_suffix + '-{phenotype}-output',
 #         final_output_folder = '{batch}/pcgr'

@@ -1,7 +1,9 @@
 ## Cancer gene coverage
 
-
 localrules: coverage
+
+
+from ngs_utils.reference_data import get_key_genes_bed
 
 
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
@@ -10,14 +12,14 @@ localrules: coverage
 rule goleft_depth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        bed = key_genes_bed,
+        bed = get_key_genes_bed(run.genome_build, coding_only=True),
         ref_fa = ref_fa
     params:
         prefix = lambda wc, output: output[0].replace('.depth.bed', ''),
         cutoff = lambda wc: {'tumor': 30, 'normal': 10}[wc.phenotype]
     output:
         '{batch}/coverage/{batch}-{phenotype}.depth.bed'
-    threads: max(1, threads_max // len(batch_by_name))
+    threads: threads_per_sample
     resources:
         mem_mb=2000
     shell:
@@ -27,7 +29,7 @@ rule goleft_depth:
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
 rule goleft_plots:
     input:
-        bam = lambda wc: batch_by_name[wc.batch].tumor.bam
+        bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
     params:
         directory = '{batch}/coverage/{batch}-indexcov',
         xchr = 'X' if run.genome_build == 'GRCh37' else 'chrX'

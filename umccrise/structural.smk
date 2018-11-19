@@ -15,27 +15,27 @@ localrules: structural
 ######### CNV #########
 
 #### Drop gene labels
-rule cnvkit_cleanup:
-    input:
-        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
-    output:
-        'work/{batch}/structural/{batch}-cnvkit-nolabels.cns'
-    group: "cnvkit"
-    shell:
-        'cat {input}'
-        ' | grep -v ^GL '
-        ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\', x.split()[4]]) if not x.startswith(\'chromosome\') else x.split()[:5])"'
-        ' > {output}'
+# rule cnvkit_cleanup:
+#     input:
+#         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
+#     output:
+#         'work/{batch}/structural/{batch}-cnvkit-nolabels.cns'
+#     group: "cnvkit"
+#     shell:
+#         'cat {input}'
+#         ' | grep -v ^GL'
+#         ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\', x.split()[4]]) if not x.startswith(\'chromosome\') else x.split()[:5])"'
+#         ' > {output}'
 
 #### Plot
-rule cnvkit_plot:
-    input:
-        rules.cnvkit_cleanup.output[0]
-    output:
-        '{batch}/structural/{batch}-cnvkit-diagram.pdf'
-    group: "cnvkit"
-    shell:
-        'cnvkit.py diagram -s {input} -o {output}'
+# rule cnvkit_plot:
+#     input:
+#         rules.cnvkit_cleanup.output[0]
+#     output:
+#         '{batch}/structural/{batch}-cnvkit-diagram.pdf'
+#     group: "cnvkit"
+#     shell:
+#         'cnvkit.py diagram -s {input} -o {output}'
 
 
 #######################
@@ -161,6 +161,5 @@ rule structural:
         expand(rules.bedpe.output, batch=batch_by_name.keys()),
         expand(rules.ribbon.output, batch=batch_by_name.keys()),
         expand(rules.prep_sv_tsv.output, batch=batch_by_name.keys()),
-        expand(rules.cnvkit_plot.output, batch=batch_by_name.keys())
     output:
         temp(touch('log/structural.done'))

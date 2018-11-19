@@ -1,7 +1,8 @@
 ## IGV
 
-
 localrules: igv, igv_upload
+
+from ngs_utils.reference_data import get_key_genes_bed
 
 
 # Create BAM and VCF files suitable for moving around easily. Right now this only uses 300 key genes list.
@@ -9,14 +10,14 @@ localrules: igv, igv_upload
 # with +/- 1kb around all somatic SNVs, CNVs and SVs.
 rule igv_bed:
     input:
-        az300 = key_genes_bed,
+        key_genes_bed = get_key_genes_bed(run.genome_build),
         small_variant_vcf = rules.somatic_vcf_pon_pass.output[0],
         structural_bed = rules.ribbon.output[0]
     output:
         '{batch}/igv/{batch}-roi.bed'
     shell:
         '{{ '
-        'cat {input.az300} | cut -f1-3'
+        'cat {input.key_genes_bed} | cut -f1-3'
         ' ; '
         'bcftools view -H {input.small_variant_vcf} -Ov | awk -v OFS="\\t" \'{{print $1, $2, $2}}\''
         ' ; '

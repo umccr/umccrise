@@ -42,36 +42,41 @@ Install conda
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
-. miniconda/etc/profile.d/conda.sh
+source miniconda/etc/profile.d/conda.sh
 ```
 
-Install umccrise
+Install environments
 
 ```
-conda env create -p $(pwd)/miniconda/envs/umccrise --file environment.yml
-conda activate $(pwd)/miniconda/envs/umccrise
-pip install -e .
+ENV_NAME=umccrise_dev
+
+conda env create -n ${ENV_NAME} --file umccrise/envs/umccrise.yml
+conda env create -n ${ENV_NAME}_purple --file umccrise/envs/purple.yml
+#conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
+conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
+conda activate ${ENV_NAME}
+pip install -e umccrise
 ```
 
 To automate sourcing in the future, you can create a loader script
 
 ```
+ENV_NAME=umccrise_dev
+
 cat <<EOT > load_umccrise.sh
-SCRIPTPATH=\$(readlink -e $(pwd))
-. \$SCRIPTPATH/miniconda/etc/profile.d/conda.sh
-conda activate \$SCRIPTPATH/miniconda/envs/umccrise
+unset PYTHONPATH
+unset PERL5LIB
+MC=\$(readlink -e $(pwd))/miniconda
+source \${MC}/etc/profile.d/conda.sh
+conda activate \${MC}/envs/${ENV_NAME}
 EOT
 ```
 
-Install PCGR
+Set up PCGR
 
 The PCGR data bundle gets refreshed every release, so please select the appropriate one from [PCGR's README](https://github.com/sigven/pcgr#step-2-download-pcgr-and-data-bundle)!
 
 ```bash
-# Clone the fork that is decoupled from Docker and install
-git clone https://github.com/vladsaveliev/pcgr
-bash -x pcgr/install_no_docker/install.sh
-
 # Download the data bundles
 pip install gdown
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | tar xvfz - # hg19
@@ -86,9 +91,9 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 
 ```
 source load_umccrise.sh
-git pull                                                             # if the code base changed
-conda env update -f environment.yml                                  # if dependencies changed
-./setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
+git pull                                                                  # if the code base changed
+conda env update -f envs/umccrise.yml                                     # if dependencies changed
+python setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
 ```
 
 ## Testing
@@ -253,7 +258,7 @@ bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
 Create minimal environment
 
 ```
-conda env create --file dev_extras/environment_wrapper.yml
+conda env create --file deploy/env_docker_wrapper.yml
 conda activate umccrise
 pip install -e .
 ```
@@ -281,7 +286,6 @@ umccrise --docker \
     --bcbio-genomes umccrise_test_data/data/genomes \
     --pon umccrise_test_data/data/panel_of_normals
 ```
-
 
 
 

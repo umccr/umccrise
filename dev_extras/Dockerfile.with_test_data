@@ -1,9 +1,0 @@
-FROM umccr/umccrise:latest
-MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
-
-# Copy tests; assuming that tests been run once in host system (populates "genomes" and panel_of_normals)
-COPY tests/umccrise_test_data/data $TEST_DATA_PATH/data
-COPY tests/umccrise_test_data/gold_standard $TEST_DATA_PATH/gold_standard
-
-RUN ln -s $TEST_DATA_PATH/data/genomes $BCBIO_GENOMES_PATH
-RUN ln -s $TEST_DATA_PATH/data/panel_of_normals $PON_PATH

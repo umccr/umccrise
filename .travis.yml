@@ -3,44 +3,29 @@ dist: trusty
 
 language: python
 python:
-  # We don't actually use the Travis Python (since we are on conda), but this keeps it organized.
-  - "3.6"
+  - "3.6"  # used below as $TRAVIS_PYTHON_VERSION in conda install command
+
+before_install:
+  - export PACKAGE_NAME=umccrise
+
+  # Get and install anaconda (https://conda.io/docs/travis.html)
+  - wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - source $HOME/miniconda/etc/profile.d/conda.sh
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a  # Useful for debugging any issues with conda
 
 install:
-  ##########################################
-  ## To pull cached miniconda and update: ##
-  ##########################################
-  # Get and install anaconda (https://conda.io/docs/travis.html) and packages
-  - if [ -d $HOME/miniconda ]; then echo "ls HOME/miniconda:" ; ls $HOME/miniconda ; fi ;
-  - if [ ! -d $HOME/miniconda/bin ] ; then
-      if [ -d $HOME/miniconda ] ; then rm -rf $HOME/miniconda ; fi ;
-      wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
-      bash miniconda.sh -b -p $HOME/miniconda ;
-      export PATH=$HOME/miniconda/bin:$PATH ;
-      hash -r ;
-      conda config --set always_yes yes --set changeps1 no ;
-      conda update -q conda ;
-      conda env create -n umccrise --file environment.yml ;
-    else
-      export PATH=$HOME/miniconda/bin:$PATH ;
-      echo "else ls HOME/miniconda:" ; ls $HOME/miniconda ;
-      conda config --set always_yes yes --set changeps1 no ;
-      conda env update -f environment.yml ;
-    fi
-  - source activate umccrise
-  # Useful for debugging any issues with conda
-  - conda info -a
+  - conda env create -n umccrise --file envs/umccrise.yml
+  - conda env create -n umccrise_purple --file envs/purple.yml
+  - conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
+  - conda activate umccrise
   # Installing the codebase (source code was automatically cloned into CWD by Travis)
   - pip install -e .
-  - R -e "library(devtools) ; options(unzip = '/usr/bin/unzip') ; devtools::install_github('umccr/rock', ref = 'umccrise')"
   # Clone the test data
   - git clone https://github.com/umccr/umccrise_test_data
-
-# Skip caching for now so we can remove miniconda folder and save space for deploy. Consider
-#cache:
-#  directories:
-#  - $HOME/miniconda
-#  timeout: 600  # allow 10 minutes to cache instead of default 3 minutes
 
 script:
   - nosetests --nocapture umccrise_test_data/test.py -a normal
@@ -52,15 +37,27 @@ addons:
     packages:
       - docker-ce
 
-after_success:
-  # Building docker image
-  - test $TRAVIS_BRANCH = "master" && grep -qv dev VERSION.txt &&
-    docker version &&
-    rm -rf $HOME/miniconda umccrise_test_data &&
-    docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
+deploy:
+  # Deploy to Anaconda.org
+  - provider: script
+    script: rm -rf $HOME/miniconda umccrise_test_data &&
+            docker build -t umccr/umccrise:$TRAVIS_TAG -f Dockerfile . &&
+            echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
+            docker push umccr/umccrise:$TRAVIS_TAG
+    on:
+      tags: true
+    skip_cleanup: true
 
-  # Pushing docker image
-  - test $TRAVIS_BRANCH = "master" && grep -qv dev VERSION.txt &&
-    docker images &&
-    echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
-    docker push umccr/umccrise:$(cat VERSION.txt)
+#after_success:
+#  # Building docker image
+#  - test $TRAVIS_BRANCH = "master" &&
+#    grep -qv dev VERSION.txt &&
+#    docker version &&
+#    rm -rf $HOME/miniconda umccrise_test_data &&
+#    docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
+#
+#  # Pushing docker image
+#  - test $TRAVIS_BRANCH = "master" && grep -qv dev VERSION.txt &&
+#    docker images &&
+#    echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
+#    docker push umccr/umccrise:$(cat VERSION.txt)
