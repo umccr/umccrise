@@ -17,14 +17,14 @@ from umccrise import package_path
 
 @click.command()
 @click.argument('vcf_path', type=click.Path(exists=True))
-@click.argument('cnv_path', type=click.Path(exists=True), required=False)
+@click.argument('purple_tsv', type=click.Path(exists=True), required=False)
 @click.option('-g', 'genome')
 @click.option('-o', 'output_dir', type=click.Path())
 @click.option('-s', 'sample')
 @click.option('--germline', is_flag=True)
 @click.option('--docker/--no-docker', 'use_docker', is_flag=True, default=None)
 @click.option('--pcgr-data', type=click.Path(exists=True), help='Path to PCGR data directory (defaults are known for spartan and raijin)')
-def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None, germline=False, use_docker=None, pcgr_data=None):
+def main(vcf_path, purple_tsv=None, output_dir=None, genome='GRCh37', sample=None, germline=False, use_docker=None, pcgr_data=None):
 
     if not pcgr_data:
         from hpc_utils.hpc import find_loc
@@ -42,8 +42,7 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     pcgr_toml = join(package_path(), 'pcgr', 'pcgr.toml')
     cpsr_toml = join(package_path(), 'pcgr', 'cpsr.toml')
     sample = sample or splitext_plus(basename(vcf_path))[0]
-    pcgr_genome = "grch38" if genome in ["hg38", "GRCh38"] else "grch37"
-
+    pcgr_genome = 'grch38' if '38' in genome else 'grch37'
     print('use_docker:', use_docker)
     if use_docker is None:
         check_docker_command = 'docker images -q sigven/pcgr'
@@ -72,8 +71,8 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
     #     run(f'{rlibs_env}R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
 
     if germline:
-        expected_report_path = join(output_dir, f'{sample}.cpsr.{pcgr_genome}.html')
-        renamed_report_path = join(output_dir, f'{sample}.cpsr.html')
+        expected_file_base = join(output_dir, f'{sample}.cpsr.{pcgr_genome}')
+        renamed_file_base = join(output_dir, f'{sample}.cpsr')
         cmd = (f'{rlibs_env}'
                f'cpsr.py'
                f' --input_vcf {abspath(vcf_path)}'
@@ -86,12 +85,14 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
                f' --force_overwrite'
         )
     else:
-        expected_report_path = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}.html')
-        renamed_report_path = join(output_dir, f'{sample}.pcgr.html')
+        expected_file_base = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}')
+        renamed_file_base = join(output_dir, f'{sample}.pcgr')
+        cnv_cmd = (f' --input_cna <(echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" ; '
+                   f'cat {abspath(purple_tsv)} | grep -v ^# | grep -v ^GL | cut -f1,2,3,4)') if purple_tsv else ''
         cmd = (f'{rlibs_env}'
                f'pcgr.py'
                f' --input_vcf {abspath(vcf_path)}'
-               f' {("--input_cna " + abspath(cnv_path)) if cnv_path else ""}'
+               f'{cnv_cmd}'
                f' {dirname(pcgr_data)}'
                f' {output_dir}'
                f' {pcgr_genome}'
@@ -107,15 +108,17 @@ def main(vcf_path, cnv_path=None, output_dir=None, genome='GRCh37', sample=None,
         err(f'Error running PCGR.\n')
         raise
 
-    if isfile(expected_report_path):
-        info(f'Result generated as {expected_report_path}. Renaming to {renamed_report_path}')
-        rename(expected_report_path, renamed_report_path)
-    if isfile(renamed_report_path):
-        info(f'PCGR report: {renamed_report_path}')
-    else:
-        err('--------\n')
-        critical('Error running PCGR: report is not produced')
-
-
+    endings = ['.pass.vcf.gz', '.pass.vcf.gz.tbi', '.html']
+    if not germline:
+        endings.append('.snvs_indels.tiers.tsv')
+    for ending in endings:
+        expected_path = expected_file_base + ending
+        renamed_path = renamed_file_base + ending
+        if not isfile(expected_path):
+            err('--------\n')
+            critical('Error running PCGR: expected output file is not produced: ' + expected_path)
+        rename(expected_path, renamed_path)
+        info(f'PCGR report: {renamed_path}')
+    
 if __name__ == '__main__':
     main()
