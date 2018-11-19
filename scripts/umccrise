@@ -17,7 +17,7 @@ from umccrise import package_path
 @click.command()
 @click.argument('bcbio_project', type=click.Path(exists=True))
 @click.argument('target_rule', nargs=-1)
-@click.option('-o', 'output_dir', type=click.Path(), help='Output directory (default is "umccrise")')
+@click.option('-o', 'output_dir', type=click.Path(), help='Output directory [def: umccrised]')
 
 @click.option('-s', '--sample', 'sample', help='Comma-separated list of samples or batches to process')
 @click.option('-b', '--batch', 'batch', help='Comma-separated list of samples or batches to process')
@@ -28,9 +28,10 @@ from umccrise import package_path
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 
-@click.option('--unlock', is_flag=True, help='Propagaded to snakemake')
-@click.option('--rerun-incomplete', is_flag=True, help='Propagaded to snakemake')
-@click.option('--restart-times', default=3, help='Propagaded to snakemake. Default is 3.')
+@click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake')
+@click.option('--unlock', is_flag=True, help='Propagated to snakemake')
+@click.option('--rerun-incomplete', is_flag=True, help='Propagated to snakemake')
+@click.option('--restart-times', default=3, help='Propagated to snakemake [def: 3]')
 
 @click.option('--pon', '--panel-of-normals', '--pon-dir', 'pon_dir', help='Path to panel of normals folder '
               '(see https://github.com/umccr/vcf_stuff#building-the-panel on how to prepare it)')
@@ -49,7 +50,7 @@ from umccrise import package_path
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
          jobs=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
          pon_dir=None, bcbio_genomes=None, ref_fasta=None, truth_regions=None,
-         docker_wrapper_mode=False, pcgr_data=None, no_pcgr=None, no_s3=None):
+         docker_wrapper_mode=False, pcgr_data=None, no_pcgr=None, no_s3=None, dryrun=False):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -153,7 +154,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         cpus_avail = int(subprocess.check_output('docker system info | grep CPUs', shell=True).decode().split(': ')[1])
         if jobs > cpus_avail:
             click.echo(click.style(
-                f'Warning: the number of jobs requested {jobs} is higher than then number of available CPUs '
+                f'Warning: the number of jobs requested {jobs} is higher than the number of available CPUs '
                 f'for the docker machine {cpus_avail}. Downgrading requested jobs to {cpus_avail}.', fg='red'))
             jobs = cpus_avail
 
@@ -176,13 +177,15 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         f'{" ".join(target_rule)} '
         f'--snakefile {snakefile} '
         f'--printshellcmds '
+        f'{"--dryrun " if dryrun else ""}'
         f'--directory {output_dir if not docker_wrapper_mode else "/output_dir"} '
         f'-j {jobs} '
-        f'--rerun-incomplete ' 
+        f'--rerun-incomplete '
         f'--restart-times {restart_times} '
         f'{cluster_param} '
         f'--config {" ".join(k + "=" + v for k, v in conf.items())} '
     )
+
 
     #################
     #### Running ####

@@ -170,3 +170,4 @@ rule purple:
         expand(rules.purple_symlink.output, batch=batch_by_name.keys())
     output:
         temp(touch('log/purple.done'))
+
