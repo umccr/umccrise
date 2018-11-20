@@ -76,8 +76,8 @@ tmb_intermediate_limit = 20
 
 [cna]
 ## log ratio thresholds for determination of copy number gains and homozygous deletions
-logR_gain = 0.8
-logR_homdel = -0.8
+logR_gain = 5
+logR_homdel = 0
 
 ## mean percent overlap between copy number segment and gene transcripts for reporting of gains/losses in tumor suppressor genes/oncogenes
 cna_overlap_pct = 50
