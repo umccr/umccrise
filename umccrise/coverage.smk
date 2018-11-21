@@ -1,9 +1,10 @@
 ## Cancer gene coverage
 
-localrules: coverage
+localrules: coverage, cacao_symlink_somatic, cacao_symlink_somatic
 
 
 from ngs_utils.reference_data import get_key_genes_bed
+from ngs_utils.file_utils import safe_symlink
 
 
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
@@ -77,11 +78,27 @@ rule run_cacao_normal:
         'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome} ' \
         'hereditary {params.sample} {params.docker_opt}'
 
+rule cacao_symlink_somatic:
+    input:
+        rules.run_cacao_somatic.output.report
+    output:
+        '{batch}/{batch}-somatic.cacao.html'
+    run:
+        safe_symlink(input[0], output[0], rel=True)
+
+rule cacao_symlink_normal:
+    input:
+        rules.run_cacao_normal.output.report
+    output:
+        '{batch}/{batch}-normal.cacao.html'
+    run:
+        safe_symlink(input[0], output[0], rel=True)
+
 rule coverage:
     input:
         expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
         expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
-        expand(rules.run_cacao_somatic.output.report, batch=batch_by_name.keys()),
-        expand(rules.run_cacao_normal.output.report, batch=batch_by_name.keys()),
+        expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
+        # expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
     output:
         temp(touch('log/coverage.done'))
