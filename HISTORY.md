@@ -1,3 +1,16 @@
+0.10
+
+- Small variant filtering improvements: 
+    - Assuming calling with 1%
+    - First round of PoN filter: remove with >=3 hits
+    - Annotate with PCGR and keep all tier 1-3
+    - Tier 4 and noncoding - filter with: 
+        - gnomad_AF <=0.02
+        - PoN hits >=1
+        - indels in bad promoters
+        - DP<25 & AF<5% in tricky regions or GiaB LCR
+- Integrate CACAO
+
 0.9 (15 Nov 2018)
 
 - Integrate Purple

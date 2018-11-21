@@ -49,7 +49,6 @@ Install environments
 
 ```
 ENV_NAME=umccrise_dev
-
 conda env create -n ${ENV_NAME} --file umccrise/envs/umccrise.yml
 conda env create -n ${ENV_NAME}_purple --file umccrise/envs/purple.yml
 #conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
@@ -62,7 +61,6 @@ To automate sourcing in the future, you can create a loader script
 
 ```
 ENV_NAME=umccrise_dev
-
 cat <<EOT > load_umccrise.sh
 unset PYTHONPATH
 unset PERL5LIB

@@ -34,8 +34,7 @@ ENV CONDA_PYTHON_EXE /miniconda/bin/python
 # Install conda environments
 COPY envs envs
 RUN hash -r && \
-    conda config --set always_yes yes --set changeps1 no && \
-    conda update -q conda
+    conda config --set always_yes yes --set changeps1 no
 RUN conda env create -n umccrise --file envs/umccrise.yml
 RUN conda env create -n umccrise_purple --file envs/purple.yml
 RUN conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
