@@ -64,6 +64,7 @@ rule purple_cobalt:
         gc = get_ref_file(run.genome_build, 'purple_gc'),
     output:
         'work/{batch}/purple/cobalt/{batch}.cobalt',
+        'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
     params:
         outdir = 'work/{batch}/purple/cobalt',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
@@ -90,7 +91,7 @@ rule purple_cobalt:
 
 rule purple_somatic_vcf:
     input:
-        rules.somatic_vcf_pon_pass.output.vcf,
+        rules.somatic_vcf_filter_pass.output.vcf,
     output:
         'work/{batch}/purple/somatic.vcf',
     params:
@@ -103,6 +104,7 @@ rule purple_somatic_vcf:
 rule purple_run:
     input:
         cobalt_dummy = 'work/{batch}/purple/cobalt/{batch}.cobalt',
+        cobalt_dummy_pcf = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
         amber_dummy  = 'work/{batch}/purple/amber/{batch}.amber.baf',
         manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
         gc = get_ref_file(run.genome_build, 'purple_gc'),

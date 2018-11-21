@@ -28,7 +28,7 @@ localrules: rmd
 # Subset to GiaB confident intervals
 rule subset_to_giab:
     input:
-        vcf = rules.somatic_vcf_pon_pass.output.vcf
+        vcf = rules.somatic_vcf_filter_pass.output.vcf
     params:
         regions = truth_regions
     output:
@@ -85,7 +85,7 @@ rule afs_keygenes:
 # Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the ensemble calls:
 rule somatic_to_hg19:
     input:
-        rules.pcgr_somatic_vcf.output.vcf
+        rules.somatic_vcf_filter_pass.output.vcf
     output:
         'work/{batch}/rmd/ensemble-with_chr_prefix.vcf'
     group: "subset_for_af"

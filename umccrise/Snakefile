@@ -220,7 +220,7 @@ rule umccrise:
         rules.structural.output,
         rules.small_variants.output,
         rules.rmd.output,
-        (rules.pcgr.output if pcgr_data else rules.pcgr_prep.output),
+        rules.pcgr.output,
         rules.igv.output,
         rules.purple.output,
     output:
