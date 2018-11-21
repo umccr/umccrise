@@ -87,12 +87,15 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome='GRCh37', sample=Non
     else:
         expected_file_base = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.pcgr')
-        cnv_cmd = (f' --input_cna <(echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" ; '
-                   f'cat {abspath(purple_tsv)} | grep -v ^# | grep -v ^GL | cut -f1,2,3,4)') if purple_tsv else ''
+
+        if purple_tsv:
+            purple_tsv_fixed = join(output_dir, sample + '_cnv_input.tsv')
+            prep_cnv_cmd = f'(echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" ; cat {abspath(purple_tsv)} | grep -v ^# | grep -v ^GL | cut -f1,2,3,4) > {purple_tsv_fixed}'
+            run_simple(prep_cnv_cmd)
         cmd = (f'{rlibs_env}'
                f'pcgr.py'
-               f' --input_vcf {abspath(vcf_path)}'
-               f'{cnv_cmd}'
+               f' --input_vcf {abspath(vcf_path)}' +
+              (f' --input_cna {purple_tsv_fixed}' if purple_tsv else '') +
                f' {dirname(pcgr_data)}'
                f' {output_dir}'
                f' {pcgr_genome}'
