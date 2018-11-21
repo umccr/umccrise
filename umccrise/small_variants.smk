@@ -55,7 +55,7 @@ rule somatic_vcf_pon_annotate:
         tbi = 'work/{batch}/small_variants/somatic-ensemble-prep-pon.vcf.gz.tbi',
     group: "small_variants_1round"
     shell:
-        'pon_anno {input.vcf} -o {output.vcf} --pon-dir ' + pon_dir + '&& tabix -p vcf {output.vcf}'
+        'pon_anno {input.vcf} -o {output.vcf} --pon-dir ' + pon_dir + ' && tabix -p vcf {output.vcf}'
 
 rule somatic_vcf_pon_1round:
     input:
