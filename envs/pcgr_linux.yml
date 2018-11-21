@@ -10,6 +10,7 @@ channels:
 dependencies:
   - pcgr
   - cpsr
+  - cacao
   - bcftools
   - click
   - ngs_utils

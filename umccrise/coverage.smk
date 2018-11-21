@@ -41,9 +41,47 @@ rule goleft_plots:
         'goleft indexcov --directory {params.directory} {input.bam} --sex {params.xchr}'
 
 
+pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'
+
+rule run_cacao_somatic:
+    input:
+        bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
+    output:
+        report = '{batch}/coverage/cacao_somatic/{batch}.cacao.' + pcgr_genome + '.html'
+    params:
+        cacao_data = join(loc.extras, 'cacao', 'data'),
+        output_dir = '{batch}/coverage/cacao_somatic',
+        docker_opt = '--no-docker' if not which('docker') else '',
+        sample = '{batch}',
+    resources:
+        mem_mb=2000
+    shell:
+        conda_cmd.format('pcgr') +
+        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome} ' \
+        'somatic {params.sample} {params.docker_opt}'
+
+rule run_cacao_normal:
+    input:
+        bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+    output:
+        report = '{batch}/coverage/cacao_normal/{batch}.cacao.' + pcgr_genome + '.html'
+    params:
+        cacao_data = join(loc.extras, 'cacao', 'data'),
+        output_dir = '{batch}/coverage/cacao_normal',
+        docker_opt = '--no-docker' if not which('docker') else '',
+        sample = '{batch}',
+    resources:
+        mem_mb=2000
+    shell:
+        conda_cmd.format('pcgr') +
+        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome} ' \
+        'hereditary {params.sample} {params.docker_opt}'
+
 rule coverage:
     input:
         expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
-        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys())
+        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
+        expand(rules.run_cacao_somatic.output.report, batch=batch_by_name.keys()),
+        expand(rules.run_cacao_normal.output.report, batch=batch_by_name.keys()),
     output:
         temp(touch('log/coverage.done'))
