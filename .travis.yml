@@ -28,7 +28,7 @@ install:
   - git clone https://github.com/umccr/umccrise_test_data
 
 script:
-  - nosetests --nocapture umccrise_test_data/test.py -a normal
+  - umccrise --version
 
 services:
   - docker
