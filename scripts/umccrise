@@ -12,9 +12,11 @@ from ngs_utils.logger import warn, info
 from ngs_utils.utils import set_locale; set_locale()
 from ngs_utils import snakemake_utils
 from umccrise import package_path
+from umccrise import _version as version
 
 
 @click.command()
+@click.version_option(version.__version__)
 @click.argument('bcbio_project', type=click.Path(exists=True))
 @click.argument('target_rule', nargs=-1)
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory [def: umccrised]')
