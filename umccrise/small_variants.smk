@@ -213,8 +213,9 @@ rule somatic_vcf_filter:
             vcf.add_filter_to_header({'ID': 'gnomAD_common', 'Description': 'Occurs in gnomAD with frequency above 1%'})
             vcf.add_filter_to_header({'ID': 'PoN', 'Description': 'Panel of normals hits 1 or more'})
             vcf.add_filter_to_header({'ID': 'bad_promoter', 'Description': 'Indel overlapping bad promoter tricky region'})
-            vcf.add_filter_to_header({'ID': 'LowQual_TRICKY', 'Description': 'DP<25 & AF<5%, and: GC<=15% or GC>=70 or low complexity region >51bp long'})
-            vcf.add_filter_to_header({'ID': 'LowQual_GIAB_LCR', 'Description': 'DP<25 & AF<5%, and does not overlap GiaB high confidence regions'})
+            vcf.add_filter_to_header({'ID': 'LowAF_TRICKY', 'Description': 'DP<30 & AF<10%, and: GC<=15% or GC>=70 or low complexity region >51bp long'})
+            vcf.add_filter_to_header({'ID': 'LowAF_GIAB_LCR', 'Description': 'DP<30 & AF<10%, and does not overlap GiaB high confidence regions'})
+            vcf.add_filter_to_header({'ID': 'LowAF', 'Description': 'DP<25 & AF<5%'})
         def func(rec):
             t = rec.INFO['PCGR_TIER']
             int_tier = int(t.split('_')[1]) if 'TIER' in t else 5  # "TIER_2" -> 2
@@ -230,10 +231,11 @@ rule somatic_vcf_filter:
             # Remove gnomad_AF >0.02
             # Remove PoN_CNT>0         # {0 if issnp else 1}'
             # Remove indels in "bad_promoter" tricky regions
-            # Remove DP<25 & AF<5% in tricky regions:
+            # Remove DP<30 and AF<10% in tricky regions:
             #        gc15, gc70to75, gc75to80, gc80to85, gc85, low_complexity_51to200bp, low_complexity_gt200bp,
             #        non-GIAB confident,
             #    unless coding in cancer genes
+            # Remove DP<25 and AF<5%
             else:
                 for rgn in ['GLOBAL', 'SAS', 'AFR', 'AMR', 'ASJ', 'EAS', 'FIN', 'NFE', 'OTH']:
                     if rec.INFO.get(f'{rgn}_AF_GNOMAD', 0) >= 0.01:
@@ -247,12 +249,14 @@ rule somatic_vcf_filter:
                 if not rec.is_snp and 'bad_promoter' in tricky_set:
                     _add_cyvcf2_filter(rec, 'bad_promoter')
                 # removing low AF and low DP variants in low complexity regions
-                if rec.INFO['TUMOR_DP'] < 25 and rec.INFO['TUMOR_AF'] < 0.05:
+                if rec.INFO['TUMOR_DP'] < 30 and rec.INFO['TUMOR_AF'] < 0.1:
                     if tricky_set & {'gc15', 'gc70to75', 'gc75to80', 'gc80to85', 'gc85', 'low_complexity_51to200bp',
                                      'low_complexity_gt200bp'}:
-                        _add_cyvcf2_filter(rec, 'LowQual_TRICKY')
+                        _add_cyvcf2_filter(rec, 'LowAF_TRICKY')
                     if not rec.INFO.get('GIAB_CONF'):
-                        _add_cyvcf2_filter(rec, 'LowQual_GIAB_LCR')
+                        _add_cyvcf2_filter(rec, 'LowAF_GIAB_LCR')
+                if rec.INFO['TUMOR_DP'] < 25 and rec.INFO['TUMOR_AF'] < 0.05:
+                    _add_cyvcf2_filter(rec, 'LowAF')
             return rec
         _iter_vcf(input.vcf, output.vcf, func, func_hdr)
 

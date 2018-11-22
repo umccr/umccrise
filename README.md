@@ -42,8 +42,7 @@ Install conda
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
-#source miniconda/etc/profile.d/conda.sh
-export PATH=miniconda/bin:$PATH
+export PATH=$(pwd)/miniconda/bin:$PATH
 ```
 
 Install environments
@@ -52,10 +51,9 @@ Install environments
 ENV_NAME=umccrise_dev
 conda env create -n ${ENV_NAME} --file umccrise/envs/umccrise.yml
 conda env create -n ${ENV_NAME}_purple --file umccrise/envs/purple.yml
-#conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
+# conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
 conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
-export PATH=miniconda/envs/$ENV_NAME/bin:$PATH
-#conda activate ${ENV_NAME}
+export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
 pip install -e umccrise
 ```
 
@@ -66,8 +64,6 @@ ENV_NAME=umccrise_dev
 cd ./miniconda/envs/${ENV_NAME}_purple/lib
 ln -s libwebp.so.6 libwebp.so.7
 cd -
-chmod -R a+r ./miniconda/envs/${ENV_NAME}_pcgr/lib/R/etc/ldpaths
-chmod -R a+r ./miniconda/envs/${ENV_NAME}_purple/lib/R/etc/ldpaths
 ```
 
 To automate sourcing in the future, you can create a loader script
@@ -77,9 +73,8 @@ ENV_NAME=umccrise_dev
 cat <<EOT > load_umccrise.sh
 unset PYTHONPATH
 unset PERL5LIB
-MC=\$(readlink -e $(pwd))/miniconda
-source \${MC}/etc/profile.d/conda.sh
-conda activate \${MC}/envs/${ENV_NAME}
+export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$(pwd)/miniconda/bin:$PATH
+export CONDA_PREFIX=$(pwd)/miniconda/envs/${ENV_NAME}
 EOT
 ```
 
