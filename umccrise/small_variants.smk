@@ -121,7 +121,7 @@ rule somatic_vcf_pcgr_1round:
         sample_name = '{batch}-somatic',
         opt='--no-docker' if not which('docker') else '',
     resources:
-        mem_mb = set_pcgr_mem
+        mem_mb = 20000
     shell:
         conda_cmd.format('pcgr') + which('pcgr') +
         ' {input.vcf} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '

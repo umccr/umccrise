@@ -30,8 +30,11 @@ print('CONDA_PREFIX: ', os.environ.get('CONDA_PREFIX'))
 within_sub_workflow = 'within_sub_workflow' in config
 config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster sub-executions of the Snakefile
 
-conda_sh = abspath(join(config["conda_prefix"], "../../etc/profile.d/conda.sh"))
-conda_cmd = f'source {conda_sh} && conda activate {config["conda_prefix"]}_{{}} && '
+# conda_sh = abspath(join(config["conda_prefix"], "../../etc/profile.d/conda.sh"))
+# conda_cmd = f'source {conda_sh} && conda activate {config["conda_prefix"]}_{{}} && '
+conda_prefix = config["conda_prefix"]
+new_path = conda_prefix + '_{}/bin:' + os.environ['PATH']
+conda_cmd = 'export PATH=' + new_path + ' && '
 
 
 def prep_inputs(config_):
@@ -186,7 +189,6 @@ rule multiqc:  # {}
     shell:
         'cp {input} {output}'
         # generate proper mutliqc_umccrise
-
 
 
 ## Additional information

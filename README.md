@@ -42,7 +42,8 @@ Install conda
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
-source miniconda/etc/profile.d/conda.sh
+#source miniconda/etc/profile.d/conda.sh
+export PATH=miniconda/bin:$PATH
 ```
 
 Install environments
@@ -53,7 +54,8 @@ conda env create -n ${ENV_NAME} --file umccrise/envs/umccrise.yml
 conda env create -n ${ENV_NAME}_purple --file umccrise/envs/purple.yml
 #conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
 conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
-conda activate ${ENV_NAME}
+export PATH=miniconda/envs/$ENV_NAME/bin:$PATH
+#conda activate ${ENV_NAME}
 pip install -e umccrise
 ```
 
