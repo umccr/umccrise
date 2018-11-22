@@ -64,7 +64,8 @@ ENV_NAME=umccrise_dev
 cd ./miniconda/envs/${ENV_NAME}_purple/lib
 ln -s libwebp.so.6 libwebp.so.7
 cd -
-chmod -R +r ./miniconda/envs/${ENV_NAME}_pcgr/lib/R/etc/ldpaths
+chmod -R a+r ./miniconda/envs/${ENV_NAME}_pcgr/lib/R/etc/ldpaths
+chmod -R a+r ./miniconda/envs/${ENV_NAME}_purple/lib/R/etc/ldpaths
 ```
 
 To automate sourcing in the future, you can create a loader script
