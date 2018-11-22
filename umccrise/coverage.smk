@@ -13,22 +13,22 @@ max_covs = {'tumor': 200, 'normal': 100}  # coverage above this is suspiciously 
 
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
 # Minimum coverage for normal is 10, 30 for cancer.
-#TODO: replace with mosdepth
-rule goleft_depth:
+rule mosdepth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
-        ref_fa = ref_fa
-    params:
-        prefix = lambda wc, output: output[0].replace('.depth.bed', ''),
-        cutoff = lambda wc: min_covs[wc.phenotype]
     output:
-        '{batch}/coverage/{batch}-{phenotype}.depth.bed'
-    threads: threads_per_sample
-    resources:
-        mem_mb=2000
+        '{batch}/coverage/{batch}-{phenotype}.quantized.bed.gz',
+        '{batch}/coverage/{batch}-{phenotype}.regions.bed.gz',
+    params:
+        prefix = '{batch}/coverage/{batch}-{phenotype}',
+        cutoffs = lambda wc: f'0:1:{min_covs[wc.phenotype]}:{max_covs[wc.phenotype]}:',
     shell:
-        'goleft depth {input.bam} --reference {ref_fa} --processes {threads} --bed {input.bed} --stats --mincov {params.cutoff} --prefix {params.prefix}'
+        'export MOSDEPTH_Q0=NO_COVERAGE && ' \
+        'export MOSDEPTH_Q1=LOW_COVERAGE && ' \
+        'export MOSDEPTH_Q2=CALLABLE && ' \
+        'export MOSDEPTH_Q3=HIGH_COVERAGE && ' \
+        'mosdepth {params.prefix} -q {params.cutoffs} --no-per-base {input.bam} --by {input.bed}'
 
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
@@ -105,9 +105,9 @@ rule cacao_symlink_normal:
 
 rule coverage:
     input:
-        expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
+        expand(rules.mosdepth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
         expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
-        #expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
-        #expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
+        expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
+        expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
     output:
         temp(touch('log/coverage.done'))
