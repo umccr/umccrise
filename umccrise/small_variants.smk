@@ -217,7 +217,7 @@ rule somatic_vcf_filter:
             vcf.add_filter_to_header({'ID': 'LowQual_GIAB_LCR', 'Description': 'DP<25 & AF<5%, and does not overlap GiaB high confidence regions'})
         def func(rec):
             t = rec.INFO['PCGR_TIER']
-            int_tier = int(t.split()[1]) if 'TIER' in t else 5  # "TIER 2" -> 2
+            int_tier = int(t.split('_')[1]) if 'TIER' in t else 5  # "TIER_2" -> 2
             # Keeping all variants with tier 1, 2, 3:
             # Tier 1 - variants of strong clinical significance
             # Tier 2 - variants of potential clinical significance
