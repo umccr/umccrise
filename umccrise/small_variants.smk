@@ -98,8 +98,8 @@ rule somatic_vcf_pon_pass_keygenes:
 
 rule somatic_vcf_pcgr_ready:
     input:
-        full_vcf = rules.somatic_vcf_pon_annotate.output.vcf,
-        keygenes_vcf = rules.somatic_vcf_pon_1round.output.vcf,
+        full_vcf = rules.somatic_vcf_pon_1round.output.vcf,
+        keygenes_vcf = rules.somatic_vcf_pon_pass_keygenes.output.vcf,
     output:
         vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-ready.vcf.gz',
     group: "small_variants_1round"
@@ -121,7 +121,7 @@ rule somatic_vcf_pcgr_1round:
         sample_name = '{batch}-somatic',
         opt='--no-docker' if not which('docker') else '',
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000
+        mem_mb = set_pcgr_mem
     shell:
         conda_cmd.format('pcgr') + which('pcgr') +
         ' {input.vcf} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '
