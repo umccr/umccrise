@@ -60,14 +60,14 @@ rule run_cacao_somatic:
         cacao_data = join(loc.extras, 'cacao', 'data'),
         output_dir = '{batch}/coverage/cacao_somatic',
         docker_opt = '--no-docker' if not which('docker') else '',
-        output_prefix = '{batch}/coverage/cacao_somatic/{batch}',
+        sample_id = '{batch}',
     resources:
         mem_mb=2000
     threads: threads_per_sample
     shell:
         conda_cmd.format('pcgr') +
         'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' \
-        ' somatic {params.output_prefix} {params.docker_opt} --threads {threads} ' + cacao_param
+        ' somatic {params.sample_id} {params.docker_opt} --threads {threads} ' + cacao_param
 
 rule run_cacao_normal:
     input:
@@ -78,14 +78,14 @@ rule run_cacao_normal:
         cacao_data = join(loc.extras, 'cacao', 'data'),
         output_dir = '{batch}/coverage/cacao_normal',
         docker_opt = '--no-docker' if not which('docker') else '',
-        output_prefix = '{batch}/coverage/cacao_somatic/{batch}',
+        sample_id = '{batch}',
     resources:
         mem_mb=2000
     threads: threads_per_sample
     shell:
         conda_cmd.format('pcgr') +
         'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}'
-        ' somatic {params.output_prefix} {params.docker_opt} --threads {threads} ' + cacao_param
+        ' somatic {params.sample_id} {params.docker_opt} --threads {threads} ' + cacao_param
 
 rule cacao_symlink_somatic:
     input:
@@ -107,7 +107,7 @@ rule coverage:
     input:
         expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
         expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
-        expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
-        expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
+        #expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
+        #expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
     output:
         temp(touch('log/coverage.done'))
