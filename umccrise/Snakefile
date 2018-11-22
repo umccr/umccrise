@@ -133,13 +133,7 @@ def prep_inputs(config_):
         verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz'), is_critical=True, description='Panel of normals indels file in user provided folder')
         verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
 
-    if pcgr_data:
-        if config_.get('no_pcgr', 'no') == 'yes':
-            pcgr_data = False
-        else:
-            verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
-            if not within_sub_workflow:
-                info('PCGR is available')
+    verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
 
     return run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data
 
@@ -221,7 +215,7 @@ rule umccrise:
         rules.small_variants.output,
         rules.rmd.output,
         rules.pcgr.output,
-        rules.igv.output,
+       (rules.igv.output if not no_igv else []),
         rules.purple.output,
     output:
         temp(touch('log/umccrised.done'))
