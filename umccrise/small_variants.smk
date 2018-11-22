@@ -148,7 +148,7 @@ rule somatic_vcf_pcgr_anno:
             vcf.add_info_to_header({'ID': 'PCGR_GENE', 'Description': 'Gene symbol as reported by PCGR in .snvs_indels.tiers.tsv file', 'Type': 'String', 'Number': '1'})
         def func(rec):
             k = f'{rec.CHROM}:g.{rec.POS}{rec.REF}>{rec.ALT[0]}'
-            rec.INFO['PCGR_TIER'] = tier_by_snp.get(k, '.')
+            rec.INFO['PCGR_TIER'] = tier_by_snp.get(k, '.').replace(' ', '_')
             rec.INFO['PCGR_GENE'] = gene_by_snp.get(k, '.')
             return rec
         _iter_vcf(input.vcf, output.vcf, func, func_hdr)
