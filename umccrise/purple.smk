@@ -30,7 +30,8 @@ rule purple_pileup:
         '{input.bam} '
         '--samtools -q1 '
         '-f {input.fasta} '
-        '2> >(tee -a {log} >&2)'
+        '2> {log}'
+        # '2> >(tee -a {log} >&2)'
 
 rule purple_amber:
     input:
