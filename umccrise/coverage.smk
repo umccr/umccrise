@@ -7,9 +7,13 @@ from ngs_utils.reference_data import get_key_genes_bed
 from ngs_utils.file_utils import safe_symlink
 
 
+min_covs = {'tumor': 30, 'normal': 10}    # minimal coverage to confidently call a variant
+max_covs = {'tumor': 200, 'normal': 100}  # coverage above this is suspiciously high (lcr? repeat? CN?)
+
+
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
 # Minimum coverage for normal is 10, 30 for cancer.
-# TODO: replace with mosdepth
+#TODO: replace with mosdepth
 rule goleft_depth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
@@ -17,7 +21,7 @@ rule goleft_depth:
         ref_fa = ref_fa
     params:
         prefix = lambda wc, output: output[0].replace('.depth.bed', ''),
-        cutoff = lambda wc: {'tumor': 30, 'normal': 10}[wc.phenotype]
+        cutoff = lambda wc: min_covs[wc.phenotype]
     output:
         '{batch}/coverage/{batch}-{phenotype}.depth.bed'
     threads: threads_per_sample
@@ -44,6 +48,9 @@ rule goleft_plots:
 
 pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'
 
+cacao_param = f'--callability_levels_somatic 0:{min_covs["tumor"]}:{max_covs["tumor"]} ' \
+              f'--callability_levels_germline 0:{min_covs["normal"]}:{max_covs["normal"]}'
+
 rule run_cacao_somatic:
     input:
         bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
@@ -53,13 +60,14 @@ rule run_cacao_somatic:
         cacao_data = join(loc.extras, 'cacao', 'data'),
         output_dir = '{batch}/coverage/cacao_somatic',
         docker_opt = '--no-docker' if not which('docker') else '',
-        sample = '{batch}',
+        output_prefix = '{batch}/coverage/cacao_somatic/{batch}',
     resources:
         mem_mb=2000
+    threads: threads_per_sample
     shell:
         conda_cmd.format('pcgr') +
-        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome} ' \
-        'somatic {params.sample} {params.docker_opt}'
+        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' \
+        ' somatic {params.output_prefix} {params.docker_opt} --threads {threads} ' + cacao_param
 
 rule run_cacao_normal:
     input:
@@ -70,13 +78,14 @@ rule run_cacao_normal:
         cacao_data = join(loc.extras, 'cacao', 'data'),
         output_dir = '{batch}/coverage/cacao_normal',
         docker_opt = '--no-docker' if not which('docker') else '',
-        sample = '{batch}',
+        output_prefix = '{batch}/coverage/cacao_somatic/{batch}',
     resources:
         mem_mb=2000
+    threads: threads_per_sample
     shell:
         conda_cmd.format('pcgr') +
-        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome} ' \
-        'hereditary {params.sample} {params.docker_opt}'
+        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}'
+        ' somatic {params.output_prefix} {params.docker_opt} --threads {threads} ' + cacao_param
 
 rule cacao_symlink_somatic:
     input:
@@ -99,6 +108,6 @@ rule coverage:
         expand(rules.goleft_depth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
         expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
         expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
-        # expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
+        expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
     output:
         temp(touch('log/coverage.done'))
