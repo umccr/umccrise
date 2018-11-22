@@ -57,6 +57,15 @@ conda activate ${ENV_NAME}
 pip install -e umccrise
 ```
 
+Dirty fix for Raijin
+
+```
+ENV_NAME=umccrise_dev
+cd ./miniconda/envs/${ENV_NAME}_purple/lib
+ln -s libwebp.so.6 libwebp.so.7
+cd -
+```
+
 To automate sourcing in the future, you can create a loader script
 
 ```

@@ -215,7 +215,7 @@ rule umccrise:
         rules.small_variants.output,
         rules.rmd.output,
         rules.pcgr.output,
-       (rules.igv.output if not no_igv else []),
+        (rules.igv.output if config.get('no_igv', 'no') == 'no' else []),
         rules.purple.output,
     output:
         temp(touch('log/umccrised.done'))
