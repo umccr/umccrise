@@ -103,11 +103,16 @@ rule cacao_symlink_normal:
     run:
         safe_symlink(input[0], output[0], rel=True)
 
-rule coverage:
+rule cacao:
     input:
-        expand(rules.mosdepth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()),
-        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
         expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
         expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
+
+rule coverage:
+    input:
+        (expand(rules.mosdepth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()) if which('mosdepth') else []),
+        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
+        # expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
+        # expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
     output:
         temp(touch('log/coverage.done'))
