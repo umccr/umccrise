@@ -41,8 +41,9 @@ rule somatic_vcf_prep:
     group: "small_variants_1round"
     shell:
         'pcgr_prep {input.vcf} |'
-        ' bcftools view -f.,PASS -Oz -o {output.vcf}'
-        ' && tabix -p vcf {output.vcf}'
+        ' bcftools view -f.,PASS -Ob |'
+        ' bcftools annotate -x INFO/ANN '
+        ' -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
 rule somatic_vcf_pon_annotate:
     input:

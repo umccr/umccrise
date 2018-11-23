@@ -46,8 +46,8 @@ rule split_multiallelic:
         'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz'
     group: "subset_for_af"
     shell:
-        "bcftools annotate -x ^INFO/ANN,^INFO/TUMOR_AF -Ob {input.vcf} | "
-        "bcftools norm -m '-' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}"
+        'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
+        'bcftools norm -m \'-\' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}'
 
 rule afs:
     input:
@@ -74,7 +74,7 @@ rule afs_keygenes:
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.bed} -header'
-        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\t%INFO/ANN\\n"'
+        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\n"'
         ' > {output} && test -e {output}'
 
 ## Mutational signatures VCF
