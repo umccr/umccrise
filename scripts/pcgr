@@ -24,7 +24,7 @@ from umccrise import package_path
 @click.option('--germline', is_flag=True)
 @click.option('--docker/--no-docker', 'use_docker', is_flag=True, default=None)
 @click.option('--pcgr-data', type=click.Path(exists=True), help='Path to PCGR data directory (defaults are known for spartan and raijin)')
-def main(vcf_path, purple_tsv=None, output_dir=None, genome='GRCh37', sample=None, germline=False, use_docker=None, pcgr_data=None):
+def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, germline=False, use_docker=None, pcgr_data=None):
 
     if not pcgr_data:
         from hpc_utils.hpc import find_loc
@@ -42,7 +42,9 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome='GRCh37', sample=Non
     pcgr_toml = join(package_path(), 'pcgr', 'pcgr.toml')
     cpsr_toml = join(package_path(), 'pcgr', 'cpsr.toml')
     sample = sample or splitext_plus(basename(vcf_path))[0]
-    pcgr_genome = 'grch38' if '38' in genome else 'grch37'
+    if genome is None:
+        genome = 'GRCh37'
+    pcgr_genome = 'grch38' if ('38' in genome) else 'grch37'
     print('use_docker:', use_docker)
     if use_docker is None:
         check_docker_command = 'docker images -q sigven/pcgr'

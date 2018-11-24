@@ -167,6 +167,7 @@ rule prep_anno_toml:
     input:
         tricky_bed = os.path.join(loc.extras, 'GRCh37_tricky.bed.gz'),
         giab_conf_bed = rules.prep_giab_bed.output[0],
+        gnomad_vcf = get_ref_file(config['genome'], 'gnomad'),
     output:
         'work/tricky_vcfanno.toml'
     group: "small_variants_2round"
@@ -183,6 +184,12 @@ file="{input.giab_conf_bed}"
 names=["GIAB_CONF"]
 columns=[3]
 ops=["flag"]
+
+[[annotation]]
+file="{input.gnomad_vcf}"
+fields = ["AF",]
+names = ["gnomAD_AF"]
+ops=["self"] 
 '''.replace('\n', r'\\n').replace('"', r'\"'),
     shell:
         'printf "{params.toml_text}" > {output}'
@@ -229,7 +236,7 @@ rule somatic_vcf_filter:
             # Applying LC, PoN, depth and AF filters to tier 4 and non-coding:
             # Tier 4 - other coding variants
             # Noncoding variants
-            # Remove gnomad_AF >0.02
+            # Remove gnomad_AF >0.01
             # Remove PoN_CNT>0         # {0 if issnp else 1}'
             # Remove indels in "bad_promoter" tricky regions
             # Remove DP<30 and AF<10% in tricky regions:
@@ -238,9 +245,8 @@ rule somatic_vcf_filter:
             #    unless coding in cancer genes
             # Remove DP<25 and AF<5%
             else:
-                for rgn in ['GLOBAL', 'SAS', 'AFR', 'AMR', 'ASJ', 'EAS', 'FIN', 'NFE', 'OTH']:
-                    if rec.INFO.get(f'{rgn}_AF_GNOMAD', 0) >= 0.01:
-                        _add_cyvcf2_filter(rec, 'gnomAD_common')
+                if rec.INFO.get('gnomAD_AF', 0.) >= 0.01:
+                    _add_cyvcf2_filter(rec, 'gnomAD_common')
                 # second round of panel of normals
                 pon = rec.INFO.get('PoN_CNT')
                 if pon is not None and pon >= 1:
