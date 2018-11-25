@@ -5,30 +5,20 @@ language: python
 python:
   - "3.6"  # used below as $TRAVIS_PYTHON_VERSION in conda install command
 
-before_install:
-  - export PACKAGE_NAME=umccrise
-
-  # Get and install anaconda (https://conda.io/docs/travis.html)
-  - wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - source $HOME/miniconda/etc/profile.d/conda.sh
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a  # Useful for debugging any issues with conda
-
 install:
-  - conda env create -n umccrise --file envs/umccrise.yml
-  - conda env create -n umccrise_purple --file envs/purple.yml
-  - conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
-  - conda activate umccrise
-  # Installing the codebase (source code was automatically cloned into CWD by Travis)
-  - pip install -e .
+  - docker build -t umccr/umccrise:$TRAVIS_TAG -f Dockerfile .
+  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
   # Clone the test data
   - git clone https://github.com/umccr/umccrise_test_data
 
 script:
-  - umccrise --version
+  - docker run -t --cpus 1 umccr/umccrise:$TRAVIS_TAG umccrise --version
+  - docker run -t --cpus 1
+    -v=umccrise_test_data/results/bcbio_test_project_docker:/output_dir
+    -v=umccrise_test_data/data/bcbio_test_project:/bcbio_project
+    -v=umccrise_test_data/data/genomes:/genomes
+    umccr/umccrise:$TRAVIS_TAG
+    umccrise /bcbio_project -o /output_dir structural
 
 services:
   - docker
@@ -38,26 +28,9 @@ addons:
       - docker-ce
 
 deploy:
-  # Deploy to Anaconda.org
   - provider: script
-    script: rm -rf $HOME/miniconda umccrise_test_data &&
-            docker build -t umccr/umccrise:$TRAVIS_TAG -f Dockerfile . &&
-            echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
+    script: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
             docker push umccr/umccrise:$TRAVIS_TAG
     on:
       tags: true
     skip_cleanup: true
-
-#after_success:
-#  # Building docker image
-#  - test $TRAVIS_BRANCH = "master" &&
-#    grep -qv dev VERSION.txt &&
-#    docker version &&
-#    rm -rf $HOME/miniconda umccrise_test_data &&
-#    docker build -t umccr/umccrise:$(cat VERSION.txt) -f Dockerfile .
-#
-#  # Pushing docker image
-#  - test $TRAVIS_BRANCH = "master" && grep -qv dev VERSION.txt &&
-#    docker images &&
-#    echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
-#    docker push umccr/umccrise:$(cat VERSION.txt)

@@ -24,12 +24,7 @@ RUN apt-get update && \
 # Install conda
 RUN wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
     bash miniconda.sh -b -p /miniconda
-
-# Instead of `. /miniconda/etc/profile.d/conda.sh`:
 ENV PATH /miniconda/bin:$PATH
-ENV CONDA_EXE /miniconda/bin/conda
-ENV CONDA_ROOT /miniconda
-ENV CONDA_PYTHON_EXE /miniconda/bin/python
 
 # Install conda environments
 COPY envs envs
@@ -42,7 +37,6 @@ RUN conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
 # Instead of `conda activate umccrise`
 ENV PATH /miniconda/envs/umccrise/bin:$PATH
 ENV CONDA_PREFIX /miniconda/envs/umccrise
-ENV CONDA_DEFAULT_ENV umccrise
 
 # Install source
 COPY umccrise umccrise/umccrise
