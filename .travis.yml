@@ -7,14 +7,14 @@ python:
 
 install:
   - docker build -t umccr/umccrise -f Dockerfile .
-  - git clone https://github.com/umccr/umccrise_test_data /umccrise_test_data
+  - git clone https://github.com/umccr/umccrise_test_data $HOME/umccrise_test_data
 
 script:
   - docker run -t --cpus 1 umccr/umccrise umccrise --version
   - docker run -t --cpus 1
-    -v=/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
-    -v=/umccrise_test_data/data/bcbio_test_project:/bcbio_project
-    -v=/umccrise_test_data/data/genomes:/genomes
+    -v=$HOME/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
+    -v=$HOME/umccrise_test_data/data/bcbio_test_project:/bcbio_project
+    -v=$HOME/umccrise_test_data/data/genomes:/genomes
     umccr/umccrise
     umccrise /bcbio_project -o /output_dir structural
 
