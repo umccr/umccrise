@@ -170,13 +170,20 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     except subprocess.CalledProcessError:
         logger.error('--------')
         logger.error(f'Error running Umccrise: snakemake returned a non-zero status. Working directory: {output_dir}')
-        run_simple(f'chmod -R a+r {log_dir}')
         if cluster_log_dir:
+            run_simple(f'chmod -R a+r {cluster_log_dir}')
+            logger.error(f'Review cluster job logs in {cluster_log_dir}')
+        sys.exit(1)
+    except KeyboardInterrupt:
+        logger.error('--------')
+        logger.error(f'Interrupted Umccrise. Fixing logs permissions. Working directory: {output_dir}')
+        if cluster_log_dir:
+            run_simple(f'chmod -R a+r {cluster_log_dir}')
             logger.error(f'Review cluster job logs in {cluster_log_dir}')
         sys.exit(1)
     else:
-        logger.error('--------')
-        run_simple(f'chmod -R a+r {log_dir}')
+        logger.info('--------')
+        run_simple(f'chmod -R a+r {cluster_log_dir}')
         logger.info(f'Finished. Output directory: {output_dir}')
 
 

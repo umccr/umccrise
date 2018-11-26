@@ -106,7 +106,7 @@ rule somatic_vcf_pcgr_ready:
     run:
         total_vars = int(subprocess.check_output(f'bcftools view -H {input.full_vcf} | wc -l', shell=True).strip())
         vcf = input.full_vcf if total_vars <= 500_000 else input.keygenes_vcf  # to avoid PCGR choking on too many variants
-        shell(f'bcftools annotate -x INFO/ANN {basename(vcf)} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}')
+        shell(f'bcftools annotate -x INFO/ANN {vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}')
 
 rule somatic_vcf_pcgr_1round:
     input:
