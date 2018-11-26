@@ -48,7 +48,7 @@ export PATH=$(pwd)/miniconda/bin:$PATH
 Install environments
 
 ```
-ENV_NAME=umccrise_dev
+ENV_NAME=umccrise
 conda env create -n ${ENV_NAME} --file umccrise/envs/umccrise.yml
 conda env create -n ${ENV_NAME}_purple --file umccrise/envs/purple.yml
 # conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
@@ -60,7 +60,7 @@ pip install -e umccrise
 Dirty fix for Raijin
 
 ```
-ENV_NAME=umccrise_dev
+ENV_NAME=umccrise
 cd ./miniconda/envs/${ENV_NAME}_purple/lib
 ln -s libwebp.so.6 libwebp.so.7
 cd -
@@ -69,7 +69,7 @@ cd -
 To automate sourcing in the future, you can create a loader script
 
 ```
-ENV_NAME=umccrise_dev
+ENV_NAME=umccrise
 cat <<EOT > load_umccrise.sh
 unset PYTHONPATH
 unset PERL5LIB
@@ -84,7 +84,7 @@ The PCGR data bundle gets refreshed every release, so please select the appropri
 
 ```bash
 # Download the data bundles
-pip install gdown
+pip install gdown  # or use  `$(pwd)/miniconda/envs/${ENV_NAME}_pcgr/bin/gdown`
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | tar xvfz - # hg19
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | tar xvfz - # hg38
 
