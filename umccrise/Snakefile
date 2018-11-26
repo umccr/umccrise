@@ -36,7 +36,7 @@ config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster s
 
 py_path = sys.executable  # /miniconda/envs/umccrise/bin/python
 env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
-conda_cmd = 'PATH=' + env_path + '_{}/bin:$PATH '
+conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
 
 
 def prep_inputs(config_):

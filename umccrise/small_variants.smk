@@ -10,7 +10,7 @@ import csv
 from ngs_utils.file_utils import which
 
 
-localrules: small_variants
+localrules: small_variants, prep_anno_toml, prep_giab_bed
 
 
 # Call variants with 1%
@@ -157,7 +157,6 @@ rule prep_giab_bed:
         get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
     output:
         'work/giab_conf.bed.gz'
-    group: "small_variants_2round"
     shell:
         'cat {input} | bgzip -c > {output} && tabix -p bed {output}'
 
@@ -168,7 +167,6 @@ rule prep_anno_toml:
         gnomad_vcf = get_ref_file(run.genome_build, 'gnomad'),
     output:
         'work/tricky_vcfanno.toml'
-    group: "small_variants_2round"
     params:
         toml_text  = lambda wc, input, output: f'''
 [[annotation]]
