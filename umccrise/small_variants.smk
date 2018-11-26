@@ -40,9 +40,8 @@ rule somatic_vcf_prep:
         tbi = 'work/{batch}/small_variants/somatic-ensemble-prep.vcf.gz.tbi'
     group: "small_variants_1round"
     shell:
-        'pcgr_prep {input.vcf} |'
-        ' bcftools view -f.,PASS -Ob |'
-        ' bcftools annotate -x INFO/ANN '
+        'pcgr_prep {input.vcf}'
+        ' | bcftools view -f.,PASS'
         ' -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
 rule somatic_vcf_pon_annotate:
@@ -107,8 +106,7 @@ rule somatic_vcf_pcgr_ready:
     run:
         total_vars = int(subprocess.check_output(f'bcftools view -H {input.full_vcf} | wc -l', shell=True).strip())
         vcf = input.full_vcf if total_vars <= 500_000 else input.keygenes_vcf  # to avoid PCGR choking on too many variants
-        shell(f'ln -s {basename(vcf)} {output.vcf}')
-        shell(f'ln -s {basename(vcf)}.tbi {output.vcf}.tbi')
+        shell(f'bcftools annotate -x INFO/ANN {basename(vcf)} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}')
 
 rule somatic_vcf_pcgr_1round:
     input:

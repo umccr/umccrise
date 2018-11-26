@@ -118,10 +118,9 @@ rule purple_run:
         outdir = 'work/{batch}/purple',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
-        macos_patch = 'export PERL5LIB=' \
-            '$CONDA_PREFIX/lib/site_perl/5.26.2/darwin-thread-multi-2level:' \
-            '$CONDA_PREFIX/lib/perl5/site_perl/5.22.0 && '\
-            if platform.system() == 'Darwin' else '',
+        macos_patch = ('export PERL5LIB=' +
+            env_path + '_purple/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
+            env_path + '_purple/lib/perl5/site_perl/5.22.0 && ') if platform.system() == 'Darwin' else '',
         xms = 2000,
         xmx = min(50000, 3500*threads_per_batch),
     group: 'purple_run'

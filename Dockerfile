@@ -43,7 +43,6 @@ COPY umccrise umccrise/umccrise
 COPY scripts umccrise/scripts
 COPY vendor umccrise/vendor
 COPY setup.py umccrise/setup.py
-COPY VERSION.txt umccrise/VERSION.txt
 
 RUN pip install -e umccrise
 
