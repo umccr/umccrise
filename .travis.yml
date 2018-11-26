@@ -3,21 +3,19 @@ dist: trusty
 
 language: python
 python:
-  - "3.6"  # used below as $TRAVIS_PYTHON_VERSION in conda install command
+  - "3.6"
 
 install:
-  - docker build -t umccr/umccrise:$TRAVIS_TAG -f Dockerfile .
-  - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
-  # Clone the test data
+  - docker build -t umccr/umccrise -f Dockerfile .
   - git clone https://github.com/umccr/umccrise_test_data
 
 script:
-  - docker run -t --cpus 1 umccr/umccrise:$TRAVIS_TAG umccrise --version
+  - docker run -t --cpus 1 umccr/umccrise umccrise --version
   - docker run -t --cpus 1
     -v=umccrise_test_data/results/bcbio_test_project_docker:/output_dir
     -v=umccrise_test_data/data/bcbio_test_project:/bcbio_project
     -v=umccrise_test_data/data/genomes:/genomes
-    umccr/umccrise:$TRAVIS_TAG
+    umccr/umccrise
     umccrise /bcbio_project -o /output_dir structural
 
 services:
@@ -30,6 +28,7 @@ addons:
 deploy:
   - provider: script
     script: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
+            docker tag umccr/umccrise umccr/umccrise:$TRAVIS_TAG
             docker push umccr/umccrise:$TRAVIS_TAG
     on:
       tags: true
