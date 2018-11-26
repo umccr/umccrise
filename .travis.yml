@@ -28,7 +28,7 @@ addons:
 deploy:
   - provider: script
     script: echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USER" --password-stdin &&
-            docker tag umccr/umccrise umccr/umccrise:$TRAVIS_TAG
+            docker tag umccr/umccrise umccr/umccrise:$TRAVIS_TAG &&
             docker push umccr/umccrise:$TRAVIS_TAG
     on:
       tags: true
