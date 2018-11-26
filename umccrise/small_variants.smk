@@ -313,6 +313,6 @@ rule small_variants:
     input:
         expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
         expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
-        expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys())
+        expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/small_variants.done'))
