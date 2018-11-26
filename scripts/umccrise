@@ -183,7 +183,8 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         sys.exit(1)
     else:
         logger.info('--------')
-        run_simple(f'chmod -R a+r {cluster_log_dir}')
+        if cluster_log_dir:
+            run_simple(f'chmod -R a+r {cluster_log_dir}')
         logger.info(f'Finished. Output directory: {output_dir}')
 
 
