@@ -49,10 +49,10 @@ Install environments
 
 ```
 ENV_NAME=umccrise
-conda env create -n ${ENV_NAME} --file umccrise/envs/umccrise.yml
-conda env create -n ${ENV_NAME}_purple --file umccrise/envs/purple.yml
-# conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
-conda env create -n ${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
+conda env create -p $(pwd)/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
+conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_purple --file umccrise/envs/purple.yml
+# conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
+conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
 export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
 pip install -e umccrise
 ```
