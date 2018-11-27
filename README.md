@@ -73,7 +73,7 @@ ENV_NAME=umccrise
 cat <<EOT > load_umccrise.sh
 unset PYTHONPATH
 unset PERL5LIB
-export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$(pwd)/miniconda/bin:$PATH
+export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$(pwd)/miniconda/bin:\$PATH
 export CONDA_PREFIX=$(pwd)/miniconda/envs/${ENV_NAME}
 EOT
 ```
