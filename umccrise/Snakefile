@@ -13,7 +13,7 @@ from umccrise import package_path
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
-threads_max = 32  # Use up to 32 cores at once, if available
+threads_max = 28  # Use up to 32 cores at once, if available
 
 loc = find_loc()
 is_spartan = loc and loc.name == 'spartan'
