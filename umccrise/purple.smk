@@ -112,7 +112,7 @@ rule purple_run:
         somatic_vcf = rules.purple_somatic_vcf.output,
     output:
         'work/{batch}/purple/{batch}.purple.cnv',
-        # 'work/{batch}/purple/plot/{batch}.circos.png',
+        'work/{batch}/purple/plot/{batch}.circos.png',
     params:
         rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
@@ -150,10 +150,10 @@ rule purple_run:
 rule purple_symlink:
     input:
         'work/{batch}/purple/{batch}.purple.cnv',
-        # 'work/{batch}/purple/plot/{batch}.circos.png',
+        'work/{batch}/purple/plot/{batch}.circos.png',
     output:
         '{batch}/purple/{batch}.purple.cnv',
-        # '{batch}/purple/{batch}.purple.circos.png',
+        '{batch}/purple/{batch}.purple.circos.png',
     params:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
