@@ -33,18 +33,12 @@ RUN hash -r && \
 RUN conda env create -n umccrise --file envs/umccrise.yml
 RUN conda env create -n umccrise_purple --file envs/purple.yml
 RUN conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
+# Dirty hack to fix circos https://github.com/bioconda/bioconda-recipes/issues/9830#issuecomment-441438177
+RUN cd /miniconda/envs/umccrise_purple/lib && ln -s libwebp.so.6 libwebp.so.7
 
 # Instead of `conda activate umccrise`
 ENV PATH /miniconda/envs/umccrise/bin:$PATH
 ENV CONDA_PREFIX /miniconda/envs/umccrise
-
-# Install source
-COPY umccrise umccrise/umccrise
-COPY scripts umccrise/scripts
-COPY vendor umccrise/vendor
-COPY setup.py umccrise/setup.py
-
-RUN pip install -e umccrise
 
 # Clean up
 RUN rm -rf umccrise/.git && \
@@ -54,3 +48,10 @@ RUN rm -rf umccrise/.git && \
     cd /usr/local && \
     apt-get clean && \
     rm -rf /.cpanm
+
+# Install source
+COPY umccrise umccrise/umccrise
+COPY scripts umccrise/scripts
+COPY vendor umccrise/vendor
+COPY setup.py umccrise/setup.py
+RUN pip install -e umccrise
