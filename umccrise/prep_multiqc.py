@@ -62,7 +62,8 @@ def make_report_metadata(bcbio_proj, base_dirpath,
 
 
 def multiqc_prep_data(bcbio_mq_filelist, bcbio_mq_yaml, bcbio_final_dir,
-                      new_mq_data_dir, conf, filelist_file, conf_yaml, new_bcbio_mq_yaml, additional_files):
+                      new_mq_data_dir, conf, filelist_file, conf_yaml, new_bcbio_mq_yaml, additional_files,
+                      gold_standard_data=None):
     if conf:
         with file_transaction(None, conf_yaml) as tx:
             with open(tx, 'w') as f:

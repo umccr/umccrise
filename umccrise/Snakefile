@@ -32,12 +32,6 @@ upload_igv = is_hpc and config.get('no_s3', 'no') == 'no'
 within_sub_workflow = 'within_sub_workflow' in config
 config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster sub-executions of the Snakefile
 
-# conda_sh = abspath(join(config["conda_prefix"], "../../etc/profile.d/conda.sh"))
-# conda_cmd = f'source {conda_sh} && conda activate {config["conda_prefix"]}_{{}} && '
-# conda_prefix = config["conda_prefix"]
-# new_path = conda_prefix + '_{}/bin:' + os.environ['PATH']
-# conda_cmd = 'export PATH=' + new_path + ' && '
-
 py_path = sys.executable  # /miniconda/envs/umccrise/bin/python
 env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
 conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
@@ -161,6 +155,7 @@ rule all:
     input: 'log/umccrised.done'
     # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
 
+
 # TODO: try subworkflows here? http://snakemake.readthedocs.io/en/stable/snakefiles/modularization.html#sub-workflows
 """
 subworkflow small_variants:
@@ -175,6 +170,7 @@ rule all:
 # Or maybe it's not reasonable and not doable here since the input file is a phony .done, and also we depend on config in subworkflows
 
 
+include: "multiqc.smk"
 include: "small_variants.smk"
 include: "coverage.smk"
 include: "structural.smk"
@@ -184,59 +180,8 @@ include: "rmd.smk"
 include: "purple.smk"
 
 
-localrules: multiqc, copy_logs, umccrise
+localrules: umccrise
 
-
-rule prep_multiqc_data:
-    input:
-        bcbio_mq_filelist = join(run.date_dir, 'multiqc/list_files_final.txt'),
-        bcbio_mq_yaml     = join(run.date_dir, 'multiqc/multiqc_config.yaml'),
-        bcbio_final_dir   = join(run.final_dir)
-    output:
-        filelist        = 'multiqc_data/multiqc_filelist.txt',
-        conf_yaml       = 'multiqc_data/umccr_multiqc_config.yaml',
-        bcbio_conf_yaml = 'multiqc_data/bcbio_multiqc_config.yaml'
-    params:
-        data_dir        = 'multiqc_data'
-    run:
-        conf, additional_files = make_report_metadata(run, base_dirpath=abspath('.'))
-        multiqc_prep_data(bcbio_mq_filelist=input.bcbio_mq_filelist,
-                          bcbio_mq_yaml=input.bcbio_mq_yaml,
-                          bcbio_final_dir=input.bcbio_final_dir,
-                          new_mq_data_dir=params.data_dir,
-                          conf=conf,
-                          filelist_file=output.filelist,
-                          conf_yaml=output.conf_yaml,
-                          new_bcbio_mq_yaml=output.bcbio_conf_yaml,
-                          additional_files=additional_files)
-
-
-rule multiqc:  # {}
-    input:
-        filelist        = 'multiqc_data/multiqc_filelist.txt',
-        conf_yaml       = 'multiqc_data/umccr_multiqc_config.yaml',
-        bcbio_conf_yaml = 'multiqc_data/bcbio_multiqc_config.yaml'
-    output:
-        html_file       = run.project_name + '-multiqc_report.html'
-    shell:
-        'multiqc -f -v -o . -l {input.filelist} -c {input.conf_yaml} -c {input.bcbio_conf_yaml}'
-        ' --filename {output.html_file}'
-
-## Additional information
-# TODO: link it to MultiQC
-rule copy_logs:  # {}
-    input:
-        versions = join(run.date_dir, 'data_versions.csv'),
-        programs = join(run.date_dir, 'programs.txt'),
-        conf_dir = run.config_dir
-    output:
-        versions = 'log/' + run.project_name + '-data_versions.csv',
-        programs = 'log/' + run.project_name + '-programs.txt',
-        conf_dir = directory(join('log/' + run.project_name + '-config'))
-    shell:
-        'cp -r {input.versions} {output.versions} && ' \
-        'cp -r {input.programs} {output.programs} && ' \
-        'cp -r {input.conf_dir} {output.conf_dir}'
 
 
 rule umccrise:
