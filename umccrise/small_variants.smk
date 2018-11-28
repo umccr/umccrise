@@ -162,7 +162,7 @@ rule prep_giab_bed:
 
 rule prep_anno_toml:
     input:
-        tricky_bed = os.path.join(loc.extras, 'GRCh37_tricky.bed.gz'),
+        tricky_bed = get_ref_file(run.genome_build, key='tricky'),
         giab_conf_bed = rules.prep_giab_bed.output[0],
         gnomad_vcf = get_ref_file(run.genome_build, key='gnomad'),
     output:
