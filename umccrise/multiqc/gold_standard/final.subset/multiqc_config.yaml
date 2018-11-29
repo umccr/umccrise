@@ -1,0 +1,29 @@
+bcftools:
+  write_separate_table: true
+module_order:
+- bcbio
+- samtools
+- goleft_indexcov
+- peddy
+- bcftools:
+    info: Bcftools stats for somatic variant calls only.
+    name: Bcftools (somatic)
+    path_filters:
+    - '*_bcftools_stats.txt'
+    write_general_stats: true
+- bcftools:
+    info: Bcftools stats for germline variant calls only.
+    name: Bcftools (germline)
+    path_filters:
+    - '*_bcftools_stats_germline.txt'
+    write_general_stats: false
+- picard
+- qualimap
+- snpeff
+- fastqc
+- preseq
+table_columns_visible:
+  Peddy:
+    error_sex_check: false
+    family_id: false
+    sex_het_ratio: false

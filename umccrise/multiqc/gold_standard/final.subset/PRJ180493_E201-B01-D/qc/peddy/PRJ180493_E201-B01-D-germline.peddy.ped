@@ -1,0 +1,2 @@
+#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	Ethnicity	het_call_rate	het_ratio	het_mean_depth	het_idr_baf	ancestry-prediction	PC1	PC2	PC3	sex_het_ratio	sex_fixed
+E201	PRJ180493_E201-B01-D	-9	-9	0	0	-9	1	0.6691729323308271	43.434866235355834	0.2268170426065163	EUR	-0.7623459199164976	-1.5352052424719858	0.8493115324294216	0.262022355081882	True

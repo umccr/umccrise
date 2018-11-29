@@ -1,0 +1,3 @@
+sample_id,depth_outlier,het_count,het_ratio,idr_baf,mean_depth,median_depth,p10,p90,sampled_sites,call_rate,PC1,PC2,PC3,PC4,ancestry-prediction,ancestry-prob
+PRJ180506_E194-T01-D,False,3878,0.6675,0.2934,74.43,73,0.3153,0.6087,5797,1,-0.7476,-1.616,-0.5736,-0.636,EUR,0.9978
+PRJ180507_E194-B01-D,False,3901,0.6714,0.2525,34.97,34,0.3586,0.6111,5756,1,-0.7311,-1.614,-0.5486,-0.6278,EUR,0.9978

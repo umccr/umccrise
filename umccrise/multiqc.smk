@@ -3,6 +3,41 @@
 localrules: multiqc, copy_logs
 
 
+"""
+#############################
+### Prepare gold standard ###
+#############################
+cd /data/cephfs/punim0010/data/Results/Tothill-A5/2018-08-11
+mkdir final.subset
+for f in $(cat final/2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/list_files_final.txt | grep -v trimmed | grep -v target_info.yaml) ; do 
+    mkdir -p final.subset/`dirname $f`
+    cp final/$f final.subset/$f 
+done
+cd final.subset
+ls | grep -v E201 | grep -v E199 | grep -v E194 | grep -v E190 | grep -v E202 | grep -v 2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged | xargs rm -rf
+cd ..
+cat final/2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/list_files_final.txt| grep -P "E201|E199|E194|E190|E202" > final.subset/list_files_final.txt
+
+### Clean up ###
+cd final.subset
+# clean up qc/coverage
+find . -name "*-indexcov.tsv" -delete
+# clean up qc/fastqc
+find . -name "fastqc_report.html" -delete
+find . -name "Per_base_N_content.tsv" -delete
+find . -name "Per_base_sequence_content.tsv" -delete
+find . -name "Per_base_sequence_quality.tsv" -delete
+find . -name "Per_sequence_GC_content.tsv" -delete
+find . -name "Per_sequence_quality_scores.tsv" -delete
+find . -name "Per_tile_sequence_quality.tsv" -delete
+find . -name "Sequence_Length_Distribution.tsv" -delete
+# clean up qc/qsignature - to repalce with project-level .ma file
+rm -rf */qc/qsignature
+# qc/peddy
+find . -name "*.ped_check.rel-difference.csv" -delete
+find . -name "*.html" -delete
+"""
+
 
 rule prep_multiqc_data:
     input:
@@ -17,13 +52,11 @@ rule prep_multiqc_data:
         data_dir        = 'work/{batch}/multiqc_data'
     run:
         conf, additional_files = make_report_metadata(run, base_dirpath=abspath('.'))
-        # prep gold standard with:
-        # for f in $(grep -v trimmed list_files_final.txt | grep -v target_info.yaml) ; do mkdir -p tmp/`dirname $f` ; cp $f tmp/$f ; done
-        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard')
+        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'final.subset')
         with open(join(gold_standard_dir, 'list_files_final.txt')) as f:
             for l in f:
                 l = l.strip()
-                additional_files.append(join(gold_standard_dir, 'final', l))
+                additional_files.append(join(gold_standard_dir, l))
         multiqc_prep_data(
             bcbio_mq_filelist=input.bcbio_mq_filelist,
             bcbio_mq_yaml=input.bcbio_mq_yaml,
