@@ -42,14 +42,14 @@ rule purple_amber:
     params:
         outdir = 'work/{batch}/purple/amber',
         jar = join(package_path(), 'amber.jar'),
-        xms = 2000,
-        xmx = 30000,
+        xms = 10000,
+        xmx = min(50000, 10000*threads_per_batch),
     log:
         'log/purple/{batch}/{batch}.amber.log',
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        xmx = min(50000, 3500*threads_per_batch),
+        mem_mb = min(50000, 10000*threads_per_batch),
     shell:
         conda_cmd.format('purple') +
         'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
