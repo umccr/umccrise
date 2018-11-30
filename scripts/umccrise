@@ -32,7 +32,7 @@ from umccrise import _version as version
 
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
-@click.option('--restart-times', default=2, help='Propagated to snakemake. Default is 2. Set to 0 to avoid any restarts.')
+@click.option('--restart-times', default=0, help='Propagated to snakemake. Default is 0.')
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Just prints the rules and the commands '
                                                              'to run without actually generating any files.')
 
