@@ -26,7 +26,7 @@ was generated and the button that launches the welcome tour.
 
 <div class="well">
     <dl class="dl-horizontal" style="margin-bottom:0;">
-      {% if report.az %}
+      {% if report.umccr %}
         {{ '<dt>Project:</dt><dd>' + config.title + '</dd>' }}
         {{ '<dt>Creation date:</dt><dd>' + config.umccr.run_section.run_date
           + ('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.program_versions if report.umccr.run_section.program_versions else '')
@@ -44,8 +44,8 @@ was generated and the button that launches the welcome tour.
 
 {% if report.umccr %}
 <div style="margin-left: 5px; margin-bottom: 5px;">
-    <!-- {{ '<b>Mutations:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(report.az.mutations_links) + '</br>'
-        if report.az.mutations_links }} -->
+    <!-- {{ '<b>Mutations:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(report.umccr.mutations_links) + '</br>'
+        if report.umccr.mutations_links }} -->
     {{ '<b>Expression:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(report.umccr.expression_links) + '</br>'
         if report.umccr.expression_links }}
 </div>

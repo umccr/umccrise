@@ -1,2 +1,0 @@
-#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	CNX	CNY	bins.out	bins.lo	bins.hi	bins.in	slope	p.out	mapped	unmapped
-unknown	PRJ180495_E199-B01-D	-9	-9	1	-9	1.03	1.08	19422	11810	6293	156704	116.576	0.12	944490605	1753246

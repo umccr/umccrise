@@ -22,3 +22,4 @@ src/
 *.retry
 
 .circleci
+umccrise/multiqc/gold_standard/final.subset/

@@ -1,0 +1,2 @@
+sample_id,depth_outlier,het_count,het_ratio,idr_baf,mean_depth,median_depth,p10,p90,sampled_sites,call_rate,PC1,PC2,PC3,PC4,ancestry-prediction,ancestry-prob
+Eugene_B,False,3937,0.6832,0.2364,40.04,39,0.3636,0.6,5721,1,-0.6593,-1.553,-0.459,-0.9816,EUR,0.9978

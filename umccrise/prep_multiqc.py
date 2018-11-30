@@ -11,7 +11,6 @@ from ngs_utils.bcbio import BcbioProject
 from ngs_utils.call_process import run
 from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transaction
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
-from ngs_utils.utils import mean, is_us
 
 
 def make_report_metadata(bcbio_proj, base_dirpath,
@@ -62,12 +61,13 @@ def make_report_metadata(bcbio_proj, base_dirpath,
 
 
 def multiqc_prep_data(bcbio_mq_filelist, bcbio_mq_yaml, bcbio_final_dir,
-                      new_mq_data_dir, conf, filelist_file, conf_yaml, new_bcbio_mq_yaml, additional_files,
+                      new_mq_data_dir, generated_conf, filelist_file, generated_conf_yaml,
+                      new_bcbio_mq_yaml, additional_files,
                       gold_standard_data=None):
-    if conf:
-        with file_transaction(None, conf_yaml) as tx:
+    if generated_conf:
+        with file_transaction(None, generated_conf_yaml) as tx:
             with open(tx, 'w') as f:
-                yaml.dump(conf, f, default_flow_style=False)
+                yaml.dump(generated_conf, f, default_flow_style=False)
 
     shutil.copy(bcbio_mq_yaml, new_bcbio_mq_yaml)
 

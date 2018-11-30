@@ -1,0 +1,2 @@
+sample_a,sample_b,n,shared_hets,hets_a,ibs2,rel,hets_b,ibs0,pedigree_parents,pedigree_relatedness,predicted_parents,parent_error,sample_duplication_error,rel_difference
+Chen_T,Chen_B,5321,3132,3164,5280,0.9918,3158,0,False,0,True,True,True,-0.9918

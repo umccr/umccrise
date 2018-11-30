@@ -21,10 +21,12 @@ class config_loaded:
 
 class execution_start:
     def __init__(self):
-        az_conf = config.__dict__.get('az')
-        if az_conf:
-            report.az = az_conf
-            if az_conf.get('is_rnaseq', False) is True:
+        log.debug('Running execution_start hook')
+
+        umccr_conf = config.__dict__.get('umccr')
+        if umccr_conf:
+            report.umccr = umccr_conf
+            if umccr_conf.get('is_rnaseq', False) is True:
                 config.table_columns_visible['bcbio']['Mapped_reads'] = True
                 config.table_columns_visible['QualiMap']['median_coverage'] = True
                 config.table_columns_visible['FastQC']['percent_gc'] = True
@@ -41,39 +43,45 @@ general_stats_descriptions = {
 
 
 class before_set_general_stats_html:
+    log.debug('Running before_set_general_stats_html hook. Setting column descriptions')
+
     def __init__(self):
+        umccr_conf = config.__dict__.get('umccr')
+
         for header in report.general_stats_headers:
             for k, v in general_stats_descriptions.items():
                 if k in header:
                     header[k]['description'] = v
 
-        umccr_conf = config.__dict__.get('umccr')
-
 
 class after_set_general_stats_html:
+    log.debug('Running after_set_general_stats_html hook. Renaming reference samples and setting report links')
+
     def __init__(self):
-        az_conf = config.__dict__.get('umccr')
-        if az_conf and 'pcgr_report_by_sample' in az_conf:
+        umccr_conf = config.__dict__.get('umccr')
+
+        if umccr_conf and 'pcgr_report_by_sample' in umccr_conf:
             log.info('Adding PCGR repots links')
-            for sname in az_conf['pcgr_report_by_sample']:
-                if az_conf['pcgr_report_by_sample'][sname] is not None:
+            for sname in umccr_conf['pcgr_report_by_sample']:
+                if umccr_conf['pcgr_report_by_sample'][sname] is not None:
                     report.general_stats_html = report.general_stats_html \
                         .replace(
                             '>' + sname + '<',
-                            '><a href="' + az_conf['pcgr_report_by_sample'][sname] + '">' + sname + '</a><')
+                            '><a href="' + umccr_conf['pcgr_report_by_sample'][sname] + '">' + sname + '</a><')
+
             report.pcgr_reports_added = True
 
-            if len(az_conf['pcgr_report_by_sample'].items()) >= config.max_table_rows:
+            if len(umccr_conf['pcgr_report_by_sample'].items()) >= config.max_table_rows:
                 new_general_stats_html = ''
                 for l in report.general_stats_html.split('\n'):
                     if 'http://multiqc.info/docs/#tables--beeswarm-plots' in l:
                         l = ('<p class="text-muted"><span class="glyphicon glyphicon-exclamation-sign" '
                              'data-toggle="tooltip"></span> A <a href="http://multiqc.info/docs/#tables--beeswarm-plots"> '
                              'beeswarm</a> plot has been generated instead because of the large number of samples. '
-                             'Showing {} samples:<br>').format(len(az_conf['pcgr_report_by_sample']))
+                             'Showing {} samples:<br>').format(len(umccr_conf['pcgr_report_by_sample']))
                         sample_lines = []
-                        for sname in az_conf['pcgr_report_by_sample']:
-                            if az_conf['pcgr_report_by_sample'][sname] is not None:
+                        for sname in umccr_conf['pcgr_report_by_sample']:
+                            if umccr_conf['pcgr_report_by_sample'][sname] is not None:
                                 sample_lines.append('<a href="' + umccr_conf['pcgr_report_by_sample'][sname] + '">' + sname + '</a>')
                             else:
                                 sample_lines.append(' <span>' + sname + '</span>')

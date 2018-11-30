@@ -1,0 +1,2 @@
+#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	CNX	CNY	bins.out	bins.lo	bins.hi	bins.in	slope	p.out	mapped	unmapped
+unknown	Alice_B	-9	-9	2	-9	1.97	0.00	23501	11795	10250	152625	113.430	0.15	714379247	1278285

@@ -36,6 +36,9 @@ rm -rf */qc/qsignature
 # qc/peddy
 find . -name "*.ped_check.rel-difference.csv" -delete
 find . -name "*.html" -delete
+
+### Rename ###
+python rename.py
 """
 
 
@@ -45,14 +48,14 @@ rule prep_multiqc_data:
         bcbio_mq_yaml     = join(run.date_dir, 'multiqc/multiqc_config.yaml'),
         bcbio_final_dir   = run.final_dir
     output:
-        filelist        = 'work/{batch}/multiqc_data/multiqc_filelist.txt',
-        conf_yaml       = 'work/{batch}/multiqc_data/umccr_multiqc_config.yaml',
-        bcbio_conf_yaml = 'work/{batch}/multiqc_data/bcbio_multiqc_config.yaml'
+        filelist            = 'work/{batch}/multiqc_data/filelist.txt',
+        generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
+        bcbio_conf_yaml     = 'work/{batch}/multiqc_data/bcbio_conf.yaml'
     params:
         data_dir        = 'work/{batch}/multiqc_data'
     run:
-        conf, additional_files = make_report_metadata(run, base_dirpath=abspath('.'))
-        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'final.subset')
+        generated_conf, additional_files = make_report_metadata(run, base_dirpath=abspath('.'))
+        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'final.subset.renamed')
         with open(join(gold_standard_dir, 'list_files_final.txt')) as f:
             for l in f:
                 l = l.strip()
@@ -62,9 +65,9 @@ rule prep_multiqc_data:
             bcbio_mq_yaml=input.bcbio_mq_yaml,
             bcbio_final_dir=input.bcbio_final_dir,
             new_mq_data_dir=params.data_dir,
-            conf=conf,
+            generated_conf=generated_conf,
             filelist_file=output.filelist,
-            conf_yaml=output.conf_yaml,
+            generated_conf_yaml=output.generated_conf_yaml,
             new_bcbio_mq_yaml=output.bcbio_conf_yaml,
             additional_files=additional_files,
             gold_standard_data=[]
@@ -73,17 +76,17 @@ rule prep_multiqc_data:
 
 rule batch_multiqc:  # {}
     input:
-        filelist        = 'work/{batch}/multiqc_data/multiqc_filelist.txt',
-        conf_yaml       = 'work/{batch}/multiqc_data/umccr_multiqc_config.yaml',
-        bcbio_conf_yaml = 'work/{batch}/multiqc_data/bcbio_multiqc_config.yaml'
+        filelist            = 'work/{batch}/multiqc_data/filelist.txt',
+        generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
+        bcbio_conf_yaml     = 'work/{batch}/multiqc_data/bcbio_conf.yaml',
     output:
-        html_file       = '{batch}/{batch}-multiqc_report.html'
+        html_file           = '{batch}/{batch}-multiqc_report.html'
     run:
         ignore_samples=[s.name for s in run.samples if s.name not in
                 [batch_by_name[wildcards.batch].tumor.name, batch_by_name[wildcards.batch].normal.name]]
         ignore_samples_re = '"' + '|'.join(ignore_samples) + '"'
-        shell(f'multiqc -f -v -o . -l {input.filelist} -c {input.conf_yaml} -c {input.bcbio_conf_yaml}'
-            ' --filename {output.html_file} --ignore-samples {ignore_samples_re}')
+        shell(f'multiqc -f -v -o . -l {input.filelist} -c {input.generated_conf_yaml} -c {input.bcbio_conf_yaml}'
+              f' --filename {output.html_file} --ignore-samples {ignore_samples_re}')
 
 ## Additional information
 # TODO: link it to MultiQC

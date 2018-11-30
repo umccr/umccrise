@@ -1,0 +1,355 @@
+# This file was produced by bcftools stats (1.8+htslib-1.8) and can be plotted using plot-vcfstats.
+# The command line was:	bcftools stats  -s Alice_T -f PASS,. /data/cephfs/punim0010/projects/Tothill_A5/2018-07-31T0005_Tothill-A5_WGS-merged/work/ensemble/E194/E194-ensemble-effects.vcf.gz
+#
+# Definition of sets:
+# ID	[2]id	[3]tab-separated file names
+ID	0	Alice_T
+# SN, Summary numbers:
+#   number of records   .. number of data rows in the VCF
+#   number of no-ALTs   .. reference-only sites, ALT is either "." or identical to REF
+#   number of SNPs      .. number of rows with a SNP
+#   number of MNPs      .. number of rows with a MNP, such as CC>TT
+#   number of indels    .. number of rows with an indel
+#   number of others    .. number of rows with other type, for example a symbolic allele or
+#                          a complex substitution, such as ACT>TCGA
+#   number of multiallelic sites     .. number of rows with multiple alternate alleles
+#   number of multiallelic SNP sites .. number of rows with multiple alternate alleles, all SNPs
+# 
+#   Note that rows containing multiple types will be counted multiple times, in each
+#   counter. For example, a row with a SNP and an indel increments both the SNP and
+#   the indel counter.
+# 
+# SN	[2]id	[3]key	[4]value
+SN	0	number of samples:	2
+SN	0	number of records:	2013
+SN	0	number of no-ALTs:	0
+SN	0	number of SNPs:	1075
+SN	0	number of MNPs:	0
+SN	0	number of indels:	938
+SN	0	number of others:	0
+SN	0	number of multiallelic sites:	0
+SN	0	number of multiallelic SNP sites:	0
+# TSTV, transitions/transversions:
+# TSTV	[2]id	[3]ts	[4]tv	[5]ts/tv	[6]ts (1st ALT)	[7]tv (1st ALT)	[8]ts/tv (1st ALT)
+TSTV	0	582	493	1.18	582	493	1.18
+# SiS, Singleton stats:
+# SiS	[2]id	[3]allele count	[4]number of SNPs	[5]number of transitions	[6]number of transversions	[7]number of indels	[8]repeat-consistent	[9]repeat-inconsistent	[10]not applicable
+SiS	0	1	1075	582	493	937	0	0	937
+# AF, Stats by non-reference allele frequency:
+# AF	[2]id	[3]allele frequency	[4]number of SNPs	[5]number of transitions	[6]number of transversions	[7]number of indels	[8]repeat-consistent	[9]repeat-inconsistent	[10]not applicable
+AF	0	0.000000	1075	582	493	938	0	0	938
+# QUAL, Stats by quality:
+# QUAL	[2]id	[3]Quality	[4]number of SNPs	[5]number of transitions (1st ALT)	[6]number of transversions (1st ALT)	[7]number of indels
+QUAL	0	0	95	49	46	113
+QUAL	0	47	0	0	0	1
+QUAL	0	48	0	0	0	1
+QUAL	0	49	1	0	1	1
+QUAL	0	51	0	0	0	1
+QUAL	0	52	1	1	0	3
+QUAL	0	55	3	1	2	0
+QUAL	0	56	2	0	2	1
+QUAL	0	57	1	0	1	2
+QUAL	0	58	11	9	2	19
+QUAL	0	61	5	1	4	0
+QUAL	0	62	7	2	5	0
+QUAL	0	63	4	0	4	0
+QUAL	0	66	0	0	0	2
+QUAL	0	67	7	0	7	1
+QUAL	0	68	8	5	3	4
+QUAL	0	71	2	0	2	2
+QUAL	0	72	3	0	3	1
+QUAL	0	73	10	3	7	4
+QUAL	0	74	20	9	11	34
+QUAL	0	77	6	2	4	1
+QUAL	0	78	13	6	7	1
+QUAL	0	79	3	0	3	8
+QUAL	0	80	9	3	6	11
+QUAL	0	81	8	1	7	2
+QUAL	0	82	3	3	0	1
+QUAL	0	83	9	5	4	2
+QUAL	0	84	11	8	3	14
+QUAL	0	85	27	14	13	94
+QUAL	0	86	2	0	2	0
+QUAL	0	87	6	3	3	2
+QUAL	0	88	9	5	4	4
+QUAL	0	89	6	1	5	5
+QUAL	0	90	14	8	6	7
+QUAL	0	91	5	2	3	2
+QUAL	0	92	3	1	2	2
+QUAL	0	93	16	6	10	14
+QUAL	0	94	7	5	2	12
+QUAL	0	95	43	25	18	105
+QUAL	0	96	11	7	4	3
+QUAL	0	97	4	4	0	5
+QUAL	0	98	1	1	0	8
+QUAL	0	99	17	12	5	11
+QUAL	0	100	2	0	2	3
+QUAL	0	101	13	8	5	15
+QUAL	0	102	7	4	3	6
+QUAL	0	103	72	45	27	91
+QUAL	0	104	3	2	1	2
+QUAL	0	105	1	1	0	4
+QUAL	0	106	17	10	7	9
+QUAL	0	107	1	0	1	2
+QUAL	0	108	8	5	3	9
+QUAL	0	109	3	1	2	6
+QUAL	0	110	4	0	4	8
+QUAL	0	111	51	30	21	84
+QUAL	0	112	2	0	2	3
+QUAL	0	113	13	4	9	6
+QUAL	0	114	14	5	9	2
+QUAL	0	115	3	1	2	3
+QUAL	0	116	4	4	0	9
+QUAL	0	117	43	23	20	45
+QUAL	0	118	12	6	6	6
+QUAL	0	119	9	5	4	9
+QUAL	0	120	9	5	4	5
+QUAL	0	121	1	1	0	3
+QUAL	0	122	25	17	8	26
+QUAL	0	123	1	0	1	0
+QUAL	0	124	18	11	7	6
+QUAL	0	125	2	2	0	2
+QUAL	0	126	1	0	1	2
+QUAL	0	127	21	12	9	11
+QUAL	0	128	1	0	1	0
+QUAL	0	129	13	8	5	1
+QUAL	0	130	5	2	3	1
+QUAL	0	131	3	1	2	0
+QUAL	0	132	11	7	4	6
+QUAL	0	133	11	9	2	1
+QUAL	0	134	3	1	2	0
+QUAL	0	135	2	1	1	3
+QUAL	0	136	12	5	7	4
+QUAL	0	137	9	7	2	2
+QUAL	0	138	4	1	3	0
+QUAL	0	139	3	0	3	2
+QUAL	0	140	6	5	1	4
+QUAL	0	141	4	3	1	1
+QUAL	0	142	4	3	1	0
+QUAL	0	143	3	1	2	0
+QUAL	0	144	11	6	5	2
+QUAL	0	145	18	11	7	1
+QUAL	0	146	4	1	3	6
+QUAL	0	147	1	0	1	0
+QUAL	0	148	15	5	10	3
+QUAL	0	149	2	1	1	0
+QUAL	0	150	0	0	0	2
+QUAL	0	151	14	9	5	1
+QUAL	0	152	2	1	1	0
+QUAL	0	153	0	0	0	1
+QUAL	0	154	18	17	1	2
+QUAL	0	155	5	4	1	1
+QUAL	0	156	0	0	0	2
+QUAL	0	157	17	13	4	1
+QUAL	0	159	9	3	6	0
+QUAL	0	160	2	1	1	0
+QUAL	0	162	15	10	5	1
+QUAL	0	163	0	0	0	1
+QUAL	0	164	4	2	2	0
+QUAL	0	165	4	3	1	1
+QUAL	0	166	3	1	2	0
+QUAL	0	167	14	8	6	2
+QUAL	0	169	12	7	5	1
+QUAL	0	171	5	3	2	0
+QUAL	0	172	0	0	0	1
+QUAL	0	173	7	4	3	1
+QUAL	0	174	1	1	0	0
+QUAL	0	175	6	5	1	0
+QUAL	0	177	5	2	3	0
+QUAL	0	179	4	2	2	0
+QUAL	0	180	1	0	1	0
+QUAL	0	181	2	2	0	0
+QUAL	0	183	2	0	2	0
+QUAL	0	186	2	0	2	0
+QUAL	0	187	0	0	0	1
+QUAL	0	194	1	1	0	0
+QUAL	0	195	0	0	0	1
+QUAL	0	196	1	1	0	0
+QUAL	0	205	1	0	1	0
+# IDD, InDel distribution:
+# IDD	[2]id	[3]length (deletions negative)	[4]count
+IDD	0	-58	1
+IDD	0	-53	1
+IDD	0	-46	1
+IDD	0	-40	1
+IDD	0	-38	1
+IDD	0	-27	1
+IDD	0	-25	1
+IDD	0	-22	1
+IDD	0	-21	2
+IDD	0	-20	1
+IDD	0	-17	1
+IDD	0	-16	3
+IDD	0	-15	1
+IDD	0	-14	1
+IDD	0	-12	4
+IDD	0	-10	4
+IDD	0	-9	4
+IDD	0	-8	8
+IDD	0	-7	2
+IDD	0	-6	11
+IDD	0	-5	5
+IDD	0	-4	28
+IDD	0	-3	19
+IDD	0	-2	233
+IDD	0	-1	311
+IDD	0	1	200
+IDD	0	2	49
+IDD	0	3	6
+IDD	0	4	11
+IDD	0	5	5
+IDD	0	6	5
+IDD	0	7	2
+IDD	0	8	3
+IDD	0	10	3
+IDD	0	11	1
+IDD	0	14	1
+IDD	0	16	3
+IDD	0	18	2
+IDD	0	24	1
+# ST, Substitution types:
+# ST	[2]id	[3]type	[4]count
+ST	0	A>C	48
+ST	0	A>G	141
+ST	0	A>T	74
+ST	0	C>A	65
+ST	0	C>G	53
+ST	0	C>T	172
+ST	0	G>A	153
+ST	0	G>C	54
+ST	0	G>T	65
+ST	0	T>A	80
+ST	0	T>C	116
+ST	0	T>G	54
+# DP, Depth distribution
+# DP	[2]id	[3]bin	[4]number of genotypes	[5]fraction of genotypes (%)	[6]number of sites	[7]fraction of sites (%)
+DP	0	9	2	0.099354	1	0.054825
+DP	0	10	5	0.248385	2	0.109649
+DP	0	11	1	0.049677	1	0.054825
+DP	0	12	3	0.149031	3	0.164474
+DP	0	13	7	0.347740	4	0.219298
+DP	0	14	6	0.298063	6	0.328947
+DP	0	15	6	0.298063	6	0.328947
+DP	0	16	4	0.198708	4	0.219298
+DP	0	17	6	0.298063	5	0.274123
+DP	0	18	10	0.496771	8	0.438596
+DP	0	19	3	0.149031	3	0.164474
+DP	0	20	12	0.596125	8	0.438596
+DP	0	21	13	0.645802	11	0.603070
+DP	0	22	7	0.347740	6	0.328947
+DP	0	23	15	0.745156	14	0.767544
+DP	0	24	13	0.645802	12	0.657895
+DP	0	25	20	0.993542	20	1.096491
+DP	0	26	13	0.645802	13	0.712719
+DP	0	27	17	0.844511	14	0.767544
+DP	0	28	16	0.794834	13	0.712719
+DP	0	29	21	1.043219	18	0.986842
+DP	0	30	30	1.490313	26	1.425439
+DP	0	31	15	0.745156	15	0.822368
+DP	0	32	23	1.142573	21	1.151316
+DP	0	33	25	1.241927	19	1.041667
+DP	0	34	27	1.341282	20	1.096491
+DP	0	35	16	0.794834	12	0.657895
+DP	0	36	22	1.092896	17	0.932018
+DP	0	37	26	1.291605	24	1.315789
+DP	0	38	34	1.689021	33	1.809211
+DP	0	39	33	1.639344	26	1.425439
+DP	0	40	43	2.136115	40	2.192982
+DP	0	41	23	1.142573	20	1.096491
+DP	0	42	26	1.291605	24	1.315789
+DP	0	43	34	1.689021	30	1.644737
+DP	0	44	42	2.086438	35	1.918860
+DP	0	45	30	1.490313	26	1.425439
+DP	0	46	44	2.185792	38	2.083333
+DP	0	47	43	2.136115	37	2.028509
+DP	0	48	43	2.136115	33	1.809211
+DP	0	49	31	1.539990	27	1.480263
+DP	0	50	39	1.937407	34	1.864035
+DP	0	51	48	2.384501	40	2.192982
+DP	0	52	30	1.490313	24	1.315789
+DP	0	53	44	2.185792	35	1.918860
+DP	0	54	35	1.738698	27	1.480263
+DP	0	55	41	2.036761	35	1.918860
+DP	0	56	37	1.838053	36	1.973684
+DP	0	57	36	1.788376	33	1.809211
+DP	0	58	42	2.086438	37	2.028509
+DP	0	59	51	2.533532	45	2.467105
+DP	0	60	44	2.185792	38	2.083333
+DP	0	61	39	1.937407	34	1.864035
+DP	0	62	36	1.788376	31	1.699561
+DP	0	63	38	1.887730	34	1.864035
+DP	0	64	39	1.937407	32	1.754386
+DP	0	65	35	1.738698	32	1.754386
+DP	0	66	37	1.838053	34	1.864035
+DP	0	67	34	1.689021	31	1.699561
+DP	0	68	49	2.434178	41	2.247807
+DP	0	69	32	1.589667	35	1.918860
+DP	0	70	34	1.689021	34	1.864035
+DP	0	71	23	1.142573	22	1.206140
+DP	0	72	33	1.639344	31	1.699561
+DP	0	73	26	1.291605	28	1.535088
+DP	0	74	21	1.043219	21	1.151316
+DP	0	75	24	1.192250	20	1.096491
+DP	0	76	23	1.142573	24	1.315789
+DP	0	77	22	1.092896	24	1.315789
+DP	0	78	22	1.092896	19	1.041667
+DP	0	79	26	1.291605	24	1.315789
+DP	0	80	16	0.794834	15	0.822368
+DP	0	81	14	0.695479	14	0.767544
+DP	0	82	8	0.397417	8	0.438596
+DP	0	83	2	0.099354	4	0.219298
+DP	0	84	17	0.844511	16	0.877193
+DP	0	85	8	0.397417	9	0.493421
+DP	0	86	9	0.447094	10	0.548246
+DP	0	87	12	0.596125	15	0.822368
+DP	0	88	7	0.347740	8	0.438596
+DP	0	89	3	0.149031	4	0.219298
+DP	0	90	7	0.347740	8	0.438596
+DP	0	91	3	0.149031	3	0.164474
+DP	0	92	1	0.049677	1	0.054825
+DP	0	93	5	0.248385	3	0.164474
+DP	0	94	5	0.248385	6	0.328947
+DP	0	95	3	0.149031	4	0.219298
+DP	0	96	3	0.149031	5	0.274123
+DP	0	97	6	0.298063	5	0.274123
+DP	0	98	4	0.198708	3	0.164474
+DP	0	99	6	0.298063	7	0.383772
+DP	0	100	2	0.099354	5	0.274123
+DP	0	102	1	0.049677	1	0.054825
+DP	0	103	2	0.099354	2	0.109649
+DP	0	104	0	0.000000	1	0.054825
+DP	0	105	1	0.049677	1	0.054825
+DP	0	107	1	0.049677	3	0.164474
+DP	0	108	0	0.000000	1	0.054825
+DP	0	111	1	0.049677	2	0.109649
+DP	0	113	1	0.049677	1	0.054825
+DP	0	114	1	0.049677	1	0.054825
+DP	0	115	0	0.000000	1	0.054825
+DP	0	116	2	0.099354	3	0.164474
+DP	0	117	0	0.000000	2	0.109649
+DP	0	118	0	0.000000	1	0.054825
+DP	0	119	0	0.000000	1	0.054825
+DP	0	122	1	0.049677	1	0.054825
+DP	0	124	1	0.049677	2	0.109649
+DP	0	126	1	0.049677	2	0.109649
+DP	0	127	1	0.049677	1	0.054825
+DP	0	128	1	0.049677	1	0.054825
+DP	0	131	1	0.049677	2	0.109649
+DP	0	141	0	0.000000	2	0.109649
+DP	0	147	1	0.049677	1	0.054825
+DP	0	149	1	0.049677	1	0.054825
+DP	0	152	0	0.000000	1	0.054825
+DP	0	162	2	0.099354	2	0.109649
+DP	0	185	1	0.049677	1	0.054825
+DP	0	204	0	0.000000	1	0.054825
+DP	0	343	0	0.000000	1	0.054825
+DP	0	>500	1	0.049677	1	0.054825
+# PSC, Per-sample counts. Note that the ref/het/hom counts include only SNPs, for indels see PSI. The rest include both SNPs and indels.
+# PSC	[2]id	[3]sample	[4]nRefHom	[5]nNonRefHom	[6]nHets	[7]nTransitions	[8]nTransversions	[9]nIndels	[10]average depth	[11]nSingletons	[12]nHapRef	[13]nHapAlt	[14]nMissing
+PSC	0	Alice_T	1	0	1075	582	493	937	68.2	2012	0	0	0
+# PSI, Per-Sample Indels
+# PSI	[2]id	[3]sample	[4]in-frame	[5]out-frame	[6]not applicable	[7]out/(in+out) ratio	[8]nHets	[9]nAA
+PSI	0	Alice_T	0	0	0	0.00	937	0
+# HWE
+# HWE	[2]id	[3]1st ALT allele frequency	[4]Number of observations	[5]25th percentile	[6]median	[7]75th percentile
+HWE	0	0.000000	2013	0.990000	0.990000	0.990000

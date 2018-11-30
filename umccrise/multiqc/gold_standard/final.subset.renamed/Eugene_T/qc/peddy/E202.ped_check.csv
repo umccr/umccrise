@@ -1,0 +1,2 @@
+sample_a,sample_b,n,shared_hets,hets_a,ibs2,rel,hets_b,ibs0,pedigree_parents,pedigree_relatedness,predicted_parents,parent_error,sample_duplication_error,rel_difference
+Eugene_T,Eugene_B,5610,3620,3665,5463,0.9872,3853,1,False,0,True,True,True,-0.9872
