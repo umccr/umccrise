@@ -84,6 +84,13 @@ af_global <- readr::read_tsv(params$af_freqs, col_names = "af", col_types = "d")
   dplyr::mutate(set = "Global")
 
 # AF in coding regions of cancer key genes
+
+# First check if file is empty due to low mutational burden
+if (file.info(params$af_freqs_keygenes)$size == 0) {
+  # add a single row to make it work
+  params$af_freqs_keygenes = "1\t100\trs123\tA\tG\t0.5\n"
+}
+
 af_keygenes <- readr::read_tsv(params$af_freqs_keygenes,
                                col_names = c("chrom", "pos", "id", "ref", "alt", "af"),
                                col_types = "cicccd") %>%
