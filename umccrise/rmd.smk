@@ -33,7 +33,7 @@ rule subset_to_giab:
         regions = truth_regions
     output:
         'work/{batch}/rmd/afs/ensemble-confident.vcf.gz'
-    group: "subset_for_af"
+    # group: "subset_for_af"
     shell:
         'bcftools view {input.vcf} -T {params.regions} -Oz -o {output}'
 
@@ -44,7 +44,7 @@ rule split_multiallelic:
         ref_fa = ref_fa
     output:
         'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz'
-    group: "subset_for_af"
+    # group: "subset_for_af"
     shell:
         'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
         'bcftools norm -m \'-\' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}'
@@ -56,7 +56,7 @@ rule afs:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
         'work/{batch}/rmd/afs/af_tumor.txt'
-    group: "subset_for_af"
+    # group: "subset_for_af"
     shell:
         'bcftools view {input} -s {params.tumor_name} -Ou | '
         'bcftools query -f "%INFO/TUMOR_AF\\n" > {output} && test -e {output}'
@@ -70,7 +70,7 @@ rule afs_keygenes:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
         'work/{batch}/rmd/afs/af_tumor_keygenes.txt'
-    group: "subset_for_af"
+    # group: "subset_for_af"
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.bed} -header'
@@ -88,7 +88,7 @@ rule somatic_to_hg19:
         rules.somatic_vcf_filter_pass.output.vcf
     output:
         'work/{batch}/rmd/ensemble-with_chr_prefix.vcf'
-    group: "subset_for_af"
+    # group: "subset_for_af"
     run:
         if run.genome_build == 'GRCh37':
             shell('gunzip -c {input}'

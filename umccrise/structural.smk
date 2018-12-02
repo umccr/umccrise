@@ -50,7 +50,7 @@ rule prep_sv_vcf:
         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
     output:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta.vcf'
-    group: "sv_vcf"
+    # group: "sv_vcf"
     shell:
         '(bcftools annotate -x "FILTER/Intergenic,FILTER/MissingAnn" {input}' \
         ' || bcftools annotate -x "FILTER/REJECT" {input}) | '
@@ -63,7 +63,7 @@ rule filter_sv_vcf:
         vcf = rules.prep_sv_vcf.output.vcf
     output:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta-filter.vcf'
-    group: "sv_vcf"
+    # group: "sv_vcf"
     run:
         print(f'VCF samples: {VCF(input.vcf).samples}')
         print(f'Bcbio batch tumor name:: {batch_by_name[wildcards.batch].tumor.name}')
@@ -92,7 +92,7 @@ rule ribbon_filter_manta:
         manta_vcf = rules.filter_sv_vcf.output.vcf
     output:
         'work/{batch}/structural/ribbon/manta.vcf'
-    group: "ribbon"
+    # group: "ribbon"
     shell:
         'bcftools view {input.manta_vcf} > {output}'
 
@@ -104,7 +104,7 @@ rule ribbon_filter_vcfbedtope_starts:
         'work/{batch}/structural/ribbon/manta-starts.bed'
     params:
         vcftobedpe = vcftobedpe
-    group: "ribbon"
+    # group: "ribbon"
     shell:
         'cat {input.bed} | {params.vcftobedpe}'
         ' | cut -f 1-3'
@@ -119,7 +119,7 @@ rule ribbon_filter_vcfbedtope_ends:
         'work/{batch}/structural/ribbon/manta-ends.bed'
     params:
         vcftobedpe = vcftobedpe
-    group: "ribbon"
+    # group: "ribbon"
     shell:
         'cat {input.bed} | {params.vcftobedpe}'
         ' | cut -f 4-6'
@@ -135,7 +135,7 @@ rule ribbon:
         '{batch}/structural/{batch}-sv-prioritize-manta.ribbon.bed'
     params:
         vcftobedpe = vcftobedpe
-    group: "ribbon"
+    # group: "ribbon"
     shell:
         'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
 

@@ -97,7 +97,7 @@ rule purple_somatic_vcf:
         'work/{batch}/purple/somatic.vcf',
     params:
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
-    group: 'purple_run'
+    # group: 'purple_run'
     shell:
         'bcftools view -s {params.tumor_sname} {input} | '
         'bcftools reheader --samples <(echo {wildcards.batch}) > {output}'
@@ -123,7 +123,7 @@ rule purple_run:
             env_path + '_purple/lib/perl5/site_perl/5.22.0 && ') if platform.system() == 'Darwin' else '',
         xms = 2000,
         xmx = min(50000, 3500*threads_per_batch),
-    group: 'purple_run'
+    # group: 'purple_run'
     log:
         'log/purple/{batch}/{batch}.purple.log'
     benchmark:
@@ -157,7 +157,7 @@ rule purple_symlink:
     params:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
-    group: 'purple_run'
+    # group: 'purple_run'
     run:
         for img_fpath in glob.glob(f'{params.purple_outdir}/plot/*.png'):
             new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')

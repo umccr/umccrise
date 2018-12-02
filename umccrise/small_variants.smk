@@ -38,7 +38,7 @@ rule somatic_vcf_prep:
     output:
         vcf = 'work/{batch}/small_variants/somatic-ensemble-prep.vcf.gz',
         tbi = 'work/{batch}/small_variants/somatic-ensemble-prep.vcf.gz.tbi'
-    group: "small_variants_1round"
+    # group: "small_variants_1round"
     shell:
         'pcgr_prep {input.vcf}'
         ' | bcftools view -f.,PASS'
@@ -53,7 +53,7 @@ rule somatic_vcf_pon_annotate:
     output:
         vcf = 'work/{batch}/small_variants/somatic-ensemble-prep-pon.vcf.gz',
         tbi = 'work/{batch}/small_variants/somatic-ensemble-prep-pon.vcf.gz.tbi',
-    group: "small_variants_1round"
+    # group: "small_variants_1round"
     shell:
         'pon_anno {input.vcf} -o {output.vcf} --pon-dir ' + pon_dir + ' && tabix -p vcf {output.vcf}'
 
@@ -65,7 +65,7 @@ rule somatic_vcf_pon_1round:
         tbi = 'work/{batch}/small_variants/somatic-ensemble-pon_round1.vcf.gz.tbi',
     params:
         pon_hits = 3
-    group: "small_variants_1round"
+    # group: "small_variants_1round"
     shell:
         'bcftools filter {input} -e "INFO/PoN_CNT>={params.pon_hits}" -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
@@ -88,7 +88,7 @@ rule somatic_vcf_pon_pass_keygenes:
         vcf = rules.somatic_vcf_pon_1round.output.vcf,
     output:
         vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-keygenes.vcf.gz',
-    group: "small_variants_1round"
+    # group: "small_variants_1round"
     run:
         genes = get_key_genes_set()
         def func(rec):
@@ -102,7 +102,7 @@ rule somatic_vcf_pcgr_ready:
         keygenes_vcf = rules.somatic_vcf_pon_pass_keygenes.output.vcf,
     output:
         vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-ready.vcf.gz',
-    group: "small_variants_1round"
+    # group: "small_variants_1round"
     run:
         total_vars = int(subprocess.check_output(f'bcftools view -H {input.full_vcf} | wc -l', shell=True).strip())
         vcf = input.full_vcf if total_vars <= 500_000 else input.keygenes_vcf  # to avoid PCGR choking on too many variants
@@ -132,7 +132,7 @@ rule somatic_vcf_pcgr_anno:
         tiers = rules.somatic_vcf_pcgr_1round.output.tiers,
     output:
         vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-ready-pcgr_anno.vcf.gz',
-    group: "small_variants_2round"
+    # group: "small_variants_2round"
     run:
         gene_by_snp = dict()
         tier_by_snp = dict()
@@ -196,7 +196,7 @@ rule somatic_vcf_regions_anno:
         toml = rules.prep_anno_toml.output[0]
     output:
         vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-ready-pcgr_anno-regions_anno.vcf.gz',
-    group: "small_variants_2round"
+    # group: "small_variants_2round"
     shell:
         'vcfanno {input.toml} {input.vcf} | bgzip -c > {output} && tabix -p vcf -f {output}'
 
@@ -211,7 +211,7 @@ rule somatic_vcf_filter:
         vcf = rules.somatic_vcf_regions_anno.output.vcf,
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.vcf.gz',
-    group: "small_variants_2round"
+    # group: "small_variants_2round"
     run:
         def func_hdr(vcf):
             vcf.add_filter_to_header({'ID': 'gnomAD_common', 'Description': 'Occurs in gnomAD with frequency above 1%'})
@@ -268,7 +268,7 @@ rule somatic_vcf_filter_pass:
         vcf = rules.somatic_vcf_filter.output.vcf
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.pass.vcf.gz',
-    group: "small_variants_2round"
+    # group: "small_variants_2round"
     shell:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
@@ -282,7 +282,7 @@ rule germline_vcf_subset:  # {batch}
         vcf = 'work/{batch}/small_variants/raw_normal-ensemble-predispose_genes.vcf.gz',
     params:
         ungz = lambda wc, output: get_ungz_gz(output[0])[0]
-    group: "small_variants_germline"
+    # group: "small_variants_germline"
     run:
         pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
         genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
@@ -298,7 +298,7 @@ rule germline_vcf_prep:
         vcf = rules.germline_vcf_subset.output.vcf
     output:
         vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz',
-    group: "small_variants_germline"
+    # group: "small_variants_germline"
     shell:
         'pcgr_prep {input.vcf} |'
         ' bcftools view -f.,PASS -Oz -o {output.vcf}'
