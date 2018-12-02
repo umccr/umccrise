@@ -190,7 +190,7 @@ plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 
 ```{r sv_prioritize}
 col_types <- "ccciicccccc"
-# sv_all = NULL
+sv_all = NULL
 if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
   sv_all <- readr::read_tsv(params$sv_fname, col_names = TRUE, col_types = col_types) %>%
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # Unpack multiple annotations per region
@@ -215,7 +215,7 @@ if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
 if (!is.null(sv_all)) {
   suppressors <- readr::read_tsv(params$suppressors, col_names = "gene", col_types = "c") %>%
     dplyr::pull(gene)
-  
+
   lof <- sv_all %>%
     dplyr::mutate(lof = stringr::str_replace_all(lof, '\\(|\\)', '')) %>%
     tidyr::unnest(lof = strsplit(lof, ',')) %>%
