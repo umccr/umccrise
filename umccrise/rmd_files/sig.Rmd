@@ -84,17 +84,26 @@ af_global <- readr::read_tsv(params$af_freqs, col_names = "af", col_types = "d")
   dplyr::mutate(set = "Global")
 
 # AF in coding regions of cancer key genes
+
+# First check if file is empty due to low mutational burden
+if (file.info(params$af_freqs_keygenes)$size == 0) {
+  # add a single row to make it work
+  params$af_freqs_keygenes = "1\t100\tFAKE_ID\tA\tG\t0.5\n"
+}
+
 af_keygenes <- readr::read_tsv(params$af_freqs_keygenes,
                                col_names = c("chrom", "pos", "id", "ref", "alt", "af"),
                                col_types = "cicccd") %>%
+  dplyr::filter(id != "FAKE_ID") %>% 
   dplyr::select(af) %>%
   dplyr::mutate(set = 'Key genes CDS')
 
-af_both <- dplyr::bind_rows(af_global, af_keygenes)
+af_both <- dplyr::bind_rows(af_global, af_keygenes) %>% 
+  dplyr::mutate(set = factor(set, levels = c("Global", "Key genes CDS")))
 
 ggplot(data = af_both, aes(af)) +
   geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#0047ab") +
-  facet_wrap(~set, scales = 'free_y') +
+  facet_wrap(~set, scales = 'free_y', drop = FALSE) +
   scale_x_continuous(name = "Allele Frequency", 
                      breaks = seq(0, 1, by = 0.1),
                      limits = c(0, 1), expand = c(0, 0)) +
@@ -113,11 +122,11 @@ mode2 <- function(x) {
 
 af_both %>% 
   dplyr::group_by(set) %>% 
-  
   dplyr::summarise(n = n(),
                    mean = round(mean(af), 2),
                    median = round(median(af), 2),
                    mode = round(mode2(af), 2)) %>% 
+  tidyr::complete(set, fill = list(n = 0)) %>%
   knitr::kable() %>% 
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>% 
   kableExtra::column_spec(1, bold = TRUE)
