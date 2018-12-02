@@ -83,20 +83,12 @@ calls only and limited to 'high confidence' regions as determined by the
 af_global <- readr::read_tsv(params$af_freqs, col_names = "af", col_types = "d") %>%
   dplyr::mutate(set = "Global")
 
-# AF in coding regions of cancer key genes
-
-# First check if file is empty due to low mutational burden
-if (file.info(params$af_freqs_keygenes)$size == 0) {
-  # add a single row to make it work
-  params$af_freqs_keygenes = "1\t100\tFAKE_ID\tA\tG\t0.5\n"
-}
-
 af_keygenes <- readr::read_tsv(params$af_freqs_keygenes,
                                col_names = c("chrom", "pos", "id", "ref", "alt", "af"),
-                               col_types = "cicccd") %>%
-  dplyr::filter(id != "FAKE_ID") %>% 
-  dplyr::select(af) %>%
-  dplyr::mutate(set = 'Key genes CDS')
+                               col_types = "cicccd")
+af_keygenes <- dplyr::mutate(af_keygenes,
+  af = ifelse("af" %in% af_keygenes, af, NA),
+  set = 'Key genes CDS')
 
 af_both <- dplyr::bind_rows(af_global, af_keygenes) %>% 
   dplyr::mutate(set = factor(set, levels = c("Global", "Key genes CDS")))
