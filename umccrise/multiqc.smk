@@ -13,16 +13,31 @@ for f in $(cat final/2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/li
     mkdir -p final.subset/`dirname $f`
     cp final/$f final.subset/$f 
 done
-cd final.subset
-ls | grep -v E201 | grep -v E199 | grep -v E194 | grep -v E190 | grep -v E202 | grep -v 2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged | xargs rm -rf
-cd ..
-cat final/2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/list_files_final.txt| grep -P "E201|E199|E194|E190|E202" > final.subset/list_files_final.txt
+
+cat final/2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/list_files_final.txt |\
+    grep -P "E201|E199|E194|E190|E202" |\
+    grep -v "indexcov.tsv" |\
+    grep -v "Per_base_N_content.tsv" |\
+    grep -v "Per_base_sequence_content.tsv" |\
+    grep -v "Per_base_sequence_quality.tsv" |\
+    grep -v "Per_sequence_GC_content.tsv" |\
+    grep -v "Per_sequence_quality_scores.tsv" |\
+    grep -v "Per_tile_sequence_quality.tsv" |\
+    grep -v "Sequence_Length_Distribution.tsv" |\
+    grep -v "sort-chr.qsig.vcf" |\
+    grep -v "ped_check.rel-difference.csv" |\
+    grep -v ".html" |\
+    > final.subset/list_files_final.txt
 
 ### Clean up ###
 cd final.subset
-# clean up qc/coverage
+
+# Remove sample dirs:
+ls | grep -v -P "E201|E199|E194|E190|E202|2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged|list_files_final.txt" | xargs rm -rf
+
+# Clean up qc/coverage
 find . -name "*-indexcov.tsv" -delete
-# clean up qc/fastqc
+# Clean up qc/fastqc
 find . -name "fastqc_report.html" -delete
 find . -name "Per_base_N_content.tsv" -delete
 find . -name "Per_base_sequence_content.tsv" -delete
@@ -31,14 +46,19 @@ find . -name "Per_sequence_GC_content.tsv" -delete
 find . -name "Per_sequence_quality_scores.tsv" -delete
 find . -name "Per_tile_sequence_quality.tsv" -delete
 find . -name "Sequence_Length_Distribution.tsv" -delete
-# clean up qc/qsignature - to repalce with project-level .ma file
+# Clean up qc/qsignature
 rm -rf */qc/qsignature
-# qc/peddy
-find . -name "*.ped_check.rel-difference.csv" -delete
-find . -name "*.html" -delete
+# Clean up qc/peddy
+find . -path "*qc/peddy/*.ped_check.rel-difference.csv" -delete
+find . -path "*qc/peddy/*.html" -delete
+# Clean up bcbio metrics
+cd 2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/report/metrics
+ls | grep -v -P "E201|E199|E194|E190|E202" | xargs rm 
+cd ../../../../
 
+cd ..
 ### Rename ###
-python rename.py
+python rename.py final.subset final.subset.renamed
 """
 
 
