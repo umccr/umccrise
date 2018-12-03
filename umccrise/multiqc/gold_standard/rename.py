@@ -2,6 +2,10 @@ import os
 from os.path import join
 from ngs_utils.file_utils import safe_mkdir
 import shutil
+import sys
+
+final_dir = sys.argv[1]
+rn_final_dir = sys.argv[2]
 
 d = {
     "PRJ180506_E194-T01-D": "Alice_T",
@@ -21,8 +25,6 @@ def rn(s):
         s = s.replace(k, v)
     return s
 
-final_dir = 'final.subset'
-rn_final_dir = 'final.subset.renamed'
 safe_mkdir(rn_final_dir)
 
 for root, dirs, files in os.walk(final_dir):
