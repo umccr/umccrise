@@ -104,9 +104,9 @@ rule batch_multiqc:  # {}
     run:
         ignore_samples=[s.name for s in run.samples if s.name not in
                 [batch_by_name[wildcards.batch].tumor.name, batch_by_name[wildcards.batch].normal.name]]
-        ignore_samples_re = '"' + '|'.join(ignore_samples) + '"'
+        ignore_samples_cmd = ' '.join([f'--ignore-samples {s}' for s in ignore_samples])
         shell(f'multiqc -f -v -o . -l {input.filelist} -c {input.generated_conf_yaml} -c {input.bcbio_conf_yaml}'
-              f' --filename {output.html_file} --ignore-samples {ignore_samples_re}')
+              f' --filename {output.html_file} {ignore_samples_cmd}')
 
 ## Additional information
 # TODO: link it to MultiQC
