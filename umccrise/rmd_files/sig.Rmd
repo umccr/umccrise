@@ -56,12 +56,12 @@ render_me <- function() {
     "sig.Rmd", 
     params = list(
       workdir = '/Users/pdiakumis/Desktop/projects/umccr/umccrise/umccrise/rmd_files',
-      vcf_fname = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/ensemble-with_chr_prefix.vcf'),
-      af_freqs = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor.txt'),
-      af_freqs_keygenes = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/rmd/afs/af_tumor_keygenes.txt'),
+      vcf_fname = 'ensemble-with_chr_prefix.vcf',
+      af_freqs = 'af_tumor_empty.txt',
+      af_freqs_keygenes = 'keygenes_empty.txt',
       sv_fname = file.path(dd, 'gold_standard/bcbio_test_project/cup__cup_tissue/structural/cup__cup_tissue-sv-prioritize-manta-pass.tsv'),
       manta_vcf = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/structural/ribbon/manta.vcf'),
-      tumor_name = '17MHP031Tmr',
+      tumor_name = 'PRJ180207_2121_8073359T',
       sig_probs = 'signatures_probabilities.txt',
       suppressors = '/Users/pdiakumis/Desktop/projects/umccr/vcf_stuff/src/ngs-utils/ngs_utils/reference_data/suppressors.txt',
       genome_build = 'hg19')
@@ -78,17 +78,15 @@ Frequencies are currently based on MuTect2
 calls only and limited to 'high confidence' regions as determined by the 
 [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/).
 
-```{r af_plot}
+```{r af_plot, warning=FALSE}
 # Global AF
-af_global <- readr::read_tsv(params$af_freqs, col_names = "af", col_types = "d") %>%
+af_global <- readr::read_tsv(params$af_freqs, col_types = "d") %>%
   dplyr::mutate(set = "Global")
 
 af_keygenes <- readr::read_tsv(params$af_freqs_keygenes,
-                               col_names = c("chrom", "pos", "id", "ref", "alt", "af"),
-                               col_types = "cicccd")
-af_keygenes <- dplyr::mutate(af_keygenes,
-  af = ifelse("af" %in% af_keygenes, af, NA),
-  set = 'Key genes CDS')
+                               col_types = "cicccd") %>% 
+  dplyr::select(af) %>% 
+  dplyr::mutate(set = 'Key genes CDS')
 
 af_both <- dplyr::bind_rows(af_global, af_keygenes) %>% 
   dplyr::mutate(set = factor(set, levels = c("Global", "Key genes CDS")))
@@ -119,7 +117,7 @@ af_both %>%
                    median = round(median(af), 2),
                    mode = round(mode2(af), 2)) %>% 
   tidyr::complete(set, fill = list(n = 0)) %>%
-  knitr::kable() %>% 
+  knitr::kable(format = "html") %>% 
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>% 
   kableExtra::column_spec(1, bold = TRUE)
 ```
