@@ -6,6 +6,9 @@ import shutil
 import platform
 
 
+localrules: purple, purple_symlink, purple_somatic_vcf
+
+
 rule purple_pileup:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
