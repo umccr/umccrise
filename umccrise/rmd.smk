@@ -59,7 +59,7 @@ rule afs:
     # group: "subset_for_af"
     shell:
         'bcftools view {input} -s {params.tumor_name} -Ou | '
-        'bcftools query -f "%INFO/TUMOR_AF\\n" > {output} && test -e {output}'
+        '(printf "af\n"; bcftools query -f "%INFO/TUMOR_AF\\n") > {output} && test -e {output}'
 
 # Intersect with cancer key genes CDS for a table in Rmd
 rule afs_keygenes:
@@ -74,7 +74,7 @@ rule afs_keygenes:
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.bed} -header'
-        ' | bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\n"'
+        ' | (printf "chrom\tpos\tid\tref\talt\taf\n" ; bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\n")'
         ' > {output} && test -e {output}'
 
 ## Mutational signatures VCF
@@ -146,3 +146,4 @@ rule rmd:
         expand(rules.sig_rmd.output[0], batch=batch_by_name.keys())
     output:
         temp(touch('log/rmd.done'))
+
