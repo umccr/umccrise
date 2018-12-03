@@ -58,3 +58,16 @@ bcftools:
 
 qualimap:
     general_stats_coverage: 1, 5, 10, 30, 100
+
+umccr:
+    reference_samples:
+    - Alice_B
+    - Alice_T
+    - Bob_B
+    - Bob_T
+    - Chen_B
+    - Chen_T
+    - Dakota_B
+    - Dakota_T
+    - Eugene_B
+    - Eugene_T
