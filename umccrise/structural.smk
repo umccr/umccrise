@@ -8,7 +8,7 @@ from cyvcf2 import VCF
 vcftobedpe = 'vcfToBedpe'
 
 
-localrules: prep_sv_vcf, filter_sv_vcf, prep_sv_tsv, ribbon_filter_manta, ribbon_filter_vcfbedtope_starts, ribbon_filter_vcfbedtope_ends, ribbon, bedpe, structural
+localrules: prep_sv_vcf, filter_sv_vcf, prep_sv_tsv, ribbon_filter_manta, ribbon_filter_vcfbedtope_starts, ribbon_filter_vcfbedtope_ends, ribbon, structural
 
 
 #######################
