@@ -1,6 +1,6 @@
 ## IGV
 
-localrules: multiqc, copy_logs
+localrules: prep_multiqc_data, batch_multiqc, multiqc, copy_logs
 
 
 """
