@@ -3,7 +3,7 @@ from ngs_utils.reference_data import get_suppressors, get_key_genes_bed
 from umccrise import get_sig_rmd_file, get_signatures_probabilities
 
 
-localrules: rmd
+localrules: split_multiallelic, subset_to_giab, afs, afs_keygenes, somatic_to_hg19, rmd
 
 
 ## Allelic frequencies
