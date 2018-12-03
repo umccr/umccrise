@@ -24,10 +24,14 @@ dependencies:
   - snakemake-minimal
   - nose
   - versionpy
+  - multiqc
+  - multiqc-bcbio
   - pip:
     - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
     - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
+    - "--editable=git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
+    - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
   #
   # Umccrise-specific
   - natsort  # for bcbio.py in ngs_utils
@@ -38,8 +42,6 @@ dependencies:
   - awscli
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - parallel
-  - multiqc
-  - multiqc-bcbio
   # R libraries
   # - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - r-base
