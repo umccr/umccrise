@@ -28,8 +28,10 @@ table_columns_visible:
         reads_mapped_percent: False               # is also set in bcbio/__init__.py
         raw_total_sequences: False                # is also set in bcbio/__init__.py
         error_rate: False                         # is also set in bcbio/__init__.py
+        reads_properly_paired_percent: True
     bcbio:
-        Ontarget_padded_pct: True
+        Usable_pct: False
+        Ontarget_padded_pct: False
         Average_insert_size: False
     SnpEff:
         Change_rate: False                        # is also set in bcbio/__init__.py
@@ -40,15 +42,16 @@ table_columns_visible:
         number_of_indels: True
         tstv: True
         number_of_records: False
-        variations_hom: False
-        variations_het: False
+        variations_hom: True
+        variations_het: True
         number_of_MNPs: False
         number_of_others: False
     Peddy:
-        family_id: False
-        ancestry-prediction: False
-        sex_het_ratio: False
-        error: False
+#        family_id: False
+#        ancestry-prediction: False
+        ancestry-prob_het_check: False
+#        sex_het_ratio: False
+#        error: False
 
 preseq:
     notrim: True

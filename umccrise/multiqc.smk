@@ -66,7 +66,9 @@ rule prep_multiqc_data:
     input:
         bcbio_mq_filelist = join(run.date_dir, 'multiqc/list_files_final.txt'),
         bcbio_mq_yaml     = join(run.date_dir, 'multiqc/multiqc_config.yaml'),
-        bcbio_final_dir   = run.final_dir
+        bcbio_final_dir   = run.final_dir,
+        versions          = 'log/' + run.project_name + '-data_versions.csv',
+        programs          = 'log/' + run.project_name + '-programs.txt',
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -74,7 +76,10 @@ rule prep_multiqc_data:
     params:
         data_dir        = 'work/{batch}/multiqc_data'
     run:
-        generated_conf, additional_files = make_report_metadata(run, base_dirpath=abspath('.'))
+        generated_conf, additional_files = make_report_metadata(run, base_dirpath=abspath('.'),
+                                                                analysis_dir=run.date_dir,
+                                                                program_versions_fpath=input.programs,
+                                                                data_versions_fpath=input.versions)
         gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'final.subset.renamed')
         with open(join(gold_standard_dir, 'list_files_final.txt')) as f:
             for l in f:
@@ -102,11 +107,13 @@ rule batch_multiqc:  # {}
     output:
         html_file           = '{batch}/{batch}-multiqc_report.html'
     run:
-        ignore_samples=[s.name for s in run.samples if s.name not in
-                [batch_by_name[wildcards.batch].tumor.name, batch_by_name[wildcards.batch].normal.name]]
-        ignore_samples_cmd = ' '.join([f'--ignore-samples {s}' for s in ignore_samples])
-        shell(f'multiqc -f -v -o . -l {input.filelist} -c {input.generated_conf_yaml} -c {input.bcbio_conf_yaml}'
-              f' --filename {output.html_file} {ignore_samples_cmd}')
+        other_samples=[
+            s.name for s in run.samples if s.name not in [batch_by_name[wildcards.batch].tumor.name,
+                                                          batch_by_name[wildcards.batch].normal.name]]
+        list_files = f'<(grep -P -v "{"|".join(sn for sn in other_samples)}" {input.filelist})'
+        shell(f'multiqc -f -v -o . -l {list_files} -c {input.generated_conf_yaml} -c {input.bcbio_conf_yaml}'
+              f' --filename {output.html_file}')
+
 
 ## Additional information
 # TODO: link it to MultiQC

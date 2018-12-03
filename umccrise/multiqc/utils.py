@@ -19,7 +19,7 @@ def format_bed_info(d, genome_info):
                                 format_decimal(d.get('regions')), \
                                 format_decimal(d.get('genes'))
     bed_name = os.path.basename(bed)
-    html = '<a href={bed_name}>{bed_name}</a>'
+    html = '{bed_name}'
     if size is not None:
         percent = (100.0 * d['size'] / genome_info['size']) if genome_info.get('size') else 0
         html += ' ({size} bp'

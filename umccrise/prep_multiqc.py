@@ -15,7 +15,8 @@ from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
 def make_report_metadata(bcbio_proj, base_dirpath,
                          call_vis_html_fpath=None, pcgr_report_by_sample=None,
-                         combined_ngs_rep_html_fpath=None, analysis_dir=None):
+                         combined_ngs_rep_html_fpath=None, analysis_dir=None,
+                         program_versions_fpath=None, data_versions_fpath=None):
     conf = dict()
     conf['umccr'] = dict()
     additional_files = []
@@ -39,7 +40,9 @@ def make_report_metadata(bcbio_proj, base_dirpath,
 
     # General links
     conf['title'] = bcbio_proj.project_name
-    conf['umccr']['run_section'] = get_run_info(bcbio_proj, base_dirpath, analysis_dir=analysis_dir)
+    conf['umccr']['run_section'] = get_run_info(bcbio_proj, base_dirpath, analysis_dir=analysis_dir,
+                                                program_versions_fpath=program_versions_fpath,
+                                                data_versions_fpath=data_versions_fpath)
 
     # if bcbio_proj.is_rnaseq:
     #     conf['umccr']['expression_links'] = _rna_general_links(bcbio_proj, base_dirpath)
@@ -162,7 +165,8 @@ def _make_link(fpath, base_dirpath, text=None, blank=False):
         return '<span>' + (text or basename(fpath)) + '</span>'
 
 
-def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None):
+def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
+                 program_versions_fpath=None, data_versions_fpath=None):
     info('Getting run and codebase information...')
     run_info_dict = dict()
     cur_fpath = abspath(getsourcefile(lambda: 0))
@@ -204,24 +208,24 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None):
             version_text += 'last modified ' + last_modified_datestamp
         run_info_dict['umccrise_version'] = version_text
 
-    program_versions_fpath = bcbio_proj.find_in_log('programs.txt')
-    program_versions = dict(l.strip().split(',') for l in open(program_versions_fpath).readlines())
-    if version:
-        program_versions['umccrise'] = version
-    try:
-        with open(program_versions_fpath, 'w') as f:
-            for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
-                f.write(p + ',' + v + '\n')
-    except OSError as e:
-        err(e)
-    programs_url = relpath(program_versions_fpath, base_dirpath) \
-        if verify_file(program_versions_fpath) else None
+    if verify_file(program_versions_fpath):
+        with open(program_versions_fpath) as f:
+            program_versions = dict(l.strip().split(',')[:2] for l in f.readlines())
+        if version:
+            program_versions['umccrise'] = version
+        try:
+            with open(program_versions_fpath, 'w') as f:
+                for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
+                    f.write(p + ',' + v + '\n')
+        except OSError as e:
+            err(e)
+        programs_url = relpath(program_versions_fpath, base_dirpath)
+        run_info_dict['program_versions'] = '<a href="{programs_url}">program versions</a>'.format(**locals())
 
-    data_versions_fpath = bcbio_proj.find_in_log('data_versions.csv')
-    datas_url = relpath(data_versions_fpath, base_dirpath) if verify_file(data_versions_fpath) else None
+    if verify_file(data_versions_fpath):
+        datas_url = relpath(data_versions_fpath, base_dirpath)
+        run_info_dict['data_versions'] = '<a href="{datas_url}">data versions</a>'.format(**locals())
 
-    run_info_dict['program_versions'] = '<a href="{programs_url}">program versions</a>'.format(**locals())
-    run_info_dict['data_versions'] = '<a href="{datas_url}">data versions</a>'.format(**locals())
     run_info_dict['analysis_dir'] = analysis_dir or bcbio_proj.final_dir
     return run_info_dict
 
