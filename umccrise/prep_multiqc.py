@@ -5,6 +5,7 @@ from inspect import getsourcefile
 from os.path import join, dirname, abspath, pardir, isfile, isdir, islink, basename, relpath, getmtime, exists
 from time import localtime, strftime
 import yaml
+import re
 
 from ngs_utils import logger
 from ngs_utils.bcbio import BcbioProject
@@ -13,9 +14,7 @@ from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transa
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
 
-def make_report_metadata(bcbio_proj, base_dirpath,
-                         call_vis_html_fpath=None, pcgr_report_by_sample=None,
-                         combined_ngs_rep_html_fpath=None, analysis_dir=None,
+def make_report_metadata(bcbio_proj, base_dirpath, analysis_dir=None,
                          program_versions_fpath=None, data_versions_fpath=None):
     conf = dict()
     conf['umccr'] = dict()
@@ -56,19 +55,14 @@ def make_report_metadata(bcbio_proj, base_dirpath,
     #         link = _make_link(combined_ngs_rep_html_fpath, base_dirpath, 'known mutations')
     #         mutations_links.append(link)
 
-    # Sample-level details
-    if pcgr_report_by_sample:
-        conf['umccr']['pcgr_report_by_sample'] = pcgr_report_by_sample
-
     return conf, additional_files
 
 
 def multiqc_prep_data(bcbio_mq_filelist, bcbio_mq_yaml, bcbio_final_dir,
-                      new_mq_data_dir, generated_conf, filelist_file, generated_conf_yaml,
-                      new_bcbio_mq_yaml, additional_files,
-                      gold_standard_data=None):
+                      new_mq_data_dir, generated_conf, out_filelist_file, out_conf_yaml,
+                      new_bcbio_mq_yaml, additional_files, exclude_files=None):
     if generated_conf:
-        with file_transaction(None, generated_conf_yaml) as tx:
+        with file_transaction(None, out_conf_yaml) as tx:
             with open(tx, 'w') as f:
                 yaml.dump(generated_conf, f, default_flow_style=False)
 
@@ -77,10 +71,15 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_mq_yaml, bcbio_final_dir,
     verify_file(bcbio_mq_filelist, is_critical=True)
     qc_files_not_found = []
 
-    with file_transaction(None, filelist_file) as tx:
+    with file_transaction(None, out_filelist_file) as tx:
         try:
             with open(bcbio_mq_filelist) as inp, open(tx, 'w') as out:
                 for fp in [l.strip() for l in inp if l.strip()]:
+                    if exclude_files:
+                        if isinstance(exclude_files, str):
+                            exclude_files = [exclude_files]
+                        if any(re.search(ptn, fp) for ptn in exclude_files):
+                            continue
                     old_fpath = join(bcbio_final_dir, fp)
                     new_fpath = join(new_mq_data_dir, fp)
                     if not verify_file(old_fpath):
@@ -125,34 +124,6 @@ def make_multiqc_report(conf_yamls, filelist, multiqc_fpath, extra_params=''):
     return multiqc_fpath
 
 
-# def _rna_general_links(bcbio_proj, base_dirpath):
-#     links = []
-#     for fname in bcbio_proj.counts_names:
-#         counts_name = str(basename(fname)).replace('.html', '').replace('_', ' ').capitalize()
-#         counts_name = counts_name.replace('tpm', 'TPM')
-#         counts_fpath = join(bcbio_proj.expression_dir, fname)
-
-#         if isfile(fname):
-#             links.append(_make_link(counts_fpath, base_dirpath, counts_name))
-#     return links
-
-
-# def _dna_general_links(bcbio_proj, base_dirpath):
-#     links = []
-
-#     for (caller, is_germline), samples in bcbio_proj.samples_by_caller.items():
-#         for fpath in bcbio_proj.find_mutation_files(caller=caller, is_germline=is_germline):
-#             link = _make_link(fpath, base_dirpath) + (' (germline)' if is_germline else '')
-#             if link not in links:
-#                 links.append(link)
-
-#     seq2c_file = bcbio_proj.find_seq2c_file()
-#     if seq2c_file:
-#         links.append(_make_link(seq2c_file, base_dirpath))
-
-#     return links
-
-
 def _make_url(fpath, base_dirpath):
     return relpath(fpath, base_dirpath) if verify_file(fpath) else None
 
@@ -174,14 +145,13 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
 
     run_info_dict["run_date"] = strftime('%d %b %Y, %H:%M (GMT%z)', localtime())
 
-    version = None
-    # try:
-    #     from ngs_reporting.version import __version__
-    # except ImportError:
-    #     err('Cannot import __version__ from ngs_reporting.version and get version')
-    # else:
-    #     version = __version__
-    #TODO: read VERSION.txt
+    try:
+        from umccrise import _version
+    except ImportError:
+        err('Cannot import __version__ from umccrise._version and get version')
+        umccrsie_version = None
+    else:
+        umccrsie_version = _version.__version__
 
     last_modified_datestamp = ''
     try:
@@ -198,11 +168,11 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
     else:
         last_modified_datestamp = strftime('%d %b %Y, %H:%M (GMT%z)', localtime(last_modification_time))
 
-    if last_modified_datestamp or version:
+    if last_modified_datestamp or umccrsie_version:
         version_text = 'Reporting Suite '
-        if version:
-            version_text += 'v.' + version
-        if version and last_modified_datestamp:
+        if umccrsie_version:
+            version_text += umccrsie_version
+        if umccrsie_version and last_modified_datestamp:
             version_text += ', '
         if last_modified_datestamp:
             version_text += 'last modified ' + last_modified_datestamp
@@ -211,8 +181,8 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
     if verify_file(program_versions_fpath):
         with open(program_versions_fpath) as f:
             program_versions = dict(l.strip().split(',')[:2] for l in f.readlines())
-        if version:
-            program_versions['umccrise'] = version
+        if umccrsie_version:
+            program_versions['umccrise'] = umccrsie_version
         try:
             with open(program_versions_fpath, 'w') as f:
                 for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):

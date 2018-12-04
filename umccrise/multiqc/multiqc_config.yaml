@@ -50,8 +50,9 @@ table_columns_visible:
 #        family_id: False
 #        ancestry-prediction: False
         ancestry-prob_het_check: False
-#        sex_het_ratio: False
-#        error: False
+        sex_het_ratio: False
+        error_sex_check: False
+        error: False
 
 preseq:
     notrim: True
