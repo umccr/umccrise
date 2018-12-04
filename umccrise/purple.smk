@@ -115,6 +115,7 @@ rule purple_run:
         somatic_vcf = rules.purple_somatic_vcf.output,
     output:
         'work/{batch}/purple/{batch}.purple.cnv',
+        'work/{batch}/purple/{batch}.purple.gene.cnv',
         'work/{batch}/purple/plot/{batch}.circos.png',
     params:
         rundir = 'work/{batch}/purple',

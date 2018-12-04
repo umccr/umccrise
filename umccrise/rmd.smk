@@ -101,7 +101,7 @@ rule somatic_to_hg19:
 
 rule rmd_purple:
     input:
-        '{batch}/purple/{batch}.purple.cnv',
+        'work/{batch}/purple/{batch}.purple.gene.cnv',
     output:
         'work/{batch}/rmd/purple.tsv'
     shell:
