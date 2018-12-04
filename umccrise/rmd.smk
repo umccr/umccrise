@@ -3,7 +3,7 @@ from ngs_utils.reference_data import get_cancermine, get_key_genes, get_key_gene
 from umccrise import get_sig_rmd_file, get_signatures_probabilities
 
 
-localrules: split_multiallelic, subset_to_giab, afs, afs_keygenes, somatic_to_hg19, rmd
+localrules: split_multiallelic, subset_to_giab, afs, afs_keygenes, somatic_to_hg19, rmd_purple, rmd
 
 
 ## Allelic frequencies
@@ -99,6 +99,15 @@ rule somatic_to_hg19:
             shell('gunzip -c {input} > {output}')
 
 
+rule rmd_purple:
+    input:
+        '{batch}/purple/{batch}.purple.cnv',
+    output:
+        'work/{batch}/rmd/purple.tsv'
+    shell:
+        'cut -f1-6 {input} > {output}'
+
+
 ## Running Rmarkdown
 rule sig_rmd:
     input:
@@ -110,7 +119,8 @@ rule sig_rmd:
         sig_probs = get_signatures_probabilities(),
         cancermine = get_cancermine(),
         key_genes = get_key_genes(),
-        manta_vcf = rules.filter_sv_vcf.output[0]
+        manta_vcf = rules.filter_sv_vcf.output[0],
+        purple = rules.rmd_purple.output[0],
     params:
         rmd_tmp = 'work/{batch}/rmd/sig.Rmd',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
@@ -135,6 +145,7 @@ tumor_name='{params.tumor_name}', \
 sig_probs='{input.sig_probs}', \
 cancermine='{input.cancermine}', \
 key_genes='{input.key_genes}', \
+purple='{input.purple}', \
 workdir='{params.workdir}', \
 genome_build='{params.rmd_genome_build}' \
 ))"
