@@ -10,8 +10,6 @@ import subprocess
 from ngs_utils.file_utils import which
 
 
-######################
-### Running PCGR
 rule run_pcgr:
     input:
         vcf = rules.somatic_vcf_filter_pass.output.vcf,

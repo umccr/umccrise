@@ -92,7 +92,10 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
 
         if purple_tsv:
             purple_tsv_fixed = join(output_dir, sample + '_cnv_input.tsv')
-            prep_cnv_cmd = f'(echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" ; cat {abspath(purple_tsv)} | grep -v ^# | grep -v ^GL | cut -f1,2,3,4) > {purple_tsv_fixed}'
+            prep_cnv_cmd = f'(echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" ; cat {abspath(purple_tsv)} | ' \
+                           f'grep -v ^# | grep -v ^GL | cut -f1,2,3,4 | awk -v OFS="\\t" \'{{ if ($4<=0) ' \
+                           f'{{ print $1,$2,$3,-4 }} else {{ print $1,$2,$3, log($4/2)/log(2) }} }}\') > ' \
+                           f'{purple_tsv_fixed}'
             run_simple(prep_cnv_cmd)
         cmd = (f'{rlibs_env}'
                f'pcgr.py'
