@@ -11,15 +11,17 @@ output:
   rmdformats::material:
     highlight: kate
 params:
-  workdir: '/path/to/tmp'
-  vcf_fname: 'ensemble-with_chr_prefix.vcf'
-  af_freqs: 'af/af_tumor.txt'
-  af_freqs_keygenes: 'af/af_tumor_keygenes.txt'
-  sv_fname: 'sv-prioritize-manta-pass.tsv'
-  manta_vcf: 'manta.vcf'
-  tumor_name: '17MHP031Tmr'
-  sig_probs: 'rmd_files/signatures_probabilities.txt'
-  suppressors: 'rmd_files/suppressors.txt'
+  workdir: '/Users/vsaveliev/git/umccr/umccrise_test_data/results/bcbio_test_project/for_rmd_SmallCellNET'
+  vcf_fname: 'for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf'
+  af_freqs: 'for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt'
+  af_freqs_keygenes: 'for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt'
+  sv_fname: 'for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv'
+  manta_vcf: 'for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf'
+  tumor_name: 'SmallCellNET__PRJ180596_CW-DNA029841T'
+  sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt'
+  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt'
+  oncomine: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv'
+  purple: 'for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv'
   genome_build: hg19
 ---
 
@@ -51,20 +53,23 @@ options(width = 140)
 ```{r render_interactively, eval=FALSE, echo=FALSE}
 # helper function to run report interactively, instead of via the CL.
 render_me <- function() {
-  dd <- "/Users/pdiakumis/Desktop/projects/umccr/umccrise_test_data"
   rmarkdown::render(
-    "sig.Rmd", 
+    '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/sig.Rmd', 
+    output_file = '/Users/vsaveliev/git/umccr/umccrise_test_data/results/bcbio_test_project/for_rmd_SmallCellNET/test.html',
     params = list(
-      workdir = '/Users/pdiakumis/Desktop/projects/umccr/umccrise/umccrise/rmd_files',
-      vcf_fname = 'ensemble-with_chr_prefix.vcf',
-      af_freqs = 'af_tumor_empty.txt',
-      af_freqs_keygenes = 'keygenes_empty.txt',
-      sv_fname = file.path(dd, 'gold_standard/bcbio_test_project/cup__cup_tissue/structural/cup__cup_tissue-sv-prioritize-manta-pass.tsv'),
-      manta_vcf = file.path(dd, 'gold_standard/bcbio_test_project/work/cup__cup_tissue/structural/ribbon/manta.vcf'),
-      tumor_name = 'PRJ180207_2121_8073359T',
-      sig_probs = 'signatures_probabilities.txt',
-      suppressors = '/Users/pdiakumis/Desktop/projects/umccr/vcf_stuff/src/ngs-utils/ngs_utils/reference_data/suppressors.txt',
-      genome_build = 'hg19')
+      workdir = '/Users/vsaveliev/git/umccr/umccrise_test_data/results/bcbio_test_project/for_rmd_SmallCellNET',
+      vcf_fname = 'work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
+      af_freqs = 'work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
+      af_freqs_keygenes = 'work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
+      sv_fname = 'SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
+      manta_vcf = 'SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf',
+      tumor_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
+      sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
+      key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt',
+      oncomine = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv',
+      purple = 'work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
+      genome_build = 'hg19'
+    )
   )
 }
 
@@ -195,8 +200,8 @@ if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
     tidyr::separate(annotation,
                     c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
                     sep = '\\|', convert = TRUE) %>% # Unpack annotation columns %>%
-    dplyr::select(chrom, start, end, gene, priority, score, annotation, type, lof,
-                  split_read_support, paired_support_PR) %>%
+    dplyr::mutate(SR = split_read_support, PR = paired_support_PR) %>% 
+    dplyr::select(chrom, start, end, gene, priority, score, annotation, type, lof, SR, PR) %>%
     dplyr::distinct() %>% 
     dplyr::mutate(chrom = factor(chrom, levels = c(1:22, "X", "Y", "MT")))
   
@@ -207,22 +212,26 @@ if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
 }
 ```
 
-### LoF in tumor suppressors
+### SV LoF in tumor suppressors (by Cancermine)
 
 ```{r sv_suppressors}
-if (!is.null(sv_all)) {
-  suppressors <- readr::read_tsv(params$suppressors, col_names = "gene", col_types = "c") %>%
-    dplyr::pull(gene)
+key_genes <- readr::read_tsv(params$key_genes, col_names = "gene", col_types = "c")$gene
+oncomine <- readr::read_tsv(params$oncomine) %>% 
+  mutate(gene = gene_normalized,
+         umccr_list = gene %in% key_genes)
+oncogenes <- oncomine %>% filter(role == "Oncogene")
+tsgenes <- oncomine %>% filter(role == "Tumor_Suppressor")
 
+if (!is.null(sv_all)) {
   lof <- sv_all %>%
     dplyr::mutate(lof = stringr::str_replace_all(lof, '\\(|\\)', '')) %>%
     tidyr::unnest(lof = strsplit(lof, ',')) %>%
     tidyr::separate(lof,
                     c('lof_gene', 'geneid', 'transcript_count', 'percent_affected'),
                     sep = '\\|') %>%
-    dplyr::select(chrom, start, end, lof_gene, transcript_count, percent_affected,
-                  split_read_support, paired_support_PR) %>%
-    dplyr::filter(lof_gene %in% suppressors) %>%
+    dplyr::select(chrom, start, end, lof_gene, transcript_count, percent_affected, SR, PR) %>%
+    dplyr::filter(lof_gene %in% tsgenes$gene) %>%
+    dplyr::mutate('UMCCR list' = ifelse(lof_gene %in% key_genes, 'Yes', '')) %>% 
     dplyr::distinct()
   
   DT::datatable(lof, rownames = FALSE) %>%
@@ -232,6 +241,32 @@ if (!is.null(sv_all)) {
 } else {
   warning('No prioritized events detected')
 }
+```
+
+## Copy number 
+
+### Homozugous deletions and gains by Purple. Oncogenes and tumor suppresors reported by Cancermine.
+
+```{r cnv_suppressors}
+purple <- readr::read_tsv(params$purple, col_types = "ciicdd") %>% 
+  dplyr::select(Gene, MinCopyNumber, MaxCopyNumber) %>% 
+  dplyr::mutate(hom_del = MinCopyNumber < 0.5,
+                gain = MinCopyNumber >= 3) %>% 
+  dplyr::filter(hom_del | gain) %>% 
+  dplyr::mutate(oncogene = Gene %in% oncogenes$gene,
+                tsgene = Gene %in% tsgenes$gene,
+                key_gene = Gene %in% key_genes) %>% 
+  dplyr::filter(oncogene & gain | tsgene & hom_del | key_gene) %>% 
+  dplyr::mutate(Event = ifelse(gain, 'Gain', 'Hom del'),
+                'Gene role' = ifelse(oncogene, 'Oncogene', ifelse(tsgene, 'Tumor suppressor', '')),
+                'UMCCR list' = ifelse(key_gene, 'Yes', ''),
+                min_cn = round(MinCopyNumber),
+                max_cn = round(MaxCopyNumber),
+                CN = ifelse(min_cn == max_cn, min_cn, paste(min_cn, max_cn, sep='-'))) %>% 
+  dplyr::arrange(CN) %>% 
+  dplyr::select(Gene, CN, Event, 'Gene role', 'UMCCR list')
+
+DT::datatable(purple, rownames = FALSE)
 ```
 
 ## Transcriptional strand bias analysis
