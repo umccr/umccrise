@@ -191,7 +191,7 @@ plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 
 ## Prioritised SVs
 
-```{r sv_prioritize}
+```{r sv_prioritize, message=FALSE}
 col_types <- "ccciicccccc"
 sv_all = NULL
 if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
@@ -214,7 +214,7 @@ if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
 
 ### SV LoF in tumor suppressors (by Cancermine)
 
-```{r sv_suppressors}
+```{r sv_suppressors, message=FALSE}
 key_genes <- readr::read_tsv(params$key_genes, col_names = "gene", col_types = "c")$gene
 cancermine <- readr::read_tsv(params$cancermine) %>%
   mutate(gene = gene_normalized,
@@ -247,7 +247,7 @@ if (!is.null(sv_all)) {
 
 ### Homozugous deletions and gains by Purple. Oncogenes and tumor suppresors reported by Cancermine.
 
-```{r cnv_suppressors}
+```{r cnv_suppressors, message=FALSE}
 purple <- readr::read_tsv(params$purple, col_types = "ciicdd") %>% 
   dplyr::select(Gene, MinCopyNumber, MaxCopyNumber) %>% 
   dplyr::mutate(hom_del = MinCopyNumber < 0.5,
