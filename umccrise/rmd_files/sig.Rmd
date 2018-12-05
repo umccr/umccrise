@@ -250,14 +250,15 @@ if (!is.null(sv_all)) {
 ```{r cnv_suppressors, message=FALSE}
 purple <- readr::read_tsv(params$purple, col_types = "ciicdd") %>% 
   dplyr::select(Gene, MinCopyNumber, MaxCopyNumber) %>% 
-  dplyr::mutate(hom_del = MinCopyNumber < 0.5,
-                gain = MinCopyNumber >= 3) %>% 
+  dplyr::mutate(del = MinCopyNumber < 1.5,
+                hom_del = MinCopyNumber < 0.5,
+                gain = MinCopyNumber >= 3.5) %>%
   dplyr::filter(hom_del | gain) %>% 
   dplyr::mutate(oncogene = Gene %in% oncogenes$gene,
                 tsgene = Gene %in% tsgenes$gene,
                 key_gene = Gene %in% key_genes) %>% 
-  dplyr::filter(oncogene & gain | tsgene & hom_del | key_gene) %>% 
-  dplyr::mutate(Event = ifelse(gain, 'Gain', 'Hom del'),
+  dplyr::filter(oncogene & gain | tsgene & hom_del | key_gene & del) %>%
+  dplyr::mutate(Event = ifelse(gain, 'Gain', ifelse(hom_del, 'Hom del', 'Del')),
                 'Gene role' = ifelse(oncogene, 'Oncogene', ifelse(tsgene, 'Tumor suppressor', '')),
                 'UMCCR list' = ifelse(key_gene, 'Yes', ''),
                 min_cn = round(MinCopyNumber),

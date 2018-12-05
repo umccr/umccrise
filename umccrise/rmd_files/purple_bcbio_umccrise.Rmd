@@ -80,7 +80,7 @@ data <- rbind(bcbio, umccrise) %>%
                 role = ifelse(gene %in% oncogenes$gene, 'oncogene', ifelse(gene %in% tsgenes$gene, 'tsgene', '')),
                 event = ifelse(MinCopyNumber < 0.5, 'hom_del',
                                ifelse(MinCopyNumber < 1.5, 'het_del',
-                               ifelse(MinCopyNumber > 3.5, 'gain', ''))),
+                               ifelse(MinCopyNumber >= 3.5, 'gain', ''))),
                 min_cn = MinCopyNumber) %>%
   dplyr::select(gene, pipeline, sample, min_cn, event)
 
