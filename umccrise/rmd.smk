@@ -180,7 +180,7 @@ rule purple_bcbio_stats:
             tumor_name = basename(fn).split('.purple.gene.cnv')[0]
             key = key_by_tumor_name[tumor_name]
             shell('cut -f1-5 ' + fn + ' > ' + join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
-            print('Copyimg bcbio purple file to :', join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
+            print('Copying bcbio purple file to :', join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
         for fn in input.purple_umccrise_files:
             shell('cut -f1-5 ' + fn + ' > ' + join(params.workdir, f'umccrise_' + basename(fn)))
         shell("""
