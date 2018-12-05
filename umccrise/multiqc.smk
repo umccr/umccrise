@@ -77,10 +77,14 @@ rule prep_multiqc_data:
         data_dir        = 'work/{batch}/multiqc_data'
     run:
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
-        generated_conf, additional_files = make_report_metadata(run, base_dirpath=report_base_path,
-                                                                analysis_dir=run.date_dir,
-                                                                program_versions_fpath=input.programs,
-                                                                data_versions_fpath=input.versions)
+        generated_conf, additional_files = make_report_metadata(
+            run,
+            tumor_sample = batch_by_name[wildcards.batch].tumor.name,
+            normal_sample = batch_by_name[wildcards.batch].normal.name,
+            base_dirpath=report_base_path,
+            analysis_dir=run.date_dir,
+            program_versions_fpath=input.programs,
+            data_versions_fpath=input.versions)
         gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'final.subset.renamed')
         with open(join(gold_standard_dir, 'list_files_final.txt')) as f:
             for l in f:

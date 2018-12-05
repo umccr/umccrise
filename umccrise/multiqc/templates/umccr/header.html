@@ -9,6 +9,41 @@ was generated and the button that launches the welcome tour.
 #}
 
 <style type="text/css">{{ include_file('assets/css/multiqc_umccr.css') }}</style>
+<script>
+    window.mqc_highlight_f_texts = ["", "{{ config.umccr.tumor_name }}", "{{ config.umccr.normal_name}}"];
+    window.mqc_highlight_f_cols = ["#cccccc", "rgb(228, 26, 28)", "rgb(55, 126, 184)"];
+
+    $(function(e, regex_mode){
+      var f_texts = window.mqc_highlight_f_texts;
+      var f_cols = window.mqc_highlight_f_cols;
+
+      $('.mqc_table_sortHighlight').hide();
+      $('.mqc_table tbody th').removeClass('highlighted').removeData('highlight');
+      $('.mqc_table tbody th').each(function(i){
+        var th = $(this);
+        var thtext = $(this).text();
+        var thiscol = '#333';
+        $.each(f_texts, function(idx, f_text){
+          if((regex_mode && thtext.match(f_text)) || (!regex_mode && thtext.indexOf(f_text) > -1)){
+            thiscol = f_cols[idx];
+            th.addClass('highlighted').data('highlight', idx);
+            $('.mqc_table_sortHighlight').show();
+          }
+        });
+        $(this).css('color', thiscol);
+      });
+    });
+
+    $(function () { fastqc_seq_content_heatmap(); });
+
+    $(function(){
+      // Replot graphs
+      $('.hc-plot:not(.not_rendered)').each(function(){
+        var target = $(this).attr('id');
+        plot_graph(target);
+      });
+    });
+</script>
 
 <h1 id="page_title">
   <a class="pull-right" href="https://umccr.github.io/" target="_blank">
@@ -93,4 +128,4 @@ was generated and the button that launches the welcome tour.
 </div>
 {% endif %}
 
-{{ report.umccr['sample_match_on_hover_js'] if report.umccr and 'sample_match_on_hover_js' in report.umccr }}
+<!--{{ report.umccr['sample_match_on_hover_js'] if report.umccr and 'sample_match_on_hover_js' in report.umccr }}-->

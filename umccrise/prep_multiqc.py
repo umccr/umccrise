@@ -14,28 +14,16 @@ from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transa
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
 
-def make_report_metadata(bcbio_proj, base_dirpath, analysis_dir=None,
+def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, analysis_dir=None,
                          program_versions_fpath=None, data_versions_fpath=None):
     conf = dict()
     conf['umccr'] = dict()
     additional_files = []
 
-    conf['umccr']['is_rnaseq'] = bcbio_proj.is_rnaseq
+    conf['umccr']['tumor_name'] = tumor_sample
+    conf['umccr']['normal_name'] = normal_sample
 
-    # Paired samples relations
-    normal_samples = [s for s in bcbio_proj.samples if s.phenotype == 'normal']
-    if normal_samples:
-        sample_match_on_hover_js = '<script type="text/javascript">\n'
-        for s in bcbio_proj.samples:
-            if s.phenotype != 'normal' and s.normal_match:
-                sample_match_on_hover_js += ('' +
-                    '\tdocument.getElementById("' + s.name + '_match").onmouseover = function()'
-                    ' { document.getElementById("' + s.normal_match.name + '").style.backgroundColor = "#EEE"; };\n' +
-                    '\tdocument.getElementById("' + s.name + '_match").onmouseleave = function()'
-                    ' { document.getElementById("' + s.normal_match.name + '").style.backgroundColor = "white"; };\n'
-                )
-        sample_match_on_hover_js += '</script>\n'
-        conf['umccr']['sample_match_on_hover_js'] = sample_match_on_hover_js
+    conf['umccr']['is_rnaseq'] = bcbio_proj.is_rnaseq
 
     # General links
     conf['title'] = bcbio_proj.project_name
