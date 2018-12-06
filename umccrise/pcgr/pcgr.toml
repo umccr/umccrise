@@ -88,7 +88,7 @@ msi = true
 
 [mutational_signatures]
 ## Identify relative contribution of 30 known mutational signatures (COSMIC) through the deconstructSigs framework
-mutsignatures = true
+mutsignatures = false
 ## deconstructSigs option: number of mutational signatures to limit the search to ('signatures.limit' in whichSignatures)
 mutsignatures_signature_limit = 6
 ## deconstructSigs option: type of trimer count normalization for inference of known mutational signatures, see explanation at https://github.com/raerose01/deconstructSigs"
