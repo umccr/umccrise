@@ -1,6 +1,12 @@
-0.10
+0.11 (6 Dec 2018)
 
-- Small variant filtering improvements: 
+- Add Per-sample MultiQC reports with reference samples
+- Add Sig.rmd Purple table
+- Add summary Purple-vs-bcbio comparison
+
+0.10 (30 Nov 2018)
+
+- SNV filtering improvements: 
     - Assuming calling with 1%
     - First round of PoN filter: remove with >=3 hits
     - Annotate with PCGR and keep all tier 1-3
@@ -9,7 +15,7 @@
         - PoN hits >=1
         - indels in bad promoters
         - DP<25 & AF<5% in tricky regions or GiaB LCR
-- Integrate CACAO
+- Integrate CACAO (temporary disabled)
 
 0.9 (15 Nov 2018)
 
