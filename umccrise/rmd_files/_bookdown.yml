@@ -1,0 +1,6 @@
+output_dir: "_book_umccrised"
+rmd_files: ["index.Rmd", "sig.Rmd", "purple_report.Rmd", "session_info.Rmd"]
+delete_merged_file: true
+language:
+  ui:
+    chapter_name: "Section "

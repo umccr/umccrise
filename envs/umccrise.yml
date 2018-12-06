@@ -68,11 +68,5 @@ dependencies:
   - r-readr
   - r-stringr
   - r-htmlwidgets >=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
-#  - circos=0.69.6         # for circos
-#  - libgd=2.2.5=3         # for circos
-#  - perl                  # for circos
-#  - bioconductor-copynumber=1.18.0   # for purple
-#  - sambamba                         # for purple
-#  - java-jdk                         # for purple
-#  - pcgr  # [not osx]
   - toml
+  - r-bookdown

@@ -1,0 +1,81 @@
+---
+author: "University of Melbourne Centre for Cancer Research"
+date: "`r format(Sys.time(), '%a %Y-%b-%d')`"
+site: bookdown::bookdown_site
+params:
+  title: "Cancer Report for "
+  workdir: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests'
+  vcf_fname: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf'
+  af_freqs: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt'
+  af_freqs_keygenes: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt'
+  sv_fname: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv'
+  manta_vcf: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf'
+  tumor_name: 'SmallCellNET__PRJ180596_CW-DNA029841T'
+  sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt'
+  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt'
+  cancermine: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv'
+  purple_gene_cnv: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv'
+  purple_circos_baf: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/?'
+  genome_build: 'hg19'
+description: "Analysis of tumor/normal samples at UMCCR"
+title: "`r paste(params$title, params$tumor_name)`"
+---
+
+# Introduction {-}
+
+```{r knitr-opts, include=FALSE}
+print(params$workdir)
+knitr::opts_chunk$set(collapse = TRUE, echo = FALSE)
+knitr::opts_knit$set(root.dir = params$workdir)
+```
+
+
+```{r load_pkgs, message=FALSE, warning=FALSE, eval=TRUE}
+library(bookdown)
+library(BSgenome)
+library(devtools)
+library(DT)
+library(dplyr)
+library(glue)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(MutationalPatterns)
+library(readr)
+library(rmarkdown)
+library(stringr)
+library(tidyr)
+library(vcfR)
+ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
+library(ref_genome, character.only = TRUE)
+tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
+library(tx_ref_genome, character.only = TRUE)
+```
+
+
+```{r render_book_inter, eval=FALSE, echo=FALSE}
+params = list(
+  workdir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests',
+  vcf_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
+  af_freqs = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
+  af_freqs_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
+  sv_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
+  manta_vcf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf',
+  tumor_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
+  sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
+  key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt',
+  cancermine = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv',
+  purple_gene_cnv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
+  purple_circos_baf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/?',
+  genome_build = 'hg19'
+)
+
+render_me <- function() {
+  bookdown::render_book(
+    "index.Rmd",
+    params = params)
+}
+render_me()
+```
+
+Umccrise report

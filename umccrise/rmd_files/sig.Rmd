@@ -1,78 +1,28 @@
----
-title: "UMCCR Patient Summary"
-author: "Oliver Hofmann"
-date: "`r Sys.Date()`"
-output:
-  html_document:
-    theme: readable
-    toc: true
-    toc_float: true
-    code_folding: hide
-  rmdformats::material:
-    highlight: kate
-params:
-  workdir: '/Users/vsaveliev/git/umccr/umccrise_test_data/results/bcbio_test_project/for_rmd_SmallCellNET'
-  vcf_fname: 'for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf'
-  af_freqs: 'for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt'
-  af_freqs_keygenes: 'for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt'
-  sv_fname: 'for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv'
-  manta_vcf: 'for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf'
-  tumor_name: 'SmallCellNET__PRJ180596_CW-DNA029841T'
-  sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt'
-  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt'
-  cancermine: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv'
-  purple: 'for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv'
-  genome_build: hg19
----
-
-```{r load-pkgs, echo=FALSE, message=FALSE, warning=FALSE}
-library(ggplot2)
-library(knitr)
-library(kableExtra)
-library(rmarkdown)
-library(tidyr)
-library(dplyr)
-library(readr)
-library(DT)
-library(MutationalPatterns)
-library(BSgenome)
-library(devtools)
-library(stringr)
-ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
-library(ref_genome, character.only = TRUE)
-tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
-library(tx_ref_genome, character.only = TRUE)
-library(vcfR)
-```
-
-```{r setup, include=FALSE}
-knitr::opts_knit$set(root.dir = params$workdir)
-options(width = 140)
-```
+# Signatures
 
 ```{r render_interactively, eval=FALSE, echo=FALSE}
 # helper function to run report interactively, instead of via the CL.
 render_me <- function() {
   rmarkdown::render(
     '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/sig.Rmd', 
-    output_file = '/Users/vsaveliev/git/umccr/umccrise_test_data/results/bcbio_test_project/for_rmd_SmallCellNET/test.html',
+    output_file = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/test.html',
     params = list(
-      workdir = '/Users/vsaveliev/git/umccr/umccrise_test_data/results/bcbio_test_project/for_rmd_SmallCellNET',
-      vcf_fname = 'work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
-      af_freqs = 'work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
-      af_freqs_keygenes = 'work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
-      sv_fname = 'SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
-      manta_vcf = 'SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf',
+      workdir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests',
+      vcf_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
+      af_freqs = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
+      af_freqs_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
+      sv_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
+      manta_vcf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf',
       tumor_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
       sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
       key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt',
       cancermine = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv',
-      purple = 'work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
+      purple = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
+      purple_dir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/purple/purple',
       genome_build = 'hg19'
     )
   )
 }
-
 render_me()
 ```
 
@@ -204,9 +154,12 @@ if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
     dplyr::select(chrom, start, end, gene, priority, score, annotation, type, lof, SR, PR) %>%
     dplyr::distinct() %>% 
     dplyr::mutate(chrom = factor(chrom, levels = c(1:22, "X", "Y", "MT")))
-  
-  DT::datatable(sv_all, rownames = FALSE, filter = "top")
-  
+
+  DT::datatable(sv_all, rownames = FALSE, filter = "top",
+                extensions = c('Scroller', 'Buttons'),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
+                               dom = 'Bfrtip', buttons = c('csv', 'excel')))
+
 } else {
   warning('No prioritized events detected')
 }
@@ -234,40 +187,16 @@ if (!is.null(sv_all)) {
     dplyr::mutate('UMCCR list' = ifelse(lof_gene %in% key_genes, 'Yes', '')) %>% 
     dplyr::distinct()
   
-  DT::datatable(lof, rownames = FALSE) %>%
+  DT::datatable(lof, rownames = FALSE, filter = "top",
+                extensions = c('Scroller', 'Buttons'),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
+                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>%
     DT::formatCurrency('start', currency = "", interval = 3, mark = ",", digits = 0) %>% 
     DT::formatCurrency('end', currency = "", interval = 3, mark = ",", digits = 0)
   
 } else {
   warning('No prioritized events detected')
 }
-```
-
-## Copy number 
-
-### Homozugous deletions and gains by Purple. Oncogenes and tumor suppresors reported by Cancermine.
-
-```{r cnv_suppressors, message=FALSE}
-purple <- readr::read_tsv(params$purple, col_types = "ciicdd") %>% 
-  dplyr::select(Gene, MinCopyNumber, MaxCopyNumber) %>% 
-  dplyr::mutate(del = MinCopyNumber < 1.5,
-                hom_del = MinCopyNumber < 0.5,
-                gain = MinCopyNumber >= 3.5) %>%
-  dplyr::filter(hom_del | gain) %>% 
-  dplyr::mutate(oncogene = Gene %in% oncogenes$gene,
-                tsgene = Gene %in% tsgenes$gene,
-                key_gene = Gene %in% key_genes) %>% 
-  dplyr::filter(oncogene & gain | tsgene & hom_del | key_gene & del) %>%
-  dplyr::mutate(Event = ifelse(gain, 'Gain', ifelse(hom_del, 'Hom del', 'Del')),
-                'Gene role' = ifelse(oncogene, 'Oncogene', ifelse(tsgene, 'Tumor suppressor', '')),
-                'UMCCR list' = ifelse(key_gene, 'Yes', ''),
-                min_cn = round(MinCopyNumber),
-                max_cn = round(MaxCopyNumber),
-                CN = ifelse(min_cn == max_cn, min_cn, paste(min_cn, max_cn, sep='-'))) %>% 
-  dplyr::arrange(CN) %>% 
-  dplyr::select(Gene, CN, Event, 'Gene role', 'UMCCR list')
-
-DT::datatable(purple, rownames = FALSE)
 ```
 
 ## Transcriptional strand bias analysis
@@ -346,35 +275,4 @@ strand_bias_rep <- strand_bias_test(strand_counts_rep)
 plot_strand(strand_counts_rep, mode = "relative")
 plot_strand_bias(strand_bias_rep)
 ```
-
-
-## Software Used
-
-<details>
-<summary>R packages</summary>
-```{r}
-si <- devtools::session_info(include_base = TRUE)
-si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
-si_pkg <- unclass(si$packages) %>% as_tibble()
-
-dplyr::tibble(var = row.names(si_pl), 
-              value = si_pl[, , drop = TRUE]) %>% 
-  knitr::kable()
-
-knitr::kable(si_pkg)
-```
-</details>
-
-<details>
-<summary>conda packages</summary>
-
-```{r eval=FALSE}
-which_r <- Sys.which("R")
-conda_bin <- list.files(file.path(dirname(dirname(dirname(dirname(x)))), "bin"), 
-                        pattern = "^conda$", full.names=T)
-conda_list <- system(command = paste(conda_bin, "list"), intern = TRUE)
-conda_list # do pretty stuff with it
-```
-
-</details>
 

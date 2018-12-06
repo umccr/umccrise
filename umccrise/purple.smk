@@ -9,6 +9,11 @@ import platform
 localrules: purple, purple_symlink, purple_somatic_vcf
 
 
+circos_macos_patch = ('export PERL5LIB=' +
+    env_path + '_purple/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
+    env_path + '_purple/lib/perl5/site_perl/5.22.0 && ') if platform.system() == 'Darwin' else ''
+
+
 rule purple_pileup:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
@@ -114,17 +119,20 @@ rule purple_run:
         gc = get_ref_file(run.genome_build, 'purple_gc'),
         somatic_vcf = rules.purple_somatic_vcf.output,
     output:
-        'work/{batch}/purple/{batch}.purple.cnv',
-        'work/{batch}/purple/{batch}.purple.gene.cnv',
-        'work/{batch}/purple/plot/{batch}.circos.png',
+        cnv          = 'work/{batch}/purple/{batch}.purple.cnv',
+        gene_cnv     = 'work/{batch}/purple/{batch}.purple.gene.cnv',
+        germline_cnv = 'work/{batch}/purple/{batch}.purple.germline.cnv',
+        circos_png   = 'work/{batch}/purple/plot/{batch}.circos.png',
+        input_png    = 'work/{batch}/purple/plot/{batch}.input.png',
+        cn_png       = 'work/{batch}/purple/plot/{batch}.copyNumber.png',
+        ma_png       = 'work/{batch}/purple/plot/{batch}.minor_allele.png',
+        variant_png  = 'work/{batch}/purple/plot/{batch}.variant.png',
+        purity       = 'work/{batch}/purple/{batch}.purple.purity',
     params:
         rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
-        macos_patch = ('export PERL5LIB=' +
-            env_path + '_purple/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
-            env_path + '_purple/lib/perl5/site_perl/5.22.0 && ') if platform.system() == 'Darwin' else '',
         xms = 2000,
         xmx = min(50000, 3500*threads_per_batch),
     # group: 'purple_run'
@@ -139,7 +147,7 @@ rule purple_run:
     shell:
         conda_cmd.format('purple') +
         'circos -modules ; circos -v ; ' +
-        '{params.macos_patch} '
+        circos_macos_patch +
         'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
         '-run_dir {params.rundir} '
         '-output_dir {params.outdir} '
@@ -151,13 +159,44 @@ rule purple_run:
         '-somatic_vcf {input.somatic_vcf} '
         '-circos circos 2>&1 | tee {log} '
 
+rule purple_circos_baf:
+    input:
+        baf = 'work/{batch}/purple/circos/{batch}.baf.circos',
+        cnv = 'work/{batch}/purple/circos/{batch}.cnv.circos',
+        map = 'work/{batch}/purple/circos/{batch}.map.circos',
+        link = 'work/{batch}/purple/circos/{batch}.link.circos',
+        circos_baf_conf = package_path() + '/rmd_files/templates/circos/circos_baf.conf',
+        gaps_txt = package_path() + '/rmd_files/templates/circos/gaps.txt',
+        ideo_conf = package_path() + '/rmd_files/templates/circos/ideogram.conf',
+    output:
+        png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
+    params:
+        out_dir = 'work/{batch}/purple/circos_baf'
+    run:
+        shell('mkdir -p {params.out_dir}')
+        shell('cp {input.gaps_txt} {params.out_dir}')
+        shell('cp {input.ideo_conf} {params.out_dir}')
+        out_conf = join(params.out_dir, basename(input.circos_baf_conf))
+        shell('sed s/SAMPLE/{wildcards.batch}/ {input.circos_baf_conf} > ' + out_conf)
+        shell('cp {input.baf} {params.out_dir}')
+        shell('cp {input.cnv} {params.out_dir}')
+        shell('cp {input.map} {params.out_dir}')
+        shell('cp {input.link} {params.out_dir}')
+        out_file = basename(output.png)
+        shell(conda_cmd.format('purple') +
+              'circos -modules ; circos -v ; ' +
+              circos_macos_patch +
+              'circos -nosvg -conf ' + out_conf + ' -outputdir {params.out_dir} -outputfile {out_file}')
+
 rule purple_symlink:
     input:
-        'work/{batch}/purple/{batch}.purple.cnv',
-        'work/{batch}/purple/plot/{batch}.circos.png',
+        rules.purple_run.output.cnv,
+        rules.purple_run.output.gene_cnv,
+        rules.purple_run.output.circos_png,
     output:
-        '{batch}/purple/{batch}.purple.cnv',
-        '{batch}/purple/{batch}.purple.circos.png',
+        cnv = '{batch}/purple/{batch}.purple.cnv',
+        gene_cnv = '{batch}/purple/{batch}.purple.gene.cnv',
+        circos_png = '{batch}/purple/{batch}.purple.circos.png',
     params:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
@@ -173,7 +212,8 @@ rule purple_symlink:
 
 rule purple:
     input:
-        expand(rules.purple_symlink.output, batch=batch_by_name.keys())
+        expand(rules.purple_symlink.output, batch=batch_by_name.keys()),
+        expand(rules.purple_circos_baf.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/purple.done'))
 

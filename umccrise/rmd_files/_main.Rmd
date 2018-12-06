@@ -1,0 +1,631 @@
+---
+author: "University of Melbourne Centre for Cancer Research"
+date: "`r format(Sys.time(), '%a %Y-%b-%d')`"
+site: bookdown::bookdown_site
+params:
+  title: "Cancer Report for "
+  workdir: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests'
+  vcf_fname: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf'
+  af_freqs: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt'
+  af_freqs_keygenes: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt'
+  sv_fname: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv'
+  manta_vcf: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf'
+  tumor_name: 'SmallCellNET__PRJ180596_CW-DNA029841T'
+  sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt'
+  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt'
+  cancermine: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv'
+  purple: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv'
+  purple_dir: "/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/purple"
+  genome_build: 'hg19'
+description: "Analysis of tumor/normal samples at UMCCR"
+title: "`r paste(params$title, params$tumor_name)`"
+---
+
+# Introduction {-}
+
+```{r knitr-opts, include=FALSE}
+print(params$workdir)
+knitr::opts_chunk$set(collapse = TRUE, echo = FALSE)
+knitr::opts_knit$set(root.dir = params$workdir)
+```
+
+
+```{r load_pkgs, message=FALSE, warning=FALSE, eval=TRUE}
+library(bookdown)
+library(BSgenome)
+library(devtools)
+library(DT)
+library(dplyr)
+library(glue)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(MutationalPatterns)
+library(readr)
+library(rmarkdown)
+library(stringr)
+library(tidyr)
+library(vcfR)
+ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
+library(ref_genome, character.only = TRUE)
+tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
+library(tx_ref_genome, character.only = TRUE)
+```
+
+
+```{r render_book_inter, eval=FALSE, echo=FALSE}
+params = list(
+  workdir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests',
+  vcf_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
+  af_freqs = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
+  af_freqs_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
+  sv_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
+  manta_vcf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf',
+  tumor_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
+  sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
+  key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt',
+  cancermine = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv',
+  purple = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
+  purple_dir = "/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/purple",
+  genome_build = 'hg19'
+)
+
+render_me <- function() {
+  bookdown::render_book(
+    "index.Rmd",
+    params = params)
+}
+
+render_me()
+```
+
+This is the intro.
+
+<!--chapter:end:index.Rmd-->
+
+# Signatures
+
+```{r render_interactively, eval=FALSE, echo=FALSE}
+# helper function to run report interactively, instead of via the CL.
+render_me <- function() {
+  rmarkdown::render(
+    '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/sig.Rmd', 
+    output_file = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/test.html',
+    params = list(
+      workdir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests',
+      vcf_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
+      af_freqs = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
+      af_freqs_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
+      sv_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
+      manta_vcf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf',
+      tumor_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
+      sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
+      key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt',
+      cancermine = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv',
+      purple = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
+      purple_dir = "/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/purple/purple",
+      genome_build = 'hg19'
+    )
+  )
+}
+
+render_me()
+```
+
+## Allelic frequencies
+We can compare the allelic frequencies of all detected somatic mutations (Global) 
+vs. those present in a subset of ~1300 cancer genes.
+Frequencies are currently based on MuTect2 
+calls only and limited to 'high confidence' regions as determined by the 
+[Genome in a Bottle consortium](http://jimb.stanford.edu/giab/).
+
+```{r af_plot, warning=FALSE}
+# Global AF
+af_global <- readr::read_tsv(params$af_freqs, col_types = "d") %>%
+  dplyr::mutate(set = "Global")
+
+af_keygenes <- readr::read_tsv(params$af_freqs_keygenes,
+                               col_types = "cicccd") %>% 
+  dplyr::select(af) %>% 
+  dplyr::mutate(set = 'Key genes CDS')
+
+af_both <- dplyr::bind_rows(af_global, af_keygenes) %>% 
+  dplyr::mutate(set = factor(set, levels = c("Global", "Key genes CDS")))
+
+ggplot(data = af_both, aes(af)) +
+  geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#0047ab") +
+  facet_wrap(~set, scales = 'free_y', drop = FALSE) +
+  scale_x_continuous(name = "Allele Frequency", 
+                     breaks = seq(0, 1, by = 0.1),
+                     limits = c(0, 1), expand = c(0, 0)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        panel.grid.minor = element_blank())
+```
+
+### AF summary stats
+
+```{r af_stats}
+mode2 <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+af_both %>% 
+  dplyr::group_by(set) %>% 
+  dplyr::summarise(n = n(),
+                   mean = round(mean(af), 2),
+                   median = round(median(af), 2),
+                   mode = round(mode2(af), 2)) %>% 
+  tidyr::complete(set, fill = list(n = 0)) %>%
+  knitr::kable(format = "html") %>% 
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>% 
+  kableExtra::column_spec(1, bold = TRUE)
+```
+
+
+## Mutational signature
+We can use [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html)
+to generate a mutation signature for our sample.
+
+```{r importVCF, warning=FALSE}
+# Grab ensemble calls from the post-processing stage. These were converted
+# by adding "chr" prefixes and removing G* chromosomes.
+vcf <- read_vcfs_as_granges(
+  params$vcf_fname,
+  sample_names = params$tumor_name,
+  genome = ref_genome,
+  group = "auto+sex")
+```
+
+### Somatic change distribution
+
+#### Point mutation spectrum
+```{r somProfile1, warning=FALSE}
+type_occurrences <- mut_type_occurrences(vcf_list = vcf, ref_genome = ref_genome)
+plot_spectrum(type_occurrences, CT = TRUE)
+```
+
+#### 96 trinucleotide profile
+```{r somProfile2, warning=FALSE}
+mut_mat <- mut_matrix(vcf_list = vcf, ref_genome = ref_genome)
+plot_96_profile(mut_mat, condensed = TRUE)
+```
+
+### Compare signature to reference
+```{r somSig}
+# Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
+sig_probs <- params$sig_probs
+# better be explicit - the sig_probs file has 7 extra empty columns
+col_types <- paste0(c("ccc", paste0(rep("d", 30), collapse = ""), "ccccccc"), collapse = "")
+col_names <- c("SubstType", "Trinucleotide", "SomMutType", paste0("Sig", 1:30), paste0("foo", 1:7))
+cancer_signatures <- readr::read_tsv(sig_probs, col_names = col_names, col_types = col_types, skip = 1) %>%
+  dplyr::arrange(SubstType) %>%
+  dplyr::select(4:33) %>%
+  as.matrix()
+
+# Fit mutation matrix to cancer signatures
+fit_res <- fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures)
+
+# Select signatures with some contribution
+fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
+result <- dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr)
+
+result %>%
+  dplyr::arrange(-Contribution) %>%
+  DT::datatable(rownames = FALSE,
+                options = list(dom = 't')) %>%
+  DT::formatRound('Contribution', 1)
+```
+
+### Check for positional enrichment of somatic signatures (limited to autosomes):
+
+```{r rainfall}
+chromosomes <- seqnames(get(ref_genome))[1:22]
+plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
+```
+
+## Prioritised SVs
+
+```{r sv_prioritize, message=FALSE}
+col_types <- "ccciicccccc"
+sv_all = NULL
+if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
+  sv_all <- readr::read_tsv(params$sv_fname, col_names = TRUE, col_types = col_types) %>%
+    tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # Unpack multiple annotations per region
+    tidyr::separate(annotation,
+                    c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
+                    sep = '\\|', convert = TRUE) %>% # Unpack annotation columns %>%
+    dplyr::mutate(SR = split_read_support, PR = paired_support_PR) %>% 
+    dplyr::select(chrom, start, end, gene, priority, score, annotation, type, lof, SR, PR) %>%
+    dplyr::distinct() %>% 
+    dplyr::mutate(chrom = factor(chrom, levels = c(1:22, "X", "Y", "MT")))
+
+  DT::datatable(sv_all, rownames = FALSE, filter = "top",
+                extensions = c('Scroller', 'Buttons'),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
+                               dom = 'Bfrtip', buttons = c('csv', 'excel')))
+
+} else {
+  warning('No prioritized events detected')
+}
+```
+
+### SV LoF in tumor suppressors (by Cancermine)
+
+```{r sv_suppressors, message=FALSE}
+key_genes <- readr::read_tsv(params$key_genes, col_names = "gene", col_types = "c")$gene
+cancermine <- readr::read_tsv(params$cancermine) %>%
+  mutate(gene = gene_normalized,
+         umccr_list = gene %in% key_genes)
+oncogenes <- cancermine %>% filter(role == "Oncogene")
+tsgenes <- cancermine %>% filter(role == "Tumor_Suppressor")
+
+if (!is.null(sv_all)) {
+  lof <- sv_all %>%
+    dplyr::mutate(lof = stringr::str_replace_all(lof, '\\(|\\)', '')) %>%
+    tidyr::unnest(lof = strsplit(lof, ',')) %>%
+    tidyr::separate(lof,
+                    c('lof_gene', 'geneid', 'transcript_count', 'percent_affected'),
+                    sep = '\\|') %>%
+    dplyr::select(chrom, start, end, lof_gene, transcript_count, percent_affected, SR, PR) %>%
+    dplyr::filter(lof_gene %in% tsgenes$gene) %>%
+    dplyr::mutate('UMCCR list' = ifelse(lof_gene %in% key_genes, 'Yes', '')) %>% 
+    dplyr::distinct()
+  
+  DT::datatable(lof, rownames = FALSE, filter = "top",
+                extensions = c('Scroller', 'Buttons'),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
+                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>%
+    DT::formatCurrency('start', currency = "", interval = 3, mark = ",", digits = 0) %>% 
+    DT::formatCurrency('end', currency = "", interval = 3, mark = ",", digits = 0)
+  
+} else {
+  warning('No prioritized events detected')
+}
+```
+
+## Transcriptional strand bias analysis
+
+We can determine if a gene mutation is on the transcribed or non-transcribed
+strand, which can be used to evaluate the involvement of transcription-coupled
+repair. By convention base substitutions are regarded as C>X or T>X, so we try
+to determine whether the C or T base is on the same strand as the gene
+definition. Base substitutions on the same strand as the gene definition are
+considered 'untranscribed', and on the opposite strand 'transcribed', since the
+gene definitions report the coding or sense strand, which is untranscribed. No
+strand information is reported for base substitutions that overlap with more
+than one gene on different strands.
+
+```{r tran_strand_bias, warning=FALSE, message=FALSE}
+# Get known genes table from UCSC
+if (params$genome_build == 'hg19') {
+  genes_list <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
+} else {
+  genes_list <- genes(TxDb.Hsapiens.UCSC.hg38.knownGene)
+}
+
+# Mutation count matrix with strand info (4*6*4=96 -> 96*2=192)
+mut_mat_s <- mut_matrix_stranded(vcf,
+                                 ref_genome = ref_genome,
+                                 ranges = genes_list,
+                                 mode = "transcription")
+
+# Mutation count per type and strand
+strand_counts <- strand_occurrences(mut_mat_s, by = "all")
+# Poisson test for strand asymmetry significance testing
+strand_bias <- strand_bias_test(strand_counts)
+
+# mutation spectrum with strand distinction
+plot_strand(strand_counts, mode = "relative")
+# effect size of strand bias
+plot_strand_bias(strand_bias)
+```
+
+
+## Replicative strand bias analysis
+The involvement of replication-associated mechanisms can be evaluated by
+testing for a mutational bias between the leading and lagging strand.
+The replication strand is dependent on the locations of replication
+origins from which DNA replication is fired.
+However, replication timing is dynamic and cell-type specific,
+which makes replication strand determination less straightforward than
+transcriptional strand bias analysis.
+Replication timing profiles can be generated with
+Repli-Seq experiments. Once the replication direction is defined,
+a strand asymmetry analysis can be performed similarly as the transcription
+strand bias analysis.
+
+```{r rep_strand_bias, warning=FALSE, message=FALSE}
+repli_file <- system.file("extdata/ReplicationDirectionRegions.bed",
+                          package = "MutationalPatterns")
+# start/stop contain scientific notation, so need to be doubles
+repli_strand <- read_tsv(repli_file, col_names = TRUE, col_types = "cddcc") %>% 
+  mutate_if(is.character, as.factor)
+repli_strand_granges <- GRanges(
+  seqnames = repli_strand$Chr,
+  ranges = IRanges(start = repli_strand$Start + 1,
+                   end = repli_strand$Stop),
+  strand_info = repli_strand$Class)
+
+seqlevelsStyle(repli_strand_granges) <- seqlevelsStyle(base::get(ref_genome))
+
+mut_mat_s_rep <- mut_matrix_stranded(vcf, ref_genome = ref_genome,
+                                     ranges = repli_strand_granges,
+                                     mode = "replication")
+# Mutation count per type and strand
+strand_counts_rep <- strand_occurrences(mut_mat_s_rep, by = "all")
+# Poisson test for strand asymmetry significance testing
+strand_bias_rep <- strand_bias_test(strand_counts_rep)
+
+plot_strand(strand_counts_rep, mode = "relative")
+plot_strand_bias(strand_bias_rep)
+```
+
+
+<!--chapter:end:sig.Rmd-->
+
+# PURPLE Results
+
+## Events in cancer genes
+
+Listed deletions in cancer genes, homozygous deletions of tumor suppressors, and gains in oncogenes. Oncogenes and tumor suppressors reported by Cancermine
+
+```{r cnv_suppressors, message=FALSE}
+purple <- readr::read_tsv(params$purple, col_types = "ciicdd") %>%
+  dplyr::select(Gene, MinCopyNumber, MaxCopyNumber) %>%
+  dplyr::mutate(del = MinCopyNumber < 1.5,
+                hom_del = MinCopyNumber < 0.5,
+                gain = MinCopyNumber >= 3.5) %>%
+  dplyr::filter(hom_del | gain) %>%
+  dplyr::mutate(oncogene = Gene %in% oncogenes$gene,
+                tsgene = Gene %in% tsgenes$gene,
+                key_gene = Gene %in% key_genes) %>%
+  dplyr::filter(oncogene & gain | tsgene & hom_del | key_gene & del) %>%
+  dplyr::mutate(Event = ifelse(gain, 'Gain', ifelse(hom_del, 'Hom del', 'Del')),
+                'Gene role' = ifelse(oncogene, 'Oncogene', ifelse(tsgene, 'Tumor suppressor', '')),
+                'UMCCR list' = ifelse(key_gene, 'Yes', ''),
+                min_cn = round(MinCopyNumber),
+                max_cn = round(MaxCopyNumber),
+                CN = ifelse(min_cn == max_cn, min_cn, paste(min_cn, max_cn, sep='-'))) %>%
+  dplyr::arrange(CN) %>%
+  dplyr::select(Gene, CN, Event, 'Gene role', 'UMCCR list')
+
+DT::datatable(purple, rownames = FALSE, filter = "top", extensions = c('Scroller', 'Buttons'),
+              options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
+                             dom = 'Bfrtip', buttons = c('csv', 'excel')))
+```
+
+
+```{r funcs}
+cnv_tab <- function(cnv) {
+  
+  DT::datatable(cnv, filter = "top", rownames = FALSE, 
+                extensions = c('Scroller', 'Buttons'), 
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300, 
+                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>% 
+    DT::formatCurrency(~ start + end + seg_len, currency = "", interval = 3, mark = ",", digits = 0) %>% 
+    DT::formatRound('tot_cn')
+}
+
+plot_circos_baf <- function(purple_circos_dir = NULL, out_dir = "circos_baf", tumor_name = NULL) {
+  
+  stopifnot(!is.null(purple_circos_dir), !is.null(tumor_name))
+  stopifnot(dir.exists(purple_circos_dir))
+  
+  req_files <- file.path(purple_circos_dir, paste0(tumor_name, c(".baf.circos", ".cnv.circos", ".map.circos", ".link.circos")))
+  stopifnot(all(file.exists(req_files)))
+  target_files <- file.path(out_dir, sub(tumor_name, "SAMPLE", basename(req_files)))
+  
+  dir.create(out_dir, recursive = TRUE)
+  message(glue::glue("Copying circos templates to '{out_dir}'."))
+  file.copy(system.file("templates/circos", "circos_baf.conf", package = "pebbles"), out_dir, overwrite = TRUE)
+  file.copy(system.file("templates/circos", "gaps.txt", package = "pebbles"), out_dir, overwrite = TRUE)
+  file.copy(system.file("templates/circos", "ideogram.conf", package = "pebbles"), out_dir, overwrite = TRUE)
+  
+  message(glue::glue("Copying circos input files to '{out_dir}'."))
+  file.copy(from = req_files, to = target_files)
+  if (Sys.which("circos") != "") {
+    cmd <- glue::glue("circos -nosvg -conf {out_dir}/circos_baf.conf -outputdir {out_dir} -outputfile {tumor_name}_circos_baf.png")
+    system(cmd)
+  } else {
+    stop("Can't find 'circos' in your PATH. Exiting.")
+  }
+}
+```
+
+
+[PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
+is a tool for estimating tumor purity and ploidy. It uses the read depth and 
+tumor beta allele frequency (BAF) to estimate purity and generate a copy number profile.
+
+### Parameters
+
+* Tumor Name: ``r params$tumor_name``
+* PURPLE Results directory: ``r params$purple_dir``
+
+## Circos
+
+### Plot 1: Somatic SNVs/Indels, Total/Minor CN, SVs
+
+* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome 
+  (centromeres, heterochromatin & missing short arms)
+* __Track2__: Somatic variants (incl. exon, intron and intergenic regions). 
+    * outer ring: SNP allele frequencies, corrected for tumor purity and scaled from 0 to 100%.
+      Each dot represents a single somatic variant, coloured according to the
+      type of base change (e.g. C>T/G>A in red).
+    * inner ring: short insertion (yellow) and deletion (red) locations. 
+* __Track3__: Observed copy number changes adjusted for tumor purity,
+  including focal and chromosomal somatic events. 
+  <span style="color:red">Red</span> = Loss; <span style="color:#32CD32">Green</span> = Gain.
+  Scaled from 0 (complete loss) to 6 (high level gains). 
+  If > 6, shown as 6 with a green dot on the outermost green gridline. 
+* __Track4__: Observed 'minor allele copy numbers'. Range from 0 to 3. 
+  Expected normal minor allele copy number is 1, and anything below 1 is shown 
+  as a loss (<span style="color:#EE7600">Orange</span>), representing an LOH event. 
+  Minor allele copy numbers above 1 (<span style="color:#7EC0EE">Blue</span>) indicate gains 
+  of both A and B alleles. 
+* __Track5__ (Inner circle): Observed structural variants within or between the chromosomes.
+    * <span style="color:#7EC0EE">Blue</span> = Translocations
+    * <span style="color:red">Red</span> = Deletions 
+    * <span style="color:#e6e600">Yellow</span> = Insertions 
+    * <span style="color:#32CD32">Green</span> = Tandem duplications 
+    * <span style="color:#000000">Black</span> = Inversions
+
+```{r circos-default1, out.width="80%"}
+plot_path <- file.path(params$purple_dir, "plot") 
+purple_circos_dir <- file.path(params$purple_dir, "circos")
+knitr::include_graphics(file.path(plot_path, paste0(params$tumor_name, ".circos.png")))
+```
+
+### Plot 2: Tumor/Normal Allele Ratios, BAF
+
+* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome 
+  (centromeres, heterochromatin & missing short arms)
+* __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
+* __Track3__: <span style="#EE7600">Beta Allele Frequency</span>
+
+
+```{r circos-default2, out.width="80%"}
+knitr::include_graphics(file.path(plot_path, paste0(params$tumor_name, ".input.png")))
+```
+
+### Plot 3: Total/Minor CN, SVs, BAF
+
+```{r circos-baf-prep, message=FALSE, warning=FALSE}
+plot_circos_baf(purple_circos_dir = purple_circos_dir, 
+                out_dir = "baf_circos",
+                tumor_name = params$tumor_name)
+```
+
+```{r circos-baf-plot}
+knitr::include_graphics(file.path("baf_circos", paste0(params$tumor_name, "_circos_baf.png")))
+```
+
+## Purity and Ploidy Summary
+
+```{r purply}
+fn <- file.path(params$purple_dir, paste0(params$tumor_name, ".purple.purity"))
+x <- readr::read_tsv(fn, col_types = cols(.default = col_double(), 
+                                          Gender = col_character(), 
+                                          Status = col_character())) %>%
+  dplyr::mutate_if(is.numeric, round, 2) %>%
+  unlist()
+
+tribble(~key, ~value,
+        'Sex', x["Gender"],
+        'Purity', glue('{x["#Purity"]} ({x["MinPurity"]}-{x["MaxPurity"]})'),
+        'Ploidy', glue('{x["Ploidy"]} ({x["MinPloidy"]}-{x["MaxPloidy"]})'),
+        'Diploidy Proportion', glue('{x["DiploidProportion"]} ({x["MinDiploidProportion"]}-{x["MaxDiploidProportion"]})'),
+        'Polyclonal Proportion', x["PolyclonalProportion"],
+        'Purple Version', x["Version"]) %>% 
+  knitr::kable()
+```
+
+## AZ300 + UMCCR Gene Somatic CNV Calls
+
+```{r gene-tab}
+fn_gene <- file.path(params$purple_dir, paste0(params$tumor_name, ".purple.gene.cnv"))
+df <- readr::read_tsv(fn_gene, col_types = cols(.default = col_character()), skip = 1, col_names = FALSE) %>% 
+  dplyr::select(chrom = X1, start = X2, end = X3, gene = X4, min_cn = X5, max_cn = X6) %>% 
+  dplyr::mutate(start = as.integer(start), end = as.integer(end),
+                min_cn = as.double(min_cn), max_cn = as.double(max_cn))
+
+umccr_genes <- readr::read_tsv(params$key_genes, col_names = "gene", col_types = "c") %>%
+  dplyr::pull(gene)
+
+df %>%
+  dplyr::filter(gene %in% umccr_genes) %>%
+  DT::datatable(filter = "top", rownames = FALSE, extensions = c('Scroller', 'Buttons'), 
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500, 
+                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>% 
+  DT::formatCurrency(~ start + end, currency = "", interval = 3, mark = ",", digits = 0) %>% 
+  DT::formatRound(~ min_cn + max_cn)
+```
+
+
+## Global Somatic and Germline CNV Summary
+
+```{r germ-som-prep}
+fn_som <- file.path(params$purple_dir, paste0(params$tumor_name, ".purple.cnv"))
+fn_germ <- file.path(params$purple_dir, paste0(params$tumor_name, ".purple.germline.cnv"))
+cnv_som <- readr::read_tsv(fn_som, col_types = "ciididdccc") %>%
+  dplyr::rename(chrom = .data$`#chromosome`,
+                tot_cn = .data$copyNumber) %>%
+  dplyr::select(.data$chrom, .data$start, .data$end, .data$tot_cn) %>%
+  dplyr::filter(.data$chrom != "MT")
+cnv_germ <- readr::read_tsv(fn_germ, col_types = "ciiddddccc") %>%
+  dplyr::select(chrom = `#chromosome`, start, end, tot_cn = copyNumber) %>% 
+  dplyr::filter(.data$chrom != "MT")
+
+cnv_som <- structure(list(cnv = cnv_som), class = "cnv")
+cnv_germ <- structure(list(cnv = cnv_germ), class = "cnv")
+
+cnv_all <- dplyr::bind_rows(list(somatic = cnv_som$cnv, germline = cnv_germ$cnv), .id = "type")
+cnv_all %>% 
+  mutate(sv_len = end - start) %>% 
+  group_by(type) %>% 
+  summarise(n = n(),
+            mean_len = round(mean(sv_len), 0),
+            med_len = round(median(sv_len), 0),
+            min_cn = round(min(tot_cn), 2),
+            max_cn = round(max(tot_cn), 2)) %>% 
+  knitr::kable(format.args = list(big.mark = ","))
+```
+
+### Somatic Calls
+
+```{r som-tab}
+cnv_tab(cnv_som$cnv %>% mutate(seg_len = end - start))
+```
+
+## Other Stuff
+
+```{r purple-other-plots, out.width="80%"}
+knitr::include_graphics(file.path(plot_path, paste0(params$tumor_name, ".copyNumber.png")))
+knitr::include_graphics(file.path(plot_path, paste0(params$tumor_name, ".minor_allele.png")))
+knitr::include_graphics(file.path(plot_path, paste0(params$tumor_name, ".variant.png")))
+```
+
+<!--chapter:end:purple_report.Rmd-->
+
+# Session Info
+
+<details>
+<summary>R packages</summary>
+```{r eval=TRUE}
+si <- devtools::session_info(include_base = TRUE)
+si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
+si_pkg <- unclass(si$packages) %>% 
+  dplyr::as_tibble() %>% 
+  dplyr::select(package, version = ondiskversion, path, datestamp = date)
+
+  
+
+dplyr::tibble(var = row.names(si_pl), 
+              value = si_pl[, , drop = TRUE]) %>% 
+  knitr::kable(format = "html") %>% 
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>% 
+  kableExtra::column_spec(1, bold = TRUE)
+
+knitr::kable(si_pkg, format = "html") %>% 
+  kableExtra::kable_styling(full_width = TRUE, position = "left") %>% 
+  kableExtra::column_spec(1, bold = TRUE)
+```
+</details>
+
+<details>
+<summary>conda packages</summary>
+
+```{r eval=FALSE}
+which_r <- Sys.which("R")
+conda_bin <- list.files(file.path(dirname(dirname(dirname(dirname(x)))), "bin"), 
+                        pattern = "^conda$", full.names=T)
+conda_list <- system(command = paste(conda_bin, "list"), intern = TRUE)
+conda_list # do pretty stuff with it
+```
+
+</details>
+
+<!--chapter:end:session_info.Rmd-->
+

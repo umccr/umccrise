@@ -1,34 +1,4 @@
----
-title: "Purple: bcbio vs umccrise"
-date: "`r Sys.Date()`"
-output:
-  html_document:
-    theme: readable
-    toc: true
-    toc_float: true
-    code_folding: hide
-  rmdformats::material:
-    highlight: kate
-params:
-  workdir: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/purple'
-  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt'
-  cancermine: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv'
----
-
-```{r load-pkgs, echo=FALSE, message=FALSE, warning=FALSE}
-library(ggplot2)
-library(knitr)
-library(rmarkdown)
-library(purrr)
-library(tidyr)
-library(dplyr)
-library(readr)
-library(DT)
-```
-
-```{r setup, include=FALSE}
-knitr::opts_knit$set(root.dir = params$workdir)
-```
+# PURPLE bcbio vs. umccrise
 
 ```{r render_interactively, eval=FALSE, echo=FALSE, warning=FALSE}
 # helper function to run report interactively, instead of via the CL.
