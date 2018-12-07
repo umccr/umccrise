@@ -199,12 +199,12 @@ rule bookdown_report:
         purple_variant_png  = lambda wc, input: abspath(input.purple_variant_png),
         purple_baf_png      = lambda wc, input: abspath(input.purple_baf_png),
     output:
-        '{batch}/{batch}-rmd_report.html'
+        dir = directory('{batch}/{batch}_book')
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
-    shell: """cp -r {input.rmd_files_dir} {params.rmd_tmp_dir} && 
-cd {params.rmd_tmp_dir} && 
+    shell: """cp -r {input.rmd_files_dir} {params.rmd_tmp_dir} && \
+cd {params.rmd_tmp_dir} && \
 Rscript -e "library(bookdown); bookdown::render_book('{params.index_rmd}', \
 params=list( \
 tumor_name='{params.tumor_name}', \
@@ -227,7 +227,9 @@ purple_ma_png='{params.purple_ma_png}', \
 purple_variant_png='{params.purple_variant_png}', \
 purple_baf_png='{params.purple_baf_png}', \
 purple_purity='{params.purple_purity}' \
-))" ; cd {params.workdir}
+))" ; \
+cd {params.workdir} ; \
+cp -r {params.rmd_tmp_dir}/_book_umccrised {output}
 """
 # sed -e s/SAMPLE/{wildcards.batch}/g -itmp {params.bookdown_yml} &&
 
