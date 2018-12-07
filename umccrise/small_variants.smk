@@ -241,16 +241,22 @@ rule somatic_vcf_filter:
             #    unless coding in cancer genes
             # Remove DP<25 and AF<5%
             else:
+                if rec.INFO['TUMOR_AF'] < 0.1:
+                    _add_cyvcf2_filter(rec, 'AF10')
+
                 if rec.INFO.get('gnomAD_AF', 0.) >= 0.01:
                     _add_cyvcf2_filter(rec, 'gnomAD_common')
+
                 # second round of panel of normals
                 pon = rec.INFO.get('PoN_CNT')
                 if pon is not None and pon >= 1:
                     _add_cyvcf2_filter(rec, 'PoN')
+
                 # removing indels in bad promoter regions
                 tricky_set = set(rec.INFO.get('TRICKY', '').split(','))
                 if not rec.is_snp and 'bad_promoter' in tricky_set:
                     _add_cyvcf2_filter(rec, 'bad_promoter')
+
                 # removing low AF and low DP variants in low complexity regions
                 if rec.INFO['TUMOR_DP'] < 30 and rec.INFO['TUMOR_AF'] < 0.1:
                     if tricky_set & {'gc15', 'gc70to75', 'gc75to80', 'gc80to85', 'gc85', 'low_complexity_51to200bp',
@@ -258,8 +264,10 @@ rule somatic_vcf_filter:
                         _add_cyvcf2_filter(rec, 'LowAF_TRICKY')
                     if not rec.INFO.get('GIAB_CONF'):
                         _add_cyvcf2_filter(rec, 'LowAF_GIAB_LCR')
+
                 if rec.INFO['TUMOR_DP'] < 25 and rec.INFO['TUMOR_AF'] < 0.05:
                     _add_cyvcf2_filter(rec, 'LowAF')
+
             return rec
         _iter_vcf(input.vcf, output.vcf, func, func_hdr)
 
