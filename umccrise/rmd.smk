@@ -156,16 +156,15 @@ rule rmd_purple_cnv:
 ## Running Rmarkdown
 rule bookdown_report:
     input:
-        afs = rules.afs.output[0],
-        afs_keygenes = rules.afs_keygenes.output[0],
-        vcf = rules.somatic_to_hg19.output[0],
-        sv = rules.prep_sv_tsv.output[0],
         rmd_files_dir = join(package_path(), 'rmd_files'),
-        sig_rmd = join(package_path(), 'rmd_files', 'index.Rmd'),
         sig_probs = join(package_path(), 'rmd_files', 'signatures_probabilities.txt'),
         cancermine = get_cancermine(),
         key_genes = get_key_genes(),
-        manta_vcf = rules.filter_sv_vcf.output[0],
+        afs                 = rules.afs.output[0],
+        afs_keygenes        = rules.afs_keygenes.output[0],
+        vcf                 = rules.somatic_to_hg19.output[0],
+        sv                  = rules.prep_sv_tsv.output[0],
+        manta_vcf           = rules.filter_sv_vcf.output[0],
         purple_gene_cnv     = rules.rmd_purple_cnv.output[0],
         purple_cnv          = rules.purple_run.output.cnv,
         purple_germline_cnv = rules.purple_run.output.germline_cnv,
@@ -178,42 +177,59 @@ rule bookdown_report:
         purple_baf_png      = rules.purple_circos_baf.output.png,
     params:
         rmd_tmp_dir = 'work/{batch}/rmd/rmd_files',
-        index_rmd = 'work/{batch}/rmd/rmd_files/index.Rmd',
+        index_rmd = 'index.Rmd',
+        # bookdown_yml = 'work/{batch}/rmd/rmd_files/_bookdown.yml',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         workdir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0]),
-        rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build
+        rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
+        afs                 = lambda wc, input: abspath(input.afs),
+        afs_keygenes        = lambda wc, input: abspath(input.afs_keygenes),
+        vcf                 = lambda wc, input: abspath(input.vcf),
+        sv                  = lambda wc, input: abspath(input.sv),
+        manta_vcf           = lambda wc, input: abspath(input.manta_vcf),
+        purple_gene_cnv     = lambda wc, input: abspath(input.purple_gene_cnv),
+        purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
+        purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
+        purple_purity       = lambda wc, input: abspath(input.purple_purity),
+        purple_circos_png   = lambda wc, input: abspath(input.purple_circos_png),
+        purple_input_png    = lambda wc, input: abspath(input.purple_input_png),
+        purple_cn_png       = lambda wc, input: abspath(input.purple_cn_png),
+        purple_ma_png       = lambda wc, input: abspath(input.purple_ma_png),
+        purple_variant_png  = lambda wc, input: abspath(input.purple_variant_png),
+        purple_baf_png      = lambda wc, input: abspath(input.purple_baf_png),
     output:
         '{batch}/{batch}-rmd_report.html'
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
     shell: """cp -r {input.rmd_files_dir} {params.rmd_tmp_dir} && 
+cd {params.rmd_tmp_dir} && 
 Rscript -e "library(bookdown); bookdown::render_book('{params.index_rmd}', \
 params=list( \
-af_freqs='{input.afs}', \
-af_freqs_keygenes='{input.afs_keygenes}', \
-vcf_fname='{input.vcf}', \
-sv_fname='{input.sv}', \
-manta_vcf='{input.manta_vcf}', \
 tumor_name='{params.tumor_name}', \
+genome_build='{params.rmd_genome_build}', \
 sig_probs='{input.sig_probs}', \
 cancermine='{input.cancermine}', \
 key_genes='{input.key_genes}', \
-purple_gene_cnv='{input.purple_gene_cnv}', \
-purple_cnv='{input.purple_cnv}', \
-purple_germline_cnv='{input.purple_germline_cnv}', \
-purple_circos_png='{input.purple_circos_png}', \
-purple_input_png='{input.purple_input_png}', \
-purple_cn_png='{input.purple_cn_png}', \
-purple_ma_png='{input.purple_ma_png}', \
-purple_variant_png='{input.purple_variant_png}', \
-purple_baf_png='{input.purple_baf_png}', \
-purple_purity='{input.purple_purity}', \
-workdir='{params.workdir}', \
-genome_build='{params.rmd_genome_build}' \
-))"
+af_freqs='{params.afs}', \
+af_freqs_keygenes='{params.afs_keygenes}', \
+vcf_fname='{params.vcf}', \
+sv_fname='{params.sv}', \
+manta_vcf='{params.manta_vcf}', \
+purple_gene_cnv='{params.purple_gene_cnv}', \
+purple_cnv='{params.purple_cnv}', \
+purple_germline_cnv='{params.purple_germline_cnv}', \
+purple_circos_png='{params.purple_circos_png}', \
+purple_input_png='{params.purple_input_png}', \
+purple_cn_png='{params.purple_cn_png}', \
+purple_ma_png='{params.purple_ma_png}', \
+purple_variant_png='{params.purple_variant_png}', \
+purple_baf_png='{params.purple_baf_png}', \
+purple_purity='{params.purple_purity}' \
+))" ; cd {params.workdir}
 """
+# sed -e s/SAMPLE/{wildcards.batch}/g -itmp {params.bookdown_yml} &&
 
 rule purple_bcbio_stats:
     input:
