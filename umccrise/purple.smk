@@ -128,6 +128,10 @@ rule purple_run:
         ma_png       = 'work/{batch}/purple/plot/{batch}.minor_allele.png',
         variant_png  = 'work/{batch}/purple/plot/{batch}.variant.png',
         purity       = 'work/{batch}/purple/{batch}.purple.purity',
+        baf          = 'work/{batch}/purple/circos/{batch}.baf.circos',
+        cnv_circos   = 'work/{batch}/purple/circos/{batch}.cnv.circos',
+        map          = 'work/{batch}/purple/circos/{batch}.map.circos',
+        link         = 'work/{batch}/purple/circos/{batch}.link.circos',
     params:
         rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
