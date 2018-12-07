@@ -1,5 +1,5 @@
 output_dir: "_book_umccrised"
-rmd_files: ["index.Rmd", "sig.Rmd", "purple_report.Rmd"]
+rmd_files: ["index.Rmd", "purple_report.Rmd"]
 delete_merged_file: true
 language:
   ui:
