@@ -8,6 +8,7 @@ import cyvcf2
 import toml
 import csv
 from ngs_utils.file_utils import which
+from vcf_stuff import iter_vcf
 
 
 localrules: small_variants, prep_anno_toml, prep_giab_bed
@@ -69,20 +70,6 @@ rule somatic_vcf_pon_1round:
     shell:
         'bcftools filter {input} -e "INFO/PoN_CNT>={params.pon_hits}" -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
-def _iter_vcf(inp_path, out_path, func, func_hdr=None):
-    inp_vcf = cyvcf2.VCF(inp_path)
-    ungz = get_ungz_gz(out_path)[0]
-    if func_hdr is not None:
-        func_hdr(inp_vcf)
-    out_vcf = cyvcf2.Writer(ungz, inp_vcf)
-    out_vcf.write_header()
-    for rec in inp_vcf:
-        res_rec = func(rec)
-        if res_rec is not None:
-            out_vcf.write_record(res_rec)
-    out_vcf.close()
-    shell('bgzip {ungz} && tabix -p vcf {out_path}')
-
 rule somatic_vcf_pon_pass_keygenes:
     input:
         vcf = rules.somatic_vcf_pon_1round.output.vcf,
@@ -94,7 +81,7 @@ rule somatic_vcf_pon_pass_keygenes:
         def func(rec):
             if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
                 return rec
-        _iter_vcf(input.vcf, output.vcf, func)
+        iter_vcf(input.vcf, output.vcf, func)
 
 rule somatic_vcf_pcgr_ready:
     input:
@@ -150,7 +137,7 @@ rule somatic_vcf_pcgr_anno:
             rec.INFO['PCGR_TIER'] = tier_by_snp.get(k, '.').replace(' ', '_')
             rec.INFO['PCGR_GENE'] = gene_by_snp.get(k, '.')
             return rec
-        _iter_vcf(input.vcf, output.vcf, func, func_hdr)
+        iter_vcf(input.vcf, output.vcf, func, func_hdr)
 
 rule prep_giab_bed:
     input:
@@ -200,76 +187,14 @@ rule somatic_vcf_regions_anno:
     shell:
         'vcfanno {input.toml} {input.vcf} | bgzip -c > {output} && tabix -p vcf -f {output}'
 
-def _add_cyvcf2_filter(rec, filt):
-    filters = rec.FILTER.split(';') if rec.FILTER else []
-    filters.append(filt)
-    rec.FILTER = ';'.join(filters)
-    return rec
-
 rule somatic_vcf_filter:
     input:
         vcf = rules.somatic_vcf_regions_anno.output.vcf,
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.vcf.gz',
     # group: "small_variants_2round"
-    run:
-        def func_hdr(vcf):
-            vcf.add_filter_to_header({'ID': 'gnomAD_common', 'Description': 'Occurs in gnomAD with frequency above 1%'})
-            vcf.add_filter_to_header({'ID': 'PoN', 'Description': 'Panel of normals hits 1 or more'})
-            vcf.add_filter_to_header({'ID': 'bad_promoter', 'Description': 'Indel overlapping bad promoter tricky region'})
-            vcf.add_filter_to_header({'ID': 'LowAF_TRICKY', 'Description': 'DP<30 & AF<10%, and: GC<=15% or GC>=70 or low complexity region >51bp long'})
-            vcf.add_filter_to_header({'ID': 'LowAF_GIAB_LCR', 'Description': 'DP<30 & AF<10%, and does not overlap GiaB high confidence regions'})
-            vcf.add_filter_to_header({'ID': 'LowAF', 'Description': 'DP<25 & AF<5%'})
-        def func(rec):
-            t = rec.INFO['PCGR_TIER']
-            int_tier = int(t.split('_')[1]) if 'TIER' in t else 5  # "TIER_2" -> 2
-            # Keeping all variants with tier 1, 2, 3:
-            # Tier 1 - variants of strong clinical significance
-            # Tier 2 - variants of potential clinical significance
-            # Tier 3 - variants of unknown clinical significance
-            if 1 >= int_tier >= 3:
-                return rec
-            # Applying LC, PoN, depth and AF filters to tier 4 and non-coding:
-            # Tier 4 - other coding variants
-            # Noncoding variants
-            # Remove gnomad_AF >0.01
-            # Remove PoN_CNT>0         # {0 if issnp else 1}'
-            # Remove indels in "bad_promoter" tricky regions
-            # Remove DP<30 and AF<10% in tricky regions:
-            #        gc15, gc70to75, gc75to80, gc80to85, gc85, low_complexity_51to200bp, low_complexity_gt200bp,
-            #        non-GIAB confident,
-            #    unless coding in cancer genes
-            # Remove DP<25 and AF<5%
-            else:
-                if rec.INFO['TUMOR_AF'] < 0.1:
-                    _add_cyvcf2_filter(rec, 'AF10')
-
-                if rec.INFO.get('gnomAD_AF', 0.) >= 0.01:
-                    _add_cyvcf2_filter(rec, 'gnomAD_common')
-
-                # second round of panel of normals
-                pon = rec.INFO.get('PoN_CNT')
-                if pon is not None and pon >= 1:
-                    _add_cyvcf2_filter(rec, 'PoN')
-
-                # removing indels in bad promoter regions
-                tricky_set = set(rec.INFO.get('TRICKY', '').split(','))
-                if not rec.is_snp and 'bad_promoter' in tricky_set:
-                    _add_cyvcf2_filter(rec, 'bad_promoter')
-
-                # removing low AF and low DP variants in low complexity regions
-                if rec.INFO['TUMOR_DP'] < 30 and rec.INFO['TUMOR_AF'] < 0.1:
-                    if tricky_set & {'gc15', 'gc70to75', 'gc75to80', 'gc80to85', 'gc85', 'low_complexity_51to200bp',
-                                     'low_complexity_gt200bp'}:
-                        _add_cyvcf2_filter(rec, 'LowAF_TRICKY')
-                    if not rec.INFO.get('GIAB_CONF'):
-                        _add_cyvcf2_filter(rec, 'LowAF_GIAB_LCR')
-
-                if rec.INFO['TUMOR_DP'] < 25 and rec.INFO['TUMOR_AF'] < 0.05:
-                    _add_cyvcf2_filter(rec, 'LowAF')
-
-            return rec
-        _iter_vcf(input.vcf, output.vcf, func, func_hdr)
+    shell:
+        'filter_somatic_vcf {input.vcf} -o {output.vcf}'
 
 rule somatic_vcf_filter_pass:
     input:
@@ -297,7 +222,7 @@ rule germline_vcf_subset:  # {batch}
         def func(rec):
             if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
                 return rec
-        _iter_vcf(input.vcf, output.vcf, func)
+        iter_vcf(input.vcf, output.vcf, func)
 
 # Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and mitochondria, remove non-PASSed calls.
 # Suites for PCGR, but for all other processing steps too
