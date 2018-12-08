@@ -179,7 +179,6 @@ rule bookdown_report:
         purple_variant_png  = rules.purple_run.output.variant_png,
         purple_baf_png      = rules.purple_circos_baf.output.png,
     params:
-        rmd_tmp_dir = 'work/{batch}/rmd/rmd_files',
         index_rmd = 'index.Rmd',
         # bookdown_yml = 'work/{batch}/rmd/rmd_files/_bookdown.yml',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
@@ -196,13 +195,14 @@ rule bookdown_report:
         purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
     output:
-        dir = directory('{batch}/{batch}_book')
+        dir = directory('{batch}/{batch}_book'),
+        rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
     run:
-        shell('cp -r {input.rmd_files_dir} {params.rmd_tmp_dir}')
-        shell('mkdir -p {params.rmd_tmp_dir}/img')
+        shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
+        shell('mkdir -p {output.rmd_tmp_dir}/img')
         for img_path in [
             input.purple_circos_png,
             input.purple_input_png,
@@ -211,13 +211,13 @@ rule bookdown_report:
             input.purple_variant_png,
             input.purple_baf_png,
         ]:
-            shell('cp ' + img_path + ' {params.rmd_tmp_dir}/img')
+            shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
         shell("""
-cp -r {input.rmd_files_dir} {params.rmd_tmp_dir} && \
-cd {params.rmd_tmp_dir} && \
+cd {output.rmd_tmp_dir} && \
 Rscript -e "library(bookdown); bookdown::render_book('{params.index_rmd}', \
 params=list( \
 tumor_name='{params.tumor_name}', \
+batch_name='{wildcards.batch}', \
 genome_build='{params.rmd_genome_build}', \
 sig_probs='{input.sig_probs}', \
 cancermine='{input.cancermine}', \
@@ -233,9 +233,8 @@ purple_germline_cnv='{params.purple_germline_cnv}', \
 purple_purity='{params.purple_purity}' \
 ))" ; \
 cd {params.workdir} ; \
-cp -r {params.rmd_tmp_dir}/_book_umccrised {output}
 """)
-# sed -e s/SAMPLE/{wildcards.batch}/g -itmp {params.bookdown_yml} &&
+        shell('mv {output.rmd_tmp_dir}/_book_umccrised {output.dir}')
 
 rule purple_bcbio_stats:
     input:
