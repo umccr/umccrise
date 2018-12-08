@@ -40,31 +40,6 @@ cnv_tab <- function(cnv) {
     DT::formatCurrency(~ start + end + seg_len, currency = "", interval = 3, mark = ",", digits = 0) %>% 
     DT::formatRound('tot_cn')
 }
-
-# plot_circos_baf <- function(purple_circos_dir = NULL, out_dir = "circos_baf", tumor_name = NULL) {
-#   
-#   stopifnot(!is.null(purple_circos_dir), !is.null(tumor_name))
-#   stopifnot(dir.exists(purple_circos_dir))
-#   
-#   req_files <- file.path(purple_circos_dir, paste0(tumor_name, c(".baf.circos", ".cnv.circos", ".map.circos", ".link.circos")))
-#   stopifnot(all(file.exists(req_files)))
-#   target_files <- file.path(out_dir, sub(tumor_name, "SAMPLE", basename(req_files)))
-#   
-#   dir.create(out_dir, recursive = TRUE)
-#   message(glue::glue("Copying circos templates to '{out_dir}'."))
-#   file.copy(system.file("templates/circos", "circos_baf.conf", package = "pebbles"), out_dir, overwrite = TRUE)
-#   file.copy(system.file("templates/circos", "gaps.txt", package = "pebbles"), out_dir, overwrite = TRUE)
-#   file.copy(system.file("templates/circos", "ideogram.conf", package = "pebbles"), out_dir, overwrite = TRUE)
-#   
-#   message(glue::glue("Copying circos input files to '{out_dir}'."))
-#   file.copy(from = req_files, to = target_files)
-#   if (Sys.which("circos") != "") {
-#     cmd <- glue::glue("circos -nosvg -conf {out_dir}/circos_baf.conf -outputdir {out_dir} -outputfile {tumor_name}_circos_baf.png")
-#     system(cmd)
-#   } else {
-#     stop("Can't find 'circos' in your PATH. Exiting.")
-#   }
-# }
 ```
 
 
@@ -74,7 +49,7 @@ tumor beta allele frequency (BAF) to estimate purity and generate a copy number 
 
 ### Parameters
 
-* Tumor Name: ``r params$tumor_name``
+* Batch Name: ``r params$batch_name``
 * PURPLE gene-level CNV: ``r params$purple_gene_cnv``
 
 ## Circos
@@ -106,7 +81,8 @@ tumor beta allele frequency (BAF) to estimate purity and generate a copy number 
     * <span style="color:#000000">Black</span> = Inversions
 
 ```{r circos-default1, out.width="80%"}
-knitr::include_graphics(file.path(params$purple_circos_png))
+img_dir <- 'img'
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
 ```
 
 ### Plot 2: Tumor/Normal Allele Ratios, BAF
@@ -118,19 +94,13 @@ knitr::include_graphics(file.path(params$purple_circos_png))
 
 
 ```{r circos-default2, out.width="80%"}
-knitr::include_graphics(file.path(params$purple_input_png))
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
 ```
 
 ### Plot 3: Total/Minor CN, SVs, BAF
 
-<!-- ```{r circos-baf-prep, message=FALSE, warning=FALSE} -->
-<!-- plot_circos_baf(purple_circos_dir = purple_circos_dir,  -->
-<!--                 out_dir = "baf_circos", -->
-<!--                 tumor_name = params$tumor_name) -->
-<!-- ``` -->
-
 ```{r circos-baf-plot}
-knitr::include_graphics(file.path(params$purple_baf_png))
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
 ```
 
 ## Purity and Ploidy Summary
@@ -213,7 +183,8 @@ cnv_tab(cnv_som$cnv %>% mutate(seg_len = end - start))
 ## Other Stuff
 
 ```{r purple-other-plots, out.width="80%"}
-knitr::include_graphics(params$purple_cn_png)
-knitr::include_graphics(params$purple_ma_png)
-knitr::include_graphics(params$purple_variant_png)
+img_dir <- 'img'
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.copyNumber.png')))
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.minor_allele.png')))
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.png')))
 ```

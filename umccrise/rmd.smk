@@ -195,18 +195,25 @@ rule bookdown_report:
         purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
         purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
-        purple_circos_png   = lambda wc, input: abspath(input.purple_circos_png),
-        purple_input_png    = lambda wc, input: abspath(input.purple_input_png),
-        purple_cn_png       = lambda wc, input: abspath(input.purple_cn_png),
-        purple_ma_png       = lambda wc, input: abspath(input.purple_ma_png),
-        purple_variant_png  = lambda wc, input: abspath(input.purple_variant_png),
-        purple_baf_png      = lambda wc, input: abspath(input.purple_baf_png),
     output:
         dir = directory('{batch}/{batch}_book')
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
-    shell: """cp -r {input.rmd_files_dir} {params.rmd_tmp_dir} && \
+    run:
+        shell('cp -r {input.rmd_files_dir} {params.rmd_tmp_dir}')
+        shell('mkdir -p {params.rmd_tmp_dir}/img')
+        for img_path in [
+            input.purple_circos_png,
+            input.purple_input_png,
+            input.purple_cn_png,
+            input.purple_ma_png,
+            input.purple_variant_png,
+            input.purple_baf_png,
+        ]:
+            shell('cp ' + img_path + ' {params.rmd_tmp_dir}/img')
+        shell("""
+cp -r {input.rmd_files_dir} {params.rmd_tmp_dir} && \
 cd {params.rmd_tmp_dir} && \
 Rscript -e "library(bookdown); bookdown::render_book('{params.index_rmd}', \
 params=list( \
@@ -223,17 +230,11 @@ manta_vcf='{params.manta_vcf}', \
 purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_germline_cnv='{params.purple_germline_cnv}', \
-purple_circos_png='{params.purple_circos_png}', \
-purple_input_png='{params.purple_input_png}', \
-purple_cn_png='{params.purple_cn_png}', \
-purple_ma_png='{params.purple_ma_png}', \
-purple_variant_png='{params.purple_variant_png}', \
-purple_baf_png='{params.purple_baf_png}', \
 purple_purity='{params.purple_purity}' \
 ))" ; \
 cd {params.workdir} ; \
 cp -r {params.rmd_tmp_dir}/_book_umccrised {output}
-"""
+""")
 # sed -e s/SAMPLE/{wildcards.batch}/g -itmp {params.bookdown_yml} &&
 
 rule purple_bcbio_stats:
