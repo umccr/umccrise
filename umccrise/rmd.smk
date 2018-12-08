@@ -1,4 +1,6 @@
 from os.path import join
+
+from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_cancermine, get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
 from umccrise import get_sig_rmd_file, get_signatures_probabilities
@@ -134,7 +136,8 @@ rule rmd_purple_cnv:
 #     resources:
 #         mem_mb=lambda wildcards, attempt: attempt * 10000
 #         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
-#     shell: """cp {input.sig_rmd} {params.rmd_tmp} &&
+#     shell: """
+# cp {input.sig_rmd} {params.rmd_tmp} &&
 # Rscript -e "rmarkdown::render('{params.rmd_tmp}', \
 # output_file='{params.output_file}', \
 # params=list( \
@@ -243,12 +246,12 @@ rule purple_bcbio_stats:
     output:
         'purple_stats.html'
     params:
+        rmd_tmp = 'work/purple/purple_bcbio_umccrise.Rmd',
         workdir = abspath('work/purple'),
         output_file = lambda wc, output: abspath(output[0]),
     run:
         purple_bcbio_files = glob.glob(join(input.bcbio_workdir, 'structural/*/purple/purple/*.purple.gene.cnv'))
         assert(purple_bcbio_files)
-        print('Found bcbio purple files:', purple_bcbio_files)
 
         key_by_tumor_name = {
             b.tumor.name: bk for bk, b in batch_by_name.items()
@@ -257,13 +260,16 @@ rule purple_bcbio_stats:
         for fn in purple_bcbio_files:
             print(fn)
             tumor_name = basename(fn).split('.purple.gene.cnv')[0]
+            if tumor_name not in key_by_tumor_name:
+                continue
             key = key_by_tumor_name[tumor_name]
             shell('cut -f1-5 ' + fn + ' > ' + join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
             print('Copying bcbio purple file to :', join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
         for fn in input.purple_umccrise_files:
             shell('cut -f1-5 ' + fn + ' > ' + join(params.workdir, f'umccrise_' + basename(fn)))
         shell("""
-Rscript -e "rmarkdown::render('{input.rmd}',\
+cp {input.rmd} {params.rmd_tmp} && \
+Rscript -e "rmarkdown::render('{params.rmd_tmp}',\
 output_file='{params.output_file}', \
 params=list( \
 cancermine='{input.cancermine}', \
