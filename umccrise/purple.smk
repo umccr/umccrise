@@ -55,8 +55,6 @@ if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
             cobalt_dir = 'work/{batch}/purple/cobalt',
             amber_dir = 'work/{batch}/purple/amber',
         run:
-            shell('mkdir {params.cobalt_dir}')
-            shell('mkdir {params.amber_dir}')
             for bcbio_fp in glob.glob(f'{input.bcbio_amber_dir}/*'):
                 bcbio_fn = basename(bcbio_fp)
                 umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
