@@ -26,7 +26,7 @@ rule purple_pileup:
     benchmark:
         'benchmarks/{batch}/purple/{batch}-{phenotype}.pileup.tsv'
     threads:
-        28
+        threads_per_sample
     resources:
         mem_mb = min(50000, 10000*threads_per_sample)
     shell:
