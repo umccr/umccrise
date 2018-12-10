@@ -195,7 +195,7 @@ rule bookdown_report:
         purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
     output:
-        dir = directory('{batch}/{batch}_book'),
+        report = '{batch}/{batch}_book.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
@@ -234,7 +234,7 @@ purple_purity='{params.purple_purity}' \
 ))" ; \
 cd {params.workdir} ; \
 """)
-        shell('mv {output.rmd_tmp_dir}/_book_umccrised {output.dir}')
+        shell('mv {output.rmd_tmp_dir}/_book_umccrised/_main.html {output.report}')
 
 rule purple_bcbio_stats:
     input:
