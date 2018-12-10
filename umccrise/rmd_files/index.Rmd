@@ -210,7 +210,7 @@ result %>%
   DT::formatRound('Contribution', 1)
 ```
 
-### Check for positional enrichment of somatic signatures (limited to autosomes):
+### Positional enrichment of somatic signatures
 
 ```{r rainfall}
 chromosomes <- seqnames(get(ref_genome))[1:22]
@@ -258,11 +258,11 @@ if (!is.null(sv_all)) {
     dplyr::mutate(lof = stringr::str_replace_all(lof, '\\(|\\)', '')) %>%
     tidyr::unnest(lof = strsplit(lof, ',')) %>%
     tidyr::separate(lof,
-                    c('lof_gene', 'geneid', 'transcript_count', 'percent_affected'),
+                    c('lof_gene', 'geneid', 'tx_count', 'prop_affected'),
                     sep = '\\|') %>%
-    dplyr::select(chrom, start, end, lof_gene, transcript_count, percent_affected, SR, PR) %>%
+    dplyr::select(chrom, start, end, lof_gene, tx_count, prop_affected, SR, PR) %>%
     dplyr::filter(lof_gene %in% tsgenes$gene) %>%
-    dplyr::mutate('UMCCR list' = ifelse(lof_gene %in% key_genes, 'Yes', '')) %>%
+    dplyr::mutate('UMCCR_list' = ifelse(lof_gene %in% key_genes, 'Yes', '')) %>%
     dplyr::distinct()
 
   DT::datatable(lof, rownames = FALSE, filter = "top",
