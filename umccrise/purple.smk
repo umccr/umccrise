@@ -6,7 +6,7 @@ import shutil
 import platform
 
 
-localrules: purple, purple_symlink, purple_somatic_vcf
+localrules: purple, purple_symlink, purple_somatic_vcf, copy_inputs_from_bcbio
 
 
 circos_macos_patch = ('export PERL5LIB=' +
@@ -41,62 +41,90 @@ rule purple_pileup:
         '2> {log}'
         # '2> >(tee -a {log} >&2)'
 
-rule purple_amber:
-    input:
-        normal_mpileup = 'work/{batch}/purple/pileup/{batch}-normal.mpileup',
-        tumor_mpileup  = 'work/{batch}/purple/pileup/{batch}-tumor.mpileup',
-    output:
-        'work/{batch}/purple/amber/{batch}.amber.baf',
-    params:
-        outdir = 'work/{batch}/purple/amber',
-        jar = join(package_path(), 'amber.jar'),
-        xms = 10000,
-        xmx = min(50000, 10000*threads_per_batch),
-    log:
-        'log/purple/{batch}/{batch}.amber.log',
-    benchmark:
-        'benchmarks/{batch}/purple/{batch}-amber.tsv'
-    resources:
-        mem_mb = min(50000, 10000*threads_per_batch),
-    shell:
-        conda_cmd.format('purple') +
-        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
-        '-sample {wildcards.batch} '
-        '-reference {input.normal_mpileup} '
-        '-tumor {input.tumor_mpileup} '
-        '-output_dir {params.outdir} 2>&1 | tee {log} '
+if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
+    rule copy_inputs_from_bcbio:
+        input:
+            bcbio_amber_dir  = directory(lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/amber')),
+            bcbio_cobalt_dir = directory(lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/cobalt')),
+        output:
+            'work/{batch}/purple/cobalt/{batch}.cobalt',
+            'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
+            'work/{batch}/purple/amber/{batch}.amber.baf',
+        params:
+            tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
+            cobalt_dir = 'work/{batch}/purple/cobalt',
+            amber_dir = 'work/{batch}/purple/amber',
+        run:
+            shell('mkdir {params.cobalt_dir}')
+            shell('mkdir {params.amber_dir}')
+            for bcbio_fp in glob.glob(f'{input.bcbio_amber_dir}/*'):
+                bcbio_fn = basename(bcbio_fp)
+                umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
+                umccrise_fp = join(params.amber_dir, umccrise_fn)
+                shell(f'cp {bcbio_fp} {umccrise_fp}')
+            for bcbio_fp in glob.glob(f'{input.bcbio_cobalt_dir}/*'):
+                bcbio_fn = basename(bcbio_fp)
+                umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
+                umccrise_fp = join(params.cobalt_dir, umccrise_fn)
+                shell(f'cp {bcbio_fp} {umccrise_fp}')
 
-rule purple_cobalt:
-    input:
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        gc = get_ref_file(run.genome_build, 'purple_gc'),
-    output:
-        'work/{batch}/purple/cobalt/{batch}.cobalt',
-        'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
-    params:
-        outdir = 'work/{batch}/purple/cobalt',
-        normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
-        xms = 2000,
-        xmx = min(50000, 3500*threads_per_batch),
-    log:
-        'log/purple/{batch}/{batch}.cobalt.log'
-    benchmark:
-        'benchmarks/{batch}/purple/{batch}-cobalt.tsv'
-    threads:
-        threads_per_batch
-    resources:
-        mem_mb = min(50000, 3500*threads_per_batch)
-    shell:
-        conda_cmd.format('purple') +
-        'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
-        '-reference {params.normal_sname} '
-        '-reference_bam {input.normal_bam} '
-        '-tumor {wildcards.batch} '
-        '-tumor_bam {input.tumor_bam} '
-        '-threads {threads} '
-        '-gc_profile {input.gc} '
-        '-output_dir {params.outdir} 2>&1 | tee {log} '
+else:
+    rule purple_amber:
+        input:
+            normal_mpileup = 'work/{batch}/purple/pileup/{batch}-normal.mpileup',
+            tumor_mpileup  = 'work/{batch}/purple/pileup/{batch}-tumor.mpileup',
+        output:
+            'work/{batch}/purple/amber/{batch}.amber.baf',
+        params:
+            outdir = 'work/{batch}/purple/amber',
+            jar = join(package_path(), 'amber.jar'),
+            xms = 10000,
+            xmx = min(50000, 10000*threads_per_batch),
+        log:
+            'log/purple/{batch}/{batch}.amber.log',
+        benchmark:
+            'benchmarks/{batch}/purple/{batch}-amber.tsv'
+        resources:
+            mem_mb = min(50000, 10000*threads_per_batch),
+        shell:
+            conda_cmd.format('purple') +
+            'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
+            '-sample {wildcards.batch} '
+            '-reference {input.normal_mpileup} '
+            '-tumor {input.tumor_mpileup} '
+            '-output_dir {params.outdir} 2>&1 | tee {log} '
+
+    rule purple_cobalt:
+        input:
+            normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+            tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+            gc = get_ref_file(run.genome_build, 'purple_gc'),
+        output:
+            'work/{batch}/purple/cobalt/{batch}.cobalt',
+            'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
+        params:
+            outdir = 'work/{batch}/purple/cobalt',
+            normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
+            xms = 2000,
+            xmx = min(50000, 3500*threads_per_batch),
+        log:
+            'log/purple/{batch}/{batch}.cobalt.log'
+        benchmark:
+            'benchmarks/{batch}/purple/{batch}-cobalt.tsv'
+        threads:
+            threads_per_batch
+        resources:
+            mem_mb = min(50000, 3500*threads_per_batch)
+        shell:
+            conda_cmd.format('purple') +
+            'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
+            '-reference {params.normal_sname} '
+            '-reference_bam {input.normal_bam} '
+            '-tumor {wildcards.batch} '
+            '-tumor_bam {input.tumor_bam} '
+            '-threads {threads} '
+            '-gc_profile {input.gc} '
+            '-output_dir {params.outdir} 2>&1 | tee {log} '
 
 rule purple_somatic_vcf:
     input:
@@ -112,12 +140,12 @@ rule purple_somatic_vcf:
 
 rule purple_run:
     input:
-        cobalt_dummy = 'work/{batch}/purple/cobalt/{batch}.cobalt',
-        cobalt_dummy_pcf = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
-        amber_dummy  = 'work/{batch}/purple/amber/{batch}.amber.baf',
+        cobalt_dummy      = 'work/{batch}/purple/cobalt/{batch}.cobalt',
+        cobalt_dummy_pcf  = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
+        amber_dummy       = 'work/{batch}/purple/amber/{batch}.amber.baf',
         manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
-        gc = get_ref_file(run.genome_build, 'purple_gc'),
-        somatic_vcf = rules.purple_somatic_vcf.output,
+        gc                = get_ref_file(run.genome_build, 'purple_gc'),
+        somatic_vcf       = rules.purple_somatic_vcf.output,
     output:
         cnv          = 'work/{batch}/purple/{batch}.purple.cnv',
         gene_cnv     = 'work/{batch}/purple/{batch}.purple.gene.cnv',
