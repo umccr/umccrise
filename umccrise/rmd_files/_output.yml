@@ -6,3 +6,5 @@ bookdown::gitbook:
         <li><a href="./">Tumor/Normal Analysis</a></li>
       after: |
         <li><a href="https://research.unimelb.edu.au/centre-for-cancer-research/our-research/genomics-platform-group" target="blank">UMCCR Genomics Platform Group</a></li>
+  split_by: none
+  self_contained: true
