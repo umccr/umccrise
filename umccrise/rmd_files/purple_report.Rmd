@@ -1,56 +1,42 @@
 # PURPLE Results
 
+[PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
+is a tool for estimating tumor purity and ploidy. It uses the read depth and 
+tumor beta allele frequency (BAF) to estimate purity and generate a copy number profile.
+
 ## Events in cancer genes
 
-Listed deletions in cancer genes, homozygous deletions of tumor suppressors, and gains in oncogenes. Oncogenes and tumor suppressors reported by Cancermine
+Listed are deletions in cancer genes, homozygous deletions of tumor suppressors, 
+and gains in oncogenes. Oncogenes and tumor suppressors reported by 
+[Cancermine](https://github.com/jakelever/cancermine).
 
 ```{r cnv_suppressors, message=FALSE}
-purple <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicdd") %>%
+purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicdd")
+
+purple_gene_cnv %>% 
   dplyr::select(Gene, MinCopyNumber, MaxCopyNumber) %>%
   dplyr::mutate(del = MinCopyNumber < 1.5,
                 hom_del = MinCopyNumber < 0.5,
-                gain = MinCopyNumber >= 3.5) %>%
+                gain = MinCopyNumber >= 3) %>%
   dplyr::filter(hom_del | gain) %>%
   dplyr::mutate(oncogene = Gene %in% oncogenes$gene,
                 tsgene = Gene %in% tsgenes$gene,
                 key_gene = Gene %in% key_genes) %>%
   dplyr::filter(oncogene & gain | tsgene & hom_del | key_gene & del) %>%
-  dplyr::mutate(Event = ifelse(gain, 'Gain', ifelse(hom_del, 'Hom del', 'Del')),
-                'Gene role' = ifelse(oncogene, 'Oncogene', ifelse(tsgene, 'Tumor suppressor', '')),
-                'UMCCR list' = ifelse(key_gene, 'Yes', ''),
-                min_cn = round(MinCopyNumber),
-                max_cn = round(MaxCopyNumber),
-                CN = ifelse(min_cn == max_cn, min_cn, paste(min_cn, max_cn, sep='-'))) %>%
-  dplyr::arrange(CN) %>%
-  dplyr::select(Gene, CN, Event, 'Gene role', 'UMCCR list')
-
-DT::datatable(purple, rownames = FALSE, filter = "top", extensions = c('Scroller', 'Buttons'),
-              options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
-                             dom = 'Bfrtip', buttons = c('csv', 'excel')))
+  dplyr::mutate(
+    Event = dplyr::case_when(gain ~ 'Gain', hom_del ~ 'HomDel', TRUE ~ 'Del'),
+    Gene_Role = dplyr::case_when(oncogene ~ 'Oncogene', tsgene ~ 'Tumor Suppressor', TRUE ~ ''),
+    UMCCR_list = ifelse(key_gene, 'Yes', ''),
+    min_cn = round(MinCopyNumber),
+    max_cn = round(MaxCopyNumber),
+    CopyNumber = ifelse(min_cn == max_cn, min_cn, paste(min_cn, max_cn, sep = '-'))) %>%
+  dplyr::arrange(CopyNumber) %>%
+  dplyr::select(Gene, CopyNumber, Event, Gene_Role, UMCCR_list) %>% 
+  DT::datatable(rownames = FALSE, filter = "top", extensions = c('Scroller', 'Buttons'),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
+                               dom = 'Bfrtip', buttons = c('csv', 'excel')))
 ```
 
-
-```{r funcs}
-cnv_tab <- function(cnv) {
-  
-  DT::datatable(cnv, filter = "top", rownames = FALSE, 
-                extensions = c('Scroller', 'Buttons'), 
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300, 
-                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>% 
-    DT::formatCurrency(~ start + end + seg_len, currency = "", interval = 3, mark = ",", digits = 0) %>% 
-    DT::formatRound('tot_cn')
-}
-```
-
-
-[PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
-is a tool for estimating tumor purity and ploidy. It uses the read depth and 
-tumor beta allele frequency (BAF) to estimate purity and generate a copy number profile.
-
-### Parameters
-
-* Batch Name: ``r params$batch_name``
-* PURPLE gene-level CNV: ``r params$purple_gene_cnv``
 
 ## Circos
 
@@ -63,12 +49,12 @@ tumor beta allele frequency (BAF) to estimate purity and generate a copy number 
       Each dot represents a single somatic variant, coloured according to the
       type of base change (e.g. C>T/G>A in red).
     * inner ring: short insertion (yellow) and deletion (red) locations. 
-* __Track3__: Observed copy number changes adjusted for tumor purity,
+* __Track3__: Observed __total__ copy number changes adjusted for tumor purity,
   including focal and chromosomal somatic events. 
   <span style="color:red">Red</span> = Loss; <span style="color:#32CD32">Green</span> = Gain.
   Scaled from 0 (complete loss) to 6 (high level gains). 
   If > 6, shown as 6 with a green dot on the outermost green gridline. 
-* __Track4__: Observed 'minor allele copy numbers'. Range from 0 to 3. 
+* __Track4__: Observed __minor__ allele copy numbers. Range from 0 to 3. 
   Expected normal minor allele copy number is 1, and anything below 1 is shown 
   as a loss (<span style="color:#EE7600">Orange</span>), representing an LOH event. 
   Minor allele copy numbers above 1 (<span style="color:#7EC0EE">Blue</span>) indicate gains 
@@ -90,7 +76,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 * __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome 
   (centromeres, heterochromatin & missing short arms)
 * __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
-* __Track3__: <span style="#EE7600">Beta Allele Frequency</span>
+* __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
 
 
 ```{r circos-default2, out.width="80%"}
@@ -99,7 +85,13 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 
 ### Plot 3: Total/Minor CN, SVs, BAF
 
-```{r circos-baf-plot}
+* __Track1__: Chromosomes
+* __Track2__: <span style="color:#8A2BE2">Beta Allele Frequency</span>
+* __Track3__: Total Copy Number Changes (see above)
+* __Track4__: Minor Copy Number Changes (see above)
+* __Track5__ (Inner circle): Observed Structural Variants (see above)
+
+```{r circos-baf-plot, out.width="80%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
 ```
 
@@ -107,7 +99,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_ba
 
 ```{r purply}
 fn <- file.path(params$purple_purity)
-x <- readr::read_tsv(fn, col_types = cols(.default = col_double(), 
+x <- readr::read_tsv(fn, col_types = cols(.default = col_double(),
                                           Gender = col_character(), 
                                           Status = col_character())) %>%
   dplyr::mutate_if(is.numeric, round, 2) %>%
@@ -120,70 +112,61 @@ tribble(~key, ~value,
         'Diploidy Proportion', glue('{x["DiploidProportion"]} ({x["MinDiploidProportion"]}-{x["MaxDiploidProportion"]})'),
         'Polyclonal Proportion', x["PolyclonalProportion"],
         'Purple Version', x["Version"]) %>% 
-  knitr::kable()
+  knitr::kable(format = "html")
 ```
 
 ## UMCCR Gene Somatic CNV Calls
 
 ```{r gene-tab}
-fn_gene <- file.path(params$purple_gene_cnv)
-df <- readr::read_tsv(fn_gene, col_types = cols(.default = col_character()), skip = 1, col_names = FALSE) %>% 
-  dplyr::select(chrom = X1, start = X2, end = X3, gene = X4, min_cn = X5, max_cn = X6) %>% 
-  dplyr::mutate(start = as.integer(start), end = as.integer(end),
-                min_cn = as.double(min_cn), max_cn = as.double(max_cn))
-
-umccr_genes <- readr::read_tsv(params$key_genes, col_names = "gene", col_types = "c") %>%
-  dplyr::pull(gene)
-
-df %>%
-  dplyr::filter(gene %in% umccr_genes) %>%
+purple_gene_cnv %>%
+  dplyr::rename(min_cn = MinCopyNumber, max_cn = MaxCopyNumber) %>% 
+  dplyr::filter(Gene %in% key_genes) %>%
   DT::datatable(filter = "top", rownames = FALSE, extensions = c('Scroller', 'Buttons'), 
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500, 
                                dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>% 
-  DT::formatCurrency(~ start + end, currency = "", interval = 3, mark = ",", digits = 0) %>% 
+  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0) %>% 
   DT::formatRound(~ min_cn + max_cn)
 ```
-
 
 ## Global Somatic and Germline CNV Summary
 
 ```{r germ-som-prep}
 fn_som <- file.path(params$purple_cnv)
 fn_germ <- file.path(params$purple_germline_cnv)
-cnv_som <- readr::read_tsv(fn_som, col_types = "ciididdccc") %>%
-  dplyr::rename(chrom = .data$`#chromosome`,
-                tot_cn = .data$copyNumber) %>%
-  dplyr::select(.data$chrom, .data$start, .data$end, .data$tot_cn) %>%
-  dplyr::filter(.data$chrom != "MT")
-cnv_germ <- readr::read_tsv(fn_germ, col_types = "ciiddddccc") %>%
-  dplyr::select(chrom = `#chromosome`, start, end, tot_cn = copyNumber) %>% 
-  dplyr::filter(.data$chrom != "MT")
+som <- readr::read_tsv(fn_som, col_types = "ciididdccccccc") %>%
+  dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
+  dplyr::select(chrom, start, end, tot_cn)
+germ <- readr::read_tsv(fn_germ, col_types = "ciiddddccccccc") %>%
+  dplyr::select(chrom = `#chromosome`, start, end, tot_cn = copyNumber)
 
-cnv_som <- structure(list(cnv = cnv_som), class = "cnv")
-cnv_germ <- structure(list(cnv = cnv_germ), class = "cnv")
-
-cnv_all <- dplyr::bind_rows(list(somatic = cnv_som$cnv, germline = cnv_germ$cnv), .id = "type")
+cnv_all <- dplyr::bind_rows(somatic = som, germline = germ, .id = "type")
 cnv_all %>% 
-  mutate(sv_len = end - start) %>% 
+  mutate(seg_len = end - start) %>% 
   group_by(type) %>% 
   summarise(n = n(),
-            mean_len = round(mean(sv_len), 0),
-            med_len = round(median(sv_len), 0),
+            mean_len = round(mean(seg_len), 0),
+            med_len = round(median(seg_len), 0),
             min_cn = round(min(tot_cn), 2),
             max_cn = round(max(tot_cn), 2)) %>% 
-  knitr::kable(format.args = list(big.mark = ","))
+  knitr::kable(format = "html", format.args = list(big.mark = ","))
 ```
 
 ### Somatic Calls
 
 ```{r som-tab}
-cnv_tab(cnv_som$cnv %>% mutate(seg_len = end - start))
+som %>%  
+  dplyr::mutate(seg_len = end - start) %>% 
+  DT::datatable(filter = "top", rownames = FALSE, 
+                extensions = c('Scroller', 'Buttons'), 
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300, 
+                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>% 
+  DT::formatCurrency(~ start + end + seg_len, currency = "", interval = 3, mark = ",", digits = 0) %>% 
+  DT::formatRound('tot_cn')
 ```
 
-## Other Stuff
+## Other PURPLE Charts
 
 ```{r purple-other-plots, out.width="80%"}
-img_dir <- 'img'
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.copyNumber.png')))
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.minor_allele.png')))
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.png')))
