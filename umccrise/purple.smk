@@ -14,33 +14,6 @@ circos_macos_patch = ('export PERL5LIB=' +
     env_path + '_purple/lib/perl5/site_perl/5.22.0 && ') if platform.system() == 'Darwin' else ''
 
 
-rule purple_pileup:
-    input:
-        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        snp_bed = get_ref_file(run.genome_build, 'purple_het'),
-        fasta = ref_fa,
-    output:
-        'work/{batch}/purple/pileup/{batch}-{phenotype}.mpileup'
-    log:
-        'log/purple/{batch}/{batch}-{phenotype}.mpileup.log'
-    benchmark:
-        'benchmarks/{batch}/purple/{batch}-{phenotype}.pileup.tsv'
-    threads:
-        threads_per_sample
-    resources:
-        mem_mb = min(50000, 10000*threads_per_sample)
-    shell:
-        conda_cmd.format('purple') +
-        'sambamba mpileup '
-        '-o {output} '
-        '-t{threads} '
-        '-L <(gunzip -c {input.snp_bed}) '
-        '{input.bam} '
-        '--samtools -q1 '
-        '-f {input.fasta} '
-        '2> {log}'
-        # '2> >(tee -a {log} >&2)'
-
 if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
     rule copy_inputs_from_bcbio:
         input:
@@ -69,11 +42,14 @@ if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
 else:
     rule purple_amber:
         input:
-            normal_mpileup = 'work/{batch}/purple/pileup/{batch}-normal.mpileup',
-            tumor_mpileup  = 'work/{batch}/purple/pileup/{batch}-tumor.mpileup',
+            tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+            normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+            snp_bed = get_ref_file(run.genome_build, 'purple_het'),
+            ref_fa = ref_fa,
         output:
             'work/{batch}/purple/amber/{batch}.amber.baf',
         params:
+            normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
             outdir = 'work/{batch}/purple/amber',
             jar = join(package_path(), 'amber.jar'),
             xms = 10000,
@@ -84,12 +60,18 @@ else:
             'benchmarks/{batch}/purple/{batch}-amber.tsv'
         resources:
             mem_mb = min(50000, 10000*threads_per_batch),
+        threads:
+            threads_per_batch
         shell:
             conda_cmd.format('purple') +
             'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
-            '-sample {wildcards.batch} '
-            '-reference {input.normal_mpileup} '
-            '-tumor {input.tumor_mpileup} '
+            '-tumor {wildcards.batch} '
+            '-tumor_bam {input.tumor_bam} '
+            '-reference {params.normal_name} '
+            '-reference_bam {input.normal_bam} '
+            '-ref_genome {input.ref_fa} '
+            '-bed {input.snp_bed} '
+            '-threads {threads} '
             '-output_dir {params.outdir} 2>&1 | tee {log} '
 
     rule purple_cobalt:
@@ -131,6 +113,7 @@ rule purple_somatic_vcf:
         'work/{batch}/purple/somatic.vcf',
     params:
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
+        jar = join(package_path(), 'purple.jar'),
     # group: 'purple_run'
     shell:
         'bcftools view -s {params.tumor_sname} {input} | '
@@ -178,7 +161,7 @@ rule purple_run:
         conda_cmd.format('purple') +
         'circos -modules ; circos -v ; ' +
         circos_macos_patch +
-        'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
+        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
         '-run_dir {params.rundir} '
         '-output_dir {params.outdir} '
         '-ref_sample {params.normal_sname} '
