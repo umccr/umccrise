@@ -6,6 +6,7 @@ import shutil
 import platform
 
 
+# localrules: purple
 localrules: purple, purple_symlink, purple_somatic_vcf, copy_inputs_from_bcbio
 
 
@@ -23,6 +24,7 @@ if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
             'work/{batch}/purple/cobalt/{batch}.cobalt',
             'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
             'work/{batch}/purple/amber/{batch}.amber.baf',
+        # group: 'purple'
         params:
             tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
             cobalt_dir = 'work/{batch}/purple/cobalt',
@@ -48,12 +50,13 @@ else:
             ref_fa = ref_fa,
         output:
             'work/{batch}/purple/amber/{batch}.amber.baf',
+        # group: 'purple'
         params:
             normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
             outdir = 'work/{batch}/purple/amber',
             jar = join(package_path(), 'amber.jar'),
-            xms = 10000,
-            xmx = min(50000, 10000*threads_per_batch),
+            xms = 5000,
+            xmx = min(40000, 8000*threads_per_batch),
         log:
             'log/purple/{batch}/{batch}.amber.log',
         benchmark:
@@ -82,11 +85,12 @@ else:
         output:
             'work/{batch}/purple/cobalt/{batch}.cobalt',
             'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
+        # group: 'purple'
         params:
             outdir = 'work/{batch}/purple/cobalt',
             normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
             xms = 2000,
-            xmx = min(50000, 3500*threads_per_batch),
+            xmx = min(40000, 3000*threads_per_batch),
         log:
             'log/purple/{batch}/{batch}.cobalt.log'
         benchmark:
@@ -113,8 +117,7 @@ rule purple_somatic_vcf:
         'work/{batch}/purple/somatic.vcf',
     params:
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
-        jar = join(package_path(), 'purple.jar'),
-    # group: 'purple_run'
+    # group: 'purple'
     shell:
         'bcftools view -s {params.tumor_sname} {input} | '
         'bcftools reheader --samples <(echo {wildcards.batch}) > {output}'
@@ -141,14 +144,15 @@ rule purple_run:
         cnv_circos   = 'work/{batch}/purple/circos/{batch}.cnv.circos',
         map          = 'work/{batch}/purple/circos/{batch}.map.circos',
         link         = 'work/{batch}/purple/circos/{batch}.link.circos',
+    # group: 'purple'
     params:
+        jar = join(package_path(), 'purple.jar'),
         rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
         xms = 2000,
-        xmx = min(50000, 3500*threads_per_batch),
-    # group: 'purple_run'
+        xmx = min(40000, 3000*threads_per_batch),
     log:
         'log/purple/{batch}/{batch}.purple.log'
     benchmark:
@@ -183,6 +187,7 @@ rule purple_circos_baf:
         ideo_conf = package_path() + '/rmd_files/templates/circos/ideogram.conf',
     output:
         png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
+    # group: 'purple'
     params:
         out_dir = 'work/{batch}/purple/circos_baf'
     run:
@@ -213,7 +218,7 @@ rule purple_symlink:
     params:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
-    # group: 'purple_run'
+    # group: 'purple'
     run:
         for img_fpath in glob.glob(f'{params.purple_outdir}/plot/*.png'):
             new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')

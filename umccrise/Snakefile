@@ -9,11 +9,9 @@ from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug
 from ngs_utils import logger as ngs_utils_logger
 from hpc_utils.hpc import find_loc, get_ref_file
-from umccrise import package_path
-
-from umccrise.prep_multiqc import make_report_metadata, multiqc_prep_data
-
+from ngs_utils.utils import set_locale; set_locale()
 from hpc_utils.hpc import get_loc, get_ref_file
+from umccrise import package_path
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")

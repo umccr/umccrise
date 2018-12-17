@@ -1,6 +1,8 @@
-## IGV
+from umccrise.prep_multiqc import make_report_metadata, multiqc_prep_data
 
-localrules: prep_multiqc_data, batch_multiqc, multiqc, copy_logs
+
+# localrules: multiqc, copy_logs
+localrules: prep_multiqc_data, multiqc, copy_logs
 
 
 """
@@ -75,6 +77,7 @@ rule prep_multiqc_data:
         bcbio_conf_yaml     = 'work/{batch}/multiqc_data/bcbio_conf.yaml',
     params:
         data_dir        = 'work/{batch}/multiqc_data'
+    # group: 'multiqc'
     run:
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
         generated_conf, additional_files = make_report_metadata(
@@ -112,6 +115,7 @@ rule batch_multiqc:  # {}
         umccrise_conf_yaml  = join(package_path(), 'multiqc', 'multiqc_config.yaml'),
     output:
         html_file           = '{batch}/{batch}-multiqc_report.html'
+    # group: 'multiqc'
     run:
         other_samples=[
             s.name for s in run.samples if s.name not in [batch_by_name[wildcards.batch].tumor.name,
@@ -120,7 +124,7 @@ rule batch_multiqc:  # {}
             list_files = f'<(grep -P -v "{"|".join(sn for sn in other_samples)}" {input.filelist})'
         else:
             list_files = input.filelist
-        shell(f'multiqc -f -v -o . -l {list_files} -c {input.bcbio_conf_yaml} -c {input.umccrise_conf_yaml}'
+        shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -v -o . -l {list_files} -c {input.bcbio_conf_yaml} -c {input.umccrise_conf_yaml}'
               f' -c {input.generated_conf_yaml} --filename {output.html_file}')
 
 
