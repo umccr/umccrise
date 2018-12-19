@@ -45,36 +45,26 @@ rule somatic_vcf_prep:
         ' | bcftools view -f.,PASS'
         ' -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
-rule somatic_vcf_pon_annotate:
+rule somatic_vcf_pon_anno:
     input:
         vcf = rules.somatic_vcf_prep.output.vcf,
         tbi = rules.somatic_vcf_prep.output.tbi,
     params:
         genome_build = run.genome_build,
+        pon_hits = 3,
     output:
-        vcf = 'work/{batch}/small_variants/somatic-ensemble-prep-pon.vcf.gz',
-        tbi = 'work/{batch}/small_variants/somatic-ensemble-prep-pon.vcf.gz.tbi',
+        vcf = 'work/{batch}/small_variants/pon_anno/somatic-ensemble.vcf.gz',
     # group: "small_variants"
     shell:
-        'pon_anno {input.vcf} -o {output.vcf} --pon-dir ' + pon_dir + ' && tabix -p vcf {output.vcf}'
+        'pon_anno {input.vcf} --pon-dir ' + pon_dir + ' | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
+        # ' | bcftools filter -e "INFO/PoN_CNT>={params.pon_hits}" --soft-filter PoN --mode + -Oz -o {output.vcf}' \
+        # ' && tabix -p vcf {output.vcf} '
 
-rule somatic_vcf_pon_1round:
+rule somatic_vcf_keygenes:
     input:
-        rules.somatic_vcf_pon_annotate.output.vcf
+        vcf = rules.somatic_vcf_pon_anno.output.vcf,
     output:
-        vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1.vcf.gz',
-        tbi = 'work/{batch}/small_variants/somatic-ensemble-pon_round1.vcf.gz.tbi',
-    params:
-        pon_hits = 3
-    # group: "small_variants"
-    shell:
-        'bcftools filter {input} -e "INFO/PoN_CNT>={params.pon_hits}" -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
-
-rule somatic_vcf_pon_pass_keygenes:
-    input:
-        vcf = rules.somatic_vcf_pon_1round.output.vcf,
-    output:
-        vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-keygenes.vcf.gz',
+        vcf = 'work/{batch}/small_variants/keygenes/somatic-ensemble.vcf.gz',
     # group: "small_variants"
     run:
         genes = get_key_genes_set()
@@ -85,24 +75,24 @@ rule somatic_vcf_pon_pass_keygenes:
 
 rule somatic_vcf_pcgr_ready:
     input:
-        full_vcf = rules.somatic_vcf_pon_1round.output.vcf,
-        keygenes_vcf = rules.somatic_vcf_pon_pass_keygenes.output.vcf,
+        full_vcf = rules.somatic_vcf_pon_anno.output.vcf,
+        keygenes_vcf = rules.somatic_vcf_keygenes.output.vcf,
     output:
-        vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-ready.vcf.gz',
+        vcf = 'work/{batch}/small_variants/pcgr_input/somatic-ensemble.vcf.gz',
     # group: "small_variants"
     run:
         total_vars = int(subprocess.check_output(f'bcftools view -H {input.full_vcf} | wc -l', shell=True).strip())
         vcf = input.full_vcf if total_vars <= 500_000 else input.keygenes_vcf  # to avoid PCGR choking on too many variants
         shell(f'bcftools annotate -x INFO/ANN {vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}')
 
-rule somatic_vcf_pcgr_1round:
+rule somatic_vcf_pcgr_round1:
     input:
         vcf = rules.somatic_vcf_pcgr_ready.output.vcf,
         pcgr_data = pcgr_data,
     output:
-        tiers = 'work/{batch}/small_variants/pcgr_1round/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
+        tiers = 'work/{batch}/small_variants/pcgr_round1/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
     params:
-        output_dir = 'work/{batch}/small_variants/pcgr_1round',
+        output_dir = 'work/{batch}/small_variants/pcgr_round1',
         genome = run.genome_build,
         sample_name = '{batch}-somatic',
         opt='--no-docker' if not which('docker') else '',
@@ -117,9 +107,9 @@ rule somatic_vcf_pcgr_1round:
 rule somatic_vcf_pcgr_anno:
     input:
         vcf = rules.somatic_vcf_pcgr_ready.output.vcf,
-        tiers = rules.somatic_vcf_pcgr_1round.output.tiers,
+        tiers = rules.somatic_vcf_pcgr_round1.output.tiers,
     output:
-        vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-ready-pcgr_anno.vcf.gz',
+        vcf = 'work/{batch}/small_variants/annotation/pcgr/somatic-ensemble.vcf.gz',
     # group: "small_variants"
     run:
         gene_by_snp = dict()
@@ -148,32 +138,69 @@ rule prep_giab_bed:
     shell:
         'cat {input} | bgzip -c > {output} && tabix -p bed {output}'
 
+rule prep_hmf_hotspots:
+    input:
+        get_ref_file(run.genome_build, key='hmf_hotspot'),
+    output:
+        'work/hmf_hotspot.vcf.gz'
+    params:
+        ungz = 'work/hmf_hotspot.vcf'
+    shell: """
+echo "##fileformat=VCFv4.2" >> {params.ungz} && 
+echo "#CHROM\\tPOS\\tID\\tREF\\tALT\\tQUAL\\tFILTER\\tINFO" >> {params.ungz} && 
+gunzip -c {input} | py -x "print('\t'.join([x.split()[0], x.split()[1], '.', x.split()[2], x.split()[3], '.', '.', 'HS']))" >> {params.ungz} &&
+bgzip {params.ungz} && 
+tabix -p vcf {output}
+"""
+
 rule prep_anno_toml:
     input:
-        tricky_bed = get_ref_file(run.genome_build, key='tricky'),
-        giab_conf_bed = rules.prep_giab_bed.output[0],
-        gnomad_vcf = get_ref_file(run.genome_build, key='gnomad'),
+        tricky_bed      = get_ref_file(run.genome_build, key='tricky'),
+        giab_conf_bed   = rules.prep_giab_bed.output[0],
+        gnomad_vcf      = get_ref_file(run.genome_build, key='gnomad'),
+        hmf_hotspots    = rules.prep_hmf_hotspots.output[0],
+        hmf_giab        = get_ref_file(run.genome_build, key='hmf_giab_conf'),
+        hmf_mappability = get_ref_file(run.genome_build, key='hmf_mappability'),
     output:
         'work/tricky_vcfanno.toml'
     params:
         toml_text  = lambda wc, input, output: f'''
 [[annotation]]
-file="{input.tricky_bed}"
-names=["TRICKY"]
-columns=[4]
-ops=["self"]
+file = "{input.tricky_bed}"
+names = ["TRICKY"]
+columns = [4]
+ops = ["self"]
 
 [[annotation]]
-file="{input.giab_conf_bed}"
-names=["GIAB_CONF"]
-columns=[3]
-ops=["flag"]
+file = "{input.giab_conf_bed}"
+names = ["GIAB_CONF"]
+columns = [3]
+ops = ["flag"]
 
 [[annotation]]
 file="{input.gnomad_vcf}"
-fields = ["AF",]
+fields = ["AF"]
 names = ["gnomAD_AF"]
-ops=["self"] 
+ops = ["self"]
+
+[[annotation]]
+file = "{input.hmf_hotspots}"
+fields = ["HS"]
+names = ["HMF_HOTSPOT"]
+ops = ["flag"]
+
+[[annotation]]
+file = "{input.hmf_giab}"
+names = ["HMF_GIAB_CONF"]
+columns = [3]
+ops = ["flag"]
+
+[[annotation]]
+file = "{input.hmf_mappability}"
+names = ["HMF_MAPPABILITY"]
+columns = [5]
+ops = ["self"]
+
 '''.replace('\n', r'\\n').replace('"', r'\"'),
     shell:
         'printf "{params.toml_text}" > {output}'
@@ -183,7 +210,7 @@ rule somatic_vcf_regions_anno:
         vcf = rules.somatic_vcf_pcgr_anno.output.vcf,
         toml = rules.prep_anno_toml.output[0]
     output:
-        vcf = 'work/{batch}/small_variants/somatic-ensemble-pon_round1-ready-pcgr_anno-regions_anno.vcf.gz',
+        vcf = 'work/{batch}/small_variants/annotation/regions/somatic-ensemble.vcf.gz',
     # group: "small_variants"
     shell:
         'vcfanno {input.toml} {input.vcf} | bgzip -c > {output} && tabix -p vcf -f {output}'
