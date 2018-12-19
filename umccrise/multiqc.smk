@@ -121,7 +121,8 @@ rule batch_multiqc:  # {}
             s.name for s in run.samples if s.name not in [batch_by_name[wildcards.batch].tumor.name,
                                                           batch_by_name[wildcards.batch].normal.name]]
         if other_samples:
-            list_files = f'<(grep -P -v "{"|".join(sn for sn in other_samples)}" {input.filelist})'
+            greps = ''.join(f' | grep -v {sn}' for sn in other_samples)
+            list_files = f'<(cat {input.filelist}{greps})'
         else:
             list_files = input.filelist
         shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -v -o . -l {list_files} -c {input.bcbio_conf_yaml} -c {input.umccrise_conf_yaml}'

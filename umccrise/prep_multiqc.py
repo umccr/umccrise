@@ -157,7 +157,7 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
         last_modified_datestamp = strftime('%d %b %Y, %H:%M (GMT%z)', localtime(last_modification_time))
 
     if last_modified_datestamp or umccrsie_version:
-        version_text = 'Reporting Suite '
+        version_text = ''
         if umccrsie_version:
             version_text += umccrsie_version
         if umccrsie_version and last_modified_datestamp:
