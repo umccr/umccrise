@@ -8,6 +8,10 @@ ENV TEST_DATA_PATH=/umccrise/umccrise_test_data
 RUN apt-get update && \
     apt-get install -y curl wget git unzip tar gzip bzip2 g++ make zlib1g-dev nano
 
+# Install fonts for pandoc/rmarkdown
+RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections
+RUN apt-get install -y ttf-mscorefonts-installer
+
 # Setting locales and timezones, based on https://github.com/jacksoncage/node-docker/blob/master/Dockerfile
 # (setting UTC for readr expecting UTC https://rdrr.io/github/tidyverse/readr/src/R/locale.R)
 ENV LANGUAGE en_US.UTF-8
