@@ -187,7 +187,9 @@ tabix -p vcf {output}
 
 rule prep_anno_toml:
     input:
-        tricky_bed      = get_ref_file(run.genome_build, key='tricky'),
+        ga4gh_dir       = directory(join(get_ref_file(run.genome_build, key='problem_regions_dir'), 'GA4GH')),
+        encode          = join(get_ref_file(run.genome_build, key='problem_regions_dir'), 'ENCODE', 'wgEncodeDacMapabilityConsensusExcludable.bed.gz'),
+        lcr             = join(get_ref_file(run.genome_build, key='problem_regions_dir'), 'repeats', 'LCR.bed.gz'),
         giab_conf_bed   = rules.prep_giab_bed.output[0],
         gnomad_vcf      = get_ref_file(run.genome_build, key='gnomad'),
         hmf_hotspots    = rules.prep_hmf_hotspots.output[0],
@@ -195,14 +197,9 @@ rule prep_anno_toml:
         hmf_mappability = get_ref_file(run.genome_build, key='hmf_mappability'),
     output:
         'work/tricky_vcfanno.toml'
-    params:
-        toml_text  = lambda wc, input, output: f'''
-[[annotation]]
-file = "{input.tricky_bed}"
-names = ["TRICKY"]
-columns = [4]
-ops = ["self"]
-
+    run:
+        with open(output[0], 'w') as f:
+            f.write(f"""
 [[annotation]]
 file = "{input.giab_conf_bed}"
 names = ["GIAB_CONF"]
@@ -233,9 +230,33 @@ names = ["HMF_MAPPABILITY"]
 columns = [5]
 ops = ["self"]
 
-'''.replace('\n', r'\\n').replace('"', r'\"'),
-    shell:
-        'printf "{params.toml_text}" > {output}'
+[[annotation]]
+file = "{input.lcr}"
+names = ["TRICKY_LCR"]
+columns = [3]
+ops = ["flag"]
+
+[[annotation]]
+file = "{input.encode}"
+names = ["ENCODE"]
+columns = [4]
+ops = ["self"]
+
+""")
+        for fn in os.listdir(join(input.ga4gh_dir)):
+            if fn.endswith('.bed.gz'):
+                fpath = join(input.ga4gh_dir, fn)
+                assert isfile(fpath), fpath
+                name = splitext_plus(basename(fpath))[0]
+                with open(output[0], 'a') as f:
+                    f.write(f"""
+[[annotation]]
+file = "{fpath}"
+columns = [4]
+names = ["TRICKY_{name}"]
+ops = ["flag"]
+""")
+
 
 rule somatic_vcf_regions_anno:
     input:
