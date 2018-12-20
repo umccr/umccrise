@@ -112,21 +112,53 @@ rule somatic_vcf_pcgr_anno:
         vcf = 'work/{batch}/small_variants/annotation/pcgr/somatic-ensemble.vcf.gz',
     # group: "small_variants"
     run:
-        gene_by_snp = dict()
-        tier_by_snp = dict()
+        pcgr_fields_by_snp = dict()
         with open(input.tiers) as f:
             reader = csv.DictReader(f, delimiter='\t', fieldnames=f.readline().strip().split('\t'))
             for row in reader:
                 k = row['GENOMIC_CHANGE']
-                gene_by_snp[k] = row['SYMBOL']
-                tier_by_snp[k] = row['TIER']
+                pcgr_fields_by_snp[k] = {
+                    k: row[k].replace(' ', '_') for k in ['SYMBOL',
+                                                          'TIER',
+                                                          'CONSEQUENCE',
+                                                          'MUTATION_HOTSPOT',
+                                                          'INTOGEN_DRIVER_MUT',
+                                                          'TCGA_PANCANCER_COUNT',
+                                                          'CLINVAR_CLNSIG']
+                }
+
         def func_hdr(vcf):
-            vcf.add_info_to_header({'ID': 'PCGR_TIER', 'Description': 'TIER as reported by PCGR in .snvs_indels.tiers.tsv file', 'Type': 'String', 'Number': '1'})
-            vcf.add_info_to_header({'ID': 'PCGR_GENE', 'Description': 'Gene symbol as reported by PCGR in .snvs_indels.tiers.tsv file', 'Type': 'String', 'Number': '1'})
+            vcf.add_info_to_header({'ID': 'PCGR_SYMBOL', 'Description':
+                'VEP gene symbol, reported by PCGR in .snvs_indels.tiers.tsv file',
+                                    'Type': 'String', 'Number': '1'})
+            vcf.add_info_to_header({'ID': 'PCGR_TIER', 'Description':
+                'TIER as reported by PCGR in .snvs_indels.tiers.tsv file. '
+                '1: strong clinical significance; '
+                '2: potential clinical significance; '
+                '3: unknown clinical significance; '
+                '4: other coding variants',
+                'Type': 'String', 'Number': '1'})
+            vcf.add_info_to_header({'ID': 'PCGR_CONSEQUENCE', 'Description':
+                'VEP consequence, reported by PCGR in .snvs_indels.tiers.tsv file',
+                                    'Type': 'String', 'Number': '1'})
+            vcf.add_info_to_header({'ID': 'PCGR_MUTATION_HOTSPOT', 'Description':
+                'Mutation hotspot, reported by PCGR in .snvs_indels.tiers.tsv file',
+                                    'Type': 'String', 'Number': '1'})
+            vcf.add_info_to_header({'ID': 'PCGR_INTOGEN_DRIVER_MUT', 'Description':
+                'Driver mutation by Introgen, reported by PCGR in .snvs_indels.tiers.tsv file',
+                                    'Type': 'String', 'Number': '1'})
+            vcf.add_info_to_header({'ID': 'PCGR_TCGA_PANCANCER_COUNT', 'Description':
+                'Occurences in TCGR, reported by PCGR in .snvs_indels.tiers.tsv file',
+                                    'Type': 'String', 'Number': '1'})
+            vcf.add_info_to_header({'ID': 'PCGR_CLINVAR_CLNSIG', 'Description':
+                'ClinVar clinical significance, reported by PCGR in .snvs_indels.tiers.tsv file',
+                                    'Type': 'String', 'Number': '1'})
         def func(rec):
             k = f'{rec.CHROM}:g.{rec.POS}{rec.REF}>{rec.ALT[0]}'
-            rec.INFO['PCGR_TIER'] = tier_by_snp.get(k, '.').replace(' ', '_')
-            rec.INFO['PCGR_GENE'] = gene_by_snp.get(k, '.')
+            pcgr_d = pcgr_fields_by_snp.get(k, {})
+            if pcgr_d:
+                for k, v in pcgr_d.items():
+                    rec.INFO[f'PCGR_{k}'] = v
             return rec
         iter_vcf(input.vcf, output.vcf, func, func_hdr)
 
@@ -219,16 +251,26 @@ rule somatic_vcf_filter:
     input:
         vcf = rules.somatic_vcf_regions_anno.output.vcf,
     output:
-        vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.ALL_AF.vcf.gz',
     # group: "small_variants"
     shell:
         'filter_somatic_vcf {input.vcf} -o {output.vcf}'
+
+rule somatic_vcf_filter_af10:
+    input:
+        vcf = rules.somatic_vcf_filter.output.vcf
+    output:
+        vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.vcf.gz',
+    # group: "small_variants"
+    shell:
+        'bcftools filter -e "INFO/TUMOR_AF<0.1" --soft-filter af10 --mode + ' \
+        '-Oz {input.vcf} -o {output.vcf} && tabix -p vcf -f {output.vcf}'
 
 rule somatic_vcf_filter_pass:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf
     output:
-        vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.pass.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.PASS.vcf.gz',
     # group: "small_variants"
     shell:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
@@ -271,6 +313,7 @@ rule germline_vcf_prep:
 rule small_variants:
     input:
         expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
+        expand(rules.somatic_vcf_filter_af10.output.vcf, batch=batch_by_name.keys()),
         expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
         expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys()),
     output:
