@@ -63,6 +63,8 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_mq_yaml, bcbio_final_dir,
         try:
             with open(bcbio_mq_filelist) as inp, open(tx, 'w') as out:
                 for fp in [l.strip() for l in inp if l.strip()]:
+                    if fp == 'trimmed' or fp.endswith('/trimmed'):
+                        continue  # back-compatibility with bcbio
                     if exclude_files:
                         if isinstance(exclude_files, str):
                             exclude_files = [exclude_files]
