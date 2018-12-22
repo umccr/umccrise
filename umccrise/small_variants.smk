@@ -272,7 +272,7 @@ rule somatic_vcf_regions_anno:
         tbi = 'work/{batch}/small_variants/annotation/regions/somatic-ensemble.vcf.gz.tbi',
     # group: "small_variants"
     shell:
-        'vcfanno {input.toml} {input.vcf} | bgzip -c > {output.vcf} && tabix -f -p vcf -f {output.vcf}'
+        'vcfanno {input.toml} {input.vcf} | bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
 rule somatic_vcf_filter:
     input:
