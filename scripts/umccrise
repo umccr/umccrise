@@ -103,6 +103,8 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     conf['no_s3'] = 'yes' if no_s3 else 'no'
     conf['no_igv'] = 'yes' if no_igv else 'no'
 
+    conf['total_cores'] = jobs
+
     #########################
     #### Setting cluster ####
     #########################
