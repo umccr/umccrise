@@ -15,7 +15,6 @@ from umccrise import package_path
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
-threads_max = 28  # Use up to 32 cores at once, if available
 
 loc = find_loc()
 is_spartan = loc and loc.name == 'spartan'
@@ -145,8 +144,12 @@ if any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-ensemble-annot
        for b in batch_by_name.keys()):
     GERMLINE_SUFFIX = ''
 
-threads_per_batch  = max(1, threads_max // len(batch_by_name))
-threads_per_sample = max(1, threads_max // len(run.samples))
+threads_on_node = 32
+total_cores = config.get('total_cores', 128)
+threads_per_batch  = max(1, min(threads_on_node, total_cores // len(batch_by_name)))
+threads_per_sample = max(1, min(threads_on_node, total_cores // len(run.samples)))
+print(f'Threads on node: {threads_on_node}, total cores allowed: {total_cores}. '
+      f'Batches found: {threads_per_batch}, using {threads_per_batch} threads per batch, {threads_per_sample} per sample')
 
 
 rule all:

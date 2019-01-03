@@ -40,7 +40,7 @@ rule igv_bam:
     benchmark:
         "{batch}/igv/benchmarks/{batch}-{phenotype}.tsv"
     threads:
-        max(1, threads_max // (2 * len(batch_by_name)))
+        threads_per_sample
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
     shell:
