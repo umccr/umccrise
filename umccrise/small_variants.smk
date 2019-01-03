@@ -296,7 +296,7 @@ rule somatic_vcf_filter_af10:
 
 rule somatic_vcf_filter_pass:
     input:
-        vcf = rules.somatic_vcf_filter.output.vcf
+        vcf = rules.somatic_vcf_filter_af10.output.vcf
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-filt.PASS.vcf.gz',
         tbi = '{batch}/small_variants/{batch}-somatic-ensemble-filt.PASS.vcf.gz.tbi',
