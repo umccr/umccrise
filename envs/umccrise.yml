@@ -15,6 +15,7 @@ dependencies:
   - samtools
   - vcfanno
   - vcflib  # for VCF normalisation
+  - bedops
   - pythonpy
   - click
   - cyvcf2 >=0.10.0
