@@ -36,18 +36,18 @@ from umccrise import _version as version
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Just prints the rules and the commands '
                                                              'to run without actually generating any files.')
 
-@click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data (e.g. /bcbio/genomes; '
-              'Hsapiens/{genome}/seq/{genome}.fa(.fai) and Hsapiens/{genome}/validation/giab-NA12878/truth_regions.bed '
-              'are used)')
+# @click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data (e.g. /bcbio/genomes; '
+#               'Hsapiens/{genome}/seq/{genome}.fa(.fai) and Hsapiens/{genome}/validation/giab-NA12878/truth_regions.bed '
+#               'are used)')
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
-@click.option('--pcgr-data', help='Path to the PCGR reference data folder')
+# @click.option('--pcgr-data', help='Path to the PCGR reference data folder')
 @click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
 @click.option('--no-igv', is_flag=True, help='Skip generating of minibams')
 
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
          jobs=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
-         dryrun=False, bcbio_genomes=None, docker_wrapper_mode=False, pcgr_data=None, no_s3=None, no_igv=False):
+         dryrun=False, docker_wrapper_mode=False, no_s3=None, no_igv=False):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -73,15 +73,15 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if docker_wrapper_mode:
         conf['bcbio_project'] = docker_mounts[bcbio_project] = '/bcbio_project'
 
-    if bcbio_genomes:
-        conf['bcbio_genomes'] = verify_dir(bcbio_genomes, is_critical=True)
-        if docker_wrapper_mode:
-            conf['bcbio_genomes'] = docker_mounts[bcbio_genomes] = '/bcbio_genomes'
-
-    if pcgr_data:
-        conf['pcgr_data'] = verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
-        if docker_wrapper_mode:
-            conf['pcgr_data'] = docker_mounts[pcgr_data] = '/pcgr/data'
+    # if bcbio_genomes:
+    #     conf['bcbio_genomes'] = verify_dir(bcbio_genomes, is_critical=True)
+    #     if docker_wrapper_mode:
+    #         conf['bcbio_genomes'] = docker_mounts[bcbio_genomes] = '/bcbio_genomes'
+    #
+    # if pcgr_data:
+    #     conf['pcgr_data'] = verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
+    #     if docker_wrapper_mode:
+    #         conf['pcgr_data'] = docker_mounts[pcgr_data] = '/pcgr/data'
 
     #####################################
     #### Setting non-path parameters ####
@@ -132,8 +132,8 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
             jobs = cpus_avail
 
         docker_tag = 'umccr/umccrise'
-        if pcgr_data:
-            docker_tag = 'umccr/umccrise_with_pcgr'
+        # if pcgr_data:
+        #     docker_tag = 'umccr/umccrise_with_pcgr'
 
         cmd = (
             f'docker run -t ' +

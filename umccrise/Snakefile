@@ -73,50 +73,13 @@ def prep_inputs(config_):
 
     batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
 
-    ############################################
-    #### Reference files provided directly? ####
-    ############################################
-    ref_fa = config_.get('ref_fasta')
-    truth_regions = config_.get('truth_regions')
-    pon_dir = config_.get('panel_of_normals')
-    pcgr_data = config_.get('pcgr_data')
-
-    ##################################################
-    #### Bcbio reference genomes folder provided? ####
-    ##################################################
-    bcbio_genomes_dir = config_.get('bcbio_genomes')
-    if bcbio_genomes_dir:
-        # Looking for reference fasta
-        for fp in [
-            join(bcbio_genomes_dir, f'Hsapiens/{run.genome_build}/seq/{run.genome_build}.fa'),
-            join(bcbio_genomes_dir, f'{run.genome_build}/seq/{run.genome_build}.fa'),
-            join(bcbio_genomes_dir, f'seq/{run.genome_build}.fa')]:
-            if isfile(fp):
-                ref_fa = fp
-        if not ref_fa:
-            critical(f'Not found {run.genome_build}.fa in bcbio genomes directory {bcbio_genomes_dir}')
-
-        # Looking for truth regions
-        for fp in [
-            join(bcbio_genomes_dir, f'Hsapiens/{run.genome_build}/validation/giab-NA12878/truth_regions.bed'),
-            join(bcbio_genomes_dir, f'{run.genome_build}/validation/giab-NA12878/truth_regions.bed'),
-            join(bcbio_genomes_dir, f'validation/giab-NA12878/truth_regions.bed')]:
-            if isfile(fp):
-                truth_regions = fp
-        if not truth_regions:
-            critical(f'Not found GiaB truth regions in bcbio genomes directory {bcbio_genomes_dir}')
-
-    #################################################################
-    #### Reference files not provided, but we are on known host? ####
-    #################################################################
-    if not ref_fa:
-        ref_fa = get_ref_file(run.genome_build)
-    if not truth_regions:
-        truth_regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
-    if not pon_dir:
-        pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
-    if not pcgr_data and loc:
-        pcgr_data = loc.pcgr_data
+    ###########################################################
+    #### Reference files we are on known host?             ####
+    ###########################################################
+    ref_fa = get_ref_file(run.genome_build)
+    truth_regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
+    pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
+    pcgr_data = loc.pcgr_data
 
     ###########################################################
     #### Done looking for refernece files, now some checks ####
