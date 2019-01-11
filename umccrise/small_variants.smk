@@ -38,10 +38,11 @@ rule somatic_vcf_annotate:
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-ANNO.vcf.gz',
     params:
-        genome = run.genome_build
+        genome = run.genome_build,
+        work_dir = 'work/{batch}/small_variants/annotation'
     # group: "small_variants"
     shell:
-        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf}'
+        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}'
 
 rule somatic_vcf_filter:
     input:
