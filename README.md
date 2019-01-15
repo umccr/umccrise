@@ -62,7 +62,7 @@ Dirty fix for Raijin
 ```
 ENV_NAME=umccrise
 cd ./miniconda/envs/${ENV_NAME}_purple/lib
-ln -s libwebp.so.6 libwebp.so.7
+if [ ! -e libwebp.so.7 ] ; then ln -s libwebp.so.6 libwebp.so.7; fi
 cd -
 ```
 
