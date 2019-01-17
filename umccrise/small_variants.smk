@@ -42,6 +42,8 @@ rule somatic_vcf_annotate:
         work_dir = 'work/{batch}/small_variants',
 #        full_out_path = lambda wc, input, output: abspath(output.vcf)
     # group: "small_variants"
+    resources:
+        mem_mb = 20000
     shell:
         'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}'
 
