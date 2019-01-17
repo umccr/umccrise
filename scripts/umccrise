@@ -59,6 +59,9 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     log_dir = safe_mkdir(join(output_dir, 'log'))
     logger.init(log_fpath_=join(log_dir, 'command.txt'), save_previous=True)
 
+    if isfile(join(output_dir, 'all.done')):
+        run_simple('touch ' + join(output_dir, 'all.done'))
+
     conf = dict()
     docker_mounts = dict()
 

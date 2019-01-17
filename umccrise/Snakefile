@@ -116,7 +116,7 @@ print(f'Threads on node: {threads_on_node}, total cores allowed: {total_cores}. 
 
 
 rule all:
-    input: 'log/umccrised.done'
+    input: 'all.done'
     # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
 
 
@@ -127,7 +127,7 @@ subworkflow small_variants:
     snakefile: 'Snakefile.small_variants'
 
 rule all:
-    input:  small_variants('log/small_variants.done')
+    input:  small_variants('all.done')
     output: ...
     shell:  ...
 """
@@ -160,4 +160,4 @@ rule umccrise:
         rules.rmd.output,
         (rules.igv.output if config.get('no_igv', 'no') == 'no' else []),
     output:
-        temp(touch('log/umccrised.done'))
+        touch('all.done')
