@@ -23,8 +23,6 @@ Eugene_T/qc/peddy/E202.het_check.csv
 Eugene_T/qc/peddy/E202.ped_check.csv
 Eugene_T/qc/peddy/E202.peddy.ped
 Eugene_T/qc/peddy/E202.sex_check.csv
-Dakota_T/qc/contamination/Dakota_T-verifybamid.out
-Dakota_T/qc/contamination/Dakota_T-verifybamid.selfSM
 Dakota_T/qc/coverage/Dakota_T-coverage.mosdepth.region.dist.txt
 Dakota_T/qc/coverage/indexcov/Dakota_T-indexcov.ped
 Dakota_T/qc/coverage/indexcov/Dakota_T-indexcov.roc
@@ -39,8 +37,6 @@ Dakota_B/qc/peddy/Dakota_B-germline.het_check.csv
 Dakota_B/qc/peddy/Dakota_B-germline.ped_check.csv
 Dakota_B/qc/peddy/Dakota_B-germline.peddy.ped
 Dakota_B/qc/peddy/Dakota_B-germline.sex_check.csv
-Dakota_B/qc/contamination/Dakota_B-verifybamid.out
-Dakota_B/qc/contamination/Dakota_B-verifybamid.selfSM
 Dakota_B/qc/coverage/Dakota_B-coverage.mosdepth.region.dist.txt
 Dakota_B/qc/coverage/indexcov/Dakota_B-indexcov.ped
 Dakota_B/qc/coverage/indexcov/Dakota_B-indexcov.roc
@@ -49,8 +45,6 @@ Dakota_B/qc/fastqc/fastqc_data.txt
 Dakota_B/qc/samtools/Dakota_B-idxstats.txt
 Dakota_B/qc/samtools/Dakota_B.txt
 Dakota_B/qc/variants/Dakota_B_bcftools_stats_germline.txt
-Bob_T/qc/contamination/Bob_T-verifybamid.out
-Bob_T/qc/contamination/Bob_T-verifybamid.selfSM
 Bob_T/qc/coverage/Bob_T-coverage.mosdepth.region.dist.txt
 Bob_T/qc/coverage/indexcov/Bob_T-indexcov.ped
 Bob_T/qc/coverage/indexcov/Bob_T-indexcov.roc
@@ -65,8 +59,6 @@ Bob_B/qc/peddy/Bob_B-germline.het_check.csv
 Bob_B/qc/peddy/Bob_B-germline.ped_check.csv
 Bob_B/qc/peddy/Bob_B-germline.peddy.ped
 Bob_B/qc/peddy/Bob_B-germline.sex_check.csv
-Bob_B/qc/contamination/Bob_B-verifybamid.out
-Bob_B/qc/contamination/Bob_B-verifybamid.selfSM
 Bob_B/qc/coverage/Bob_B-coverage.mosdepth.region.dist.txt
 Bob_B/qc/coverage/indexcov/Bob_B-indexcov.ped
 Bob_B/qc/coverage/indexcov/Bob_B-indexcov.roc
@@ -75,8 +67,6 @@ Bob_B/qc/fastqc/fastqc_data.txt
 Bob_B/qc/samtools/Bob_B-idxstats.txt
 Bob_B/qc/samtools/Bob_B.txt
 Bob_B/qc/variants/Bob_B_bcftools_stats_germline.txt
-Chen_T/qc/contamination/Chen_T-verifybamid.out
-Chen_T/qc/contamination/Chen_T-verifybamid.selfSM
 Chen_T/qc/coverage/Chen_T-coverage.mosdepth.region.dist.txt
 Chen_T/qc/coverage/indexcov/Chen_T-indexcov.ped
 Chen_T/qc/coverage/indexcov/Chen_T-indexcov.roc
@@ -91,8 +81,6 @@ Chen_B/qc/peddy/Chen_B-germline.het_check.csv
 Chen_B/qc/peddy/Chen_B-germline.ped_check.csv
 Chen_B/qc/peddy/Chen_B-germline.peddy.ped
 Chen_B/qc/peddy/Chen_B-germline.sex_check.csv
-Chen_B/qc/contamination/Chen_B-verifybamid.out
-Chen_B/qc/contamination/Chen_B-verifybamid.selfSM
 Chen_B/qc/coverage/Chen_B-coverage.mosdepth.region.dist.txt
 Chen_B/qc/coverage/indexcov/Chen_B-indexcov.ped
 Chen_B/qc/coverage/indexcov/Chen_B-indexcov.roc
@@ -101,8 +89,6 @@ Chen_B/qc/fastqc/fastqc_data.txt
 Chen_B/qc/samtools/Chen_B-idxstats.txt
 Chen_B/qc/samtools/Chen_B.txt
 Chen_B/qc/variants/Chen_B_bcftools_stats_germline.txt
-Eugene_T/qc/contamination/Eugene_T-verifybamid.out
-Eugene_T/qc/contamination/Eugene_T-verifybamid.selfSM
 Eugene_T/qc/coverage/Eugene_T-coverage.mosdepth.region.dist.txt
 Eugene_T/qc/coverage/indexcov/Eugene_T-indexcov.ped
 Eugene_T/qc/coverage/indexcov/Eugene_T-indexcov.roc
@@ -117,8 +103,6 @@ Eugene_B/qc/peddy/Eugene_B-germline.het_check.csv
 Eugene_B/qc/peddy/Eugene_B-germline.ped_check.csv
 Eugene_B/qc/peddy/Eugene_B-germline.peddy.ped
 Eugene_B/qc/peddy/Eugene_B-germline.sex_check.csv
-Eugene_B/qc/contamination/Eugene_B-verifybamid.out
-Eugene_B/qc/contamination/Eugene_B-verifybamid.selfSM
 Eugene_B/qc/coverage/Eugene_B-coverage.mosdepth.region.dist.txt
 Eugene_B/qc/coverage/indexcov/Eugene_B-indexcov.ped
 Eugene_B/qc/coverage/indexcov/Eugene_B-indexcov.roc
@@ -127,8 +111,6 @@ Eugene_B/qc/fastqc/fastqc_data.txt
 Eugene_B/qc/samtools/Eugene_B-idxstats.txt
 Eugene_B/qc/samtools/Eugene_B.txt
 Eugene_B/qc/variants/Eugene_B_bcftools_stats_germline.txt
-Alice_T/qc/contamination/Alice_T-verifybamid.out
-Alice_T/qc/contamination/Alice_T-verifybamid.selfSM
 Alice_T/qc/coverage/Alice_T-coverage.mosdepth.region.dist.txt
 Alice_T/qc/coverage/indexcov/Alice_T-indexcov.ped
 Alice_T/qc/coverage/indexcov/Alice_T-indexcov.roc
@@ -143,8 +125,6 @@ Alice_B/qc/peddy/Alice_B-germline.het_check.csv
 Alice_B/qc/peddy/Alice_B-germline.ped_check.csv
 Alice_B/qc/peddy/Alice_B-germline.peddy.ped
 Alice_B/qc/peddy/Alice_B-germline.sex_check.csv
-Alice_B/qc/contamination/Alice_B-verifybamid.out
-Alice_B/qc/contamination/Alice_B-verifybamid.selfSM
 Alice_B/qc/coverage/Alice_B-coverage.mosdepth.region.dist.txt
 Alice_B/qc/coverage/indexcov/Alice_B-indexcov.ped
 Alice_B/qc/coverage/indexcov/Alice_B-indexcov.roc
