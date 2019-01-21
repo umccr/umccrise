@@ -1,3 +1,18 @@
+0.12 (21 Jan 2019)
+
+- Somatic annotation/filtering:
+    - Filter VarDict strand bias and HP indels
+    - Abstract somatic annotation into somatic_vcf_annotate script
+    - Add more sources: HMF mappability, ICGC, COSMIC, TCGA hotspots, ENCODE, LCR
+- pcgr_prep: populate VD and AD
+- Support Strelka2-only runs, populate Strelka2 AD for Purple
+- Correct threading for cluster runs
+- Key genes:
+    - Update umccr cancer genes to 2019 (remove TSG, add cancermine and NGC)
+    - Use NGC+cancermine oncogene/tsg defenitions
+    - Add predispose BED files for germline runs
+- Update Purple to sambamba-free Amber
+
 0.11 (6 Dec 2018)
 
 - Add Per-sample MultiQC reports with reference samples
