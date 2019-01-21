@@ -107,7 +107,7 @@ if any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-ensemble-annot
        for b in batch_by_name.keys()):
     GERMLINE_SUFFIX = ''
 
-threads_on_node = 32
+threads_on_node = loc.threads_on_node
 total_cores = config.get('total_cores', 128)
 threads_per_batch  = max(1, min(threads_on_node, total_cores // len(batch_by_name)))
 threads_per_sample = max(1, min(threads_on_node, total_cores // len(run.samples)))
