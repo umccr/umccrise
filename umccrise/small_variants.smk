@@ -2,7 +2,6 @@
 #### Somatic ####
 from os.path import isfile, join
 from ngs_utils.file_utils import get_ungz_gz
-from ngs_utils.reference_data import get_key_genes_set
 from umccrise import package_path
 import cyvcf2
 import toml

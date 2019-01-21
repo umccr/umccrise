@@ -12,8 +12,7 @@ params:
   tumor_name: 'PRJ180596_CW-DNA029841T'
   batch_name: 'SmallCellNET__PRJ180596_CW-DNA029841T'
   sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt'
-  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt'
-  cancermine: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv'
+  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
   purple_gene_cnv: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv'
   purple_circos_baf: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/?'
   purple_purity: 'x'
@@ -60,8 +59,7 @@ params = list(
   tumor_name = 'PRJ180596_CW-DNA029841T',
   batch_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
   sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
-  key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt',
-  cancermine = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv',
+  key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
   purple_gene_cnv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
   purple_circos_baf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/?',
   genome_build = 'hg19'
@@ -93,8 +91,7 @@ render_me <- function() {
       tumor_name = 'PRJ180596_CW-DNA029841T',
       batch_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
       sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
-      key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt',
-      cancermine = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv',
+      key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
       purple = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
       purple_dir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/purple/purple',
       genome_build = 'hg19'
@@ -246,12 +243,9 @@ if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
 ### SV LoF in tumor suppressors (by Cancermine)
 
 ```{r sv_suppressors, message=FALSE}
-key_genes <- readr::read_tsv(params$key_genes, col_names = "gene", col_types = "c")$gene
-cancermine <- readr::read_tsv(params$cancermine) %>%
-  mutate(gene = gene_normalized,
-         umccr_list = gene %in% key_genes)
-oncogenes <- cancermine %>% filter(role == "Oncogene")
-tsgenes <- cancermine %>% filter(role == "Tumor_Suppressor")
+key_genes <- readr::read_tsv(params$key_genes)
+oncogenes <- key_genes %>% filter(oncogene)
+tsgenes <- key_genes %>% filter(tumorsuppressor)
 
 if (!is.null(sv_all)) {
   lof <- sv_all %>%
@@ -261,8 +255,8 @@ if (!is.null(sv_all)) {
                     c('lof_gene', 'geneid', 'tx_count', 'prop_affected'),
                     sep = '\\|') %>%
     dplyr::select(chrom, start, end, lof_gene, tx_count, prop_affected, SR, PR) %>%
-    dplyr::filter(lof_gene %in% tsgenes$gene) %>%
-    dplyr::mutate('UMCCR_list' = ifelse(lof_gene %in% key_genes, 'Yes', '')) %>%
+    dplyr::filter(lof_gene %in% tsgenes$symbol) %>%
+    dplyr::mutate('UMCCR_list' = ifelse(lof_gene %in% key_genes$symbol, 'Yes', '')) %>%
     dplyr::distinct()
 
   DT::datatable(lof, rownames = FALSE, filter = "top",

@@ -11,8 +11,7 @@ output:
     highlight: kate
 params:
   workdir: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/purple'
-  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt'
-  cancermine: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv'
+  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
 ---
 
 ```{r load-pkgs, echo=FALSE, message=FALSE, warning=FALSE}
@@ -40,21 +39,17 @@ render_me <- function() {
     output_file = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/purple_bcbio_umccrise.html',
     params = list(
       workdir = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/purple',
-      key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/key_genes.txt',
-      cancermine = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/cancermine_collated.tsv'
-    )
+      key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
+   )
   )
 }
 render_me()
 ```
 
 ```{r load_ref_data, message=FALSE, echo=FALSE, warning=FALSE}
-key_genes <- readr::read_tsv(params$key_genes, col_names = "gene", col_types = "c")$gene
-cancermine <- readr::read_tsv(params$cancermine) %>%
-  mutate(gene = gene_normalized,
-         umccr_list = gene %in% key_genes)
-oncogenes <- cancermine %>% filter(role == "Oncogene")
-tsgenes <- cancermine %>% filter(role == "Tumor_Suppressor")
+key_genes <- readr::read_tsv(params$key_genes)
+oncogenes <- key_genes %>% filter(oncogene)
+tsgenes <- key_genes %>% filter(tumorsuppressor)
 ```
 
 ```{r read_files, message=FALSE, echo=FALSE, warning=FALSE}
@@ -76,9 +71,9 @@ data <- rbind(bcbio, umccrise) %>%
   dplyr::select(fname, Gene, MinCopyNumber, pipeline) %>% 
   mutate(sample = gsub("\\.purple.gene.cnv$", "\\1", fname)) %>% 
   mutate(sample = gsub("^(bcbio_|umccrise_)", "\\2", sample)) %>% 
-  filter(Gene %in% key_genes) %>% 
+  filter(Gene %in% key_genes$symbol) %>%
   dplyr::mutate(gene = Gene,
-                role = ifelse(gene %in% oncogenes$gene, 'oncogene', ifelse(gene %in% tsgenes$gene, 'tsgene', '')),
+                role = ifelse(gene %in% oncogenes$symbol, 'oncogene', ifelse(gene %in% tsgenes$symbol, 'tsgene', '')),
                 event = ifelse(MinCopyNumber < 0.5, 'hom_del',
                                ifelse(MinCopyNumber < 1.5, 'het_del',
                                ifelse(MinCopyNumber >= 3.5, 'gain', ''))),

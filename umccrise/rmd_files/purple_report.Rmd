@@ -19,9 +19,9 @@ purple_gene_cnv %>%
                 hom_del = MinCopyNumber < 0.5,
                 gain = MinCopyNumber >= 3) %>%
   dplyr::filter(hom_del | gain) %>%
-  dplyr::mutate(oncogene = Gene %in% oncogenes$gene,
-                tsgene = Gene %in% tsgenes$gene,
-                key_gene = Gene %in% key_genes) %>%
+  dplyr::mutate(oncogene = Gene %in% oncogenes$symbol,
+                tsgene = Gene %in% tsgenes$symbol,
+                key_gene = Gene %in% key_genes$symbol) %>%
   dplyr::filter(oncogene & gain | tsgene & hom_del | key_gene & del) %>%
   dplyr::mutate(
     Event = dplyr::case_when(gain ~ 'Gain', hom_del ~ 'HomDel', TRUE ~ 'Del'),
@@ -120,7 +120,7 @@ tribble(~key, ~value,
 ```{r gene-tab}
 purple_gene_cnv %>%
   dplyr::rename(min_cn = MinCopyNumber, max_cn = MaxCopyNumber) %>% 
-  dplyr::filter(Gene %in% key_genes) %>%
+  dplyr::filter(Gene %in% key_genes$symbol) %>%
   DT::datatable(filter = "top", rownames = FALSE, extensions = c('Scroller', 'Buttons'), 
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500, 
                                dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>% 

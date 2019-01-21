@@ -1,7 +1,7 @@
 from os.path import join
 
 from ngs_utils.logger import warn
-from ngs_utils.reference_data import get_cancermine, get_key_genes, get_key_genes_bed
+from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
 from umccrise import get_sig_rmd_file, get_signatures_probabilities
 import glob
@@ -163,7 +163,6 @@ rule bookdown_report:
     input:
         rmd_files_dir = join(package_path(), 'rmd_files'),
         sig_probs = join(package_path(), 'rmd_files', 'signatures_probabilities.txt'),
-        cancermine = get_cancermine(),
         key_genes = get_key_genes(),
         afs                 = rules.afs.output[0],
         afs_keygenes        = rules.afs_keygenes.output[0],
@@ -184,7 +183,7 @@ rule bookdown_report:
         index_rmd = 'index.Rmd',
         # bookdown_yml = 'work/{batch}/rmd/rmd_files/_bookdown.yml',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
-        workdir = os.getcwd(),
+        work_dir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0]),
         rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
         afs                 = lambda wc, input: abspath(input.afs),
@@ -197,7 +196,7 @@ rule bookdown_report:
         purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
     output:
-        report = '{batch}/{batch}_book.html',
+        report_html = '{batch}/{batch}_book.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
     # group: "rmd"
     resources:
@@ -235,22 +234,21 @@ purple_cnv='{params.purple_cnv}', \
 purple_germline_cnv='{params.purple_germline_cnv}', \
 purple_purity='{params.purple_purity}' \
 ))" ; \
-cd {params.workdir} ; \
+cd {params.work_dir} ; \
 """)
-        shell('mv {output.rmd_tmp_dir}/_book_umccrised/_main.html {output.report}')
+        shell('mv {output.rmd_tmp_dir}/_book_umccrised/_main.html {output.report_html}')
 
 rule purple_bcbio_stats:
     input:
         rmd = verify_file(join(package_path(), 'rmd_files', 'purple_bcbio_umccrise.Rmd'), is_critical=True),
         purple_umccrise_files = expand('work/{batch}/purple/{batch}.purple.gene.cnv', batch=batch_by_name.keys()),
         bcbio_workdir = run.work_dir,
-        cancermine = get_cancermine(),
         key_genes = get_key_genes(),
     output:
         'purple_stats.html'
     params:
         rmd_tmp = 'work/purple/purple_bcbio_umccrise.Rmd',
-        workdir = abspath('work/purple'),
+        work_dir = abspath('work/purple'),
         output_file = lambda wc, output: abspath(output[0]),
     run:
         purple_bcbio_files = glob.glob(join(input.bcbio_workdir, 'structural/*/purple/purple/*.purple.gene.cnv'))
@@ -277,7 +275,7 @@ output_file='{params.output_file}', \
 params=list( \
 cancermine='{input.cancermine}', \
 key_genes='{input.key_genes}', \
-workdir='{params.workdir}' \
+workdir='{params.work_dir}' \
 ))"
 """)
 
