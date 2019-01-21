@@ -123,7 +123,6 @@ rule rmd_purple_cnv:
 #         sv = rules.prep_sv_tsv.output[0],
 #         sig_rmd = get_sig_rmd_file(),
 #         sig_probs = get_signatures_probabilities(),
-#         cancermine = get_cancermine(),
 #         key_genes = get_key_genes(),
 #         manta_vcf = rules.filter_sv_vcf.output[0],
 #         purple = rules.rmd_purple.output[0],
@@ -150,7 +149,6 @@ rule rmd_purple_cnv:
 # manta_vcf='{input.manta_vcf}', \
 # tumor_name='{params.tumor_name}', \
 # sig_probs='{input.sig_probs}', \
-# cancermine='{input.cancermine}', \
 # key_genes='{input.key_genes}', \
 # purple='{input.purple}', \
 # workdir='{params.workdir}', \
@@ -222,7 +220,6 @@ tumor_name='{params.tumor_name}', \
 batch_name='{wildcards.batch}', \
 genome_build='{params.rmd_genome_build}', \
 sig_probs='{input.sig_probs}', \
-cancermine='{input.cancermine}', \
 key_genes='{input.key_genes}', \
 af_freqs='{params.afs}', \
 af_freqs_keygenes='{params.afs_keygenes}', \
@@ -273,7 +270,6 @@ cp {input.rmd} {params.rmd_tmp} && \
 Rscript -e "rmarkdown::render('{params.rmd_tmp}',\
 output_file='{params.output_file}', \
 params=list( \
-cancermine='{input.cancermine}', \
 key_genes='{input.key_genes}', \
 workdir='{params.work_dir}' \
 ))"
