@@ -33,7 +33,7 @@ localrules: small_variants, prep_anno_toml, prep_giab_bed
 
 rule somatic_vcf_annotate:
     input:
-        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-ensemble-annotated.vcf.gz')
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-{SOMATIC_CALLER}-annotated.vcf.gz')
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-ANNO.vcf.gz',
     params:
@@ -81,7 +81,7 @@ rule somatic_vcf_filter_pass:
 # Annotate any events found in ~200 cancer predisposition gene set.
 rule germline_vcf_subset:  # {batch}
     input:
-        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}{GERMLINE_SUFFIX}-ensemble-annotated.vcf.gz'),
+        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].normal.name}{GERMLINE_SUFFIX}-{GERMLINE_CALLER}-annotated.vcf.gz'),
     output:
         vcf = 'work/{batch}/small_variants/raw_normal-ensemble-predispose_genes.vcf.gz',
         tbi = 'work/{batch}/small_variants/raw_normal-ensemble-predispose_genes.vcf.gz.tbi',
