@@ -24,10 +24,10 @@ rule mosdepth:
         prefix = '{batch}/coverage/{batch}-{phenotype}',
         cutoffs = lambda wc: f'0:1:{min_covs[wc.phenotype]}:{max_covs[wc.phenotype]}:',
     shell:
-        'export MOSDEPTH_Q0=NO_COVERAGE && ' \
-        'export MOSDEPTH_Q1=LOW_COVERAGE && ' \
-        'export MOSDEPTH_Q2=CALLABLE && ' \
-        'export MOSDEPTH_Q3=HIGH_COVERAGE && ' \
+        'export MOSDEPTH_Q0=NO_COVERAGE && '
+        'export MOSDEPTH_Q1=LOW_COVERAGE && '
+        'export MOSDEPTH_Q2=CALLABLE && '
+        'export MOSDEPTH_Q3=HIGH_COVERAGE && '
         'mosdepth {params.prefix} -q {params.cutoffs} --no-per-base {input.bam} --by {input.bed}'
 
 

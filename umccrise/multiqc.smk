@@ -50,7 +50,7 @@ find . -name "Per_tile_sequence_quality.tsv" -delete
 find . -name "Sequence_Length_Distribution.tsv" -delete
 # Clean up qc/qsignature
 rm -rf */qc/qsignature
-# Clean up qc/peddy
+# Clean up qc/peddy -  TODO: remove peddy and VerifyBAMID
 find . -path "*qc/peddy/*.ped_check.rel-difference.csv" -delete
 find . -path "*qc/peddy/*.html" -delete
 # Clean up bcbio metrics
@@ -71,6 +71,8 @@ rule prep_multiqc_data:
         bcbio_final_dir   = run.final_dir,
         versions          = 'log/' + run.project_name + '-data_versions.csv',
         programs          = 'log/' + run.project_name + '-programs.txt',
+        conpair_concord   = '{batch}/conpair/tumor_normal_concordance.txt',
+        conpair_contam    = '{batch}/conpair/tumor_normal_contamination.txt',
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -93,6 +95,10 @@ rule prep_multiqc_data:
             for l in f:
                 l = l.strip()
                 additional_files.append(join(gold_standard_dir, l))
+
+        additional_files.append(input.conpair_concord)
+        additional_files.append(input.conpair_contam)
+
         multiqc_prep_data(
             bcbio_mq_filelist=input.bcbio_mq_filelist,
             bcbio_mq_yaml=input.bcbio_mq_yaml,
@@ -152,3 +158,15 @@ rule multiqc:
         rules.copy_logs.output,
     output:
         temp(touch('log/multiqc.done'))
+
+
+
+
+
+
+
+
+
+
+
+

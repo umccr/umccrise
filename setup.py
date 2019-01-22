@@ -23,6 +23,7 @@ setup(
         'vendor/vcfToBedpe',
         'scripts/umccrise',
         'scripts/pcgr',
+        'scripts/conpair',
     ],
     include_package_data=True,
     zip_safe=False,

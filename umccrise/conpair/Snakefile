@@ -1,0 +1,67 @@
+from os.path import splitext, basename
+
+
+bams = {
+    'tumor': config['tumor_bam'],
+    'normal': config['normal_bam']
+}
+samples = {
+    'tumor': config.get('tumor_name'),
+    'normal': config.get('normal_name'),
+}
+
+genome = config['genome']
+ref_fa = config['ref_fa']
+use_het_markers = config.get('use_het_markers', 'no') == 'yes'
+
+
+rule all:
+    input:
+        samples['tumor'] + '_' + samples['normal'] + '_concordance.txt',
+        samples['tumor'] + '_' + samples['normal'] + '_contamination.txt'
+
+
+rule concordance:
+    input:
+        tumor_pileup = samples['tumor'] + '_tumor.pileup',
+        normal_pileup = samples['normal'] + '_normal.pileup',
+    output:
+        samples['tumor'] + '_' + samples['normal'] + '_concordance.txt'
+    params:
+        het_opt = '-H' if not use_het_markers else ''
+    shell:
+        'verify_concordance.py '
+        '-T {input.tumor_pileup} '
+        '-N {input.normal_pileup} '
+        '-g {genome} '
+        '-O {output} '
+        '{params.het_opt} '
+        '-C 0'
+
+
+rule contamination:
+    input:
+        tumor_pileup = samples['tumor'] + '_tumor.pileup',
+        normal_pileup = samples['normal'] + '_normal.pileup',
+    output:
+        samples['tumor'] + '_' + samples['normal'] + '_contamination.txt'
+    shell:
+        'estimate_tumor_normal_contamination.py '
+        '-T {input.tumor_pileup} '
+        '-N {input.normal_pileup} '
+        '-g {genome} '
+        '-O {output}'
+
+
+rule pileup:
+    input:
+        lambda wc: bams[wc.pheno],
+        ref_fa = ref_fa
+    output:
+        '{sample}_{pheno}.pileup'
+        # lambda wc: samples[wc.pheno] + '_' + wc.pheno + '.pileup',
+    params:
+        genome = genome
+    shell:
+        'run_gatk_pileup_for_sample.py -B {input} -O {output} -g {params.genome} --reference {input.ref_fa}'
+
