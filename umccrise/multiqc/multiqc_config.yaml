@@ -53,6 +53,8 @@ table_columns_visible:
         sex_het_ratio: False
         error_sex_check: False
         error: False
+    VerifyBAMID:
+        Contam: False
 
 preseq:
     notrim: True

@@ -64,6 +64,25 @@ python rename.py final.subset final.subset.renamed
 """
 
 
+def prep_conpair(contam, concor, data_dir, t_name, n_name):
+    contam_dir = safe_mkdir(join(data_dir, 'conpair', 'contamination'))
+    concor_dir = safe_mkdir(join(data_dir, 'conpair', 'concordance'))
+    contam_t = join(contam_dir, t_name + '.txt')
+    contam_n = join(contam_dir, n_name + '.txt')
+
+    with open(contam) as c, open(contam_t, 'w') as ct, open(contam_n, 'w') as cn:
+        for l in c:
+            if l.startswith('Tumor sample contamination level'):
+                ct.write(l.replace('Tumor sample', 'Sample'))
+            if l.startswith('Normal sample contamination level'):
+                cn.write(l.replace('Normal sample', 'Sample'))
+
+    concor_t = join(concor_dir, t_name + '.txt')
+    shell(f"cp {concor} {concor_t}")
+
+    return contam_t, contam_n, concor_t
+
+
 rule prep_multiqc_data:
     input:
         bcbio_mq_filelist = join(run.date_dir, 'multiqc/list_files_final.txt'),
@@ -71,21 +90,23 @@ rule prep_multiqc_data:
         bcbio_final_dir   = run.final_dir,
         versions          = 'log/' + run.project_name + '-data_versions.csv',
         programs          = 'log/' + run.project_name + '-programs.txt',
-        conpair_concord   = '{batch}/conpair/tumor_normal_concordance.txt',
         conpair_contam    = '{batch}/conpair/tumor_normal_contamination.txt',
+        conpair_concor    = '{batch}/conpair/tumor_normal_concordance.txt',
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
         bcbio_conf_yaml     = 'work/{batch}/multiqc_data/bcbio_conf.yaml',
     params:
-        data_dir        = 'work/{batch}/multiqc_data'
+        data_dir        = 'work/{batch}/multiqc_data',
+        tumor_name      = lambda wc: batch_by_name[wc.batch].tumor.name,
+        normal_name     = lambda wc: batch_by_name[wc.batch].normal.name,
     # group: 'multiqc'
     run:
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
         generated_conf, additional_files = make_report_metadata(
             run,
-            tumor_sample = batch_by_name[wildcards.batch].tumor.name,
-            normal_sample = batch_by_name[wildcards.batch].normal.name,
+            tumor_sample=params.tumor_name,
+            normal_sample=params.normal_name,
             base_dirpath=report_base_path,
             analysis_dir=run.date_dir,
             program_versions_fpath=input.programs,
@@ -96,8 +117,8 @@ rule prep_multiqc_data:
                 l = l.strip()
                 additional_files.append(join(gold_standard_dir, l))
 
-        additional_files.append(input.conpair_concord)
-        additional_files.append(input.conpair_contam)
+        additional_files.extend(prep_conpair(input.conpair_contam, input.conpair_concor,
+                                             params.data_dir, params.tumor_name, params.normal_name))
 
         multiqc_prep_data(
             bcbio_mq_filelist=input.bcbio_mq_filelist,
