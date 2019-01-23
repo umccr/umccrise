@@ -150,7 +150,7 @@ include: "purple.smk"
 include: "pcgr.smk"
 include: "rmd.smk"
 include: "igv.smk"
-include: "contamination.smk"
+include: "conpair.smk"
 include: "multiqc.smk"
 
 

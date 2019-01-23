@@ -1,15 +1,15 @@
 ## Cancer gene coverage
 
-localrules: contamination
+localrules: conpair
 
 
-rule conpair:
+rule run_conpair:
     input:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
     output:
-        '{batch}/conpair/tumor_normal_concordance.txt',
-        '{batch}/conpair/tumor_normal_contamination.txt',
+        directory('{batch}/conpair/concordance'),
+        directory('{batch}/conpair/contamination'),
     threads: 2
     params:
         genome = run.genome_build,
@@ -19,8 +19,8 @@ rule conpair:
         '-o {params.out_dir} -tn tumor -nn normal'
 
 
-rule contamination:
+rule conpair:
     input:
-        expand(rules.conpair.output[0], batch=batch_by_name.keys())
+        expand(rules.conpair.output, batch=batch_by_name.keys())
     output:
-        temp(touch('log/contamination.done'))
+        temp(touch('log/conpair.done'))

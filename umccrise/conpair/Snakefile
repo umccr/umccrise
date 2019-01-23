@@ -17,8 +17,9 @@ use_het_markers = config.get('use_het_markers', 'no') == 'yes'
 
 rule all:
     input:
-        samples['tumor'] + '_' + samples['normal'] + '_concordance.txt',
-        samples['tumor'] + '_' + samples['normal'] + '_contamination.txt'
+        'concordance/' + samples['tumor'] + '.txt',
+        'contamination/' + samples['tumor'] + '.txt',
+        'contamination/' + samples['normal'] + '.txt',
 
 
 rule concordance:
@@ -26,31 +27,34 @@ rule concordance:
         tumor_pileup = samples['tumor'] + '_tumor.pileup',
         normal_pileup = samples['normal'] + '_normal.pileup',
     output:
-        samples['tumor'] + '_' + samples['normal'] + '_concordance.txt'
+        'concordance/' + samples['tumor'] + '.txt'
     params:
         het_opt = '-H' if not use_het_markers else ''
-    shell:
-        'verify_concordance.py '
-        '-T {input.tumor_pileup} '
-        '-N {input.normal_pileup} '
-        '-g {genome} '
-        '-O {output} '
-        '{params.het_opt} '
-        '-C 0'
-
+    shell: """
+verify_concordance.py\
+ -T {input.tumor_pileup}\
+ -N {input.normal_pileup}\
+ -g {genome}\
+ -O {output}\
+ {params.het_opt}\
+ -C 0
+"""
 
 rule contamination:
     input:
         tumor_pileup = samples['tumor'] + '_tumor.pileup',
         normal_pileup = samples['normal'] + '_normal.pileup',
     output:
-        samples['tumor'] + '_' + samples['normal'] + '_contamination.txt'
-    shell:
-        'estimate_tumor_normal_contamination.py '
-        '-T {input.tumor_pileup} '
-        '-N {input.normal_pileup} '
-        '-g {genome} '
-        '-O {output}'
+        tumor = 'contamination/' + samples['tumor'] + '.txt',
+        normal = 'contamination/' + samples['normal'] + '.txt',
+    shell: """
+estimate_tumor_normal_contamination.py\
+ -T {input.tumor_pileup}\
+ -N {input.normal_pileup}\
+ -g {genome} | tee\
+ >(grep Tumor | sed 's/Tumor sample/Sample/' > {output.tumor})\
+ | grep Normal | sed 's/Normal sample/Sample/' > {output.normal}
+"""
 
 
 rule pileup:
@@ -65,3 +69,31 @@ rule pileup:
     shell:
         'run_gatk_pileup_for_sample.py -B {input} -O {output} -g {params.genome} --reference {input.ref_fa}'
 
+
+# rule for_multiqc:
+#     input:
+#         concor = samples['tumor'] + '_' + samples['normal'] + '_concordance.txt',
+#         contam = samples['tumor'] + '_' + samples['normal'] + '_contamination.txt'
+#     output:
+#         concor =
+#         contam_t = samples['tumor']
+#         contam_n =
+#
+#
+# def prep_conpair(contam, concor, data_dir, t_name, n_name):
+#     contam_dir = safe_mkdir(join(data_dir, 'conpair', 'contamination'))
+#     concor_dir = safe_mkdir(join(data_dir, 'conpair', 'concordance'))
+#     contam_t = join(contam_dir, t_name + '.txt')
+#     contam_n = join(contam_dir, n_name + '.txt')
+#
+#     with open(contam) as c, open(contam_t, 'w') as ct, open(contam_n, 'w') as cn:
+#         for l in c:
+#             if l.startswith('Tumor sample contamination level'):
+#                 ct.write(l.replace('Tumor sample', 'Sample'))
+#             if l.startswith('Normal sample contamination level'):
+#                 cn.write(l.replace('Normal sample', 'Sample'))
+#
+#     concor_t = join(concor_dir, t_name + '.txt')
+#     shell(f"cp {concor} {concor_t}")
+#
+#     return contam_t, contam_n, concor_t

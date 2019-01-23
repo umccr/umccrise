@@ -1,86 +1,8 @@
-from umccrise.prep_multiqc import make_report_metadata, multiqc_prep_data
+from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
 
 
 # localrules: multiqc, copy_logs
 localrules: prep_multiqc_data, multiqc, copy_logs
-
-
-"""
-#############################
-### Prepare gold standard ###
-#############################
-cd /data/cephfs/punim0010/data/Results/Tothill-A5/2018-08-11
-mkdir final.subset
-for f in $(cat final/2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/list_files_final.txt | grep -v trimmed | grep -v target_info.yaml) ; do 
-    mkdir -p final.subset/`dirname $f`
-    cp final/$f final.subset/$f 
-done
-
-cat final/2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/list_files_final.txt |\
-    grep -P "E201|E199|E194|E190|E202" |\
-    grep -v "indexcov.tsv" |\
-    grep -v "Per_base_N_content.tsv" |\
-    grep -v "Per_base_sequence_content.tsv" |\
-    grep -v "Per_base_sequence_quality.tsv" |\
-    grep -v "Per_sequence_GC_content.tsv" |\
-    grep -v "Per_sequence_quality_scores.tsv" |\
-    grep -v "Per_tile_sequence_quality.tsv" |\
-    grep -v "Sequence_Length_Distribution.tsv" |\
-    grep -v "sort-chr.qsig.vcf" |\
-    grep -v "ped_check.rel-difference.csv" |\
-    grep -v ".html" |\
-    > final.subset/list_files_final.txt
-
-### Clean up ###
-cd final.subset
-
-# Remove sample dirs:
-ls | grep -v -P "E201|E199|E194|E190|E202|2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged|list_files_final.txt" | xargs rm -rf
-
-# Clean up qc/coverage
-find . -name "*-indexcov.tsv" -delete
-# Clean up qc/fastqc
-find . -name "fastqc_report.html" -delete
-find . -name "Per_base_N_content.tsv" -delete
-find . -name "Per_base_sequence_content.tsv" -delete
-find . -name "Per_base_sequence_quality.tsv" -delete
-find . -name "Per_sequence_GC_content.tsv" -delete
-find . -name "Per_sequence_quality_scores.tsv" -delete
-find . -name "Per_tile_sequence_quality.tsv" -delete
-find . -name "Sequence_Length_Distribution.tsv" -delete
-# Clean up qc/qsignature
-rm -rf */qc/qsignature
-# Clean up qc/peddy -  TODO: remove peddy and VerifyBAMID
-find . -path "*qc/peddy/*.ped_check.rel-difference.csv" -delete
-find . -path "*qc/peddy/*.html" -delete
-# Clean up bcbio metrics
-cd 2018-08-11_2018-07-31T0005_Tothill-A5_WGS-merged/multiqc/report/metrics
-ls | grep -v -P "E201|E199|E194|E190|E202" | xargs rm 
-cd ../../../../
-
-cd ..
-### Rename ###
-python rename.py final.subset final.subset.renamed
-"""
-
-
-def prep_conpair(contam, concor, data_dir, t_name, n_name):
-    contam_dir = safe_mkdir(join(data_dir, 'conpair', 'contamination'))
-    concor_dir = safe_mkdir(join(data_dir, 'conpair', 'concordance'))
-    contam_t = join(contam_dir, t_name + '.txt')
-    contam_n = join(contam_dir, n_name + '.txt')
-
-    with open(contam) as c, open(contam_t, 'w') as ct, open(contam_n, 'w') as cn:
-        for l in c:
-            if l.startswith('Tumor sample contamination level'):
-                ct.write(l.replace('Tumor sample', 'Sample'))
-            if l.startswith('Normal sample contamination level'):
-                cn.write(l.replace('Normal sample', 'Sample'))
-
-    concor_t = join(concor_dir, t_name + '.txt')
-    shell(f"cp {concor} {concor_t}")
-
-    return contam_t, contam_n, concor_t
 
 
 rule prep_multiqc_data:
@@ -90,8 +12,9 @@ rule prep_multiqc_data:
         bcbio_final_dir   = run.final_dir,
         versions          = 'log/' + run.project_name + '-data_versions.csv',
         programs          = 'log/' + run.project_name + '-programs.txt',
-        conpair_contam    = '{batch}/conpair/tumor_normal_contamination.txt',
-        conpair_concor    = '{batch}/conpair/tumor_normal_concordance.txt',
+        conpair_contam_t  = lambda wc: f'{wc.batch}/conpair/contamination/{batch_by_name[wc.batch].tumor.name}.txt',
+        conpair_contam_n  = lambda wc: f'{wc.batch}/conpair/contamination/{batch_by_name[wc.batch].normal.name}.txt',
+        conpair_concord   = lambda wc: f'{wc.batch}/conpair/concordance/{batch_by_name[wc.batch].tumor.name}.txt',
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -117,8 +40,7 @@ rule prep_multiqc_data:
                 l = l.strip()
                 additional_files.append(join(gold_standard_dir, l))
 
-        additional_files.extend(prep_conpair(input.conpair_contam, input.conpair_concor,
-                                             params.data_dir, params.tumor_name, params.normal_name))
+        additional_files.extend([input.conpair_contam_t, input.conpair_contam_n, input.conpair_concord])
 
         multiqc_prep_data(
             bcbio_mq_filelist=input.bcbio_mq_filelist,
