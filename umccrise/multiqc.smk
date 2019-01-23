@@ -12,9 +12,8 @@ rule prep_multiqc_data:
         bcbio_final_dir   = run.final_dir,
         versions          = 'log/' + run.project_name + '-data_versions.csv',
         programs          = 'log/' + run.project_name + '-programs.txt',
-        conpair_contam_t  = lambda wc: f'{wc.batch}/conpair/contamination/{batch_by_name[wc.batch].tumor.name}.txt',
-        conpair_contam_n  = lambda wc: f'{wc.batch}/conpair/contamination/{batch_by_name[wc.batch].normal.name}.txt',
-        conpair_concord   = lambda wc: f'{wc.batch}/conpair/concordance/{batch_by_name[wc.batch].tumor.name}.txt',
+        conpair_concord   = directory('{batch}/conpair/concordance'),
+        conpair_contam    = directory('{batch}/conpair/contamination'),
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -40,7 +39,11 @@ rule prep_multiqc_data:
                 l = l.strip()
                 additional_files.append(join(gold_standard_dir, l))
 
-        additional_files.extend([input.conpair_contam_t, input.conpair_contam_n, input.conpair_concord])
+        additional_files.extend([
+            join(input.conpair_contam, params.tumor_name + '.txt'),
+            join(input.conpair_contam, params.normal_name + '.txt'),
+            join(input.conpair_concord, params.tumor_name + '.txt'),
+        ])
 
         multiqc_prep_data(
             bcbio_mq_filelist=input.bcbio_mq_filelist,
@@ -56,7 +59,7 @@ rule prep_multiqc_data:
         )
 
 
-rule batch_multiqc:  # {}
+rule batch_multiqc:
     input:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -74,13 +77,11 @@ rule batch_multiqc:  # {}
             list_files = f'<(cat {input.filelist}{greps})'
         else:
             list_files = input.filelist
-        shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -v -o . -l {list_files} -c {input.bcbio_conf_yaml} -c {input.umccrise_conf_yaml}'
+        shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . -l {list_files} -c {input.bcbio_conf_yaml} -c {input.umccrise_conf_yaml}'
               f' -c {input.generated_conf_yaml} --filename {output.html_file}')
 
 
-## Additional information
-# TODO: link it to MultiQC
-rule copy_logs:  # {}
+rule copy_logs:
     input:
         versions = join(run.date_dir, 'data_versions.csv'),
         programs = join(run.date_dir, 'programs.txt'),

@@ -1,4 +1,4 @@
-0.12 (21 Jan 2019)
+0.12 (23 Jan 2019)
 
 - Somatic annotation/filtering:
     - Filter VarDict strand bias and HP indels
@@ -12,6 +12,7 @@
     - Use NGC+cancermine oncogene/tsg defenitions
     - Add predispose BED files for germline runs
 - Update Purple to sambamba-free Amber
+- Integrate Conpair (replaces VerifyBAMID and Peddy)
 
 0.11 (6 Dec 2018)
 
