@@ -30,10 +30,18 @@ localrules: small_variants, prep_anno_toml, prep_giab_bed
 #   Remove indels in "bad_promoter" tricky regions
 #   Remove DP<25 & AF<5% in tricky regions: gc15, gc70to75, gc75to80, gc80to85, gc85, low_complexity_51to200bp, low_complexity_gt200bp, non-GIAB confident, unless coding in cancer genes
 
+rule somatic_vcf_sort:
+    input:
+        lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-{SOMATIC_CALLER}-annotated.vcf.gz')
+    output:
+        '{batch}/small_variants/{batch}-somatic-ensemble-SORT.vcf.gz',
+    shell:
+        '(bcftools view -h {input} ; bcftools view -H -f.,PASS {input} | sort -k1,1V -k2,2n) | bgzip -c > {output} && '
+        'tabix -f -p vcf {output}'
 
 rule somatic_vcf_annotate:
     input:
-        vcf = lambda wc: join(run.date_dir, f'{batch_by_name[wc.batch].name}-{SOMATIC_CALLER}-annotated.vcf.gz')
+        vcf = rules.somatic_vcf_sort.output[0],
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-ensemble-ANNO.vcf.gz',
     params:
