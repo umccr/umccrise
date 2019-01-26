@@ -7,7 +7,7 @@ channels:
   - defaults
 
 dependencies:
-  - python ==3.6
+  - python >=3.6
   - ngs_utils
   - cython
   - bcftools >=1.9
@@ -48,22 +48,23 @@ dependencies:
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - parallel
   # R libraries
-  # - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - pandoc
   - libgfortran-ng
   - toml
-  - r-base
+  - r-base >=3.5.1
   - r-bookdown
   - r-devtools
+  - r-dplyr
   - r-dt
   - r-ggplot2
-  - r-htmlwidgets >=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
+  - r-htmlwidgets #>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
   - r-kableextra
+  - r-purrr
   - r-radix
   - r-readr
-  - r-rmarkdown >=1.6
+  - r-rmarkdown #>=1.6
   - r-stringr
-  - r-stringi >=1.1.7  # for pcgrr
+  - r-stringi #>=1.1.7  # for pcgrr
   - r-tidyr
   - r-vcfr
   - bioconductor-delayedarray
