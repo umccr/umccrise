@@ -1,30 +1,36 @@
 ---
 author: "University of Melbourne Centre for Cancer Research"
 date: "`r format(Sys.time(), '%a %Y-%b-%d')`"
-site: bookdown::bookdown_site
+output:
+  html_document:
+    theme: simplex
+    toc: true
+    toc_float: true
+    code_folding: hide
+  rmdformats::material:
+    highlight: kate
 params:
   title: "Cancer Report for "
-  vcf_fname: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf'
-  af_freqs: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt'
-  af_freqs_keygenes: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt'
-  sv_fname: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv'
-  manta_vcf: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf'
   tumor_name: 'PRJ180596_CW-DNA029841T'
   batch_name: 'SmallCellNET__PRJ180596_CW-DNA029841T'
+  genome_build: 'hg19'
   sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt'
   key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
+  af_global: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt'
+  af_keygenes: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt'
+  somatic_snv: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf'
+  somatic_sv: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv'
   purple_gene_cnv: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv'
   purple_circos_baf: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/?'
   purple_purity: 'x'
   purple_cnv: 'x'
   purple_germline_cnv: 'x'
-  genome_build: 'hg19'
 description: "Analysis of tumor/normal samples at UMCCR"
 title: "`r paste(params$title, params$batch_name)`"
 ---
 
 ```{r knitr-opts, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, echo = FALSE)
+knitr::opts_chunk$set(collapse = TRUE, echo = TRUE)
 ```
 
 ```{r load_pkgs, message=FALSE, warning=FALSE, eval=TRUE}
@@ -51,11 +57,10 @@ library(tx_ref_genome, character.only = TRUE)
 
 ```{r render_book_inter, eval=FALSE, echo=FALSE}
 params = list(
-  vcf_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
-  af_freqs = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
-  af_freqs_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
-  sv_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
-  manta_vcf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf',
+  somatic_snv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
+  af_global = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
+  af_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
+  somatic_sv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
   tumor_name = 'PRJ180596_CW-DNA029841T',
   batch_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
   sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
@@ -83,11 +88,10 @@ render_me <- function() {
     output_file = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/test.html',
     params = list(
       workdir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests',
-      vcf_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
-      af_freqs = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
-      af_freqs_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
-      sv_fname = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
-      manta_vcf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-filter.vcf',
+      somatic_snv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
+      af_global = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
+      af_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
+      somatic_sv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
       tumor_name = 'PRJ180596_CW-DNA029841T',
       batch_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
       sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
@@ -110,10 +114,10 @@ calls only and limited to 'high confidence' regions as determined by the
 
 ```{r af_plot, warning=FALSE}
 # Global AF
-af_global <- readr::read_tsv(params$af_freqs, col_types = "d") %>%
+af_global <- readr::read_tsv(params$af_global, col_types = "d") %>%
   dplyr::mutate(set = "Global")
 
-af_keygenes <- readr::read_tsv(params$af_freqs_keygenes,
+af_keygenes <- readr::read_tsv(params$af_keygenes,
                                col_types = "cicccd") %>%
   dplyr::select(af) %>%
   dplyr::mutate(set = 'Key genes CDS')
@@ -161,7 +165,7 @@ to generate a mutation signature for our sample.
 # Grab ensemble calls from the post-processing stage. These were converted
 # by adding "chr" prefixes and removing G* chromosomes.
 vcf <- read_vcfs_as_granges(
-  params$vcf_fname,
+  params$somatic_snv,
   sample_names = params$tumor_name,
   genome = ref_genome,
   group = "auto+sex")
@@ -219,8 +223,8 @@ plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 ```{r sv_prioritize, message=FALSE}
 col_types <- "ccciicccccc"
 sv_all = NULL
-if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
-  sv_all <- readr::read_tsv(params$sv_fname, col_names = TRUE, col_types = col_types) %>%
+if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
+  sv_all <- readr::read_tsv(params$somatic_sv, col_names = TRUE, col_types = col_types) %>%
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # Unpack multiple annotations per region
     tidyr::separate(annotation,
                     c('type', 'annotation', 'gene', 'transcript', 'priority', 'score'),
