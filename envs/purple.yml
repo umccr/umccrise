@@ -1,4 +1,4 @@
-name: purple
+name: umccrise_purple
 
 channels:
   - conda-forge
