@@ -182,9 +182,9 @@ rule purple_circos_baf:
         cnv = 'work/{batch}/purple/circos/{batch}.cnv.circos',
         map = 'work/{batch}/purple/circos/{batch}.map.circos',
         link = 'work/{batch}/purple/circos/{batch}.link.circos',
-        circos_baf_conf = package_path() + '/rmd_files/templates/circos/circos_baf.conf',
-        gaps_txt = package_path() + '/rmd_files/templates/circos/gaps.txt',
-        ideo_conf = package_path() + '/rmd_files/templates/circos/ideogram.conf',
+        circos_baf_conf = package_path() + '/rmd_files/misc/circos/circos_baf.conf',
+        gaps_txt = package_path() + '/rmd_files/misc/circos/gaps.txt',
+        ideo_conf = package_path() + '/rmd_files/misc/circos/ideogram.conf',
     output:
         png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
     # group: 'purple'
