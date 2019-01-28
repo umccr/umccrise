@@ -162,11 +162,10 @@ rule bookdown_report:
         rmd_files_dir = join(package_path(), 'rmd_files'),
         sig_probs = join(package_path(), 'rmd_files', 'signatures_probabilities.txt'),
         key_genes = get_key_genes(),
-        afs                 = rules.afs.output[0],
-        afs_keygenes        = rules.afs_keygenes.output[0],
-        vcf                 = rules.somatic_to_hg19.output[0],
-        sv                  = rules.prep_sv_tsv.output[0],
-        manta_vcf           = rules.filter_sv_vcf.output[0],
+        af_global           = rules.afs.output[0],
+        af_keygenes         = rules.afs_keygenes.output[0],
+        somatic_snv         = rules.somatic_to_hg19.output[0],
+        somatic_sv          = rules.prep_sv_tsv.output[0],
         purple_gene_cnv     = rules.rmd_purple_cnv.output[0],
         purple_cnv          = rules.purple_run.output.cnv,
         purple_germline_cnv = rules.purple_run.output.germline_cnv,
@@ -178,23 +177,22 @@ rule bookdown_report:
         purple_variant_png  = rules.purple_run.output.variant_png,
         purple_baf_png      = rules.purple_circos_baf.output.png,
     params:
-        index_rmd = 'index.Rmd',
+        report_rmd = 'cancer_report.Rmd',
         # bookdown_yml = 'work/{batch}/rmd/rmd_files/_bookdown.yml',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         work_dir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0]),
         rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
-        afs                 = lambda wc, input: abspath(input.afs),
-        afs_keygenes        = lambda wc, input: abspath(input.afs_keygenes),
-        vcf                 = lambda wc, input: abspath(input.vcf),
-        sv                  = lambda wc, input: abspath(input.sv),
-        manta_vcf           = lambda wc, input: abspath(input.manta_vcf),
+        af_global           = lambda wc, input: abspath(input.af_global),
+        af_keygenes         = lambda wc, input: abspath(input.af_keygenes),
+        somatic_snv         = lambda wc, input: abspath(input.somatic_snv),
+        somatic_sv          = lambda wc, input: abspath(input.somatic_sv),
         purple_gene_cnv     = lambda wc, input: abspath(input.purple_gene_cnv),
         purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
         purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
     output:
-        report_html = '{batch}/{batch}_book.html',
+        report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
     # group: "rmd"
     resources:
@@ -214,18 +212,18 @@ rule bookdown_report:
             shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
         shell("""
 cd {output.rmd_tmp_dir} && \
-Rscript -e "library(bookdown); bookdown::render_book('{params.index_rmd}', \
+Rscript -e "rmarkdown::render('{params.report_rmd}', \
+output_file='{params.output_file}', \
 params=list( \
 tumor_name='{params.tumor_name}', \
 batch_name='{wildcards.batch}', \
 genome_build='{params.rmd_genome_build}', \
 sig_probs='{input.sig_probs}', \
 key_genes='{input.key_genes}', \
-af_freqs='{params.afs}', \
-af_freqs_keygenes='{params.afs_keygenes}', \
-vcf_fname='{params.vcf}', \
-sv_fname='{params.sv}', \
-manta_vcf='{params.manta_vcf}', \
+af_global='{params.af_global}', \
+af_keygenes='{params.af_keygenes}', \
+somatic_snv='{params.somatic_snv}', \
+somatic_sv='{params.somatic_sv}', \
 purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_germline_cnv='{params.purple_germline_cnv}', \
@@ -233,7 +231,7 @@ purple_purity='{params.purple_purity}' \
 ))" ; \
 cd {params.work_dir} ; \
 """)
-        shell('mv {output.rmd_tmp_dir}/_book_umccrised/_main.html {output.report_html}')
+
 
 rule purple_bcbio_stats:
     input:
