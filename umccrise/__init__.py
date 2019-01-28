@@ -12,5 +12,3 @@ def get_sig_rmd_file():
     """
     return verify_file(join(package_path(), 'rmd_files', 'sig.Rmd'), is_critical=True)
 
-def get_signatures_probabilities():
-    return verify_file(join(package_path(), 'rmd_files', 'signatures_probabilities.txt'), is_critical=True)

@@ -14,7 +14,6 @@ params:
   tumor_name: 'PRJ180596_CW-DNA029841T'
   batch_name: 'SmallCellNET__PRJ180596_CW-DNA029841T'
   genome_build: 'hg19'
-  sig_probs: '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt'
   key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
   af_global: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt'
   af_keygenes: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt'
@@ -63,7 +62,6 @@ params = list(
   somatic_sv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
   tumor_name = 'PRJ180596_CW-DNA029841T',
   batch_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
-  sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
   key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
   purple_gene_cnv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
   purple_circos_baf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/?',
@@ -94,7 +92,6 @@ render_me <- function() {
       somatic_sv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
       tumor_name = 'PRJ180596_CW-DNA029841T',
       batch_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
-      sig_probs = '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/signatures_probabilities.txt',
       key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
       purple = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
       purple_dir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/purple/purple',
@@ -188,7 +185,7 @@ plot_96_profile(mut_mat, condensed = TRUE)
 ### Compare signature to reference
 ```{r somSig}
 # Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
-sig_probs <- params$sig_probs
+sig_probs <- file.path("misc/sig/signatures_probabilities.txt")
 # better be explicit - the sig_probs file has 7 extra empty columns
 col_types <- paste0(c("ccc", paste0(rep("d", 30), collapse = ""), "ccccccc"), collapse = "")
 col_names <- c("SubstType", "Trinucleotide", "SomMutType", paste0("Sig", 1:30), paste0("foo", 1:7))
@@ -421,7 +418,7 @@ purple_gene_cnv %>%
     * <span style="color:#000000">Black</span> = Inversions
 
 ```{r circos-default1, out.width="80%"}
-img_dir <- 'img'
+img_dir <- file.path('img') # created before when copying purple files to tmp dir
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
 ```
 

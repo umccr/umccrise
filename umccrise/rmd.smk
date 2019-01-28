@@ -3,7 +3,6 @@ from os.path import join
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
-from umccrise import get_sig_rmd_file, get_signatures_probabilities
 import glob
 
 
@@ -113,54 +112,10 @@ rule rmd_purple_cnv:
     shell:
         'cut -f1-6 {input} > {output}'
 
-
-# ## Running Rmarkdown
-# rule sig_rmd:
-#     input:
-#         afs = rules.afs.output[0],
-#         afs_keygenes = rules.afs_keygenes.output[0],
-#         vcf = rules.somatic_to_hg19.output[0],
-#         sv = rules.prep_sv_tsv.output[0],
-#         sig_rmd = get_sig_rmd_file(),
-#         sig_probs = get_signatures_probabilities(),
-#         key_genes = get_key_genes(),
-#         manta_vcf = rules.filter_sv_vcf.output[0],
-#         purple = rules.rmd_purple.output[0],
-#     params:
-#         rmd_tmp = 'work/{batch}/rmd/sig.Rmd',
-#         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
-#         workdir = os.getcwd(),
-#         output_file = lambda wc, output: join(os.getcwd(), output[0]),
-#         rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build
-#     output:
-#         '{batch}/{batch}-rmd_report.html'
-#     resources:
-#         mem_mb=lambda wildcards, attempt: attempt * 10000
-#         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
-#     shell: """
-# cp {input.sig_rmd} {params.rmd_tmp} &&
-# Rscript -e "rmarkdown::render('{params.rmd_tmp}', \
-# output_file='{params.output_file}', \
-# params=list( \
-# af_freqs='{input.afs}', \
-# af_freqs_keygenes='{input.afs_keygenes}', \
-# vcf_fname='{input.vcf}', \
-# sv_fname='{input.sv}', \
-# manta_vcf='{input.manta_vcf}', \
-# tumor_name='{params.tumor_name}', \
-# sig_probs='{input.sig_probs}', \
-# key_genes='{input.key_genes}', \
-# purple='{input.purple}', \
-# workdir='{params.workdir}', \
-# genome_build='{params.rmd_genome_build}' \
-# ))"
-# """
-
 ## Running Rmarkdown
 rule bookdown_report:
     input:
         rmd_files_dir = join(package_path(), 'rmd_files'),
-        sig_probs = join(package_path(), 'rmd_files', 'signatures_probabilities.txt'),
         key_genes = get_key_genes(),
         af_global           = rules.afs.output[0],
         af_keygenes         = rules.afs_keygenes.output[0],
@@ -178,7 +133,6 @@ rule bookdown_report:
         purple_baf_png      = rules.purple_circos_baf.output.png,
     params:
         report_rmd = 'cancer_report.Rmd',
-        # bookdown_yml = 'work/{batch}/rmd/rmd_files/_bookdown.yml',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         work_dir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0]),
@@ -218,7 +172,6 @@ params=list( \
 tumor_name='{params.tumor_name}', \
 batch_name='{wildcards.batch}', \
 genome_build='{params.rmd_genome_build}', \
-sig_probs='{input.sig_probs}', \
 key_genes='{input.key_genes}', \
 af_global='{params.af_global}', \
 af_keygenes='{params.af_keygenes}', \
