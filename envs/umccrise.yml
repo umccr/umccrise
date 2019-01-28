@@ -47,6 +47,7 @@ dependencies:
   - awscli
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - parallel
+  - pygraphviz # for snakemake report
   # R libraries
   - pandoc
   - libgfortran-ng

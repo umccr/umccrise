@@ -35,6 +35,7 @@ from umccrise import _version as version
 @click.option('--restart-times', default=0, help='Propagated to snakemake. Default is 0.')
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Just prints the rules and the commands '
                                                              'to run without actually generating any files.')
+@click.option('--report', 'report', help='Propagated to snakemake. Create an HTML report with results and statistics.')
 
 # @click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data (e.g. /bcbio/genomes; '
 #               'Hsapiens/{genome}/seq/{genome}.fa(.fai) and Hsapiens/{genome}/validation/giab-NA12878/truth_regions.bed '
@@ -47,7 +48,7 @@ from umccrise import _version as version
 
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
          jobs=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
-         dryrun=False, docker_wrapper_mode=False, no_s3=None, no_igv=False):
+         dryrun=False, report=None, docker_wrapper_mode=False, no_s3=None, no_igv=False):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -146,12 +147,14 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         )
 
     snakefile = join(package_path(), 'Snakefile') if not docker_wrapper_mode else '/umccrise/umccrise/Snakefile'
+    report = f'--report {report} ' if report else ''
     cmd += (
         f'snakemake '
         f'{" ".join(target_rule)} '
         f'--snakefile {snakefile} '
         f'--printshellcmds '
         f'{"--dryrun " if dryrun else ""}'
+        f'{report}'
         f'--directory {output_dir if not docker_wrapper_mode else "/output_dir"} '
         f'-j {jobs} '
         f'--rerun-incomplete '
