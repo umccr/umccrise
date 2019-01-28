@@ -68,8 +68,8 @@ rule filter_sv_vcf:
         print(f'Bcbio batch tumor name:: {batch_by_name[wildcards.batch].tumor.name}')
         tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
-        shell('''cat {input.vcf} |
-bcftools filter -e "FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" |
+        shell('''cat {input.vcf} | \
+bcftools filter -e "FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" | \
 bcftools filter -e "FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" > {output.vcf}
 ''')
 
