@@ -102,6 +102,18 @@ conda env update -f envs/umccrise.yml                                     # if d
 python setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
 ```
 
+## Reference data bundle
+
+Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle 
+mounted to the Docker image under `/genomes`.
+
+To sync the reference data from Spartan to NCI, use:
+
+```
+cd /data/cephfs/punim0010/extras/umccrise
+rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
+```
+
 ## Testing
 
 Tests are stored in a separate repository https://github.com/umccr/umccrise_test_data
@@ -175,10 +187,10 @@ umccrise /path/to/bcbio/project/final --exclude cup-tumor_1,cup-batch_2
 
 #### Use HPC cluster
 
-Set `--cluster-auto` option to submit jobs on HPC cluster. Supports Spartan for now.
+Set `--cluster-auto` (`-c`) option to submit jobs on HPC cluster. Supports Spartan for now.
 
 ```
-umccrise /path/to/bcbio/project/final -j 30 --cluster-auto
+umccrise /path/to/bcbio/project/final -j 30 -c
 ```
 
 Alternatively, you can specify a custom submission template with `--cluster-cmd`, e.g.:
@@ -189,28 +201,6 @@ umccrise /path/to/bcbio/project/final -j 30 --cluster-cmd "sbatch -p vccc -n {th
 
 Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use at single moment.
 
-
-#### Custom reference data
-
-Umccrise recognizes Spartan and NCI environments. You can alternatively provide your own reference data:
-
-* `--ref-fasta` - path to reference fasta (e.g. /genomes/hg19.fa); .fai file should exist;
-
-* `--truth-regions` - path to GiaB truth regions;
-
-* `--bcbio-genomes` - alternatively you can specify the path to full bcbio genomes installation, 
-e.g. ` --bcbio-genomes /bcbio/genomes` or ` --bcbio-genomes /bcbio/genomes/Hsapiens/hg38`;
-
-* `--pon` - panel of normals directory, should contain `panel_of_normals.snps.vcf.gz(.tbi)` and `panel_of_normals.indels.vcf.gz(.tbi)`
-which are built with `Snakefile.prep_normals` at https://github.com/umccr/vcf_stuff/tree/master/vcf_stuff/panel_of_normals
-
-Example:
-
-```
-umccrise /path/to/bcbio/project/final \
-    --bcbio-genomes tests/umccrise_test_data/data/genomes \
-    --pon tests/umccrise_test_data/data/panel_of_normals
-```
 
 ## Output explanation
 
