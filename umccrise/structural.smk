@@ -52,7 +52,7 @@ rule prep_sv_vcf:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta.vcf'
     # group: "sv_vcf"
     shell:
-        'cat {input} | (bcftools annotate -x "FILTER/Intergenic,FILTER/MissingAnn" || bcftools annotate -x "FILTER/REJECT") | '
+        '(bcftools annotate -x "FILTER/Intergenic,FILTER/MissingAnn" {input} || bcftools annotate -x "FILTER/REJECT" {input}) | '
         'bcftools view -f .,PASS > {output}'
 
 rule filter_sv_vcf:
