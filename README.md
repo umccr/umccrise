@@ -114,6 +114,16 @@ cd /data/cephfs/punim0010/extras/umccrise
 rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
 ```
 
+Sources for the reference data:
+
+```
+# GNOMAD
+wget http://ftp.ensemblorg.ebi.ac.uk/pub/data_files/homo_sapiens/GRCh37/variation_genotype/gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz
+bcftools annotate -x ID,INFO,FORMAT,^INFO/AF gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz -Oz -o gnomad_genome.vcf.gz
+
+```
+
+
 ## Testing
 
 Tests are stored in a separate repository https://github.com/umccr/umccrise_test_data

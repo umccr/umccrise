@@ -77,7 +77,7 @@ def prep_inputs(config_):
     #### Reference files we are on known host?             ####
     ###########################################################
     ref_fa = get_ref_file(run.genome_build)
-    truth_regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
+    truth_regions = get_ref_file(run.genome_build, ['hmf_giab_conf'])
     pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
     pcgr_data = loc.pcgr_data
 
