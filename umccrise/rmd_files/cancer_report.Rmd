@@ -159,8 +159,6 @@ We can use [MutationalPatterns](http://bioconductor.org/packages/release/bioc/ht
 to generate a mutation signature for our sample.
 
 ```{r importVCF, warning=FALSE}
-# Grab ensemble calls from the post-processing stage. These were converted
-# by adding "chr" prefixes and removing G* chromosomes.
 vcf <- read_vcfs_as_granges(
   params$somatic_snv,
   sample_names = params$tumor_name,
@@ -199,13 +197,22 @@ fit_res <- fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signature
 
 # Select signatures with some contribution
 fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
+
+sig_table <-
+  readr::read_tsv(file = "misc/sig/signatures_description.tsv", col_types = "cc") %>%
+  dplyr::mutate(Plot = paste0("![](misc/sig/img/sig-", signature, ".png)"),
+                signature = paste0("Sig", signature)) %>%
+  dplyr::select(Signature = signature, Description = description, Plot)
+
 result <- dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr)
 
+
 result %>%
+  dplyr::mutate(Contribution = round(Contribution, 0)) %>%
   dplyr::arrange(-Contribution) %>%
-  DT::datatable(rownames = FALSE,
-                options = list(dom = 't')) %>%
-  DT::formatRound('Contribution', 1)
+  dplyr::left_join(sig_table, by = "Signature") %>%
+  knitr::kable() %>%
+  kableExtra::kable_styling(font_size = 9)
 ```
 
 ### Positional enrichment of somatic signatures

@@ -1,31 +1,31 @@
-signature	cancer_type	proposed_aetiology	additional_features	comments
-1	"All cancer types, most cancer samples."	Spontaneous deamination of 5-methylcytosine.	Small numbers of small indels	The number of Signature 1 mutations correlates with age of cancer diagnosis.
-2	"In 22 cancer types, mostly cervical and bladder"	AID/APOBEC family of cytidine deaminases	"Transcriptional strand bias of mutations has been observed in exons, but is not present or is weaker in introns."	"Signature 2 is usually found in the same samples as Signature 13. It has been proposed that activation of AID/APOBEC cytidine deaminases is due to viral infection, retrotransposon jumping or to tissue inflammation. Currently, there is limited evidence to support these hypotheses. A germline deletion polymorphism involving APOBEC3A and APOBEC3B  is associated with the presence of large numbers of Signature 2 and 13 mutations and with predisposition to breast cancer. Mutations of similar patterns to Signatures 2 and 13 are commonly found in the phenomenon of local hypermutation present in some cancers, known as kataegis, potentially implicating AID/APOBEC enzymes in this process as well."
-3	"Breast, ovarian, and pancreatic"	Failure of DNA double-strand break-repair by homologous recombination	Elevated numbers of large (longer than 3bp) insdels with overlapping microhomology at breakpoint junctions	"Signature 3 is strongly associated with germline and somatic BRCA1 and BRCA2 mutations in breast, pancreatic, and ovarian cancers. In pancreatic cancer, responders to platinum therapy usually exhibit Signature 3 mutations."
-4	"head, neck, liver, lung adenocarcinoma, lung squamous carcinoma, small cell lung carcinoma, and  oesophageal cancer"	"Smoking, tobacco carcinogens and mutagens"	"Transcriptional strand bias for C>A mutations, compatible with the notion that damage to guanine is repaired by transcription-coupled nucleotide excision repair. Signature 4 is also associated with CC>AA dinucleotide substitutions."	Signature 29 is found in cancers associated with tobacco chewing and appears different from Signature 4.
-5	"All cancer types, most cancer samples"	unknown	Transcriptional strand bias for T>C substitutions at ApTpN context.	N/A
-6	"In 17 cancer types, most common in colorectal and uterine cancers. Found in less than 3% of examined samples with other cancer types."	"Defective DNA mismatch repair, found in microsatellite unstable tumours"	High numbers of small (shorter than 3bp) indels at mono/polynucleotide repeats	"Signature 6 is one of four mutational signatures associated with defective DNA mismatch repair and is often found in the same samples as Signatures 15, 20, and 26."
-7	"Skin, lip, head and neck or oral squamous cancers"	Ultraviolet light exposure	"Large numbers of CC>TT dinucleotide mutations at dipyrimidines. Strong transcriptional strand-bias indicating that mutations occur at pyrimidines (viz., by formation of pyrimidine-pyrimidine photodimers) and these mutations are being repaired by transcription-coupled nucleotide excision repair."	N/A
-8	Breast cancer and medulloblastoma	unknown	"Weak strand bias for C>A substitutions and is associated with double nucleotide substitutions, notably CC>AA."	N/A
-9	Chronic lymphocytic leukaemias and malignant B-cell lymphomas	"Polymerase H, which is implicated with the activity of AID during somatic hypermutation"	N/A	Chronic lymphocytic leukaemias that possess immunoglobulin gene hypermutation (IGHV-mutated) have elevated numbers of mutations attributed to Signature 9 compared to those that do not have immunoglobulin gene hypermutation.
-10	"Found in six cancer types, notably colorectal and uterine cancer, usually generating huge numbers of mutations in small subsets of samples"	Altered activity of the error-prone polymerase POLE	Strand bias for C>A mutations at TpCpT context and T>G mutations at TpTpT context	Signature 10 is associated with some of most mutated cancer samples. Samples exhibiting this mutational signature have been termed ultra-hypermutators.
-11	Melanoma and glioblastoma	Alkylating agents	Transcriptional strand-bias for C>T substitutions indicating that mutations occur on guanine and that these mutations are effectively repaired by transcription-coupled nucleotide excision repair.	N/A
-12	Liver	unknown	Strong transcriptional strand-bias for T>C substitutions.	Signature 12 usually contributes a small percentage (<20%) of the mutations observed in a liver cancer sample.
-13	"In 22 cancer types, mostly cervical and bladder cancers. In most of these 22 cancer types, Signature 13 is present in at least 10% of samples."	AID/APOBEC	"Transcriptional strand bias of mutations has been observed in exons, but is not present or is weaker in introns."	"Signature 2 is usually found in the same samples as Signature 13. It has been proposed that activation of AID/APOBEC cytidine deaminases is due to viral infection, retrotransposon jumping or to tissue inflammation. Currently, there is limited evidence to support these hypotheses. A germline deletion polymorphism involving APOBEC3A and APOBEC3B is associated with the presence of large numbers of Signature 2 and 13 mutations and with predisposition to breast cancer. Mutations of similar patterns to Signatures 2 and 13 are commonly found in the phenomenon of local hypermutation present in some cancers, known as kataegis, potentially implicating AID/APOBEC enzymes in this process as well."
-14	In four uterine cancers and a single adult low-grade glioma sample	unknown	N/A	Signature 14 generates very high numbers of somatic mutations (>200 mutations per MB) in all samples in which it has been observed.
-15	In several stomach cancers and a single small cell lung carcinoma	Defective DNA mismatch repair	High numbers of small (shorter than 3bp) indels at mono/polynucleotide repeats.	"Signature 15 is one of four mutational signatures associated with defective DNA mismatch repair and is often found in the same samples as Signatures 6, 20, and 26."
-16	Liver	unknown	"Strong transcriptional strand bias for T>C mutations at ApTpN context, with T>C mutations occurring almost exclusively on the transcribed strand."	N/A
-17	"Oesophagus, breast, liver, lung adenocarcinoma, B-cell lymphoma, stomach and melanoma"	unknown	N/A	N/A
-18	Commonly in neuroblastoma; also in breast and stomach carcinomas	unknown	N/A	N/A
-19	Only in pilocytic astrocytoma	unknown	N/A	N/A
-20	Stomach and breast cancers	Defective DNA mismatch repair	High numbers of small (shorter than 3bp) indels at mono/polynucleotide repeats.	"Signature 20 is one of four mutational signatures associated with defective DNA mismatch repair and is often found in the same samples as Signatures 6, 15, and 26."
-21	Only in stomach cancer	unknown	N/A	"Signature 21 is found only in four samples all generated by the same sequencing centre. The mutational pattern of Signature 21 is somewhat similar to the one of Signature 26. Additionally, Signature 21 is found only in samples that also have Signatures 15 and 20. As such, Signature 21 is probably also related to microsatellite unstable tumours."
-22	Urothelial (renal pelvis) carcinoma and liver cancers	Aristolochic acid	Strong transcriptional strand bias for T>A mutations indicating adenine damage that is being repaired by transcription-coupled nucleotide excision repair.	"Signature 22 has a very high mutational burden in urothelial carcinoma; however, its mutational burden is much lower in liver cancers."
-23	Found only in a single liver cancer sample	unknown	Strong transcriptional strand bias for C>T mutations.	N/A
-24	Observed in a subset of liver cancers	Aflatoxin	Strong transcriptional strand bias for C>A mutations indicating guanine damage that is being repaired by transcription-coupled nucleotide excision repair.	N/A
-25	Observed in Hodgkin lymphomas	unknown	Transcriptional strand bias for T>A mutations.	This signature has only been identified in Hodgkin’s cell lines. Data is not available from primary Hodgkin lymphomas.
-26	"Breast, cervical, stomach cancer, and uterine carcinoma"	Defective DNA mismatch repair	High numbers of small (shorter than 3bp) indels at mono/polynucleotide repeats	"Signature 26 is one of four mutational signatures associated with defective DNA mismatch repair and is often found in the same samples as Signatures 6, 15 and 20."
-27	Subset of kidney clear cell carcinomas	unknown	"Strong transcriptional strand bias for T>A mutations, high numbers of small (shorter than 3bp) indels at mono/polynucleotide repeats."	N/A
-28	Subset of stomach cancers	unknown	N/A	N/A
-29	Observed only in gingivo-buccal oral squamous cell carcinoma	Tobacco chewing habit	"Transcriptional strand bias for C>A mutations indicating guanine damage that is most likely repaired by transcription-coupled nucleotide excision repair, CC>AA dinucleotide substitutions."	The Signature 29 pattern of C>A mutations due to tobacco chewing appears different from the pattern of mutations due to tobacco smoking reflected by Signature 4.
-30	Small subset of breast cancers	unknown	N/A	N/A
+signature	description
+1	"All cancer types, correlates with age of cancer diagnosis"
+2	"In 22 cancer types, mostly cervical and bladder, AID/APOBEC, similar to sig13, viral infection, retrotransposon jumping or tissue inflammation"
+3	"Breast, ovarian, and pancreatic, failure of DNA double-strand break-repair by homologous recombination"
+4	"head, neck, liver, lung adenocarcinoma, lung squamous carcinoma, small cell lung carcinoma, and  oesophageal cancer"
+5	"All cancer types, most cancer samples"
+6	"In 17 cancer types, most common in colorectal and uterine cancers. Found in less than 3% of examined samples with other cancer types."
+7	"Skin, lip, head and neck or oral squamous cancers"
+8	"Breast cancer and medulloblastoma"
+9	"Chronic lymphocytic leukaemias and malignant B-cell lymphomas"
+10	"Found in six cancer types, notably colorectal and uterine cancer"
+11	"Melanoma and glioblastoma"
+12	"Liver"
+13	"In 22 cancer types, mostly cervical and bladder cancers. AID/APOBEC"
+14	"In four uterine cancers and a single adult low-grade glioma sample"
+15	"Stomach cancers and a single small cell lung carcinoma, defective DNA mismatch repair"
+16	"Liver"
+17	"Oesophagus, breast, liver, lung adenocarcinoma, B-cell lymphoma, stomach and melanoma"
+18	"Neuroblastoma, breast and stomach carcinomas"
+19	"Only in pilocytic astrocytoma"
+20	"Stomach and breast cancers, defective DNA mismatch repair"
+21	"Only in stomach cancer"
+22	"Urothelial (renal pelvis) carcinoma and liver cancers"
+23	"Found only in a single liver cancer sample"
+24	"Observed in a subset of liver cancers"
+25	"Observed in Hodgkin lymphomas"
+26	"Breast, cervical, stomach cancer, and uterine carcinoma"
+27	"Subset of kidney clear cell carcinomas"
+28	"Subset of stomach cancers"
+29	"Observed only in gingivo-buccal oral squamous cell carcinoma, tobacco chewing habit"
+30	"Small subset of breast cancers"
