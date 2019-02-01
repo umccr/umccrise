@@ -5,15 +5,38 @@ from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
 localrules: prep_multiqc_data, multiqc, copy_logs
 
 
+versions = join(run.date_dir, 'data_versions.csv')
+programs = join(run.date_dir, 'programs.txt')
+
+
+rule copy_config:
+    input:
+        conf_dir = run.config_dir
+    output:
+        conf_dir = directory(join('log/config'))
+    shell:
+        'cp -r {input.conf_dir} {output.conf_dir}'
+
+
+rule copy_logs:
+    input:
+        versions = versions,
+        programs = programs,
+    output:
+        versions = 'log/data_versions.csv',
+        programs = 'log/programs.txt',
+    shell:
+        'cp -r {input.versions} {output.versions} && ' \
+        'cp -r {input.programs} {output.programs}'
+
+
 rule prep_multiqc_data:
     input:
         bcbio_mq_filelist = join(run.date_dir, 'multiqc/list_files_final.txt'),
         bcbio_mq_yaml     = join(run.date_dir, 'multiqc/multiqc_config.yaml'),
         bcbio_final_dir   = run.final_dir,
-        versions          = 'log/' + run.project_name + '-data_versions.csv',
-        programs          = 'log/' + run.project_name + '-programs.txt',
-        conpair_concord   = directory('{batch}/conpair/concordance'),
-        conpair_contam    = directory('{batch}/conpair/contamination'),
+        conpair_concord   = '{batch}/conpair/concordance',
+        conpair_contam    = '{batch}/conpair/contamination',
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -22,6 +45,8 @@ rule prep_multiqc_data:
         data_dir        = 'work/{batch}/multiqc_data',
         tumor_name      = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_name     = lambda wc: batch_by_name[wc.batch].normal.name,
+        versions        = 'log/data_versions.csv',
+        programs        = 'log/programs.txt',
     # group: 'multiqc'
     run:
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
@@ -31,8 +56,9 @@ rule prep_multiqc_data:
             normal_sample=params.normal_name,
             base_dirpath=report_base_path,
             analysis_dir=run.date_dir,
-            program_versions_fpath=input.programs,
-            data_versions_fpath=input.versions)
+            program_versions_fpath=verify_file(params.programs, silent=True),
+            data_versions_fpath=verify_file(params.versions, silent=True)
+        )
         gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'final.subset.renamed')
         with open(join(gold_standard_dir, 'list_files_final.txt')) as f:
             for l in f:
@@ -77,29 +103,16 @@ rule batch_multiqc:
             list_files = f'<(cat {input.filelist}{greps})'
         else:
             list_files = input.filelist
-        shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . -l {list_files} -c {input.bcbio_conf_yaml} -c {input.umccrise_conf_yaml}'
+        shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . -l {list_files}'
+              f' -c {input.bcbio_conf_yaml} -c {input.umccrise_conf_yaml}'
               f' -c {input.generated_conf_yaml} --filename {output.html_file}')
-
-
-rule copy_logs:
-    input:
-        versions = join(run.date_dir, 'data_versions.csv'),
-        programs = join(run.date_dir, 'programs.txt'),
-        conf_dir = run.config_dir
-    output:
-        versions = 'log/' + run.project_name + '-data_versions.csv',
-        programs = 'log/' + run.project_name + '-programs.txt',
-        conf_dir = directory(join('log/' + run.project_name + '-config'))
-    shell:
-        'cp -r {input.versions} {output.versions} && ' \
-        'cp -r {input.programs} {output.programs} && ' \
-        'cp -r {input.conf_dir} {output.conf_dir}'
 
 
 rule multiqc:
     input:
         expand(rules.batch_multiqc.output, batch=batch_by_name.keys()),
-        rules.copy_logs.output,
+        rules.copy_config.output,
+        (rules.copy_logs.output if all(isfile(fp) for fp in rules.copy_logs.input) else []),
     output:
         temp(touch('log/multiqc.done'))
 

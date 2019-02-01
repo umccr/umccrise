@@ -161,7 +161,6 @@ localrules: umccrise
 rule umccrise:
     input:  # Copy here inputs of the "milestone" rules (rules without output defined in the end of each Snakemake.* file)
         rules.multiqc.output,
-        rules.copy_logs.output,
         rules.coverage.output,
         rules.structural.output,
         rules.small_variants.output,
