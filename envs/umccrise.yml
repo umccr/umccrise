@@ -7,7 +7,7 @@ channels:
   - defaults
 
 dependencies:
-  - python ==3.6
+  - python ==3.6.*
   - ngs_utils
   - cython
   - bcftools >=1.9
@@ -49,7 +49,7 @@ dependencies:
   - parallel
   # R libraries
   # - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
-  - r-base
+  - r-base >=3.5.1
   - pandoc
   - r-rmarkdown >=1.6
   - r-ggplot2
