@@ -8,9 +8,11 @@ channels:
   - defaults
 
 dependencies:
-  - pcgr
-  - cpsr
-  - cacao
+  - r-openssl>=1.1
+  - samtools
   - bcftools
   - click
   - ngs_utils
+  - pcgr
+  - cpsr
+  - cacao
