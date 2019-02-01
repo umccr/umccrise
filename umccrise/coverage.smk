@@ -57,7 +57,7 @@ rule run_cacao_somatic:
     output:
         report = '{batch}/coverage/cacao_somatic/{batch}_' + pcgr_genome + '_coverage_cacao.html'
     params:
-        cacao_data = join(loc.cacao_data),
+        cacao_data = cacao_data,
         output_dir = '{batch}/coverage/cacao_somatic',
         docker_opt = '--no-docker' if not which('docker') else '',
         sample_id = '{batch}',
@@ -75,7 +75,7 @@ rule run_cacao_normal:
     output:
         report = '{batch}/coverage/cacao_normal/{batch}_' + pcgr_genome + '_coverage_cacao.html'
     params:
-        cacao_data = join(loc.cacao_data),
+        cacao_data = cacao_data,
         output_dir = '{batch}/coverage/cacao_normal',
         docker_opt = '--no-docker' if not which('docker') else '',
         sample_id = '{batch}',

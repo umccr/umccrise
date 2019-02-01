@@ -11,7 +11,6 @@ from ngs_utils import logger as ngs_utils_logger
 from hpc_utils.hpc import find_loc, get_ref_file
 from ngs_utils.utils import set_locale; set_locale()
 from hpc_utils.hpc import get_loc, get_ref_file
-from umccrise import package_path
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
@@ -79,7 +78,8 @@ def prep_inputs(config_):
     ref_fa = get_ref_file(run.genome_build)
     truth_regions = get_ref_file(run.genome_build, ['hmf_giab_conf'])
     pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
-    pcgr_data = loc.pcgr_data
+    pcgr_data = get_ref_file(key='pcgr_data', loc=loc)
+    cacao_data = get_ref_file(key='cacao_data', loc=loc),
 
     ###########################################################
     #### Done looking for refernece files, now some checks ####
@@ -98,10 +98,10 @@ def prep_inputs(config_):
 
     verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
 
-    return run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data
+    return run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data, cacao_data
 
 
-run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data = prep_inputs(config)
+run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data, cacao_data = prep_inputs(config)
 
 
 threads_on_node = loc.threads_on_node

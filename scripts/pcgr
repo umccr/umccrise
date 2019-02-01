@@ -8,6 +8,7 @@ from os.path import isfile, join, dirname, abspath, basename, exists
 import click
 import subprocess
 
+from hpc_utils.hpc import get_ref_file
 from ngs_utils.call_process import run, run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
 from ngs_utils import logger
@@ -29,7 +30,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
     if not pcgr_data:
         from hpc_utils.hpc import find_loc
         loc = find_loc()
-        pcgr_data = loc.pcgr_data
+        pcgr_data = get_ref_file(key='pcgr_data', loc=loc)
         if not pcgr_data:
             logger.critical(f'PCGR data is not found on the system "{loc.name}".'
                             f' Please, provide the path to PCGR data with --pcgr-data.'
