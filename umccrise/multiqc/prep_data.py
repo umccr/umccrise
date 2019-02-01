@@ -73,6 +73,9 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_mq_yaml, bcbio_final_dir,
                     old_fpath = join(bcbio_final_dir, fp)
                     new_fpath = join(new_mq_data_dir, fp)
                     if not verify_file(old_fpath):
+                        fp = fp.replace('inputs/', '').replace('report/metrics/', 'project/multiqc/')  # CWL?
+                        old_fpath = join(fp)
+
                         qc_files_not_found.append(old_fpath)
                         continue
                     safe_mkdir(dirname(new_fpath))
