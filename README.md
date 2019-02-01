@@ -104,25 +104,33 @@ rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
 
 #### GNOMAD
 
+Version 2.0.1 (26G, hosted by ensmble, same as in bcbio):
+
 ```
 wget http://ftp.ensemblorg.ebi.ac.uk/pub/data_files/homo_sapiens/GRCh37/variation_genotype/gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz
-mv gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz gnomad_genome.vcf.gz
-
-bcftools filter -i 'FILTER="PASS" & (AN_POPMAX>=500 & AF_POPMAX>=0.01 | AN_POPMAX>=100 & AF_POPMAX>=0.01)' gnomad_genome.vcf.gz -Ob | \
+bcftools filter -i 'FILTER="PASS" & (AN_POPMAX>=500 & AF_POPMAX>=0.01 | AN_POPMAX>=100 & AF_POPMAX>=0.01)' gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz -Ob | \
     bcftools annotate -x ID,^INFO/AN_POPMAX,^INFO/AF_POPMAX,FORMAT -Oz -o gnomad_genome.common_pass_clean.vcf.gz
 tabix -p vcf gnomad_genome.common_pass_clean.vcf.gz
+```
 
-# Version 2.1:
+Version 2.1 (latest, 500G, hosted by broad):
+
+```
 wget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgzwget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgz
-bcftools filter -i 'FILTER="PASS" & (AN_popmax>=500 & AF_popmax>=0.01 | AN_popmax>=100 & AF_popmax>=0.01)' gnomad.genomes.r2.1.sites.vcf.bgz -Ob | \
+bcftools filter -i 'FILTER="PASS" & !segdup & !lcr & !decoy & (AN_popmax>=500 & AF_popmax>=0.01 | AN_popmax>=100 & AF_popmax>=0.01)' gnomad.genomes.r2.1.sites.vcf.bgz -Ob | \
     bcftools annotate -x ID,^INFO/AN_popmax,^INFO/AF_popmax,FORMAT -Oz -o gnomad_genome.r2.1.common_pass_clean.vcf.gz
 tabix -p vcf gnomad_genome.r2.1.common_pass_clean.vcf.gz
+```
 
-TODO: filter with
-##INFO=<ID=segdup,Number=0,Type=Flag,Description="Variant falls within a segmental duplication region">
-##INFO=<ID=lcr,Number=0,Type=Flag,Description="Variant falls within a low complexity region">
-##INFO=<ID=decoy,Number=0,Type=Flag,Description="Variant falls within a reference decoy region">
-##INFO=<ID=nonpar,Number=0,Type=Flag,Description="Variant (on sex chromosome) falls outside a pseudoautosomal region">
+Normalise
+
+```
+ref = genomes/GRCh37/GRCh37.fa
+export TMPDIR=`pwd`
+vt decompose -s gnomad_genome.r2.1.common_pass_clean.vcf.gz | vt normalize -r $ref -n - | gsort -m 3000 /dev/stdin $ref.fai | bgzip -c > gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
+# vcf_norm gnomad_genome.r2.1.common_pass_clean.vcf.gz -o gnomad_genome.r2.1.common_pass_clean.norm_mine.vcf.gz
+
+tabix -f -p vcf gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
 ```
 
 #### PCGR
@@ -149,7 +157,7 @@ gunzip -c genomicSuperDups.txt.gz | cut -f2,3,4 >> segdup.bed_tmp
 gunzip -c genomicSuperDups.txt.gz | cut -f8,9,10 >> segdup.bed_tmp
 grep -v gl segdup.bed_tmp | sed 's/chr//' | bedtools sort -i - | bedtools merge -i - > segdup.bed
 bgzip -f segdup.bed && tabix -f -p bed segdup.bed.gz
-rm segdup.bed_tmp
+rm segdup.bed_tmp genomicSuperDups.txt.gz
 ```
 
 
