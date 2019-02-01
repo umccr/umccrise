@@ -11,35 +11,22 @@ vcftobedpe = 'vcfToBedpe'
 localrules: prep_sv_vcf, filter_sv_vcf, prep_sv_tsv, ribbon_filter_manta, ribbon_filter_vcfbedtope_starts, ribbon_filter_vcfbedtope_ends, ribbon, structural
 
 
-#######################
-######### CNV #########
+def get_manta_path(b):
+    return join(batch_by_name[b].tumor.dirpath, f'{batch_by_name[b].name}-sv-prioritize-manta.vcf.gz')
+def get_sv_tsv_path(b):
+    return join(batch_by_name[b].tumor.dirpath, f'{batch_by_name[b].name}-sv-prioritize.tsv')
+if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
+    # CWL?
+    def get_manta_path(b):
+        return join(run.date_dir, batch_by_name[b].tumor.name + '-manta-prioritized.vcf.gz')
+    def get_sv_tsv_path(b):
+        return join(run.date_dir, batch_by_name[b].tumor.name + '-prioritize.tsv')
 
-#### Drop gene labels
-# rule cnvkit_cleanup:
-#     input:
-#         lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-cnvkit-call.cns')
-#     output:
-#         'work/{batch}/structural/{batch}-cnvkit-nolabels.cns'
-#     group: "cnvkit"
-#     shell:
-#         'cat {input}'
-#         ' | grep -v ^GL'
-#         ' | py -x "\'\\t\'.join((x.split()[:3] + [\'.\', x.split()[4]]) if not x.startswith(\'chromosome\') else x.split()[:5])"'
-#         ' > {output}'
+    if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
+        critical('Could not find manta files for all batches neither under sample folders as '
+                 '<tumor>/<batch>-sv-prioritize-manta.vcf.gz (conventional bcbio), nor in the project folder as'
+                 'project/<tumor>-manta-prioritized.vcf.gz (CWL bcbio).')
 
-#### Plot
-# rule cnvkit_plot:
-#     input:
-#         rules.cnvkit_cleanup.output[0]
-#     output:
-#         '{batch}/structural/{batch}-cnvkit-diagram.pdf'
-#     group: "cnvkit"
-#     shell:
-#         'cnvkit.py diagram -s {input} -o {output}'
-
-
-#######################
-######### SV ##########
 
 rule prep_sv_vcf:
     """ Keep variants with the FILTER values *only* in PASS, Intergenic, or MissingAnn
@@ -47,7 +34,7 @@ rule prep_sv_vcf:
         with other values in FILTER too. That's why we remove those FILTER values.
     """
     input:
-        lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize-manta.vcf.gz')
+        lambda wc: get_manta_path(wc.batch)
     output:
         vcf = '{batch}/structural/{batch}-sv-prioritize-manta.vcf'
     # group: "sv_vcf"
@@ -76,7 +63,7 @@ bcftools filter -e "FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (B
 #### Bring in the prioritized SV calls from Manta. This should also include a basic plot at some stage.
 rule prep_sv_tsv:
     input:
-        sv_prio = lambda wc: join(batch_by_name[wc.batch].tumor.dirpath, f'{batch_by_name[wc.batch].name}-sv-prioritize.tsv'),
+        sv_prio = lambda wc: get_sv_tsv_path(wc.batch),
         vcf = rules.filter_sv_vcf.output.vcf
     output:
         '{batch}/structural/{batch}-sv-prioritize-manta-pass.tsv'
