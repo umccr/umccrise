@@ -43,6 +43,7 @@ Install conda
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
 export PATH=$(pwd)/miniconda/bin:$PATH
+conda update conda
 ```
 
 Install environments
@@ -57,7 +58,7 @@ export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
 pip install -e umccrise
 ```
 
-Dirty fix for Raijin
+Dirty fix for Raijin [DEPRECATED]
 
 ```
 ENV_NAME=umccrise
@@ -76,21 +77,6 @@ unset PERL5LIB
 export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$(pwd)/miniconda/bin:\$PATH
 export CONDA_PREFIX=$(pwd)/miniconda/envs/${ENV_NAME}
 EOT
-```
-
-Set up PCGR
-
-The PCGR data bundle gets refreshed every release, so please select the appropriate one from [PCGR's README](https://github.com/sigven/pcgr#step-2-download-pcgr-and-data-bundle)!
-
-```bash
-# Download the data bundles
-pip install gdown  # or use  `$(pwd)/miniconda/envs/${ENV_NAME}_pcgr/bin/gdown`
-gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | tar xvfz - # hg19
-gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | tar xvfz - # hg38
-
-# (Optional) if you are running on AWS, upload the PCGR data bundles to S3 like this:
-gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/GRCh37/PCGR/pcgr.databundle.grch37.YYYMMDD.tgz
-gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.YYYMMDD.tgz
 ```
 
 ## Updating
@@ -114,13 +100,44 @@ cd /data/cephfs/punim0010/extras/umccrise
 rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
 ```
 
-Sources for the reference data:
+### Sources for the reference data
+
+#### GNOMAD
 
 ```
-# GNOMAD
 wget http://ftp.ensemblorg.ebi.ac.uk/pub/data_files/homo_sapiens/GRCh37/variation_genotype/gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz
-bcftools annotate -x ID,INFO,FORMAT,^INFO/AF gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz -Oz -o gnomad_genome.vcf.gz
+mv gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz gnomad_genome.vcf.gz
 
+bcftools filter -i 'FILTER="PASS" & (AN_POPMAX>=500 & AF_POPMAX>=0.01 | AN_POPMAX>=100 & AF_POPMAX>=0.01)' gnomad_genome.vcf.gz -Ob | \
+    bcftools annotate -x ID,^INFO/AN_POPMAX,^INFO/AF_POPMAX,FORMAT -Oz -o gnomad_genome.common_pass_clean.vcf.gz
+tabix -p vcf gnomad_genome.common_pass_clean.vcf.gz
+
+# Version 2.1:
+wget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgzwget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgz
+bcftools filter -i 'FILTER="PASS" & (AN_popmax>=500 & AF_popmax>=0.01 | AN_popmax>=100 & AF_popmax>=0.01)' gnomad.genomes.r2.1.sites.vcf.bgz -Ob | \
+    bcftools annotate -x ID,^INFO/AN_popmax,^INFO/AF_popmax,FORMAT -Oz -o gnomad_genome.r2.1.common_pass_clean.vcf.gz
+tabix -p vcf gnomad_genome.r2.1.common_pass_clean.vcf.gz
+
+TODO: filter with
+##INFO=<ID=segdup,Number=0,Type=Flag,Description="Variant falls within a segmental duplication region">
+##INFO=<ID=lcr,Number=0,Type=Flag,Description="Variant falls within a low complexity region">
+##INFO=<ID=decoy,Number=0,Type=Flag,Description="Variant falls within a reference decoy region">
+##INFO=<ID=nonpar,Number=0,Type=Flag,Description="Variant (on sex chromosome) falls outside a pseudoautosomal region">
+```
+
+#### PCGR
+
+The PCGR data bundle gets refreshed every release, so please select the appropriate one from [PCGR's README](https://github.com/sigven/pcgr#step-2-download-pcgr-and-data-bundle)!
+
+```bash
+# Download the data bundles
+pip install gdown  # or use  `$(pwd)/miniconda/envs/${ENV_NAME}_pcgr/bin/gdown`
+gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | tar xvfz - # hg19
+gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | tar xvfz - # hg38
+
+# (Optional) if you are running on AWS, upload the PCGR data bundles to S3 like this:
+gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/GRCh37/PCGR/pcgr.databundle.grch37.YYYMMDD.tgz
+gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.YYYMMDD.tgz
 ```
 
 

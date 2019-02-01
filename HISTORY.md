@@ -1,3 +1,8 @@
+0.13
+
+- Re-enable CACAO
+- Support CWL
+
 0.12 (23 Jan 2019)
 
 - Somatic annotation/filtering:
