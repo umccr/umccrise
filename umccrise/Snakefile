@@ -102,18 +102,6 @@ def prep_inputs(config_):
 
 
 run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data = prep_inputs(config)
-GERMLINE_SUFFIX = '-germline'
-GERMLINE_CALLER = 'ensemble'
-SOMATIC_CALLER = 'ensemble'
-if not any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-germline-ensemble-annotated.vcf.gz')) for b in batch_by_name.keys()) and \
-       all(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-ensemble-annotated.vcf.gz')) for b in batch_by_name.keys()):
-    GERMLINE_SUFFIX = ''
-if not any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-germline-ensemble-annotated.vcf.gz')) for b in batch_by_name.keys()) and \
-       all(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-germline-strelka2-annotated.vcf.gz')) for b in batch_by_name.keys()):
-    GERMLINE_CALLER = 'strelka2'
-if not any(isfile(join(run.date_dir, batch_by_name[b].name + '-ensemble-annotated.vcf.gz')) for b in batch_by_name.keys()) and \
-       all(isfile(join(run.date_dir, batch_by_name[b].name + '-strelka2-annotated.vcf.gz')) for b in batch_by_name.keys()):
-    SOMATIC_CALLER = 'strelka2'
 
 
 threads_on_node = loc.threads_on_node
