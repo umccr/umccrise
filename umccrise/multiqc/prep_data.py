@@ -168,7 +168,7 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
             version_text += 'last modified ' + last_modified_datestamp
         run_info_dict['umccrise_version'] = version_text
 
-    if verify_file(program_versions_fpath):
+    if verify_file(program_versions_fpath, silent=True):
         with open(program_versions_fpath) as f:
             program_versions = dict(l.strip().split(',')[:2] for l in f.readlines())
         if umccrsie_version:
@@ -182,7 +182,7 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
         programs_url = relpath(program_versions_fpath, base_dirpath)
         run_info_dict['program_versions'] = '<a href="{programs_url}">program versions</a>'.format(**locals())
 
-    if verify_file(data_versions_fpath):
+    if verify_file(data_versions_fpath, silent=True):
         datas_url = relpath(data_versions_fpath, base_dirpath)
         run_info_dict['data_versions'] = '<a href="{datas_url}">data versions</a>'.format(**locals())
 
