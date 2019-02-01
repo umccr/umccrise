@@ -140,6 +140,18 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.YYYMMDD.tgz
 ```
 
+#### SegDup
+
+```
+cd problem_regions
+wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/genomicSuperDups.txt.gz .
+gunzip -c genomicSuperDups.txt.gz | cut -f2,3,4 >> segdup.bed_tmp
+gunzip -c genomicSuperDups.txt.gz | cut -f8,9,10 >> segdup.bed_tmp
+grep -v gl segdup.bed_tmp | sed 's/chr//' | bedtools sort -i - | bedtools merge -i - > segdup.bed
+bgzip -f segdup.bed && tabix -f -p bed segdup.bed.gz
+rm segdup.bed_tmp
+```
+
 
 ## Testing
 
