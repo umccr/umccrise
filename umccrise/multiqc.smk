@@ -2,7 +2,7 @@ from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
 
 
 # localrules: multiqc, copy_logs
-localrules: prep_multiqc_data, multiqc, copy_logs
+localrules: prep_multiqc_data, multiqc, copy_config, copy_logs
 
 
 versions = join(run.date_dir, 'data_versions.csv')
