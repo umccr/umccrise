@@ -43,6 +43,7 @@ Install conda
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
 export PATH=$(pwd)/miniconda/bin:$PATH
+conda update conda
 ```
 
 Install environments
@@ -57,7 +58,7 @@ export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
 pip install -e umccrise
 ```
 
-Dirty fix for Raijin
+Dirty fix for Raijin [DEPRECATED]
 
 ```
 ENV_NAME=umccrise
@@ -78,7 +79,81 @@ export CONDA_PREFIX=$(pwd)/miniconda/envs/${ENV_NAME}
 EOT
 ```
 
-Set up PCGR
+## Updating
+
+```
+source load_umccrise.sh
+git pull                                                                  # if the code base changed
+conda env update -f envs/umccrise.yml                                     # if dependencies changed
+python setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
+```
+
+## Development
+
+Changes pulled in `umccrise` repository clone folder will affect immidiately due to use of the `-e` option in `pip install -e`. To do the same for other related packages, you can clone them as well (or move already cloned repos from `./umccrise/envs/src`, and run `pip install -e` on them as well:
+
+```
+source load_umccrise.sh
+mv ./umccrise/envs/src/* .
+rm pip-delete-this-directory.txt
+pip install -e ngs-utils
+pip install -e hpc-utils
+pip install -e vcf-stuff
+pip install -e multiqc
+pip install -e multiqc-bcbio
+```
+
+## Reference data bundle
+
+Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle 
+mounted to the Docker image under `/genomes`.
+
+To sync the reference data from Spartan to NCI, use:
+
+```
+cd /data/cephfs/punim0010/extras/umccrise
+rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
+```
+
+### Sources for the reference data
+
+#### GNOMAD
+
+Version 2.0.1 (26G, hosted by ensmble, same as in bcbio):
+
+```
+wget http://ftp.ensemblorg.ebi.ac.uk/pub/data_files/homo_sapiens/GRCh37/variation_genotype/gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz
+bcftools filter -i 'FILTER="PASS" & (AN_POPMAX>=500 & AF_POPMAX>=0.01 | AN_POPMAX>=100 & AF_POPMAX>=0.01)' gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz -Ob | \
+    bcftools annotate -x ID,^INFO/AN_POPMAX,^INFO/AF_POPMAX,FORMAT -Oz -o gnomad_genome.common_pass_clean.vcf.gz
+tabix -p vcf gnomad_genome.common_pass_clean.vcf.gz
+```
+
+Version 2.1 (latest, 500G, hosted by broad):
+
+```
+wget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgzwget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgz
+bcftools filter -i 'FILTER="PASS" & segdup=0 & lcr=0 & decoy=0 & (AN_popmax>=500 & AF_popmax>=0.01 | AN_popmax>=100 & AF_popmax>=0.01)' gnomad.genomes.r2.1.sites.vcf.bgz -Ob | \
+    bcftools annotate -x ID,^INFO/AN_popmax,^INFO/AF_popmax,FORMAT -Oz -o gnomad_genome.r2.1.common_pass_clean.nolcr.vcf.gz
+tabix -p vcf gnomad_genome.r2.1.common_pass_clean.nolcr.vcf.gz
+```
+
+Normalise (see https://github.com/chapmanb/cloudbiolinux/pull/279, however after all just 5 indels will be changed, so not a bit deal)
+
+```
+ref=GRCh37.fa
+norm_vcf gnomad_genome.r2.1.common_pass_clean.vcf.gz -o gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz --ref-fasta $ref
+```
+
+Counts: 
+
+```
+bcftools view gnomad_genome.r2.1.common_pass_clean.vcf.gz -H | wc    # with lcr&segdup&decoy
+24671774
+bcftools view gnomad_genome.common_pass_clean.vcf.gz -H | wc
+21273673
+```
+
+#### PCGR
 
 The PCGR data bundle gets refreshed every release, so please select the appropriate one from [PCGR's README](https://github.com/sigven/pcgr#step-2-download-pcgr-and-data-bundle)!
 
@@ -93,26 +168,18 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.YYYMMDD.tgz
 ```
 
-## Updating
+#### SegDup
 
 ```
-source load_umccrise.sh
-git pull                                                                  # if the code base changed
-conda env update -f envs/umccrise.yml                                     # if dependencies changed
-python setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
+cd problem_regions
+wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/genomicSuperDups.txt.gz .
+gunzip -c genomicSuperDups.txt.gz | cut -f2,3,4 >> segdup.bed_tmp
+gunzip -c genomicSuperDups.txt.gz | cut -f8,9,10 >> segdup.bed_tmp
+grep -v gl segdup.bed_tmp | sed 's/chr//' | bedtools sort -i - | bedtools merge -i - > segdup.bed
+bgzip -f segdup.bed && tabix -f -p bed segdup.bed.gz
+rm segdup.bed_tmp genomicSuperDups.txt.gz
 ```
 
-## Reference data bundle
-
-Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle 
-mounted to the Docker image under `/genomes`.
-
-To sync the reference data from Spartan to NCI, use:
-
-```
-cd /data/cephfs/punim0010/extras/umccrise
-rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
-```
 
 ## Testing
 

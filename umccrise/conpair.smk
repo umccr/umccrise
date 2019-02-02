@@ -10,7 +10,12 @@ rule run_conpair:
     output:
         directory('{batch}/conpair/concordance'),
         directory('{batch}/conpair/contamination'),
+        directory('{batch}/conpair/.snakemake'),
     threads: 2
+    resources:
+        mem_mb=10000
+    benchmark:
+        'benchmarks/{batch}/conpair/{batch}-conpair.tsv'
     params:
         genome = run.genome_build,
         out_dir = '{batch}/conpair',

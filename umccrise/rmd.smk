@@ -36,7 +36,7 @@ rule subset_to_giab:
     params:
         regions = truth_regions
     output:
-        'work/{batch}/rmd/afs/ensemble-confident.vcf.gz'
+        'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident.vcf.gz'
     # group: "rmd"
     shell:
         'bcftools view {input.vcf} -T {params.regions} -Oz -o {output}'
@@ -44,10 +44,10 @@ rule subset_to_giab:
 # Split multiallelics to avoid R parsing issues
 rule split_multiallelic:
     input:
-        vcf = 'work/{batch}/rmd/afs/ensemble-confident.vcf.gz',
+        vcf = 'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident.vcf.gz',
         ref_fa = ref_fa
     output:
-        'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz'
+        'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident-singleallelic.vcf.gz'
     # group: "rmd"
     shell:
         'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
@@ -55,7 +55,7 @@ rule split_multiallelic:
 
 rule afs:
     input:
-        'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz'
+        'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident-singleallelic.vcf.gz'
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
@@ -68,7 +68,7 @@ rule afs:
 # Intersect with cancer key genes CDS for a table in Rmd
 rule afs_keygenes:
     input:
-        vcf = 'work/{batch}/rmd/afs/ensemble-confident-singleallelic.vcf.gz',
+        vcf = 'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident-singleallelic.vcf.gz',
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
@@ -83,15 +83,15 @@ rule afs_keygenes:
 
 ## Mutational signatures VCF
 #
-# Ensemble calls to be submitted to CGI. Sharing functionality does not seem to work at this point.
-# Ensemble calls only include variants that `PASS` so no additional filtering required.
+# Somatic calls to be submitted to CGI. Sharing functionality does not seem to work at this point.
+# Somatic calls only include variants that `PASS` so no additional filtering required.
 #
-# Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the ensemble calls:
+# Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the somatic calls:
 rule somatic_to_hg19:
     input:
         rules.somatic_vcf_filter_pass.output.vcf
     output:
-        'work/{batch}/rmd/ensemble-with_chr_prefix.vcf'
+        'work/{batch}/rmd/' + run.somatic_caller + '-with_chr_prefix.vcf'
     # group: "rmd"
     run:
         if run.genome_build == 'GRCh37':

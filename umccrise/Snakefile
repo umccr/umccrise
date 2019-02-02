@@ -11,7 +11,6 @@ from ngs_utils import logger as ngs_utils_logger
 from hpc_utils.hpc import find_loc, get_ref_file
 from ngs_utils.utils import set_locale; set_locale()
 from hpc_utils.hpc import get_loc, get_ref_file
-from umccrise import package_path
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
@@ -77,9 +76,10 @@ def prep_inputs(config_):
     #### Reference files we are on known host?             ####
     ###########################################################
     ref_fa = get_ref_file(run.genome_build)
-    truth_regions = get_ref_file(run.genome_build, ['truth_sets', 'giab', 'bed'])
+    truth_regions = get_ref_file(run.genome_build, ['hmf_giab_conf'])
     pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
-    pcgr_data = loc.pcgr_data
+    pcgr_data = get_ref_file(key='pcgr_data', loc=loc)
+    cacao_data = get_ref_file(key='cacao_data', loc=loc),
 
     ###########################################################
     #### Done looking for refernece files, now some checks ####
@@ -98,22 +98,10 @@ def prep_inputs(config_):
 
     verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
 
-    return run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data
+    return run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data, cacao_data
 
 
-run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data = prep_inputs(config)
-GERMLINE_SUFFIX = '-germline'
-GERMLINE_CALLER = 'ensemble'
-SOMATIC_CALLER = 'ensemble'
-if not any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-germline-ensemble-annotated.vcf.gz')) for b in batch_by_name.keys()) and \
-       all(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-ensemble-annotated.vcf.gz')) for b in batch_by_name.keys()):
-    GERMLINE_SUFFIX = ''
-if not any(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-germline-ensemble-annotated.vcf.gz')) for b in batch_by_name.keys()) and \
-       all(isfile(join(run.date_dir, batch_by_name[b].normal.name + '-germline-strelka2-annotated.vcf.gz')) for b in batch_by_name.keys()):
-    GERMLINE_CALLER = 'strelka2'
-if not any(isfile(join(run.date_dir, batch_by_name[b].name + '-ensemble-annotated.vcf.gz')) for b in batch_by_name.keys()) and \
-       all(isfile(join(run.date_dir, batch_by_name[b].name + '-strelka2-annotated.vcf.gz')) for b in batch_by_name.keys()):
-    SOMATIC_CALLER = 'strelka2'
+run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data, cacao_data = prep_inputs(config)
 
 
 threads_on_node = loc.threads_on_node
@@ -161,7 +149,6 @@ localrules: umccrise
 rule umccrise:
     input:  # Copy here inputs of the "milestone" rules (rules without output defined in the end of each Snakemake.* file)
         rules.multiqc.output,
-        rules.copy_logs.output,
         rules.coverage.output,
         rules.structural.output,
         rules.small_variants.output,

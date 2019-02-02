@@ -7,7 +7,7 @@ channels:
   - defaults
 
 dependencies:
-  - python >=3.6
+  - python ==3.6.*
   - ngs_utils
   - cython
   - bcftools >=1.9
@@ -16,6 +16,7 @@ dependencies:
   - vcfanno
   - vcflib  # for VCF normalisation
   - bedops
+  - mosdepth
   - pythonpy
   - click
   - cyvcf2 >=0.10.0
@@ -27,7 +28,7 @@ dependencies:
   - versionpy
   - multiqc
   - multiqc-bcbio
-  # Conpair
+  # Conpair:
   - gatk4
   - scipy
   - pip:
@@ -38,7 +39,7 @@ dependencies:
     - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
   #
-  # Umccrise-specific
+  # Umccrise-specific:
   - natsort  # for bcbio.py in ngs_utils
   # - pybedtools  # for ref data generation
   # - sambamba  # for test data generation
@@ -48,11 +49,14 @@ dependencies:
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - parallel
   - pygraphviz # for snakemake report
-  # R libraries
+  - gsort  # sort vcfs and beds - https://github.com/brentp/gsort
+  - toml  # to read predisposition genes from PCGR toml
+  # R libraries:
+  # - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
+  - r-base >=3.5.1
   - pandoc
   - libgfortran-ng
   - toml
-  - r-base >=3.5.1
   - r-bookdown
   - r-devtools
   - r-dplyr
@@ -77,3 +81,4 @@ dependencies:
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
+

@@ -1,6 +1,6 @@
 ## Cancer gene coverage
 
-localrules: coverage, cacao_symlink_somatic, cacao_symlink_somatic
+localrules: coverage, cacao_symlink_somatic, cacao_symlink_normal
 
 
 from ngs_utils.reference_data import get_key_genes_bed
@@ -55,9 +55,9 @@ rule run_cacao_somatic:
     input:
         bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
     output:
-        report = '{batch}/coverage/cacao_somatic/{batch}.cacao.' + pcgr_genome + '.html'
+        report = '{batch}/coverage/cacao_somatic/{batch}_' + pcgr_genome + '_coverage_cacao.html'
     params:
-        cacao_data = join(loc.cacao_data),
+        cacao_data = cacao_data,
         output_dir = '{batch}/coverage/cacao_somatic',
         docker_opt = '--no-docker' if not which('docker') else '',
         sample_id = '{batch}',
@@ -66,16 +66,16 @@ rule run_cacao_somatic:
     threads: threads_per_sample
     shell:
         conda_cmd.format('pcgr') +
-        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' \
+        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' +
         ' somatic {params.sample_id} {params.docker_opt} --threads {threads} ' + cacao_param
 
 rule run_cacao_normal:
     input:
         bam = lambda wc: batch_by_name[wc.batch].normal.bam,
     output:
-        report = '{batch}/coverage/cacao_normal/{batch}.cacao.' + pcgr_genome + '.html'
+        report = '{batch}/coverage/cacao_normal/{batch}_' + pcgr_genome + '_coverage_cacao.html'
     params:
-        cacao_data = join(loc.cacao_data),
+        cacao_data = cacao_data,
         output_dir = '{batch}/coverage/cacao_normal',
         docker_opt = '--no-docker' if not which('docker') else '',
         sample_id = '{batch}',
@@ -84,7 +84,7 @@ rule run_cacao_normal:
     threads: threads_per_sample
     shell:
         conda_cmd.format('pcgr') +
-        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}'
+        'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' +
         ' somatic {params.sample_id} {params.docker_opt} --threads {threads} ' + cacao_param
 
 rule cacao_symlink_somatic:
@@ -112,7 +112,7 @@ rule coverage:
     input:
         (expand(rules.mosdepth.output[0], phenotype=['tumor', 'normal'], batch=batch_by_name.keys()) if which('mosdepth') else []),
         expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
-        # expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
-        # expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
+        expand(rules.cacao_symlink_somatic.output[0], batch=batch_by_name.keys()),
+        expand(rules.cacao_symlink_normal.output[0], batch=batch_by_name.keys()),
     output:
         temp(touch('log/coverage.done'))
