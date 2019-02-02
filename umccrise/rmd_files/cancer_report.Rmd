@@ -625,3 +625,42 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.minor_all
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.png')))
 ```
 
+
+# Session Info
+
+
+<details>
+<summary>umccrise version</summary>
+
+```{r umccrise-version}
+umccrise_version <- system("umccrise --version", intern = TRUE)
+```
+
+__`r umccrise_version`__
+
+</details>
+
+<details>
+<summary>R package versions</summary>
+
+```{r eval=TRUE}
+si <- devtools::session_info(include_base = TRUE)
+si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
+si_pkg <- unclass(si$packages) %>%
+  dplyr::as_tibble() %>%
+  dplyr::select(package, version = ondiskversion, path, datestamp = date)
+
+
+
+dplyr::tibble(var = row.names(si_pl),
+              value = si_pl[, , drop = TRUE]) %>%
+  knitr::kable(format = "html") %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+  kableExtra::column_spec(1, bold = TRUE)
+
+knitr::kable(si_pkg, format = "html") %>%
+  kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
+  kableExtra::column_spec(1, bold = TRUE) %>%
+  kableExtra::scroll_box(height = "400px")
+```
+</details>
