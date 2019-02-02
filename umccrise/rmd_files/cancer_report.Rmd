@@ -11,16 +11,16 @@ output:
     highlight: kate
 params:
   title: "Cancer Report for "
-  tumor_name: 'PRJ180596_CW-DNA029841T'
-  batch_name: 'SmallCellNET__PRJ180596_CW-DNA029841T'
+  tumor_name: 'x'
+  batch_name: 'x'
   genome_build: 'hg19'
-  key_genes: '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
-  af_global: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt'
-  af_keygenes: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt'
-  somatic_snv: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf'
-  somatic_sv: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv'
-  purple_gene_cnv: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv'
-  purple_circos_baf: '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/?'
+  key_genes: 'x'
+  af_global: 'x'
+  af_keygenes: 'x'
+  somatic_snv: 'x'
+  somatic_sv: 'x'
+  purple_gene_cnv: 'x'
+  purple_circos_baf: 'x'
   purple_purity: 'x'
   purple_cnv: 'x'
   purple_germline_cnv: 'x'
@@ -55,21 +55,22 @@ library(tx_ref_genome, character.only = TRUE)
 ```
 
 ```{r render_book_inter, eval=FALSE, echo=FALSE}
-params = list(
-  somatic_snv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
-  af_global = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
-  af_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
-  somatic_sv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
-  tumor_name = 'PRJ180596_CW-DNA029841T',
-  batch_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
-  key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-  purple_gene_cnv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
-  purple_circos_baf = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/?',
-  genome_build = 'hg19'
-)
+params <- list( 
+  tumor_name='PRJ180471_BK221-NET1', 
+  batch_name='BK221-NET1__PRJ180471_BK221-NET1', 
+  genome_build='hg19', 
+  key_genes='/data/cephfs/punim0010/projects/Diakumis/umccrise/envs/src/ngs-utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
+  af_global='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/afs/af_tumor.txt', 
+  af_keygenes= '/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/afs/af_tumor_keygenes.txt',
+  somatic_snv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/ensemble-with_chr_prefix.vcf',
+  somatic_sv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/BK221-NET1__PRJ180471_BK221-NET1/structural/BK221-NET1__PRJ180471_BK221-NET1-sv-prioritize-manta-pass.tsv',
+  purple_gene_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/purple.tsv', 
+  purple_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.cnv',
+  purple_germline_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.germline.cnv',
+  purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity')
 
 render_me <- function() {
-  bookdown::render_book(
+  rmarkdown::render_book(
     "index.Rmd",
     params = params)
 }
@@ -78,36 +79,19 @@ render_me()
 
 # Signatures
 
-```{r render_interactively, eval=FALSE, echo=FALSE}
-# helper function to run report interactively, instead of via the CL.
-render_me <- function() {
-  rmarkdown::render(
-    '/Users/vsaveliev/git/umccr/umccrise/umccrise/rmd_files/sig.Rmd',
-    output_file = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/test.html',
-    params = list(
-      workdir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests',
-      somatic_snv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/ensemble-with_chr_prefix.vcf',
-      af_global = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor.txt',
-      af_keygenes = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/afs/af_tumor_keygenes.txt',
-      somatic_sv = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/SmallCellNET__PRJ180596_CW-DNA029841T/structural/SmallCellNET__PRJ180596_CW-DNA029841T-sv-prioritize-manta-pass.tsv',
-      tumor_name = 'PRJ180596_CW-DNA029841T',
-      batch_name = 'SmallCellNET__PRJ180596_CW-DNA029841T',
-      key_genes = '/Users/vsaveliev/git/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-      purple = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/rmd/SmallCellNET__PRJ180596_CW-DNA029841T.purple.gene.cnv',
-      purple_dir = '/Users/vsaveliev/git/umccr/umccrise_test_data/rmd_tests/for_rmd_SmallCellNET/work/SmallCellNET__PRJ180596_CW-DNA029841T/purple/purple',
-      genome_build = 'hg19'
-    )
-  )
-}
-render_me()
-```
-
 ## Allelic frequencies
-We can compare the allelic frequencies of all detected somatic mutations (Global)
-vs. those present in a subset of ~1300 cancer genes.
-Frequencies are currently based on MuTect2
-calls only and limited to 'high confidence' regions as determined by the
+
+
+<details>
+<summary>Desciption</summary>
+
+Allelic frequencies are based on the bcbio somatic ensemble
+calls (or the single variant calls if run in single-caller mode)
+and limited to 'high confidence' regions as determined by the
 [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/).
+
+</details>
+
 
 ```{r af_plot, warning=FALSE}
 # Global AF
@@ -212,7 +196,7 @@ result %>%
   dplyr::arrange(-Contribution) %>%
   dplyr::left_join(sig_table, by = "Signature") %>%
   knitr::kable() %>%
-  kableExtra::kable_styling(font_size = 9)
+  kableExtra::kable_styling(font_size = 11)
 ```
 
 ### Positional enrichment of somatic signatures
@@ -223,6 +207,29 @@ plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 ```
 
 ## Prioritised SVs
+
+<details>
+<summary>Desciption</summary>
+
+* The input file corresponds to `umccrise/batch/structural/batch-sv-prioritize-manta-pass.tsv`
+* It's generated through the following steps:
+
+1. `prep_sv_vcf`:
+  * Input: `final/tumor/batch-sv-priorize-manta.vcf.gz`
+  * Process: keep variants with FILTER values only in `.`, `PASS`, `Intergenic`, or `MissingAnn`.
+  * Output: `umccrise/batch/structural/batch-sv-prioritize-manta.vcf`.
+2. `filter_sv_vcf`:
+  * Input: above output VCF
+  * Process: exclude variants where the `SR` _and_ `PR` alt support of the tumor is less
+    than 5; also for those variants where `BPI_AF` of one of the breakpoints
+    is less than 10%, exclude them if their `SR` and `PR` alt are less than 10.
+  * Output: `umccrise/batch/structural/batch-sv-prioritize-manta-filter.vcf`
+3. `prep_sv_tsv`:
+  * Input: above output VCF and `final/tumor/batch-sv-prioritize.tsv`
+  * Process: find positions in the VCF that are in the TSV file
+  * Output: `umccrise/batch/structural/batch-sv-prioritize-manta-pass.tsv`
+
+</details>
 
 ```{r sv_prioritize, message=FALSE}
 col_types <- "ccciicccccc"
@@ -281,6 +288,9 @@ if (!is.null(sv_all)) {
 
 ## Transcriptional strand bias analysis
 
+<details>
+<summary>Desciption</summary>
+
 We can determine if a gene mutation is on the transcribed or non-transcribed
 strand, which can be used to evaluate the involvement of transcription-coupled
 repair. By convention base substitutions are regarded as C>X or T>X, so we try
@@ -290,6 +300,8 @@ considered 'untranscribed', and on the opposite strand 'transcribed', since the
 gene definitions report the coding or sense strand, which is untranscribed. No
 strand information is reported for base substitutions that overlap with more
 than one gene on different strands.
+
+</details>
 
 ```{r tran_strand_bias, warning=FALSE, message=FALSE}
 # Get known genes table from UCSC
@@ -318,6 +330,10 @@ plot_strand_bias(strand_bias)
 
 
 ## Replicative strand bias analysis
+
+<details>
+<summary>Desciption</summary>
+
 The involvement of replication-associated mechanisms can be evaluated by
 testing for a mutational bias between the leading and lagging strand.
 The replication strand is dependent on the locations of replication
@@ -329,6 +345,8 @@ Replication timing profiles can be generated with
 Repli-Seq experiments. Once the replication direction is defined,
 a strand asymmetry analysis can be performed similarly as the transcription
 strand bias analysis.
+
+</details>
 
 ```{r rep_strand_bias, warning=FALSE, message=FALSE}
 repli_file <- system.file("extdata/ReplicationDirectionRegions.bed",
@@ -364,9 +382,14 @@ tumor beta allele frequency (BAF) to estimate purity and generate a copy number 
 
 ## Events in cancer genes
 
+<details>
+<summary>Desciption</summary>
+
 Listed are deletions in cancer genes, homozygous deletions of tumor suppressors, 
 and gains in oncogenes. Oncogenes and tumor suppressors reported by 
 [Cancermine](https://github.com/jakelever/cancermine).
+
+</details>
 
 ```{r cnv_suppressors, message=FALSE}
 purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicdd")
@@ -400,6 +423,9 @@ purple_gene_cnv %>%
 
 ### Plot 1: Somatic SNVs/Indels, Total/Minor CN, SVs
 
+<details>
+<summary>Desciption</summary>
+
 * __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome 
   (centromeres, heterochromatin & missing short arms)
 * __Track2__: Somatic variants (incl. exon, intron and intergenic regions). 
@@ -424,6 +450,8 @@ purple_gene_cnv %>%
     * <span style="color:#32CD32">Green</span> = Tandem duplications 
     * <span style="color:#000000">Black</span> = Inversions
 
+</details>
+
 ```{r circos-default1, out.width="80%"}
 img_dir <- file.path('img') # created before when copying purple files to tmp dir
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
@@ -431,10 +459,15 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 
 ### Plot 2: Tumor/Normal Allele Ratios, BAF
 
+<details>
+<summary>Desciption</summary>
+
 * __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome 
   (centromeres, heterochromatin & missing short arms)
 * __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
 * __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
+
+</details>
 
 
 ```{r circos-default2, out.width="80%"}
@@ -443,11 +476,16 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 
 ### Plot 3: Total/Minor CN, SVs, BAF
 
+<details>
+<summary>Desciption</summary>
+
 * __Track1__: Chromosomes
 * __Track2__: <span style="color:#8A2BE2">Beta Allele Frequency</span>
 * __Track3__: Total Copy Number Changes (see above)
 * __Track4__: Minor Copy Number Changes (see above)
 * __Track5__ (Inner circle): Observed Structural Variants (see above)
+
+<details>
 
 ```{r circos-baf-plot, out.width="80%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
