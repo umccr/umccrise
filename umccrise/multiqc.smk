@@ -1,4 +1,6 @@
 from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
+import cyvcf2
+import yaml
 
 
 # localrules: multiqc, copy_logs
@@ -30,13 +32,77 @@ rule copy_logs:
         'cp -r {input.programs} {output.programs}'
 
 
+rule varqc_report:
+    input:
+        vcf = rules.somatic_vcf_filter.output.vcf
+    output:
+        'work/{batch}/small_variants/pon_mqc.yaml',
+    params:
+        sample = lambda wc: batch_by_name[wc.batch].tumor.name,
+    run:
+        total_cnt = 0
+        pass_cnt = 0
+        pon_cnt = 0
+        pon_filt = 0
+        vcf = cyvcf2.VCF(input.vcf)
+        for rec in vcf:
+            total_cnt += 1
+            if rec.FILTER == 'PASS':
+                pass_cnt += 1
+            if 'PoN' in rec.FILTER:
+                pon_filt += 1
+            if rec.INFO.get('PoN', 0) > 0:
+                pon_cnt += 1
+        pass_pct = pass_cnt / total_cnt
+        pon_pct = pon_cnt / total_cnt
+        pon_filt_pct = pon_filt / total_cnt
+
+        data = dict(
+            # id='umccr_pon',
+            # section_name='UMCCR panel of normals',
+            # description='Percentage of variants found in UMCCR panel of normals',
+            plot_type='generalstats',
+            pconfig=[{
+                'PoN': dict(
+                    min=0,
+                    max=100,
+                    scale='RdYlGn',
+                    suffix='%',
+                ),
+                'PASS': dict(
+                    min=0,
+                    max=100,
+                    scale='RdYlGn',
+                    suffix='%',
+                ),
+                'PoN filt': dict(
+                    min=0,
+                    max=100,
+                    scale='RdYlGn',
+                    suffix='%',
+                    hidden=True,
+                ),
+            }],
+            data={
+                params.sample: {
+                    'PoN': pon_pct,
+                    'PASS': pass_cnt,
+                    'PoN filt': pon_filt_pct
+                }
+            }
+        )
+        with open(output[0], 'w') as out:
+            yaml.dump(data, out)
+
+
 rule prep_multiqc_data:
     input:
         bcbio_mq_filelist = join(run.date_dir, 'multiqc/list_files_final.txt'),
         bcbio_mq_yaml     = join(run.date_dir, 'multiqc/multiqc_config.yaml'),
         bcbio_final_dir   = run.final_dir,
-        conpair_concord   = '{batch}/conpair/concordance',
-        conpair_contam    = '{batch}/conpair/contamination',
+        conpair_concord   = rules.run_conpair.output.concord,
+        conpair_contam    = rules.run_conpair.output.contam,
+        varqc_report      = rules.varqc_report.output[0],
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -69,6 +135,7 @@ rule prep_multiqc_data:
             join(input.conpair_contam, params.tumor_name + '.txt'),
             join(input.conpair_contam, params.normal_name + '.txt'),
             join(input.conpair_concord, params.tumor_name + '.txt'),
+            varqc_report,
         ])
 
         multiqc_prep_data(
@@ -115,6 +182,7 @@ rule multiqc:
         (rules.copy_logs.output if all(isfile(fp) for fp in rules.copy_logs.input) else []),
     output:
         temp(touch('log/multiqc.done'))
+
 
 
 

@@ -18,8 +18,8 @@ circos_macos_patch = ('export PERL5LIB=' +
 if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
     rule copy_inputs_from_bcbio:
         input:
-            bcbio_amber_dir  = directory(lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/amber')),
-            bcbio_cobalt_dir = directory(lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/cobalt')),
+            bcbio_amber_dir  = lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/amber'),
+            bcbio_cobalt_dir = lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/cobalt'),
         output:
             'work/{batch}/purple/cobalt/{batch}.cobalt',
             'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',

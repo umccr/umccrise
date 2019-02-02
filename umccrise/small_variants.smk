@@ -3,10 +3,7 @@
 from os.path import isfile, join
 from ngs_utils.file_utils import get_ungz_gz
 from umccrise import package_path
-import cyvcf2
 import toml
-import csv
-from ngs_utils.file_utils import which
 from vcf_stuff import iter_vcf
 
 
@@ -97,6 +94,7 @@ rule somatic_vcf_filter_pass:
     # group: "small_variants"
     shell:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
+
 
 ##################
 #### Germline ####
