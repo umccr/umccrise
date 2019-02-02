@@ -198,7 +198,7 @@ mut_mat <- mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_96_profile(mut_mat, condensed = TRUE)
 ```
 
-### Compare signature to reference
+### Signature reference comparison
 
 <details>
 <summary>Description</summary>
@@ -211,7 +211,8 @@ The `fit_to_signatures` function finds the optimal linear combination of
 mutational signatures that most closely reconstructs
 the mutation matrix by solving a non-negative least-squares constraints problem.
 
-Shown are signatures with positive Contribution values.
+Shown are signatures with positive Contribution values, along with summarised descriptions
+and reference signature plots from <https://cancer.sanger.ac.uk/cosmic/signatures>.
 
 </details>
 
@@ -256,7 +257,16 @@ result %>%
   kableExtra::scroll_box(height = "300px")
 ```
 
-### Positional enrichment of somatic signatures
+### Rainfall plot
+
+<details>
+<summary>description</summary>
+
+A rainfall plot visualizes mutation types and intermutation distance. Rainfall plots can be
+used to visualize the distribution of mutations along the genome or a subset of chromosomes.
+The y-axis corresponds to the distance of a mutation with the previous mutation and is log10
+transformed. Drop-downs from the plots indicate clusters or “hotspots” of mutations.
+</details>
 
 ```{r rainfall}
 chromosomes <- seqnames(get(ref_genome))[1:22]
@@ -626,22 +636,21 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.p
 ```
 
 
-# Session Info
+# Software Versions
 
+## umccrise version
 
-<details>
-<summary>umccrise version</summary>
-
-```{r umccrise-version}
-umccrise_version <- system("umccrise --version", intern = TRUE)
+```{r um-version}
+umv <- system("umccrise --version", intern = TRUE)
 ```
 
-__`r umccrise_version`__
+__`r umv`__
 
-</details>
+
+## R package info
 
 <details>
-<summary>R package versions</summary>
+<summary>Session Info</summary>
 
 ```{r eval=TRUE}
 si <- devtools::session_info(include_base = TRUE)
