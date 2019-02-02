@@ -16,6 +16,7 @@ dependencies:
   - vcfanno
   - vcflib  # for VCF normalisation
   - bedops
+  - mosdepth
   - pythonpy
   - click
   - cyvcf2 >=0.10.0
