@@ -88,6 +88,21 @@ conda env update -f envs/umccrise.yml                                     # if d
 python setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
 ```
 
+## Development
+
+Changes pulled in `umccrise` repository clone folder will affect immidiately due to use of the `-e` option in `pip install -e`. To do the same for other related packages, you can clone them as well (or move already cloned repos from `./umccrise/envs/src`, and run `pip install -e` on them as well:
+
+```
+source load_umccrise.sh
+mv ./umccrise/envs/src/* .
+rm pip-delete-this-directory.txt
+pip install -e ngs-utils
+pip install -e hpc-utils
+pip install -e vcf-stuff
+pip install -e multiqc
+pip install -e multiqc-bcbio
+```
+
 ## Reference data bundle
 
 Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle 
@@ -117,20 +132,25 @@ Version 2.1 (latest, 500G, hosted by broad):
 
 ```
 wget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgzwget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgz
-bcftools filter -i 'FILTER="PASS" & !segdup & !lcr & !decoy & (AN_popmax>=500 & AF_popmax>=0.01 | AN_popmax>=100 & AF_popmax>=0.01)' gnomad.genomes.r2.1.sites.vcf.bgz -Ob | \
-    bcftools annotate -x ID,^INFO/AN_popmax,^INFO/AF_popmax,FORMAT -Oz -o gnomad_genome.r2.1.common_pass_clean.vcf.gz
-tabix -p vcf gnomad_genome.r2.1.common_pass_clean.vcf.gz
+bcftools filter -i 'FILTER="PASS" & segdup=0 & lcr=0 & decoy=0 & (AN_popmax>=500 & AF_popmax>=0.01 | AN_popmax>=100 & AF_popmax>=0.01)' gnomad.genomes.r2.1.sites.vcf.bgz -Ob | \
+    bcftools annotate -x ID,^INFO/AN_popmax,^INFO/AF_popmax,FORMAT -Oz -o gnomad_genome.r2.1.common_pass_clean.nolcr.vcf.gz
+tabix -p vcf gnomad_genome.r2.1.common_pass_clean.nolcr.vcf.gz
 ```
 
-Normalise
+Normalise (see https://github.com/chapmanb/cloudbiolinux/pull/279, however after all just 5 indels will be changed, so not a bit deal)
 
 ```
-ref = genomes/GRCh37/GRCh37.fa
-export TMPDIR=`pwd`
-vt decompose -s gnomad_genome.r2.1.common_pass_clean.vcf.gz | vt normalize -r $ref -n - | gsort -m 3000 /dev/stdin $ref.fai | bgzip -c > gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
-# vcf_norm gnomad_genome.r2.1.common_pass_clean.vcf.gz -o gnomad_genome.r2.1.common_pass_clean.norm_mine.vcf.gz
+ref=GRCh37.fa
+norm_vcf gnomad_genome.r2.1.common_pass_clean.vcf.gz -o gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz --ref-fasta $ref
+```
 
-tabix -f -p vcf gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
+Counts: 
+
+```
+bcftools view gnomad_genome.r2.1.common_pass_clean.vcf.gz -H | wc    # with lcr&segdup&decoy
+24671774
+bcftools view gnomad_genome.common_pass_clean.vcf.gz -H | wc
+21273673
 ```
 
 #### PCGR
