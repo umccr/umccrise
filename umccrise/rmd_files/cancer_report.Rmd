@@ -55,16 +55,16 @@ library(tx_ref_genome, character.only = TRUE)
 ```
 
 ```{r render_book_inter, eval=FALSE, echo=FALSE}
-params <- list( 
-  tumor_name='PRJ180471_BK221-NET1', 
-  batch_name='BK221-NET1__PRJ180471_BK221-NET1', 
-  genome_build='hg19', 
+params <- list(
+  tumor_name='PRJ180471_BK221-NET1',
+  batch_name='BK221-NET1__PRJ180471_BK221-NET1',
+  genome_build='hg19',
   key_genes='/data/cephfs/punim0010/projects/Diakumis/umccrise/envs/src/ngs-utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-  af_global='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/afs/af_tumor.txt', 
+  af_global='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/afs/af_tumor.txt',
   af_keygenes= '/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/afs/af_tumor_keygenes.txt',
   somatic_snv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/ensemble-with_chr_prefix.vcf',
   somatic_sv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/BK221-NET1__PRJ180471_BK221-NET1/structural/BK221-NET1__PRJ180471_BK221-NET1-sv-prioritize-manta-pass.tsv',
-  purple_gene_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/purple.tsv', 
+  purple_gene_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/purple.tsv',
   purple_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.cnv',
   purple_germline_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.germline.cnv',
   purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity')
@@ -95,7 +95,7 @@ The following steps occur:
 3. `somatic_vcf_filter`: [filter VCF](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf)
 4. `somatic_vcf_filter_af10`: soft filter variants where `TUMOR_AF < 0.1`
 5. `somatic_vcf_filter_pass`: keep only `.,PASS` variants
-6. `subset_to_giab`: keep variants in 'high confidence' regions as determined by the 
+6. `subset_to_giab`: keep variants in 'high confidence' regions as determined by the
    [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/)
 7. `split_multiallelic`:
    - keep only the `TUMOR_AF` field from `INFO` column
@@ -154,8 +154,9 @@ af_both %>%
 
 
 ## Mutational signature
-We can use the [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html)
-R package to generate a mutation signature for our sample.
+The [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html)
+R package is used to generate a mutation signature for our sample. We use the final filtered somatic
+calls as input (adjusted to hg19-like format).
 
 ```{r importVCF, warning=FALSE}
 somatic_snv <- read_vcfs_as_granges(
@@ -168,26 +169,66 @@ somatic_snv <- read_vcfs_as_granges(
 ### Somatic change distribution
 
 #### Point mutation spectrum
+
+<details>
+<summary>Desciption</summary>
+
+With `mut_type_occurrences`, you can count the mutation type occurrences for the input VCF.
+For `C>T` mutations, a distinction is made between `C>T` at CpG sites
+and other sites, as deamination of methylated cytosine at CpG sites is a common mutational
+process. This is the reason the reference genome is needed.
+
+A mutation spectrum shows the relative contribution of each mutation type in the base
+substitution catalogs. The `plot_spectrum` function plots the mean relative contribution of
+each of the 6 base substitution types over all samples. Error bars indicate standard deviation
+over all samples. The total number of mutations is indicated. The `CT = TRUE` option
+distinguishes between `C>T` at CpG sites and other sites.
+
+</details>
+
 ```{r somProfile1, warning=FALSE}
 type_occurrences <- mut_type_occurrences(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_spectrum(type_occurrences, CT = TRUE)
 ```
 
-#### 96 trinucleotide profile
+#### Profile of 96 trinucleotides
+
 ```{r somProfile2, warning=FALSE}
 mut_mat <- mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_96_profile(mut_mat, condensed = TRUE)
 ```
 
 ### Compare signature to reference
+
+<details>
+<summary>Description</summary>
+
+The contribution of any set of signatures to the mutational profile of a
+sample can be quantified. This unique feature is specifically useful
+for mutational signature analyses of small cohorts or individual samples,
+but also to relate own findings to known signatures and published findings.
+The `fit_to_signatures` function finds the optimal linear combination of
+mutational signatures that most closely reconstructs
+the mutation matrix by solving a non-negative least-squares constraints problem.
+
+Shown are signatures with positive Contribution values.
+
+</details>
+
 ```{r somSig}
 # Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
 sig_probs <- file.path("misc/sig/signatures_probabilities.txt")
 # better be explicit - the sig_probs file has 7 extra empty columns
 col_types <- paste0(c("ccc", paste0(rep("d", 30), collapse = ""), "ccccccc"), collapse = "")
 col_names <- c("SubstType", "Trinucleotide", "SomMutType", paste0("Sig", 1:30), paste0("foo", 1:7))
-cancer_signatures <- readr::read_tsv(sig_probs, col_names = col_names, col_types = col_types, skip = 1) %>%
-  dplyr::arrange(SubstType) %>%
+cancer_signatures <-
+  readr::read_tsv(sig_probs, col_names = col_names, col_types = col_types, skip = 1) %>%
+  dplyr::arrange(SubstType)
+
+# sanity check - need to be in same order
+stopifnot(all(cancer_signatures$SomMutType == rownames(mut_mat)))
+
+cancer_signatures <- cancer_signatures %>%
   dplyr::select(4:33) %>%
   as.matrix()
 
@@ -196,6 +237,7 @@ fit_res <- fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signature
 
 # Select signatures with some contribution
 fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
+result <- dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr)
 
 sig_table <-
   readr::read_tsv(file = "misc/sig/signatures_description.tsv", col_types = "cc") %>%
@@ -203,7 +245,6 @@ sig_table <-
                 signature = paste0("Sig", signature)) %>%
   dplyr::select(Signature = signature, Description = description, Plot)
 
-result <- dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr)
 
 
 result %>%
@@ -211,7 +252,8 @@ result %>%
   dplyr::arrange(-Contribution) %>%
   dplyr::left_join(sig_table, by = "Signature") %>%
   knitr::kable() %>%
-  kableExtra::kable_styling(font_size = 11)
+  kableExtra::kable_styling(font_size = 11) %>%
+  kableExtra::scroll_box(height = "300px")
 ```
 
 ### Positional enrichment of somatic signatures
@@ -392,7 +434,7 @@ plot_strand_bias(strand_bias_rep)
 # PURPLE Results
 
 [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
-is a tool for estimating tumor purity and ploidy. It uses the read depth and 
+is a tool for estimating tumor purity and ploidy. It uses the read depth and
 tumor beta allele frequency (BAF) to estimate purity and generate a copy number profile.
 
 ## Events in cancer genes
@@ -400,8 +442,8 @@ tumor beta allele frequency (BAF) to estimate purity and generate a copy number 
 <details>
 <summary>Desciption</summary>
 
-Listed are deletions in cancer genes, homozygous deletions of tumor suppressors, 
-and gains in oncogenes. Oncogenes and tumor suppressors reported by 
+Listed are deletions in cancer genes, homozygous deletions of tumor suppressors,
+and gains in oncogenes. Oncogenes and tumor suppressors reported by
 [Cancermine](https://github.com/jakelever/cancermine).
 
 </details>
@@ -409,7 +451,7 @@ and gains in oncogenes. Oncogenes and tumor suppressors reported by
 ```{r cnv_suppressors, message=FALSE}
 purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicdd")
 
-purple_gene_cnv %>% 
+purple_gene_cnv %>%
   dplyr::select(Gene, MinCopyNumber, MaxCopyNumber) %>%
   dplyr::mutate(del = MinCopyNumber < 1.5,
                 hom_del = MinCopyNumber < 0.5,
@@ -427,7 +469,7 @@ purple_gene_cnv %>%
     max_cn = round(MaxCopyNumber),
     CopyNumber = ifelse(min_cn == max_cn, min_cn, paste(min_cn, max_cn, sep = '-'))) %>%
   dplyr::arrange(CopyNumber) %>%
-  dplyr::select(Gene, CopyNumber, Event, Gene_Role, UMCCR_list) %>% 
+  dplyr::select(Gene, CopyNumber, Event, Gene_Role, UMCCR_list) %>%
   DT::datatable(rownames = FALSE, filter = "top", extensions = c('Scroller', 'Buttons'),
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
                                dom = 'Bfrtip', buttons = c('csv', 'excel')))
@@ -441,28 +483,28 @@ purple_gene_cnv %>%
 <details>
 <summary>Desciption</summary>
 
-* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome 
+* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
   (centromeres, heterochromatin & missing short arms)
-* __Track2__: Somatic variants (incl. exon, intron and intergenic regions). 
+* __Track2__: Somatic variants (incl. exon, intron and intergenic regions).
     * outer ring: SNP allele frequencies, corrected for tumor purity and scaled from 0 to 100%.
       Each dot represents a single somatic variant, coloured according to the
       type of base change (e.g. C>T/G>A in red).
-    * inner ring: short insertion (yellow) and deletion (red) locations. 
+    * inner ring: short insertion (yellow) and deletion (red) locations.
 * __Track3__: Observed __total__ copy number changes adjusted for tumor purity,
-  including focal and chromosomal somatic events. 
+  including focal and chromosomal somatic events.
   <span style="color:red">Red</span> = Loss; <span style="color:#32CD32">Green</span> = Gain.
-  Scaled from 0 (complete loss) to 6 (high level gains). 
-  If > 6, shown as 6 with a green dot on the outermost green gridline. 
-* __Track4__: Observed __minor__ allele copy numbers. Range from 0 to 3. 
-  Expected normal minor allele copy number is 1, and anything below 1 is shown 
-  as a loss (<span style="color:#EE7600">Orange</span>), representing an LOH event. 
-  Minor allele copy numbers above 1 (<span style="color:#7EC0EE">Blue</span>) indicate gains 
-  of both A and B alleles. 
+  Scaled from 0 (complete loss) to 6 (high level gains).
+  If > 6, shown as 6 with a green dot on the outermost green gridline.
+* __Track4__: Observed __minor__ allele copy numbers. Range from 0 to 3.
+  Expected normal minor allele copy number is 1, and anything below 1 is shown
+  as a loss (<span style="color:#EE7600">Orange</span>), representing an LOH event.
+  Minor allele copy numbers above 1 (<span style="color:#7EC0EE">Blue</span>) indicate gains
+  of both A and B alleles.
 * __Track5__ (Inner circle): Observed structural variants within or between the chromosomes.
     * <span style="color:#7EC0EE">Blue</span> = Translocations
-    * <span style="color:red">Red</span> = Deletions 
-    * <span style="color:#e6e600">Yellow</span> = Insertions 
-    * <span style="color:#32CD32">Green</span> = Tandem duplications 
+    * <span style="color:red">Red</span> = Deletions
+    * <span style="color:#e6e600">Yellow</span> = Insertions
+    * <span style="color:#32CD32">Green</span> = Tandem duplications
     * <span style="color:#000000">Black</span> = Inversions
 
 </details>
@@ -477,7 +519,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 <details>
 <summary>Desciption</summary>
 
-* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome 
+* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
   (centromeres, heterochromatin & missing short arms)
 * __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
 * __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
@@ -511,7 +553,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_ba
 ```{r purply}
 fn <- file.path(params$purple_purity)
 x <- readr::read_tsv(fn, col_types = cols(.default = col_double(),
-                                          Gender = col_character(), 
+                                          Gender = col_character(),
                                           Status = col_character())) %>%
   dplyr::mutate_if(is.numeric, round, 2) %>%
   unlist()
@@ -522,7 +564,7 @@ tribble(~key, ~value,
         'Ploidy', glue('{x["Ploidy"]} ({x["MinPloidy"]}-{x["MaxPloidy"]})'),
         'Diploidy Proportion', glue('{x["DiploidProportion"]} ({x["MinDiploidProportion"]}-{x["MaxDiploidProportion"]})'),
         'Polyclonal Proportion', x["PolyclonalProportion"],
-        'Purple Version', x["Version"]) %>% 
+        'Purple Version', x["Version"]) %>%
   knitr::kable(format = "html")
 ```
 
@@ -530,12 +572,12 @@ tribble(~key, ~value,
 
 ```{r gene-tab}
 purple_gene_cnv %>%
-  dplyr::rename(min_cn = MinCopyNumber, max_cn = MaxCopyNumber) %>% 
+  dplyr::rename(min_cn = MinCopyNumber, max_cn = MaxCopyNumber) %>%
   dplyr::filter(Gene %in% key_genes$symbol) %>%
-  DT::datatable(filter = "top", rownames = FALSE, extensions = c('Scroller', 'Buttons'), 
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500, 
-                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>% 
-  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0) %>% 
+  DT::datatable(filter = "top", rownames = FALSE, extensions = c('Scroller', 'Buttons'),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500,
+                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>%
+  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0) %>%
   DT::formatRound(~ min_cn + max_cn)
 ```
 
@@ -551,27 +593,27 @@ germ <- readr::read_tsv(fn_germ, col_types = "ciiddddccccccc") %>%
   dplyr::select(chrom = `#chromosome`, start, end, tot_cn = copyNumber)
 
 cnv_all <- dplyr::bind_rows(somatic = som, germline = germ, .id = "type")
-cnv_all %>% 
-  mutate(seg_len = end - start) %>% 
-  group_by(type) %>% 
+cnv_all %>%
+  mutate(seg_len = end - start) %>%
+  group_by(type) %>%
   summarise(n = n(),
             mean_len = round(mean(seg_len), 0),
             med_len = round(median(seg_len), 0),
             min_cn = round(min(tot_cn), 2),
-            max_cn = round(max(tot_cn), 2)) %>% 
+            max_cn = round(max(tot_cn), 2)) %>%
   knitr::kable(format = "html", format.args = list(big.mark = ","))
 ```
 
 ### Somatic Calls
 
 ```{r som-tab}
-som %>%  
-  dplyr::mutate(seg_len = end - start) %>% 
-  DT::datatable(filter = "top", rownames = FALSE, 
-                extensions = c('Scroller', 'Buttons'), 
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300, 
-                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>% 
-  DT::formatCurrency(~ start + end + seg_len, currency = "", interval = 3, mark = ",", digits = 0) %>% 
+som %>%
+  dplyr::mutate(seg_len = end - start) %>%
+  DT::datatable(filter = "top", rownames = FALSE,
+                extensions = c('Scroller', 'Buttons'),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
+                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>%
+  DT::formatCurrency(~ start + end + seg_len, currency = "", interval = 3, mark = ",", digits = 0) %>%
   DT::formatRound('tot_cn')
 ```
 
@@ -582,3 +624,4 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.copyNumbe
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.minor_allele.png')))
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.png')))
 ```
+
