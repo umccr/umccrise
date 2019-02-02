@@ -27,7 +27,7 @@ dependencies:
   - versionpy
   - multiqc
   - multiqc-bcbio
-  # Conpair
+  # Conpair:
   - gatk4
   - scipy
   - pip:
@@ -38,7 +38,7 @@ dependencies:
     - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
   #
-  # Umccrise-specific
+  # Umccrise-specific:
   - natsort  # for bcbio.py in ngs_utils
   # - pybedtools  # for ref data generation
   # - sambamba  # for test data generation
@@ -47,7 +47,9 @@ dependencies:
   - awscli
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - parallel
-  # R libraries
+  - gsort  # sort vcfs and beds - https://github.com/brentp/gsort
+  - toml  # to read predisposition genes from PCGR toml
+  # R libraries:
   # - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - r-base >=3.5.1
   - pandoc
@@ -73,5 +75,4 @@ dependencies:
   - r-readr
   - r-stringr
   - r-htmlwidgets >=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
-  - toml
   - r-bookdown
