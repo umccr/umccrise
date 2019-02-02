@@ -70,8 +70,8 @@ params <- list(
   purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity')
 
 render_me <- function() {
-  rmarkdown::render_book(
-    "index.Rmd",
+  rmarkdown::render(
+    "cancer_report.Rmd",
     params = params)
 }
 render_me()
@@ -86,9 +86,24 @@ render_me()
 <summary>Desciption</summary>
 
 Allelic frequencies are based on the bcbio somatic ensemble
-calls (or the single variant calls if run in single-caller mode)
-and limited to 'high confidence' regions as determined by the
-[Genome in a Bottle consortium](http://jimb.stanford.edu/giab/).
+calls (or the single somatic variant calls if run in single-caller mode).
+
+The following steps occur:
+
+1. `somatic_vcf_sort`: simply sort the input VCF
+2. `somatic_vcf_annotate`: [annotate VCF](https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk)
+3. `somatic_vcf_filter`: [filter VCF](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf)
+4. `somatic_vcf_filter_af10`: soft filter variants where `TUMOR_AF < 0.1`
+5. `somatic_vcf_filter_pass`: keep only `.,PASS` variants
+6. `subset_to_giab`: keep variants in 'high confidence' regions as determined by the 
+   [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/)
+7. `split_multiallelic`:
+   - keep only the `TUMOR_AF` field from `INFO` column
+   - split multiallelics into multiple rows
+8. Allele frequencies for global and keygenes:
+   - `afs`: grab only the `INFO/TUMOR_AF` field and output to final txt file
+   - `afs_keygenes`: grab the `CHROM`, `POS`, `ID`, `REF`, `ALT` and `INFO/TUMOR_AF`
+     for variants in the UMCCR cancer gene BED file, and output to final txt file
 
 </details>
 
@@ -139,11 +154,11 @@ af_both %>%
 
 
 ## Mutational signature
-We can use [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html)
-to generate a mutation signature for our sample.
+We can use the [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html)
+R package to generate a mutation signature for our sample.
 
 ```{r importVCF, warning=FALSE}
-vcf <- read_vcfs_as_granges(
+somatic_snv <- read_vcfs_as_granges(
   params$somatic_snv,
   sample_names = params$tumor_name,
   genome = ref_genome,
@@ -154,13 +169,13 @@ vcf <- read_vcfs_as_granges(
 
 #### Point mutation spectrum
 ```{r somProfile1, warning=FALSE}
-type_occurrences <- mut_type_occurrences(vcf_list = vcf, ref_genome = ref_genome)
+type_occurrences <- mut_type_occurrences(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_spectrum(type_occurrences, CT = TRUE)
 ```
 
 #### 96 trinucleotide profile
 ```{r somProfile2, warning=FALSE}
-mut_mat <- mut_matrix(vcf_list = vcf, ref_genome = ref_genome)
+mut_mat <- mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_96_profile(mut_mat, condensed = TRUE)
 ```
 
@@ -203,7 +218,7 @@ result %>%
 
 ```{r rainfall}
 chromosomes <- seqnames(get(ref_genome))[1:22]
-plot_rainfall(vcf[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
+plot_rainfall(somatic_snv[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 ```
 
 ## Prioritised SVs
@@ -312,7 +327,7 @@ if (params$genome_build == 'hg19') {
 }
 
 # Mutation count matrix with strand info (4*6*4=96 -> 96*2=192)
-mut_mat_s <- mut_matrix_stranded(vcf,
+mut_mat_s <- mut_matrix_stranded(somatic_snv,
                                  ref_genome = ref_genome,
                                  ranges = genes_list,
                                  mode = "transcription")
@@ -362,7 +377,7 @@ repli_strand_granges <- GRanges(
 
 seqlevelsStyle(repli_strand_granges) <- seqlevelsStyle(base::get(ref_genome))
 
-mut_mat_s_rep <- mut_matrix_stranded(vcf, ref_genome = ref_genome,
+mut_mat_s_rep <- mut_matrix_stranded(somatic_snv, ref_genome = ref_genome,
                                      ranges = repli_strand_granges,
                                      mode = "replication")
 # Mutation count per type and strand
@@ -485,7 +500,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 * __Track4__: Minor Copy Number Changes (see above)
 * __Track5__ (Inner circle): Observed Structural Variants (see above)
 
-<details>
+</details>
 
 ```{r circos-baf-plot, out.width="80%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
