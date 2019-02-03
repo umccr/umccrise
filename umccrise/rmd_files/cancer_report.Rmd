@@ -24,6 +24,7 @@ params:
   purple_purity: 'x'
   purple_cnv: 'x'
   purple_germline_cnv: 'x'
+  purple_qc: 'x'
 description: "Analysis of tumor/normal samples at UMCCR"
 title: "`r paste(params$title, params$batch_name)`"
 ---
@@ -67,7 +68,8 @@ params <- list(
   purple_gene_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/rmd/purple.tsv',
   purple_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.cnv',
   purple_germline_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.germline.cnv',
-  purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity')
+  purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity',
+  purple_qc='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.qc')
 
 render_me <- function() {
   rmarkdown::render(
@@ -186,14 +188,14 @@ distinguishes between `C>T` at CpG sites and other sites.
 
 </details>
 
-```{r somProfile1, warning=FALSE}
+```{r somProfile1, warning=FALSE, out.width="60%"}
 type_occurrences <- mut_type_occurrences(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_spectrum(type_occurrences, CT = TRUE)
 ```
 
 #### Profile of 96 trinucleotides
 
-```{r somProfile2, warning=FALSE}
+```{r somProfile2, warning=FALSE, out.width="60%"}
 mut_mat <- mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_96_profile(mut_mat, condensed = TRUE)
 ```
@@ -268,7 +270,7 @@ The y-axis corresponds to the distance of a mutation with the previous mutation 
 transformed. Drop-downs from the plots indicate clusters or “hotspots” of mutations.
 </details>
 
-```{r rainfall}
+```{r rainfall, out.width="60%"}
 chromosomes <- seqnames(get(ref_genome))[1:22]
 plot_rainfall(somatic_snv[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
 ```
@@ -370,7 +372,7 @@ than one gene on different strands.
 
 </details>
 
-```{r tran_strand_bias, warning=FALSE, message=FALSE}
+```{r tran_strand_bias, warning=FALSE, message=FALSE, out.width="60%"}
 # Get known genes table from UCSC
 if (params$genome_build == 'hg19') {
   genes_list <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
@@ -415,7 +417,7 @@ strand bias analysis.
 
 </details>
 
-```{r rep_strand_bias, warning=FALSE, message=FALSE}
+```{r rep_strand_bias, warning=FALSE, message=FALSE, out.width="60%"}
 repli_file <- system.file("extdata/ReplicationDirectionRegions.bed",
                           package = "MutationalPatterns")
 # start/stop contain scientific notation, so need to be doubles
@@ -446,6 +448,55 @@ plot_strand_bias(strand_bias_rep)
 [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
 is a tool for estimating tumor purity and ploidy. It uses the read depth and
 tumor beta allele frequency (BAF) to estimate purity and generate a copy number profile.
+
+## QC Status
+
+```{r purple-qc}
+fn <- file.path(params$purple_qc)
+tab <- readr::read_tsv(fn, col_names = c("key", "value"), col_types = "cc")
+tab %>%
+  dplyr::mutate(
+    key = kableExtra::cell_spec(key, bold = TRUE),
+    value = toupper(value),
+    value = kableExtra::cell_spec(value, bold = TRUE, 
+                                  color = dplyr::case_when(
+        value == "PASS" ~ "green",
+        grepl("FAIL", value) ~ "red",
+        value == "FEMALE" ~ "purple",
+        value == "MALE" ~ "blue",
+        value == "TRUE" ~ "green",
+        value == "FALSE" ~ "red",
+        TRUE ~ "black"))) %>%
+  knitr::kable(escape = FALSE) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
+
+## Purity and Ploidy Summary
+
+```{r purply}
+fn <- file.path(params$purple_purity)
+x <- readr::read_tsv(fn, col_types = cols(.default = col_double(),
+                                          Gender = col_character(),
+                                          Status = col_character())) %>%
+  dplyr::mutate_if(is.numeric, round, 2) %>%
+  unlist()
+
+tribble(~key, ~value,
+        'Gender', x["Gender"],
+        'Purity', glue('{x["#Purity"]} ({x["MinPurity"]}-{x["MaxPurity"]})'),
+        'Ploidy', glue('{x["Ploidy"]} ({x["MinPloidy"]}-{x["MaxPloidy"]})'),
+        'Diploidy Proportion', glue('{x["DiploidProportion"]} ({x["MinDiploidProportion"]}-{x["MaxDiploidProportion"]})'),
+        'Polyclonal Proportion', x["PolyclonalProportion"],
+        'Purple Version', x["Version"]) %>%
+  dplyr::mutate(
+    key = kableExtra::cell_spec(key, bold = TRUE),
+    value = kableExtra::cell_spec(value, bold = TRUE, color = dplyr::case_when(
+        value == "FEMALE" ~ "purple",
+        value == "MALE" ~ "blue",
+        TRUE ~ "black"))) %>%
+  knitr::kable(escape = FALSE) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
 
 ## Events in cancer genes
 
@@ -558,26 +609,6 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
 ```
 
-## Purity and Ploidy Summary
-
-```{r purply}
-fn <- file.path(params$purple_purity)
-x <- readr::read_tsv(fn, col_types = cols(.default = col_double(),
-                                          Gender = col_character(),
-                                          Status = col_character())) %>%
-  dplyr::mutate_if(is.numeric, round, 2) %>%
-  unlist()
-
-tribble(~key, ~value,
-        'Sex', x["Gender"],
-        'Purity', glue('{x["#Purity"]} ({x["MinPurity"]}-{x["MaxPurity"]})'),
-        'Ploidy', glue('{x["Ploidy"]} ({x["MinPloidy"]}-{x["MaxPloidy"]})'),
-        'Diploidy Proportion', glue('{x["DiploidProportion"]} ({x["MinDiploidProportion"]}-{x["MaxDiploidProportion"]})'),
-        'Polyclonal Proportion', x["PolyclonalProportion"],
-        'Purple Version', x["Version"]) %>%
-  knitr::kable(format = "html")
-```
-
 ## UMCCR Gene Somatic CNV Calls
 
 ```{r gene-tab}
@@ -611,7 +642,8 @@ cnv_all %>%
             med_len = round(median(seg_len), 0),
             min_cn = round(min(tot_cn), 2),
             max_cn = round(max(tot_cn), 2)) %>%
-  knitr::kable(format = "html", format.args = list(big.mark = ","))
+  knitr::kable(format.args = list(big.mark = ",")) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
 
 ### Somatic Calls
