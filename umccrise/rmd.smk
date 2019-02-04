@@ -125,6 +125,7 @@ rule bookdown_report:
         purple_cnv          = rules.purple_run.output.cnv,
         purple_germline_cnv = rules.purple_run.output.germline_cnv,
         purple_purity       = rules.purple_run.output.purity,
+        purple_qc           = rules.purple_run.output.qc,
         purple_circos_png   = rules.purple_run.output.circos_png,
         purple_input_png    = rules.purple_run.output.input_png,
         purple_cn_png       = rules.purple_run.output.cn_png,
@@ -145,6 +146,7 @@ rule bookdown_report:
         purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
         purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
+        purple_qc           = lambda wc, input: abspath(input.purple_qc),
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
@@ -180,7 +182,8 @@ somatic_sv='{params.somatic_sv}', \
 purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_germline_cnv='{params.purple_germline_cnv}', \
-purple_purity='{params.purple_purity}' \
+purple_purity='{params.purple_purity}', \
+purple_qc='{params.purple_qc}' \
 ))" ; \
 cd {params.work_dir} ; \
 """)
