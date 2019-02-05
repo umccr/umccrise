@@ -11,6 +11,12 @@ base_count_desc: 'gigabases'
 make_data_dir: False
 
 
+# high values push to the right, default is 1000: https://multiqc.info/docs/#column-order
+table_columns_placement:
+    bcbio:
+        viral_content: 2000  # to put it in the end
+
+
 # Overwrite the defaults of which table columns are visible by default
 table_columns_visible:
     FastQC:
@@ -23,16 +29,18 @@ table_columns_visible:
         percentage_aligned: False                 # is also set in bcbio/__init__.py
         median_coverage: False                    # is also set in bcbio/__init__.py
     Samtools Stats:
-        non-primary_alignments: False             # is also set in bcbio/__init__.py
+        non-primary_alignments: True              # is also set in bcbio/__init__.py
         reads_mapped: False                       # is also set in bcbio/__init__.py
         reads_mapped_percent: False               # is also set in bcbio/__init__.py
         raw_total_sequences: False                # is also set in bcbio/__init__.py
         error_rate: False                         # is also set in bcbio/__init__.py
         reads_properly_paired_percent: True
+        reads_MQ0_percent: True
     bcbio:
         Usable_pct: False
         Ontarget_padded_pct: False
         Average_insert_size: False
+        RiP_pct: False
     SnpEff:
         Change_rate: False                        # is also set in bcbio/__init__.py
         Ts_Tv_ratio: False                        # is also set in bcbio/__init__.py
@@ -41,14 +49,14 @@ table_columns_visible:
         number_of_SNPs: True
         number_of_indels: True
         tstv: True
-        number_of_records: False
+        number_of_records: True
         variations_hom: True
         variations_het: True
-        number_of_MNPs: False
-        number_of_others: False
+        number_of_MNPs: True
+        number_of_others: True
     Peddy:
-#        family_id: False
-#        ancestry-prediction: False
+        family_id: False
+        ancestry-prediction: True
         ancestry-prob_het_check: False
         sex_het_ratio: False
         error_sex_check: False
@@ -56,11 +64,10 @@ table_columns_visible:
     VerifyBAMID:
         Contam: False
 
-preseq:
-    notrim: True
-
 bcftools:
     collapse_complementary_changes: False
+    write_general_stats: False
+    write_separate_table: True
 
 qualimap:
     general_stats_coverage: 1, 5, 10, 30, 100
@@ -77,3 +84,145 @@ umccr:
     - Dakota_T
     - Eugene_B
     - Eugene_T
+
+module_order:
+    - bcbio
+    - samtools
+    - goleft_indexcov
+    - peddy
+    - custom_content
+    - bcftools:
+        info: Bcftools stats for somatic variant calls.
+        name: Bcftools stats (somatic)
+        path_filters:
+        - '*_bcftools_stats.txt'
+        write_general_stats: true
+    - bcftools:
+        info: Bcftools stats for germline variant calls.
+        name: Bcftools stats (germline)
+        path_filters:
+        - '*_bcftools_stats_germline.txt'
+        write_general_stats: false
+    - picard
+    - qualimap
+    - snpeff
+    - fastqc
+    - preseq
+
+custom_data:
+    umccrise:
+# ID, section_name, description work only for plots and separate tables (plot_type: "table").
+# Do not specify them for generalstats otherwise it won't show up :(
+#        id: somatic_stats
+#        section_name: 'Somatic variants'
+#        description: 'Somatic variant calls, pre- and post-filtered statistics'
+        plot_type: generalstats
+        pconfig:
+        - snps:
+            title: 'SNP'
+            description: 'Somatic SNPs passing umccrise filters'
+            min: 0
+            format: '{:,.0f}'
+        - indels:
+            title: 'Indel'
+            description: 'Somatic indels passing umccrise filters'
+            min: 0
+            format: '{:,.0f}'
+        - other:
+            title: 'Other'
+            description: 'Other somatic variants (MNP), passing umccrise filters'
+            min: 0
+            format: '{:,.0f}'
+
+        - filt_snps:
+            title: 'SNP-filt'
+            description: 'SNPs filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
+            min: 0
+            format: '{:,.0f}'
+            scale: 'Reds'
+        - filt_indels:
+            title: 'Indel-filt'
+            description: 'Indels filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
+            min: 0
+            format: '{:,.0f}'
+            scale: 'Reds'
+        - filt_other:
+            title: 'Other-filt'
+            description: 'Other variants (MNP) filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
+            min: 0
+            format: '{:,.0f}'
+            scale: 'Reds'
+
+        - ori_snps:
+            title: 'SNP-ori'
+            description: 'Total SNPs called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
+            min: 0
+            format: '{:,.0f}'
+        - ori_indels:
+            title: 'Indel-ori'
+            description: 'Total indels called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
+            min: 0
+            format: '{:,.0f}'
+        - ori_other:
+            title: 'Other-ori'
+            description: 'Total orther variants (MNP) called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
+            min: 0
+            format: '{:,.0f}'
+
+        - germline:
+            title: 'Germline'
+            description: 'Germline variants (from normal sample)'
+            min: 0
+            format: '{:,.0f}'
+
+#        - pon:
+#            title: 'PoN'
+#            description: 'Variants filtered out because they found in the UMCCR panel of normals'
+#            id: 'pon'
+#            min: 0
+#        - gnomad:
+#            title: 'gnomAD'
+#            description: 'Variants filtered out because they found in gnomAD with population AF>1%'
+#            id: 'pon'
+#            min: 0
+#        - pon:
+#            title: 'PoN'
+#            description: 'Variants found in UMCCR panel of normals'
+#            id: 'pon'
+#            min: 0
+#            max: 100
+#            scale: 'RdYlGn'
+#            suffix: '%'
+#        - pon_filt:
+#            title: 'PoN filt'
+#            description: 'Variants filtered due to hits in UMCCR panel of normals (filtering threshold - 2 hits, but keeping all hotspots and TIER 1-3)'
+#            id: 'pon_filt'
+#            min: 0
+#            max: 100
+#            scale: 'RdYlGn'
+#            suffix: '%'
+#            hidden: True
+#        - hom_het:
+#        - ts_tv:
+
+sp:
+    umccrise:
+        fn_re: '(somatic|germline)_stats.yml'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

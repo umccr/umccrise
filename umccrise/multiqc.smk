@@ -31,82 +31,18 @@ rule copy_logs:
         'cp -r {input.versions} {output.versions} && ' \
         'cp -r {input.programs} {output.programs}'
 
-
-rule varqc_report:
-    input:
-        vcf = rules.somatic_vcf_filter.output.vcf
-    output:
-        'work/{batch}/small_variants/pon_mqc.yaml',
-    params:
-        sample = lambda wc: batch_by_name[wc.batch].tumor.name,
-    run:
-        total_cnt = 0
-        pass_cnt = 0
-        pon_cnt = 0
-        pon_filt = 0
-        vcf = cyvcf2.VCF(input.vcf)
-        for rec in vcf:
-            total_cnt += 1
-            if rec.FILTER == 'PASS':
-                pass_cnt += 1
-            if 'PoN' in rec.FILTER:
-                pon_filt += 1
-            if rec.INFO.get('PoN', 0) > 0:
-                pon_cnt += 1
-        pass_pct = pass_cnt / total_cnt
-        pon_pct = pon_cnt / total_cnt
-        pon_filt_pct = pon_filt / total_cnt
-
-        data = dict(
-            # id='umccr_pon',
-            # section_name='UMCCR panel of normals',
-            # description='Percentage of variants found in UMCCR panel of normals',
-            plot_type='generalstats',
-            pconfig=[{
-                'PoN': dict(
-                    min=0,
-                    max=100,
-                    scale='RdYlGn',
-                    suffix='%',
-                ),
-                'PASS': dict(
-                    min=0,
-                    max=100,
-                    scale='RdYlGn',
-                    suffix='%',
-                ),
-                'PoN filt': dict(
-                    min=0,
-                    max=100,
-                    scale='RdYlGn',
-                    suffix='%',
-                    hidden=True,
-                ),
-            }],
-            data={
-                params.sample: {
-                    'PoN': pon_pct,
-                    'PASS': pass_cnt,
-                    'PoN filt': pon_filt_pct
-                }
-            }
-        )
-        with open(output[0], 'w') as out:
-            yaml.dump(data, out)
-
-
 rule prep_multiqc_data:
     input:
-        bcbio_mq_filelist = join(run.date_dir, 'multiqc/list_files_final.txt'),
-        bcbio_mq_yaml     = join(run.date_dir, 'multiqc/multiqc_config.yaml'),
-        bcbio_final_dir   = run.final_dir,
-        conpair_concord   = rules.run_conpair.output.concord,
-        conpair_contam    = rules.run_conpair.output.contam,
-        varqc_report      = rules.varqc_report.output[0],
+        bcbio_mq_filelist       = join(run.date_dir, 'multiqc/list_files_final.txt'),
+        bcbio_final_dir         = run.final_dir,
+        conpair_concord         = rules.run_conpair.output.concord,
+        conpair_contam          = rules.run_conpair.output.contam,
+        somatic_stats           = rules.somatic_stats_report.output[0],
+        germline_stats          = rules.germline_stats_report.output[0],
+        bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
-        bcbio_conf_yaml     = 'work/{batch}/multiqc_data/bcbio_conf.yaml',
     params:
         data_dir        = 'work/{batch}/multiqc_data',
         tumor_name      = lambda wc: batch_by_name[wc.batch].tumor.name,
@@ -135,20 +71,22 @@ rule prep_multiqc_data:
             join(input.conpair_contam, params.tumor_name + '.txt'),
             join(input.conpair_contam, params.normal_name + '.txt'),
             join(input.conpair_concord, params.tumor_name + '.txt'),
-            varqc_report,
+            input.somatic_stats,
+            input.germline_stats,
+            input.bcftools_somatic_stats
         ])
 
         multiqc_prep_data(
             bcbio_mq_filelist=input.bcbio_mq_filelist,
-            bcbio_mq_yaml=input.bcbio_mq_yaml,
             bcbio_final_dir=input.bcbio_final_dir,
             new_mq_data_dir=params.data_dir,
             generated_conf=generated_conf,
             out_filelist_file=output.filelist,
             out_conf_yaml=output.generated_conf_yaml,
-            new_bcbio_mq_yaml=output.bcbio_conf_yaml,
             additional_files=additional_files,
-            exclude_files=r'.*qsignature.*',
+            exclude_files=[r'.*qsignature.*',
+                           r'.*bcftools_stats.txt'  # adding somatic stats, but keeping germline stats
+                           ],
         )
 
 
@@ -156,7 +94,6 @@ rule batch_multiqc:
     input:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
-        bcbio_conf_yaml     = 'work/{batch}/multiqc_data/bcbio_conf.yaml',
         umccrise_conf_yaml  = join(package_path(), 'multiqc', 'multiqc_config.yaml'),
     output:
         html_file           = '{batch}/{batch}-multiqc_report.html'
@@ -171,8 +108,7 @@ rule batch_multiqc:
         else:
             list_files = input.filelist
         shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . -l {list_files}'
-              f' -c {input.bcbio_conf_yaml} -c {input.umccrise_conf_yaml}'
-              f' -c {input.generated_conf_yaml} --filename {output.html_file}')
+              f' -c {input.umccrise_conf_yaml} -c {input.generated_conf_yaml} --filename {output.html_file}')
 
 
 rule multiqc:

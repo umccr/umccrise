@@ -78,10 +78,10 @@ def prep_inputs(config_):
     #### Reference files                                   ####
     ###########################################################
     ref_fa = get_ref_file(run.genome_build)
-    truth_regions = get_ref_file(run.genome_build, ['hmf_giab_conf'])
-    pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
+    truth_regions = get_ref_file(run.genome_build, key=['hmf_giab_conf'])
+    pon_dir = get_ref_file(run.genome_build, key='panel_of_normals_dir')
     pcgr_data = get_ref_file(key='pcgr_data', loc=loc)
-    cacao_data = get_ref_file(key='cacao_data', loc=loc),
+    cacao_data = get_ref_file(key='cacao_data', loc=loc)
 
     ###########################################################
     #### Done looking for refernece files, now some checks ####

@@ -46,15 +46,17 @@ def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, 
     return conf, additional_files
 
 
-def multiqc_prep_data(bcbio_mq_filelist, bcbio_mq_yaml, bcbio_final_dir,
-                      new_mq_data_dir, generated_conf, out_filelist_file, out_conf_yaml,
-                      new_bcbio_mq_yaml, additional_files, exclude_files=None):
+def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
+                      generated_conf, out_filelist_file, out_conf_yaml,
+                      additional_files, exclude_files=None,
+                      bcbio_mq_yaml=None, new_bcbio_mq_yaml=None):
     if generated_conf:
         with file_transaction(None, out_conf_yaml) as tx:
             with open(tx, 'w') as f:
                 yaml.dump(generated_conf, f, default_flow_style=False)
 
-    shutil.copy(bcbio_mq_yaml, new_bcbio_mq_yaml)
+    if bcbio_mq_yaml and new_bcbio_mq_yaml:
+        shutil.copy(bcbio_mq_yaml, new_bcbio_mq_yaml)
 
     verify_file(bcbio_mq_filelist, is_critical=True)
     qc_files_not_found = []
