@@ -4,10 +4,20 @@ from ngs_utils.file_utils import safe_mkdir
 import shutil
 import sys
 
-final_dir = sys.argv[1]
-rn_final_dir = sys.argv[2]
+inp_dir = sys.argv[1]
+out_dir = sys.argv[2]
 
 d = {
+    "E194__PRJ180506_E194-T01-D": "Alice_T",
+    "E194__PRJ180507_E194-B01-D": "Alice_B",
+    "E201__PRJ180492_E201-T01-D": "Bob_T",
+    "E201__PRJ180493_E201-B01-D": "Bob_B",
+    "E199__PRJ180494_E199-T01-D": "Chen_T",
+    "E199__PRJ180495_E199-B01-D": "Chen_B",
+    "E190__PRJ180253_E190-T01-D": "Dakota_T",
+    "E190__PRJ180254_E190-B01-D": "Dakota_B",
+    "E202__PRJ180499_E202-T01-D": "Eugene_T",
+    "E202__PRJ180500_E202-B01-D": "Eugene_B",
     "PRJ180506_E194-T01-D": "Alice_T",
     "PRJ180507_E194-B01-D": "Alice_B",
     "PRJ180492_E201-T01-D": "Bob_T",
@@ -25,10 +35,10 @@ def rn(s):
         s = s.replace(k, v)
     return s
 
-safe_mkdir(rn_final_dir)
+safe_mkdir(out_dir)
 
-for root, dirs, files in os.walk(final_dir):
-    rn_root = rn(root.replace(final_dir, rn_final_dir))
+for root, dirs, files in os.walk(inp_dir):
+    rn_root = rn(root.replace(inp_dir, out_dir))
     for dname in dirs:
         dpath = os.path.join(root, dname)
         rn_dpath = join(rn_root, rn(dname))
