@@ -29,7 +29,8 @@ table_columns_visible:
         percentage_aligned: False                 # is also set in bcbio/__init__.py
         median_coverage: False                    # is also set in bcbio/__init__.py
     Samtools Stats:
-        non-primary_alignments: True              # is also set in bcbio/__init__.py
+        non-primary_alignments_percent: True
+        non-primary_alignments: False             # is also set in bcbio/__init__.py
         reads_mapped: False                       # is also set in bcbio/__init__.py
         reads_mapped_percent: False               # is also set in bcbio/__init__.py
         raw_total_sequences: False                # is also set in bcbio/__init__.py
@@ -74,16 +75,16 @@ qualimap:
 
 umccr:
     reference_samples:
-    - Alice_B
     - Alice_T
-    - Bob_B
+    - Alice_B
     - Bob_T
-    - Chen_B
+    - Bob_B
     - Chen_T
-    - Dakota_B
+    - Chen_B
     - Dakota_T
-    - Eugene_B
+    - Dakota_B
     - Eugene_T
+    - Eugene_B
 
 module_order:
     - bcbio
@@ -153,19 +154,25 @@ custom_data:
             format: '{:,.0f}'
             scale: 'Reds'
 
-        - ori_snps:
-            title: 'SNP-ori'
-            description: 'Total SNPs called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
-            min: 0
-            format: '{:,.0f}'
-        - ori_indels:
-            title: 'Indel-ori'
-            description: 'Total indels called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
-            min: 0
-            format: '{:,.0f}'
-        - ori_other:
-            title: 'Other-ori'
-            description: 'Total orther variants (MNP) called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
+#        - ori_snps:
+#            title: 'SNP-ori'
+#            description: 'Total SNPs called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
+#            min: 0
+#            format: '{:,.0f}'
+#        - ori_indels:
+#            title: 'Indel-ori'
+#            description: 'Total indels called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
+#            min: 0
+#            format: '{:,.0f}'
+#        - ori_other:
+#            title: 'Other-ori'
+#            description: 'Total orther variants (MNP) called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
+#            min: 0
+#            format: '{:,.0f}'
+
+        - ori:
+            title: 'Ori'
+            description: 'Number of variants before filtering. Somatic variants were subset to cancer genes in order to start filtering, because they were exceeding 500k even after removing germline variants. Possibly indicates a noisy data'
             min: 0
             format: '{:,.0f}'
 

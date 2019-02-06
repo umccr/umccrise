@@ -15,7 +15,7 @@ from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
 
 def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, analysis_dir=None,
-                         program_versions_fpath=None, data_versions_fpath=None):
+                         prog_versions_fpath=None, data_versions_fpath=None, new_dir_for_versions=None):
     conf = dict()
     conf['umccr'] = dict()
     additional_files = []
@@ -28,8 +28,9 @@ def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, 
     # General links
     conf['title'] = bcbio_proj.project_name
     conf['umccr']['run_section'] = get_run_info(bcbio_proj, base_dirpath, analysis_dir=analysis_dir,
-                                                program_versions_fpath=program_versions_fpath,
-                                                data_versions_fpath=data_versions_fpath)
+                                                prog_versions_fpath=prog_versions_fpath,
+                                                data_versions_fpath=data_versions_fpath,
+                                                new_dir_for_versions=None)
 
     # if bcbio_proj.is_rnaseq:
     #     conf['umccr']['expression_links'] = _rna_general_links(bcbio_proj, base_dirpath)
@@ -48,7 +49,7 @@ def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, 
 
 def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
                       generated_conf, out_filelist_file, out_conf_yaml,
-                      additional_files, exclude_files=None,
+                      additional_files, exclude_files=None, include_files=None,
                       bcbio_mq_yaml=None, new_bcbio_mq_yaml=None):
     if generated_conf:
         with file_transaction(None, out_conf_yaml) as tx:
@@ -71,6 +72,11 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
                         if isinstance(exclude_files, str):
                             exclude_files = [exclude_files]
                         if any(re.search(ptn, fp) for ptn in exclude_files):
+                            continue
+                    if include_files:
+                        if isinstance(include_files, str):
+                            include_files = [include_files]
+                        if not any(re.search(ptn, fp) for ptn in include_files):
                             continue
                     old_fpath = join(bcbio_final_dir, fp)
                     new_fpath = join(new_mq_data_dir, fp)
@@ -132,7 +138,8 @@ def _make_link(fpath, base_dirpath, text=None, blank=False):
 
 
 def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
-                 program_versions_fpath=None, data_versions_fpath=None):
+                 prog_versions_fpath=None, data_versions_fpath=None,
+                 new_dir_for_versions=None):
     info('Getting run and codebase information...')
     run_info_dict = dict()
     cur_fpath = abspath(getsourcefile(lambda: 0))
@@ -173,22 +180,31 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
             version_text += 'last modified ' + last_modified_datestamp
         run_info_dict['umccrise_version'] = version_text
 
-    if verify_file(program_versions_fpath, silent=True):
-        with open(program_versions_fpath) as f:
-            program_versions = dict(l.strip().split(',')[:2] for l in f.readlines())
+    if prog_versions_fpath and new_dir_for_versions and verify_file(prog_versions_fpath, silent=True):
+        with open(prog_versions_fpath) as f:
+            program_versions = dict()
+            for l in f:
+                l = l.strip()
+                if l:
+                    if l.split(',') != 2:
+                        warn(f'Parsing line in {prog_versions_fpath} which is exptected to be in form program,version: {l}')
+                    else:
+                        program_versions[l.split(',')[0]] = l.split(',')[1]
+        new_prog_versions_fpath = join(new_dir_for_versions, basename(prog_versions_fpath))
         if umccrsie_version:
             program_versions['umccrise'] = umccrsie_version
         try:
-            with open(program_versions_fpath, 'w') as f:
+            with open(new_prog_versions_fpath, 'w') as f:
                 for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
                     f.write(p + ',' + v + '\n')
         except OSError as e:
             err(e)
-        programs_url = relpath(program_versions_fpath, base_dirpath)
+        programs_url = relpath(new_prog_versions_fpath, base_dirpath)
         run_info_dict['program_versions'] = '<a href="{programs_url}">program versions</a>'.format(**locals())
 
-    if verify_file(data_versions_fpath, silent=True):
-        datas_url = relpath(data_versions_fpath, base_dirpath)
+    if data_versions_fpath and new_dir_for_versions and verify_file(data_versions_fpath, silent=True):
+        new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath))
+        datas_url = relpath(new_data_versions_fpath, base_dirpath)
         run_info_dict['data_versions'] = '<a href="{datas_url}">data versions</a>'.format(**locals())
 
     run_info_dict['analysis_dir'] = analysis_dir or bcbio_proj.final_dir

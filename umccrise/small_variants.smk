@@ -14,27 +14,6 @@ import subprocess
 localrules: small_variants, prep_anno_toml, prep_giab_bed, somatic_stats_report, germline_stats_report
 
 
-SUBSET_SOMATIC_IF_MORE_THAN = 500_000
-
-
-# Call variants with 1%
-# Apply to VarDict only: (INFO/QUAL * TUMOR_AF) >= 4
-# Call ensemble
-# First PoN round: remove PoN_CNT>2'
-# Annotate with PCGR (VEP+known cancer databases)
-#   Tier 1 - variants of strong clinical significance
-#   Tier 2 - variants of potential clinical significance
-#   Tier 3 - variants of unknown clinical significance
-#   Tier 4 - other coding variants
-#   Noncoding variants
-# Tier 1-3 - keep all variants
-# Tier 4 and noncoding - filter with:
-#   Remove gnomad_AF <=0.02
-#   Remove PoN_CNT>{0 if issnp else 1}'
-#   Remove indels in "bad_promoter" tricky regions
-#   Remove DP<25 & AF<5% in tricky regions: gc15, gc70to75, gc75to80, gc80to85, gc85, low_complexity_51to200bp,
-#           low_complexity_gt200bp, non-GIAB confident, unless coding in cancer genes
-
 vcf_suffix = '-annotated'
 def get_somatic_vcf_path(b, suf):
     return join(run.date_dir, f'{batch_by_name[b].name}-{run.somatic_caller}{suf}.vcf.gz')
@@ -47,20 +26,6 @@ if not all(isfile(get_somatic_vcf_path(b, vcf_suffix)) for b in batch_by_name.ke
         critical('Could not find somatic variants files for all batches neither as '
                  '<datestamp_dir>/<batch>-{run.somatic_caller}-annotated.vcf.gz (conventional bcbio), '
                  'nor as project/<batch>-{run.somatic_caller}.vcf.gz (CWL bcbio).')
-
-
-# if total_vars > 500_000:  # to avoid PCGR choking on too many variants
-rule somatic_vcf_keygenes:
-    input:
-        vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix)
-    output:
-        vcf = 'work/{batch}/small_variants/keygenes_subset/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-    run:
-        genes = get_key_genes_set()
-        def func(rec):
-            if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
-                return rec
-        iter_vcf(input.vcf, output.vcf, func)
 
 def cnt_vars(vcf_path, passed=False):
     snps = 0
@@ -77,27 +42,21 @@ def cnt_vars(vcf_path, passed=False):
             others += 1
     return snps, indels, others
 
-# def count_vars(vcf_fpath):
-#     return int(subprocess.check_output(f'bcftools view -H {vcf_fpath} | wc -l', shell=True).strip())
-
-rule somatic_vcf_sort:
+rule somatic_vcf_pass_sort:
     input:
-        subset_vcf = rules.somatic_vcf_keygenes.output[0],
-        full_vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix),
+        vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix),
     output:
-        'work/{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-SORT.vcf.gz',
-    run:
-        vcf = input.subset_vcf \
-            if sum(cnt_vars(input.full_vcf)) > SUBSET_SOMATIC_IF_MORE_THAN \
-            else input.full_vcf
-        shell(f'(bcftools view -h {vcf} ; bcftools view -H -f.,PASS {vcf} | sort -k1,1V -k2,2n) | bgzip -c > {output} && '
-               'tabix -f -p vcf {output}')
+        vcf = 'work/{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS_SORT.vcf.gz',
+    shell:
+        '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
+        'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
 rule somatic_vcf_annotate:
     input:
-        vcf = rules.somatic_vcf_sort.output[0],
+        vcf = rules.somatic_vcf_pass_sort.output[0],
     output:
         vcf = 'work/{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-ANNO.vcf.gz',
+        subset_to_cancer = 'work/{batch}/small_variants/somatic_anno/subset_to_cancer_genes.flag',
     params:
         genome = run.genome_build,
         work_dir = 'work/{batch}/small_variants',
@@ -160,13 +119,21 @@ rule bcftools_stats_somatic:
 
 ##################
 #### Germline ####
-# Annotate any events found in ~200 cancer predisposition gene set.
-rule germline_vcf_subset:  # {batch}
+rule germline_vcf_pass:
     input:
-        vcf = lambda wc: get_germline_vcf_path(wc.batch, vcf_suffix)
+        vcf = lambda wc: get_germline_vcf_path(wc.batch, vcf_suffix),
     output:
-        vcf = 'work/{batch}/small_variants/raw_normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
-        tbi = 'work/{batch}/small_variants/raw_normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
+        vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-PASS.vcf.gz',
+    shell:
+        'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
+
+# Annotate any events found in ~200 cancer predisposition gene set.
+rule germline_vcf_subset:
+    input:
+        vcf = rules.germline_vcf_pass.output.vcf,
+    output:
+        vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
+        tbi = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
     params:
         ungz = lambda wc, output: get_ungz_gz(output[0])[0]
     # group: "small_variants"
@@ -188,9 +155,7 @@ rule germline_vcf_prep:
         tbi = '{batch}/small_variants/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
     # group: "small_variants"
     shell:
-        'pcgr_prep {input.vcf} |'
-        ' bcftools view -f.,PASS -Oz -o {output.vcf}'
-        ' && tabix -f -p vcf {output.vcf}'
+        'pcgr_prep {input.vcf} | bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
 # rule bcftools_stats_germline:
 #     input:
@@ -205,40 +170,33 @@ rule germline_vcf_prep:
 rule somatic_stats_report:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf,
-        full_vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix)
+        full_vcf = rules.somatic_vcf_pass_sort.output.vcf,
+        subset_to_cancer = rules.somatic_vcf_annotate.output.subset_to_cancer,
     output:
         'work/{batch}/small_variants/somatic_stats.yml',
     params:
         sample = lambda wc: batch_by_name[wc.batch].tumor.name,
     run:
         snps, indels, others = cnt_vars(input.vcf, passed=True)
-        total_snps, total_indels, total_others = cnt_vars(input.vcf)
+        all_snps, all_indels, all_others = cnt_vars(input.full_vcf)
+        ori = None
+        if open(input.subset_to_cancer).read().strip() == 'YES':
+            # In this case, "all" correspond to pre-cancer-gene subset variants,
+            # Thus we can't compare it with cancer-gene-subset PASSing variants
+            ori = all_snps + all_indels + all_others
+            all_snps, all_indels, all_others = cnt_vars(input.vcf, passed=False)
 
-        # pon_cnt = 0
-        # gnomad_cnt = 0
-        # pon_total_cnt = 0
-            # if 'PoN' in (rec.FILTER or ''):
-            #     pon_filt += 1
-            # if rec.INFO.get('PoN', 0) > 0:
-            #     pon_cnt += 1
-        # pass_pct = pass_cnt / total_cnt
-        # pon_pct = pon_cnt / total_cnt
-        # pon_filt_pct = pon_filt / total_cnt
-
-        ori_snps, ori_indels, ori_others = cnt_vars(input.full_vcf)
         data = dict(
             snps=snps,
             indels=indels,
             others=others if others else None,
-            filt_snps=total_snps - snps,
-            filt_indels=total_indels - indels,
-            filt_others=((total_others - others) if others and total_others else None),
+            filt_snps=all_snps - snps,
+            filt_indels=all_indels - indels,
+            filt_others=((all_others - others) if others and all_others else None),
         )
-        if ori_snps + ori_indels + ori_others > SUBSET_SOMATIC_IF_MORE_THAN:
+        if ori is not None:
             data.update(dict(
-                ori_snps=ori_snps,
-                ori_indels=ori_indels,
-                ori_others=ori_others,
+                ori = ori
             ))
 
         with open(output[0], 'w') as out:
@@ -306,7 +264,7 @@ rule somatic_stats_report:
 
 rule germline_stats_report:
     input:
-        vcf = lambda wc: get_germline_vcf_path(wc.batch, vcf_suffix)
+        vcf = rules.germline_vcf_pass.output.vcf,
     output:
         'work/{batch}/small_variants/germline_stats.yml',
     params:
@@ -315,8 +273,7 @@ rule germline_stats_report:
         pass_cnt = 0
         vcf = cyvcf2.VCF(input.vcf)
         for rec in vcf:
-            if rec.FILTER is None or rec.FILTER == 'PASS':
-                pass_cnt += 1
+            pass_cnt += 1
 
         with open(output[0], 'w') as out:
             data = {

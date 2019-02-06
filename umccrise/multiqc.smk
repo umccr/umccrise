@@ -4,11 +4,7 @@ import yaml
 
 
 # localrules: multiqc, copy_logs
-localrules: prep_multiqc_data, multiqc, copy_config, copy_logs
-
-
-versions = join(run.date_dir, 'data_versions.csv')
-programs = join(run.date_dir, 'programs.txt')
+localrules: multiqc, copy_config, copy_logs
 
 
 rule copy_config:
@@ -20,16 +16,16 @@ rule copy_config:
         'cp -r {input.conf_dir} {output.conf_dir}'
 
 
-rule copy_logs:
-    input:
-        versions = versions,
-        programs = programs,
-    output:
-        versions = 'log/data_versions.csv',
-        programs = 'log/programs.txt',
-    shell:
-        'cp -r {input.versions} {output.versions} && ' \
-        'cp -r {input.programs} {output.programs}'
+# rule copy_logs:
+#     input:
+#         versions = versions,
+#         programs = programs,
+#     output:
+#         versions = 'log/data_versions.csv',
+#         programs = 'log/programs.txt',
+#     shell:
+#         'cp -r {input.versions} {output.versions} && ' \
+#         'cp -r {input.programs} {output.programs}'
 
 rule prep_multiqc_data:
     input:
@@ -47,8 +43,8 @@ rule prep_multiqc_data:
         data_dir        = 'work/{batch}/multiqc_data',
         tumor_name      = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_name     = lambda wc: batch_by_name[wc.batch].normal.name,
-        versions        = 'log/data_versions.csv',
-        programs        = 'log/programs.txt',
+        prog_versions   = join(run.date_dir, 'programs.txt'),
+        data_versions   = join(run.date_dir, 'data_versions.csv'),
     # group: 'multiqc'
     run:
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
@@ -58,11 +54,12 @@ rule prep_multiqc_data:
             normal_sample=params.normal_name,
             base_dirpath=report_base_path,
             analysis_dir=run.date_dir,
-            program_versions_fpath=verify_file(params.programs, silent=True),
-            data_versions_fpath=verify_file(params.versions, silent=True)
+            prog_versions_fpath=verify_file(params.prog_versions, silent=True),
+            data_versions_fpath=verify_file(params.data_versions, silent=True),
+            new_dir_for_versions=abspath(join(f'{wildcards.batch}', 'log')),
         )
-        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'final.subset.renamed')
-        with open(join(gold_standard_dir, 'list_files_final.txt')) as f:
+        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised_2019.qconly.renamed')
+        with open(join(gold_standard_dir, 'background_multiqc_filelist.txt')) as f:
             for l in f:
                 l = l.strip()
                 additional_files.append(join(gold_standard_dir, l))
@@ -84,9 +81,27 @@ rule prep_multiqc_data:
             out_filelist_file=output.filelist,
             out_conf_yaml=output.generated_conf_yaml,
             additional_files=additional_files,
-            exclude_files=[r'.*qsignature.*',
-                           r'.*bcftools_stats.txt'  # adding somatic stats, but keeping germline stats
-                           ],
+            exclude_files=[
+                '.*qsignature.*',
+                '.*bcftools_stats.txt',  # adding somatic stats, but keeping germline stats
+                '.*indexcov.tsv',
+                '.*ped_check.rel-difference.csv',
+                '.*sort-chr.qsig.vcf.*',
+                '.*Per_base_N_content.tsv',
+                '.*Per_base_sequence_content.tsv',
+                '.*Per_base_sequence_quality.tsv',
+                '.*Per_sequence_GC_content.tsv',
+                '.*Per_sequence_quality_scores.tsv',
+                '.*Per_tile_sequence_quality.tsv',
+                '.*Sequence_Length_Distribution.tsv',
+                '.*.html',
+                '.*verifybamid.*',
+            ],
+            include_files=[
+                f'.*{params.tumor_name}.*',
+                f'.*{params.normal_name}.*',
+                f'.*{wildcards.batch}.*',
+            ],
         )
 
 
@@ -115,7 +130,6 @@ rule multiqc:
     input:
         expand(rules.batch_multiqc.output, batch=batch_by_name.keys()),
         rules.copy_config.output,
-        (rules.copy_logs.output if all(isfile(fp) for fp in rules.copy_logs.input) else []),
     output:
         temp(touch('log/multiqc.done'))
 
