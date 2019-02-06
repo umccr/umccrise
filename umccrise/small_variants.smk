@@ -54,7 +54,7 @@ rule somatic_vcf_keygenes:
     input:
         vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix)
     output:
-        'work/{batch}/small_variants/keygenes_subset/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        vcf = 'work/{batch}/small_variants/keygenes_subset/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
     run:
         genes = get_key_genes_set()
         def func(rec):
