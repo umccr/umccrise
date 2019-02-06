@@ -1,2 +1,0 @@
-#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	CNX	CNY	bins.out	bins.lo	bins.hi	bins.in	slope	p.out	mapped	unmapped
-unknown	Chen_T	-9	-9	1	-9	1.03	1.09	30765	11811	5099	145361	108.371	0.21	1909162048	3481283
