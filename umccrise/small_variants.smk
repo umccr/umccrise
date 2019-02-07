@@ -78,6 +78,38 @@ rule somatic_extract_tumor_sample:
     shell:
         'bcftools view -s {params.tumor_sample} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
+# SAGE. Explore how it changes in CCR180148_MH18F001P062-sage.vcf.gz (not MB unfortanately because MB doesn't have hotspots)
+# - what are "inframe" hotspots?
+# - add all PASS SAGE variants into the resulting VCF
+# - add FILTER=SAGE_lowconf into resulting VCF if a passing variants is not confirmed by SAGE
+# - extend the set of hotspots by adding PCGR sources?
+# - CACAO: compare hotspots and genes with PCGR and HMF hotspots
+rule run_sage:
+    input:
+        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        coding_bed = get_ref_file(run.genome_build, 'coding_regions'),
+        ref_fa = ref_fa,
+        hotspots = get_ref_file(run.genome_build, key='hmf_hotspot'),
+    output:
+        vcf = 'work/{batch}/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz'
+    params:
+        jar = join(package_path(), 'jars', 'sage-1.0-jar-with-dependencies.jar'),
+        rundir = 'work/{batch}/purple',
+        outdir = 'work/{batch}/purple',
+        normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
+        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
+        xms = 2000,
+        xmx = min(40000, 3000*threads_per_batch),
+    shell:
+        'java -Xms{params.xms}m -Xmx{params.xmx}m -cp {params.jar} com.hartwig.hmftools.sage.SageHotspotApplication '
+        '-tumor {params.tumor_sname} -tumor_bam {params.tumor_bam} '
+        '-reference {params.normal_sname} -reference_bam {params.normal_bam} '
+        '-known_hotspots {input.hotspots} '
+        '-coding_regions {input.coding_bed} '
+        '-ref_genome {input.ref_fa} '
+        '-out {output.vcf} '
+
 rule somatic_vcf_filter:
     input:
         vcf = rules.somatic_extract_tumor_sample.output.vcf,
