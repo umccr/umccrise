@@ -54,7 +54,7 @@ else:
         params:
             normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
             outdir = 'work/{batch}/purple/amber',
-            jar = join(package_path(), 'amber.jar'),
+            jar = join(package_path(), 'jars', 'amber.jar'),
             xms = 5000,
             xmx = min(40000, 8000*threads_per_batch),
         log:
@@ -146,7 +146,7 @@ rule purple_run:
         link         = 'work/{batch}/purple/circos/{batch}.link.circos',
     # group: 'purple'
     params:
-        jar = join(package_path(), 'purple.jar'),
+        jar = join(package_path(), 'jars', 'purple.jar'),
         rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
