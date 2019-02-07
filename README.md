@@ -180,6 +180,19 @@ bgzip -f segdup.bed && tabix -f -p bed segdup.bed.gz
 rm segdup.bed_tmp genomicSuperDups.txt.gz
 ```
 
+#### SAGE
+
+Coding regions:
+
+```
+python vcf_stuff/vcf_stuff/hmf/generate_coding_bed.py\
+     | sort -k1,1V -k2,2n\
+     | grep -v ^MT\
+     | grep -v ^GL\
+     | bedtools merge -i -\
+     > coding_regions.canonical.sort.merged.bed
+```
+
 
 ## Testing
 
