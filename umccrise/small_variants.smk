@@ -59,13 +59,13 @@ rule somatic_vcf_annotate:
         subset_to_cancer = 'work/{batch}/small_variants/somatic_anno/subset_to_cancer_genes.flag',
     params:
         genome = run.genome_build,
+        genomes_dir_param = f" --genomes-dir {config.get('genomes_dir')}" if config.get('genomes_dir') else "",
         work_dir = 'work/{batch}/small_variants',
-#        full_out_path = lambda wc, input, output: abspath(output.vcf)
     # group: "small_variants"
     resources:
         mem_mb = 20000
     shell:
-        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}'
+        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}{genomes_dir_param}'
 
 rule somatic_extract_tumor_sample:
     input:

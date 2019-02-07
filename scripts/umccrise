@@ -24,7 +24,7 @@ from umccrise import _version as version
 @click.option('-s', '--sample', 'sample', help='Comma-separated list of samples or batches to process')
 @click.option('-b', '--batch', 'batch', help='Comma-separated list of samples or batches to process')
 @click.option('-e', '--exclude', 'exclude', help='Comma-separated list of samples or batches to ignore')
-@click.option('--genomes', 'genomes', help='Path to the reference data')
+@click.option('--genomes', '--genomes-dir', 'genomes_dir', help='Path to the reference data')
 
 # Cluster:
 @click.option('-j', '--jobs', 'jobs', default=1, help='Maximum number of cores to use at single time (works both for '
@@ -45,7 +45,7 @@ from umccrise import _version as version
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 
-def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, genomes=None,
+def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, genomes_dir=None,
          jobs=None, cluster=False, cluster_cmd=None,
          unlock=False, rerun_incomplete=False, restart_times=None, dryrun=False,
          no_s3=None, no_igv=False, docker_wrapper_mode=False):
@@ -77,10 +77,10 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if docker_wrapper_mode:
         conf['bcbio_project'] = docker_mounts[bcbio_project] = '/bcbio_project'
 
-    if genomes:
-        conf['genomes'] = verify_dir(genomes, is_critical=True)
+    if genomes_dir:
+        conf['genomes_dir'] = verify_dir(genomes_dir, is_critical=True)
         if docker_wrapper_mode:
-            conf['genomes'] = docker_mounts[genomes] = '/genomes'
+            conf['genomes_dir'] = docker_mounts[genomes_dir] = '/genomes'
 
     #####################################
     #### Setting non-path parameters ####

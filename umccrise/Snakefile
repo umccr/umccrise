@@ -32,7 +32,7 @@ env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
 conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
 
 def get_ref_file(*args, **kwargs):
-    return hpc_get_ref_file(*args, **kwargs, genomes_dir=config.get('genomes'))
+    return hpc_get_ref_file(*args, **kwargs, genomes_dir=config.get('genomes_dir'))
 
 
 def prep_inputs(config_):
