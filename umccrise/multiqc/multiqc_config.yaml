@@ -119,6 +119,38 @@ custom_data:
 #        description: 'Somatic variant calls, pre- and post-filtered statistics'
         plot_type: generalstats
         pconfig:
+
+        - ori:
+            title: 'Ori'
+            description: 'Number of variants before filtering. Somatic variants were subset to cancer genes in order to start filtering, because they were exceeding 500k even after removing germline variants. Possibly indicates a noisy data'
+            min: 0
+            format: '{:,.0f}'
+
+        - filt_snps:
+            title: 'SNP-filt'
+            description: '% SNPs filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
+            min: 0
+            max: 100
+            format: '{:,.2f}'
+            scale: 'Reds'
+            suffix: '%'
+        - filt_indels:
+            title: 'Indel-filt'
+            description: '% Indels filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
+            min: 0
+            max: 100
+            format: '{:,.2f}'
+            scale: 'Reds'
+            suffix: '%'
+        - filt_other:
+            title: 'Other-filt'
+            description: '% Other variants (MNP) filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
+            min: 0
+            max: 100
+            format: '{:,.2f}'
+            scale: 'Reds'
+            suffix: '%'
+
         - snps:
             title: 'SNP'
             description: 'Somatic SNPs passing umccrise filters'
@@ -135,25 +167,6 @@ custom_data:
             min: 0
             format: '{:,.0f}'
 
-        - filt_snps:
-            title: 'SNP-filt'
-            description: 'SNPs filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
-            min: 0
-            format: '{:,.0f}'
-            scale: 'Reds'
-        - filt_indels:
-            title: 'Indel-filt'
-            description: 'Indels filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
-            min: 0
-            format: '{:,.0f}'
-            scale: 'Reds'
-        - filt_other:
-            title: 'Other-filt'
-            description: 'Other variants (MNP) filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
-            min: 0
-            format: '{:,.0f}'
-            scale: 'Reds'
-
 #        - ori_snps:
 #            title: 'SNP-ori'
 #            description: 'Total SNPs called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
@@ -169,12 +182,6 @@ custom_data:
 #            description: 'Total orther variants (MNP) called by bcbio, that were a subject to subsetting to cancer genes in order to continue filtering because exceeding the number of 500k (possible a contaminated or low quality sample)'
 #            min: 0
 #            format: '{:,.0f}'
-
-        - ori:
-            title: 'Ori'
-            description: 'Number of variants before filtering. Somatic variants were subset to cancer genes in order to start filtering, because they were exceeding 500k even after removing germline variants. Possibly indicates a noisy data'
-            min: 0
-            format: '{:,.0f}'
 
         - germline:
             title: 'Germline'

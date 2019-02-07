@@ -222,9 +222,9 @@ rule somatic_stats_report:
             snps=snps,
             indels=indels,
             others=others if others else None,
-            filt_snps=all_snps - snps,
-            filt_indels=all_indels - indels,
-            filt_others=((all_others - others) if others and all_others else None),
+            filt_snps=(all_snps - snps) / all_snps * 100.0,
+            filt_indels=(all_indels - indels) / all_indels * 100.0,
+            filt_others=(((all_others - others) / all_others * 100.0) if others and all_others else None),
         )
         if ori is not None:
             data.update(dict(
