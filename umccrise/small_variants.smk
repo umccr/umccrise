@@ -11,7 +11,7 @@ from ngs_utils.reference_data import get_key_genes_set
 import subprocess
 
 
-localrules: small_variants, prep_anno_toml, prep_giab_bed, somatic_stats_report, germline_stats_report
+localrules: small_variants, somatic_stats_report, germline_stats_report
 
 
 vcf_suffix = '-annotated'
@@ -46,7 +46,7 @@ rule somatic_vcf_pass_sort:
     input:
         vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix),
     output:
-        vcf = 'work/{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS_SORT.vcf.gz',
+        vcf = 'work/{batch}/small_variants/input/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
     shell:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -55,7 +55,7 @@ rule somatic_vcf_annotate:
     input:
         vcf = rules.somatic_vcf_pass_sort.output[0],
     output:
-        vcf = 'work/{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-ANNO.vcf.gz',
+        vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         subset_to_cancer = 'work/{batch}/small_variants/somatic_anno/subset_to_cancer_genes.flag',
     params:
         genome = run.genome_build,
@@ -65,25 +65,8 @@ rule somatic_vcf_annotate:
     resources:
         mem_mb = 20000
     shell:
-        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}{genomes_dir_param}'
+        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}{params.genomes_dir_param}'
 
-rule somatic_extract_tumor_sample:
-    input:
-        vcf = rules.somatic_vcf_annotate.output.vcf,
-    output:
-        vcf = 'work/{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-ANNO-onesample.vcf.gz',
-    params:
-        tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.name,
-    # group: "small_variants"
-    shell:
-        'bcftools view -s {params.tumor_sample} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
-
-# SAGE. Explore how it changes in CCR180148_MH18F001P062-sage.vcf.gz (not MB unfortanately because MB doesn't have hotspots)
-# - what are "inframe" hotspots?
-# - add all PASS SAGE variants into the resulting VCF
-# - add FILTER=SAGE_lowconf into resulting VCF if a passing variants is not confirmed by SAGE
-# - extend the set of hotspots by adding PCGR sources?
-# - CACAO: compare hotspots and genes with PCGR and HMF hotspots
 rule run_sage:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
@@ -92,7 +75,7 @@ rule run_sage:
         ref_fa = ref_fa,
         hotspots = get_ref_file(run.genome_build, key='hmf_hotspot'),
     output:
-        vcf = 'work/{batch}/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz'
+        vcf = 'work/{batch}/small_variants/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz'
     params:
         jar = join(package_path(), 'jars', 'sage-1.0-jar-with-dependencies.jar'),
         rundir = 'work/{batch}/purple',
@@ -103,21 +86,50 @@ rule run_sage:
         xmx = min(40000, 3000*threads_per_batch),
     shell:
         'java -Xms{params.xms}m -Xmx{params.xmx}m -cp {params.jar} com.hartwig.hmftools.sage.SageHotspotApplication '
-        '-tumor {params.tumor_sname} -tumor_bam {params.tumor_bam} '
-        '-reference {params.normal_sname} -reference_bam {params.normal_bam} '
-        '-known_hotspots {input.hotspots} '
+        '-tumor {params.tumor_sname} -tumor_bam {input.tumor_bam} '
+        '-reference {params.normal_sname} -reference_bam {input.normal_bam} '
+        '-known_hotspots <(gunzip -c {input.hotspots}) '
         '-coding_regions {input.coding_bed} '
         '-ref_genome {input.ref_fa} '
         '-out {output.vcf} '
+        '&& tabix -p vcf {output.vcf}'
+
+rule annotate_from_sage:
+    input:
+        vcf = rules.somatic_vcf_annotate.output.vcf,
+        sage_vcf = rules.run_sage.output.vcf,
+    output:
+        vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '-sage.vcf.gz'
+    run:
+        with open(input.sage_vcf + '_toml', 'w') as f:
+            f.write(f"""[[annotation]]
+file="{input.sage_vcf}"
+fields = ["FILTER", "AF", "HOTSPOT"]
+names = ["SAGE_FILTER", "SAGE_AF", "SAGE_HOTSPOT"]
+ops = ["self", "self", "self"]
+""")
+        shell(f'vcfanno {input.sage_vcf}_toml {input.vcf} | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
 
 rule somatic_vcf_filter:
     input:
-        vcf = rules.somatic_extract_tumor_sample.output.vcf,
+        vcf = rules.annotate_from_sage.output.vcf,
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        # vcf = 'work/{batch}/small_variants/filter/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
     # group: "small_variants"
     shell:
         'filter_somatic_vcf {input.vcf} -o {output.vcf}'
+
+# rule somatic_extract_tumor_sample:
+#     input:
+#         vcf = rules.somatic_vcf_filter.output.vcf,
+#     output:
+#         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+#     params:
+#         tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.name,
+#     # group: "small_variants"
+#     shell:
+#         'bcftools view -s {params.tumor_sample} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
 rule somatic_vcf_filter_pass:
     input:

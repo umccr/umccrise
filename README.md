@@ -189,7 +189,7 @@ python vcf_stuff/vcf_stuff/hmf/generate_coding_bed.py\
      | sort -k1,1V -k2,2n\
      | grep -v ^MT\
      | grep -v ^GL\
-     | bedtools merge -i -\
+     | bedtools merge -c 4 -o collapse -i -\
      > coding_regions.canonical.sort.merged.bed
 ```
 
