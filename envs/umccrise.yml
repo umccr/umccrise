@@ -28,6 +28,7 @@ dependencies:
   - versionpy
   - multiqc
   - multiqc-bcbio
+  - pyensembl
   # Conpair:
   - gatk4
   - scipy
