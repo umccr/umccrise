@@ -29,6 +29,7 @@ dependencies:
   - multiqc
   - multiqc-bcbio
   - pyensembl
+  - break-point-inspector
   # Conpair:
   - gatk4
   - scipy
@@ -39,8 +40,6 @@ dependencies:
     - "--editable=git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
-  #
-  # Umccrise-specific:
   - natsort  # for bcbio.py in ngs_utils
   # - pybedtools  # for ref data generation
   # - sambamba  # for test data generation
