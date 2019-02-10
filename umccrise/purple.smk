@@ -7,7 +7,7 @@ import platform
 
 
 # localrules: purple
-localrules: purple, purple_symlink, purple_somatic_vcf, copy_inputs_from_bcbio
+localrules: purple, purple_symlink
 
 
 circos_macos_patch = ('export PERL5LIB=' +
@@ -15,100 +15,98 @@ circos_macos_patch = ('export PERL5LIB=' +
     env_path + '_purple/lib/perl5/site_perl/5.22.0 && ') if platform.system() == 'Darwin' else ''
 
 
-if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
-    rule copy_inputs_from_bcbio:
-        input:
-            bcbio_amber_dir  = lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/amber'),
-            bcbio_cobalt_dir = lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/cobalt'),
-        output:
-            'work/{batch}/purple/cobalt/{batch}.cobalt',
-            'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
-            'work/{batch}/purple/amber/{batch}.amber.baf',
-        # group: 'purple'
-        params:
-            tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
-            cobalt_dir = 'work/{batch}/purple/cobalt',
-            amber_dir = 'work/{batch}/purple/amber',
-        run:
-            for bcbio_fp in glob.glob(f'{input.bcbio_amber_dir}/*'):
-                bcbio_fn = basename(bcbio_fp)
-                umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
-                umccrise_fp = join(params.amber_dir, umccrise_fn)
-                shell(f'cp {bcbio_fp} {umccrise_fp}')
-            for bcbio_fp in glob.glob(f'{input.bcbio_cobalt_dir}/*'):
-                bcbio_fn = basename(bcbio_fp)
-                umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
-                umccrise_fp = join(params.cobalt_dir, umccrise_fn)
-                shell(f'cp {bcbio_fp} {umccrise_fp}')
+# if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
+#     rule copy_inputs_from_bcbio:
+#         input:
+#             bcbio_amber_dir  = lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/amber'),
+#             bcbio_cobalt_dir = lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/cobalt'),
+#         output:
+#             'work/{batch}/purple/cobalt/{batch}.cobalt',
+#             'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
+#             'work/{batch}/purple/amber/{batch}.amber.baf',
+#         group: 'purple'
+#         params:
+#             tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
+#             cobalt_dir = 'work/{batch}/purple/cobalt',
+#             amber_dir = 'work/{batch}/purple/amber',
+#         run:
+#             for bcbio_fp in glob.glob(f'{input.bcbio_amber_dir}/*'):
+#                 bcbio_fn = basename(bcbio_fp)
+#                 umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
+#                 umccrise_fp = join(params.amber_dir, umccrise_fn)
+#                 shell(f'cp {bcbio_fp} {umccrise_fp}')
+#             for bcbio_fp in glob.glob(f'{input.bcbio_cobalt_dir}/*'):
+#                 bcbio_fn = basename(bcbio_fp)
+#                 umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
+#                 umccrise_fp = join(params.cobalt_dir, umccrise_fn)
+#                 shell(f'cp {bcbio_fp} {umccrise_fp}')
+#
+# else:
+rule purple_amber:
+    input:
+        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        snp_bed = get_ref_file(run.genome_build, 'purple_het'),
+        ref_fa = ref_fa,
+    output:
+        'work/{batch}/purple/amber/{batch}.amber.baf',
+    params:
+        normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
+        outdir = 'work/{batch}/purple/amber',
+        jar = join(package_path(), 'jars', 'amber.jar'),
+        xms = 5000,
+        xmx = min(40000, 8000*threads_per_batch),
+    log:
+        'log/purple/{batch}/{batch}.amber.log',
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-amber.tsv'
+    resources:
+        mem_mb = min(50000, 10000*threads_per_batch),
+    threads:
+        threads_per_batch
+    shell:
+        conda_cmd.format('purple') +
+        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
+        '-tumor {wildcards.batch} '
+        '-tumor_bam {input.tumor_bam} '
+        '-reference {params.normal_name} '
+        '-reference_bam {input.normal_bam} '
+        '-ref_genome {input.ref_fa} '
+        '-bed {input.snp_bed} '
+        '-threads {threads} '
+        '-output_dir {params.outdir} 2>&1 | tee {log} '
 
-else:
-    rule purple_amber:
-        input:
-            tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-            normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-            snp_bed = get_ref_file(run.genome_build, 'purple_het'),
-            ref_fa = ref_fa,
-        output:
-            'work/{batch}/purple/amber/{batch}.amber.baf',
-        # group: 'purple'
-        params:
-            normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
-            outdir = 'work/{batch}/purple/amber',
-            jar = join(package_path(), 'jars', 'amber.jar'),
-            xms = 5000,
-            xmx = min(40000, 8000*threads_per_batch),
-        log:
-            'log/purple/{batch}/{batch}.amber.log',
-        benchmark:
-            'benchmarks/{batch}/purple/{batch}-amber.tsv'
-        resources:
-            mem_mb = min(50000, 10000*threads_per_batch),
-        threads:
-            threads_per_batch
-        shell:
-            conda_cmd.format('purple') +
-            'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
-            '-tumor {wildcards.batch} '
-            '-tumor_bam {input.tumor_bam} '
-            '-reference {params.normal_name} '
-            '-reference_bam {input.normal_bam} '
-            '-ref_genome {input.ref_fa} '
-            '-bed {input.snp_bed} '
-            '-threads {threads} '
-            '-output_dir {params.outdir} 2>&1 | tee {log} '
-
-    rule purple_cobalt:
-        input:
-            normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-            tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-            gc = get_ref_file(run.genome_build, 'purple_gc'),
-        output:
-            'work/{batch}/purple/cobalt/{batch}.cobalt',
-            'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
-        # group: 'purple'
-        params:
-            outdir = 'work/{batch}/purple/cobalt',
-            normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
-            xms = 2000,
-            xmx = min(40000, 3000*threads_per_batch),
-        log:
-            'log/purple/{batch}/{batch}.cobalt.log'
-        benchmark:
-            'benchmarks/{batch}/purple/{batch}-cobalt.tsv'
-        threads:
-            threads_per_batch
-        resources:
-            mem_mb = min(50000, 3500*threads_per_batch)
-        shell:
-            conda_cmd.format('purple') +
-            'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
-            '-reference {params.normal_sname} '
-            '-reference_bam {input.normal_bam} '
-            '-tumor {wildcards.batch} '
-            '-tumor_bam {input.tumor_bam} '
-            '-threads {threads} '
-            '-gc_profile {input.gc} '
-            '-output_dir {params.outdir} 2>&1 | tee {log} '
+rule purple_cobalt:
+    input:
+        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        gc = get_ref_file(run.genome_build, 'purple_gc'),
+    output:
+        'work/{batch}/purple/cobalt/{batch}.cobalt',
+        'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
+    params:
+        outdir = 'work/{batch}/purple/cobalt',
+        normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
+        xms = 2000,
+        xmx = min(40000, 3000*threads_per_batch),
+    log:
+        'log/purple/{batch}/{batch}.cobalt.log'
+    benchmark:
+        'benchmarks/{batch}/purple/{batch}-cobalt.tsv'
+    threads:
+        threads_per_batch
+    resources:
+        mem_mb = min(50000, 3500*threads_per_batch)
+    shell:
+        conda_cmd.format('purple') +
+        'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
+        '-reference {params.normal_sname} '
+        '-reference_bam {input.normal_bam} '
+        '-tumor {wildcards.batch} '
+        '-tumor_bam {input.tumor_bam} '
+        '-threads {threads} '
+        '-gc_profile {input.gc} '
+        '-output_dir {params.outdir} 2>&1 | tee {log} '
 
 rule purple_somatic_vcf:
     input:
@@ -117,7 +115,7 @@ rule purple_somatic_vcf:
         'work/{batch}/purple/somatic.vcf',
     params:
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
-    # group: 'purple'
+    group: 'purple_main'
     shell:
         'bcftools view -s {params.tumor_sname} {input} | '
         'bcftools reheader --samples <(echo {wildcards.batch}) > {output}'
@@ -144,7 +142,7 @@ rule purple_run:
         cnv_circos   = 'work/{batch}/purple/circos/{batch}.cnv.circos',
         map          = 'work/{batch}/purple/circos/{batch}.map.circos',
         link         = 'work/{batch}/purple/circos/{batch}.link.circos',
-    # group: 'purple'
+    group: 'purple_main'
     params:
         jar = join(package_path(), 'jars', 'purple.jar'),
         rundir = 'work/{batch}/purple',
@@ -187,7 +185,6 @@ rule purple_circos_baf:
         ideo_conf = package_path() + '/rmd_files/templates/circos/ideogram.conf',
     output:
         png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
-    # group: 'purple'
     params:
         out_dir = 'work/{batch}/purple/circos_baf'
     run:
@@ -218,7 +215,6 @@ rule purple_symlink:
     params:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
-    # group: 'purple'
     run:
         for img_fpath in glob.glob(f'{params.purple_outdir}/plot/*.png'):
             new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')

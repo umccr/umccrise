@@ -7,11 +7,9 @@ import toml
 from vcf_stuff import iter_vcf
 import cyvcf2
 import yaml
-from ngs_utils.reference_data import get_key_genes_set
-import subprocess
 
 
-localrules: small_variants, somatic_stats_report, germline_stats_report
+localrules: small_variants
 
 
 vcf_suffix = '-annotated'
@@ -47,6 +45,7 @@ rule somatic_vcf_pass_sort:
         vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix),
     output:
         vcf = 'work/{batch}/small_variants/input/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+    group: "somatic_anno"
     shell:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -59,13 +58,13 @@ rule somatic_vcf_annotate:
         subset_to_cancer = 'work/{batch}/small_variants/somatic_anno/subset_to_cancer_genes.flag',
     params:
         genome = run.genome_build,
-        genomes_dir_param = f" --genomes-dir {config.get('genomes_dir')}" if config.get('genomes_dir') else "",
+        genomes_dir_opt = f" --genomes-dir {config.get('genomes_dir')}" if config.get('genomes_dir') else "",
         work_dir = 'work/{batch}/small_variants',
-    # group: "small_variants"
     resources:
         mem_mb = 20000
+    group: "somatic_anno"
     shell:
-        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}{params.genomes_dir_param}'
+        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}{params.genomes_dir_opt}'
 
 rule run_sage:
     input:
@@ -100,6 +99,7 @@ rule annotate_from_sage:
         sage_vcf = rules.run_sage.output.vcf,
     output:
         vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '-sage.vcf.gz'
+    group: "somatic_filt"
     run:
         with open(input.sage_vcf + '_toml', 'w') as f:
             f.write(f"""[[annotation]]
@@ -116,7 +116,7 @@ rule somatic_vcf_filter:
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         # vcf = 'work/{batch}/small_variants/filter/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-    # group: "small_variants"
+    group: "somatic_filt"
     shell:
         'filter_somatic_vcf {input.vcf} -o {output.vcf}'
 
@@ -137,7 +137,7 @@ rule somatic_vcf_filter_pass:
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
         tbi = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz.tbi',
-    # group: "small_variants"
+    group: "somatic_filt"
     shell:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
 
@@ -147,7 +147,7 @@ rule somatic_vcf_filter_pass_af10:
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS-AF10.vcf.gz',
         tbi = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS-AF10.vcf.gz.tbi',
-    # group: "small_variants"
+    group: "somatic_filt"
     shell:
         'bcftools filter -e "INFO/TUMOR_AF<0.1" -Oz {input.vcf} -o {output.vcf} && tabix -f -p vcf -f {output.vcf}'
 
@@ -156,6 +156,7 @@ rule bcftools_stats_somatic:
         rules.somatic_vcf_filter.output.vcf
     output:
         '{batch}/small_variants/stats/{batch}_bcftools_stats.txt'
+    group: "somatic_filt"
     params:
         sname = lambda wc: batch_by_name[wc.batch].tumor.name,
     shell:
@@ -168,6 +169,7 @@ rule germline_vcf_pass:
         vcf = lambda wc: get_germline_vcf_path(wc.batch, vcf_suffix),
     output:
         vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-PASS.vcf.gz',
+    group: "germline_snv"
     shell:
         'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
 
@@ -180,7 +182,7 @@ rule germline_vcf_subset:
         tbi = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
     params:
         ungz = lambda wc, output: get_ungz_gz(output[0])[0]
-    # group: "small_variants"
+    group: "germline_snv"
     run:
         pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
         genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
@@ -197,7 +199,7 @@ rule germline_vcf_prep:
     output:
         vcf = '{batch}/small_variants/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
         tbi = '{batch}/small_variants/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
-    # group: "small_variants"
+    group: "germline_snv"
     shell:
         'pcgr_prep {input.vcf} | bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
@@ -220,6 +222,7 @@ rule somatic_stats_report:
         'work/{batch}/small_variants/somatic_stats.yml',
     params:
         sample = lambda wc: batch_by_name[wc.batch].tumor.name,
+    group: "somatic_filt"
     run:
         snps, indels, others = cnt_vars(input.vcf, passed=True)
         all_snps, all_indels, all_others = cnt_vars(input.full_vcf)
@@ -313,6 +316,7 @@ rule germline_stats_report:
         'work/{batch}/small_variants/germline_stats.yml',
     params:
         sample = lambda wc: batch_by_name[wc.batch].normal.name
+    group: "germline_snv"
     run:
         pass_cnt = 0
         vcf = cyvcf2.VCF(input.vcf)

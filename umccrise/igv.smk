@@ -15,7 +15,7 @@ rule igv_bed:
         structural_bed = rules.ribbon.output[0]
     output:
         '{batch}/igv/{batch}-roi.bed'
-    # group: 'minibam'
+    group: 'minibam'
     shell:
         '{{ '
         'cat {input.key_genes_bed} | cut -f1-3'
@@ -36,7 +36,7 @@ rule igv_bam:
         bed = rules.igv_bed.output
     output:
         '{batch}/igv/{batch}-{phenotype}.mini.bam'
-    # group: 'minibam'
+    group: 'minibam'
     benchmark:
         "{batch}/igv/benchmarks/{batch}-{phenotype}.tsv"
     threads:

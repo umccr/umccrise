@@ -3,8 +3,7 @@ import cyvcf2
 import yaml
 
 
-# localrules: multiqc, copy_logs
-localrules: multiqc, copy_config, copy_logs
+localrules: multiqc, copy_config
 
 
 rule copy_config:
@@ -45,7 +44,7 @@ rule prep_multiqc_data:
         normal_name     = lambda wc: batch_by_name[wc.batch].normal.name,
         prog_versions   = join(run.date_dir, 'programs.txt'),
         data_versions   = join(run.date_dir, 'data_versions.csv'),
-    # group: 'multiqc'
+    group: 'multiqc'
     run:
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
         generated_conf, additional_files = make_report_metadata(
@@ -112,7 +111,7 @@ rule batch_multiqc:
         umccrise_conf_yaml  = join(package_path(), 'multiqc', 'multiqc_config.yaml'),
     output:
         html_file           = '{batch}/{batch}-multiqc_report.html'
-    # group: 'multiqc'
+    group: 'multiqc'
     run:
         other_samples=[
             s.name for s in run.samples if s.name not in [batch_by_name[wildcards.batch].tumor.name,
