@@ -21,9 +21,9 @@ if not all(isfile(get_somatic_vcf_path(b, vcf_suffix)) for b in batch_by_name.ke
     # CWL?
     vcf_suffix = ''
     if not all(isfile(get_somatic_vcf_path(b, vcf_suffix)) for b in batch_by_name.keys()):
-        critical('Could not find somatic variants files for all batches neither as '
-                 '<datestamp_dir>/<batch>-{run.somatic_caller}-annotated.vcf.gz (conventional bcbio), '
-                 'nor as project/<batch>-{run.somatic_caller}.vcf.gz (CWL bcbio).')
+        critical(f'Could not find somatic variants files for all batches neither as '
+                 f'{run.date_dir}/<batch>-{run.somatic_caller}-annotated.vcf.gz (conventional bcbio), '
+                 f'nor as project/<batch>-{run.somatic_caller}.vcf.gz (CWL bcbio).')
 
 def cnt_vars(vcf_path, passed=False):
     snps = 0
