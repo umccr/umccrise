@@ -153,7 +153,7 @@ rule somatic_vcf_filter_pass_af10:
 
 rule bcftools_stats_somatic:
     input:
-        rules.somatic_vcf_filter.output.vcf
+        rules.somatic_vcf_filter_pass.output.vcf
     output:
         '{batch}/small_variants/stats/{batch}_bcftools_stats.txt'
     group: "somatic_filt"
