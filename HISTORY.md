@@ -1,6 +1,6 @@
 0.13
 
-- Re-enable CACAO
+- Re-enable [CACAO](https://github.com/vladsaveliev/cacao)
 - Support Cromwell runs
 - MultiQC:
   - clean up
@@ -8,6 +8,7 @@
   - run bcftools-stats for filtered calls
   - sort samples in tumor-normal order
   - add columns: secondary alignments, MQ=0 reads, viral
+- Integrate [SAGE](https://github.com/hartwigmedical/hmftools/tree/master/sage): to refine variant calls in hotspot locations
 
 0.12 (23 Jan 2019)
 
@@ -15,7 +16,7 @@
     - Filter VarDict strand bias and HP indels
     - Abstract somatic annotation into somatic_vcf_annotate script
     - Add more sources: HMF mappability, ICGC, COSMIC, TCGA hotspots, ENCODE, LCR
-- pcgr_prep: populate VD and AD
+- Populate VD and AD in final VCFs (update to pcgr_prep)
 - Support Strelka2-only runs, populate Strelka2 AD for Purple
 - Correct threading for cluster runs
 - Key genes:
@@ -23,7 +24,7 @@
     - Use NGC+cancermine oncogene/tsg defenitions
     - Add predispose BED files for germline runs
 - Update Purple to sambamba-free Amber
-- Integrate Conpair (replaces VerifyBAMID and Peddy)
+- Integrate [Conpair](https://github.com/vladsaveliev/Conpair) (replaces VerifyBAMID and Peddy)
 
 0.11 (6 Dec 2018)
 

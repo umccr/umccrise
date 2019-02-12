@@ -61,7 +61,7 @@ rule purple_amber:
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        mem_mb = min(50000, 10000*threads_per_batch),
+        mem_mb = min(40000, 8000*threads_per_batch),
     threads:
         threads_per_batch
     shell:
@@ -96,7 +96,7 @@ rule purple_cobalt:
     threads:
         threads_per_batch
     resources:
-        mem_mb = min(50000, 3500*threads_per_batch)
+        mem_mb = min(40000, 3000*threads_per_batch)
     shell:
         conda_cmd.format('purple') +
         'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
@@ -159,7 +159,7 @@ rule purple_run:
     threads:
         threads_per_batch
     resources:
-        mem_mb = min(50000, 3500*threads_per_batch)
+        mem_mb = min(40000, 3000*threads_per_batch)
     shell:
         conda_cmd.format('purple') +
         'circos -modules ; circos -v ; ' +
