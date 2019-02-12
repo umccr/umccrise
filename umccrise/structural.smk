@@ -3,9 +3,12 @@ Structural variants
 ------------------
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
+import itertools
+
 from cyvcf2 import VCF
 
 from ngs_utils.file_utils import safe_mkdir
+from ngs_utils.reference_data import get_key_genes, get_known_fusion_pairs, get_known_fusion_heads, get_known_fusion_tails
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
 
 vcftobedpe = 'vcfToBedpe'
@@ -30,19 +33,71 @@ if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
                  '<tumor>/<batch>-sv-prioritize-manta.vcf.gz (conventional bcbio), nor in the project folder as'
                  'project/<tumor>-manta-prioritized.vcf.gz (CWL bcbio).')
 
+rule prep_sv_prio_lists:
+    input:
+        fusion_pairs = get_known_fusion_pairs(),
+        fusion_heads = get_known_fusion_heads(),
+        fusion_tails = get_known_fusion_tails(),
+        cancer_genes = get_key_genes(),
+    output:
+        pairs = 'work/fusion_pairs.txt',
+        promisc = 'work/fusion_promisc.txt',
+        cancer_genes = 'work/cancer_genes.txt',
+    run:
+        with open(input.fusion_pairs) as f, open(output.pairs, 'w') as out:
+            for l in f:
+                l = l.strip().replace('"', '')
+                if l:
+                    g1, g2 = l.split(',')[0:2]
+                    if g1 and g2 and g1 != 'H_gene':
+                        out.write(f'{g1},{g2}\n')
+        with open(input.fusion_heads) as f1, open(input.fusion_tails) as f2, open(output.promisc, 'w') as out:
+            for l in itertools.chain(f1, f2):
+                l = l.strip().replace('"', '')
+                if l:
+                    gene = l.split(',')[0]
+                    if gene and gene != 'gene':
+                        out.write(f'{gene}\n')
+        shell('grep -v symbol {input.cancer_genes} | cut -f1 > {output.cancer_genes}')
+
+rule sv_prioritize:
+    input:
+        vcf = lambda wc: get_manta_path(wc.batch),
+        known_pairs = rules.prep_sv_prio_lists.output.pairs,
+        known_promisc = rules.prep_sv_prio_lists.output.promisc,
+        cancer_genes = rules.prep_sv_prio_lists.output.cancer_genes,
+    output:
+        vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz'
+    run:
+        cmd = f'cat {input.vcf}'
+        # remove previous annotation
+        filts_to_remove = [f'{f}' for f in ['INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER',
+                                            'FILTER/Intergenic', 'FILTER/MissingAnn', 'FILTER/REJECT']
+                           if vcf_contains_field(input.vcf, f)]
+        if filts_to_remove:
+            cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
+
+        cmd += (f' | simple_sv_annotation.py - '
+                f'--known_fusion_pairs {input.known_pairs} --known_fusion_promiscuous {input.known_promisc} '
+                f'--gene_list {input.cancer_genes} -o - | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        shell(cmd)
+        before = count_vars(input.vcf)
+        after = count_vars(output.vcf)
+        assert before == after, (before, after)
+
 # Keep variants with the FILTER values only in PASS, Intergenic, or MissingAnn.
 # Unlesss there are too many SV calls (FFPE?) - in this case keep *only* PASS.
 rule sv_keep_pass:
     input:
-        vcf = lambda wc: get_manta_path(wc.batch)
+        vcf = rules.sv_prioritize.output.vcf
     output:
-        vcf = '{batch}/structural/keep_pass/{batch}-sv-prioritize-manta.vcf.gz'
+        vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz'
     group: "sv_vcf"
     run:
         cmd = f'cat {input.vcf}'
         if count_vars(input.vcf, filter='.,PASS,Intergenic,MissingAnn') <= 1000:
             # Not too many variants, so Intergenic won't clutter the reports much - keeping them
-            filts_to_remove = [f'FILTER/{f}' for f in ['Intergenic', 'MissingAnn', 'REJECT']
+            filts_to_remove = [f'FILTER/{f}' for f in ['Intergenic', 'MissingAnn']
                                if vcf_contains_field(input[0], f, 'FILTER')]
             if filts_to_remove:
                 # Want to keep Intergenic variants from sv-prioritize.
@@ -60,7 +115,7 @@ rule sv_maybe_keep_prioritize:
     input:
         vcf = rules.sv_keep_pass.output.vcf
     output:
-        vcf = '{batch}/structural/maybe_keep_prio/{batch}-sv-prioritize-manta.vcf.gz'
+        vcf = 'work/{batch}/structural/maybe_keep_prio/{batch}-manta.vcf.gz'
     group: "sv_vcf"
     run:
         if count_vars(input.vcf, filter='.,PASS') > 1000:
@@ -84,10 +139,10 @@ rule sv_maybe_bpi:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
     output:
-        vcf = '{batch}/structural/maybe_bpi/{batch}-sv-prioritize-manta.vcf'
+        vcf = 'work/{batch}/structural/maybe_bpi/{batch}-manta.vcf'
     group: "sv_vcf"
     log:
-        '{batch}/structural/maybe_bpi/{batch}-sv-prioritize-bpi_stats.txt'
+        'log/structural/{batch}/{batch}-bpi_stats.txt'
     params:
         xms = 1000,
         xmx = 2800,
@@ -114,7 +169,7 @@ rule filter_sv_vcf:
     input:
         vcf = rules.sv_maybe_bpi.output.vcf
     output:
-        vcf = '{batch}/structural/{batch}-sv-prioritize-manta-filter.vcf'
+        vcf = '{batch}/structural/{batch}-manta.vcf'
     group: "sv_vcf"
     run:
         print(f'VCF samples: {VCF(input.vcf).samples}')
@@ -134,7 +189,7 @@ rule prep_sv_tsv:
         sv_prio = lambda wc: get_sv_tsv_path(wc.batch),
         vcf = rules.filter_sv_vcf.output.vcf
     output:
-        '{batch}/structural/{batch}-sv-prioritize-manta-pass.tsv'
+        '{batch}/structural/{batch}-manta.tsv'
     group: "sv_vcf"
     shell: """
 head -n1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(grep -v ^# {input.vcf} | cut -f1,2) | cat >> {output}
@@ -186,7 +241,7 @@ rule ribbon:
         starts = rules.ribbon_filter_vcfbedtope_starts.output[0],
         ends = rules.ribbon_filter_vcfbedtope_ends.output[0]
     output:
-        '{batch}/structural/{batch}-sv-prioritize-manta.ribbon.bed'
+        '{batch}/structural/{batch}-manta.ribbon.bed'
     params:
         vcftobedpe = vcftobedpe
     group: "sv_vcf"
@@ -199,7 +254,7 @@ rule bedpe:
     input:
         manta_vcf = rules.filter_sv_vcf.output.vcf
     output:
-        '{batch}/structural/{batch}-sv-prioritize-manta.bedpe'
+        '{batch}/structural/{batch}-manta.bedpe'
     params:
         vcftobedpe = vcftobedpe
     group: "sv_vcf"

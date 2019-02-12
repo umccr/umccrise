@@ -30,9 +30,8 @@ dependencies:
   - multiqc-bcbio
   - pyensembl
   - break-point-inspector
-  # Conpair:
-  - gatk4
-  - scipy
+  - gatk4  # Conpair
+  - scipy  # Conpair
   - pip:
     - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
@@ -40,6 +39,7 @@ dependencies:
     - "--editable=git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
+    - "git+https://github.com/vladsaveliev/simple_sv_annotation"
   - natsort  # for bcbio.py in ngs_utils
   # - pybedtools  # for ref data generation
   # - sambamba  # for test data generation
