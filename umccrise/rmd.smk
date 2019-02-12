@@ -7,7 +7,7 @@ import glob
 
 
 # localrules: purple_bcbio_stats, rmd
-localrules: split_multiallelic, subset_to_giab, afs, afs_keygenes, somatic_to_hg19, rmd_purple, purple_bcbio_stats, rmd
+localrules: rmd
 
 
 ## Allelic frequencies
@@ -37,7 +37,7 @@ rule subset_to_giab:
         regions = truth_regions
     output:
         'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident.vcf.gz'
-    # group: "rmd"
+    group: "rmd"
     shell:
         'bcftools view {input.vcf} -T {params.regions} -Oz -o {output}'
 
@@ -48,7 +48,7 @@ rule split_multiallelic:
         ref_fa = ref_fa
     output:
         'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident-singleallelic.vcf.gz'
-    # group: "rmd"
+    group: "rmd"
     shell:
         'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
         'bcftools norm -m \'-\' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}'
@@ -60,7 +60,7 @@ rule afs:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
         'work/{batch}/rmd/afs/af_tumor.txt'
-    # group: "rmd"
+    group: "rmd"
     shell:
         'bcftools view {input} -s {params.tumor_name} -Ou | '
         '(printf "af\n"; bcftools query -f "%INFO/TUMOR_AF\\n") > {output} && test -e {output}'
@@ -74,7 +74,7 @@ rule afs_keygenes:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name
     output:
         'work/{batch}/rmd/afs/af_tumor_keygenes.txt'
-    # group: "rmd"
+    group: "rmd"
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.bed} -header'
@@ -92,7 +92,7 @@ rule somatic_to_hg19:
         rules.somatic_vcf_filter_pass.output.vcf
     output:
         'work/{batch}/rmd/' + run.somatic_caller + '-with_chr_prefix.vcf'
-    # group: "rmd"
+    group: "rmd"
     run:
         if run.genome_build == 'GRCh37':
             shell('gunzip -c {input}'
@@ -108,7 +108,7 @@ rule rmd_purple_cnv:
         'work/{batch}/purple/{batch}.purple.gene.cnv',
     output:
         'work/{batch}/rmd/purple.tsv'
-    # group: "rmd"
+    group: "rmd"
     shell:
         'cut -f1-6 {input} > {output}'
 
@@ -150,7 +150,7 @@ rule bookdown_report:
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
-    # group: "rmd"
+    group: "rmd"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G

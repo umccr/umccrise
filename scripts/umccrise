@@ -24,12 +24,15 @@ from umccrise import _version as version
 @click.option('-s', '--sample', 'sample', help='Comma-separated list of samples or batches to process')
 @click.option('-b', '--batch', 'batch', help='Comma-separated list of samples or batches to process')
 @click.option('-e', '--exclude', 'exclude', help='Comma-separated list of samples or batches to ignore')
+@click.option('--genomes', '--genomes-dir', 'genomes_dir', help='Path to the reference data')
 
+# Cluster:
 @click.option('-j', '--jobs', 'jobs', default=1, help='Maximum number of cores to use at single time (works both for '
               'local and cluster runs)')
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 
+# Snakemake:
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
 @click.option('--restart-times', default=0, help='Propagated to snakemake. Default is 0.')
@@ -39,20 +42,16 @@ from umccrise import _version as version
                                          'Needs to end in ".html".')
 @click.option('--dag', 'dag', is_flag=True, help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
                                                  'Usage: umccrise –-dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
-
-
-# @click.option('--bcbio-genomes', help='Path to bcbio-nextgen reference data (e.g. /bcbio/genomes; '
-#               'Hsapiens/{genome}/seq/{genome}.fa(.fai) and Hsapiens/{genome}/validation/giab-NA12878/truth_regions.bed '
-#               'are used)')
-@click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
-              help='Pull umccr/umccrise docker image and use it instead of the main codebase')
-# @click.option('--pcgr-data', help='Path to the PCGR reference data folder')
+# Other:
 @click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
 @click.option('--no-igv', is_flag=True, help='Skip generating of minibams')
+@click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
+              help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 
-def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
-         jobs=None, cluster=False, cluster_cmd=None, unlock=False, rerun_incomplete=False, restart_times=None,
-         dryrun=False, report=None, dag=False, docker_wrapper_mode=False, no_s3=None, no_igv=False):
+def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, genomes_dir=None,
+         jobs=None, cluster=False, cluster_cmd=None,
+         unlock=False, rerun_incomplete=False, restart_times=None, dryrun=False,
+         no_s3=None, no_igv=False, docker_wrapper_mode=False, report=None, dag=False):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -81,15 +80,10 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if docker_wrapper_mode:
         conf['bcbio_project'] = docker_mounts[bcbio_project] = '/bcbio_project'
 
-    # if bcbio_genomes:
-    #     conf['bcbio_genomes'] = verify_dir(bcbio_genomes, is_critical=True)
-    #     if docker_wrapper_mode:
-    #         conf['bcbio_genomes'] = docker_mounts[bcbio_genomes] = '/bcbio_genomes'
-    #
-    # if pcgr_data:
-    #     conf['pcgr_data'] = verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
-    #     if docker_wrapper_mode:
-    #         conf['pcgr_data'] = docker_mounts[pcgr_data] = '/pcgr/data'
+    if genomes_dir:
+        conf['genomes_dir'] = verify_dir(genomes_dir, is_critical=True)
+        if docker_wrapper_mode:
+            conf['genomes_dir'] = docker_mounts[genomes_dir] = '/genomes'
 
     #####################################
     #### Setting non-path parameters ####

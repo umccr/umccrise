@@ -1,10 +1,11 @@
 ## Cancer gene coverage
 
-localrules: coverage, cacao_symlink_somatic, cacao_symlink_normal
+localrules: coverage, cacao, cacao_symlink_somatic, cacao_symlink_normal
 
 
 from ngs_utils.reference_data import get_key_genes_bed
 from ngs_utils.file_utils import safe_symlink
+from ngs_utils.file_utils import which
 
 
 min_covs = {'tumor': 30, 'normal': 10}    # minimal coverage to confidently call a variant

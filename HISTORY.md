@@ -1,7 +1,13 @@
 0.13
 
 - Re-enable CACAO
-- Support CWL
+- Support Cromwell runs
+- MultiQC:
+  - clean up
+  - add somatic and germline filtering stats
+  - run bcftools-stats for filtered calls
+  - sort samples in tumor-normal order
+  - add columns: secondary alignments, MQ=0 reads, viral
 
 0.12 (23 Jan 2019)
 

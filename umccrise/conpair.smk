@@ -8,9 +8,9 @@ rule run_conpair:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
     output:
-        directory('{batch}/conpair/concordance'),
-        directory('{batch}/conpair/contamination'),
-        directory('{batch}/conpair/.snakemake'),
+        concord = directory('{batch}/conpair/concordance'),
+        contam = directory('{batch}/conpair/contamination'),
+        tmp = directory('{batch}/conpair/.snakemake'),
     threads: 2
     resources:
         mem_mb=10000

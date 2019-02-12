@@ -8,9 +8,8 @@ from ngs_utils.bcbio import BcbioProject
 from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug
 from ngs_utils import logger as ngs_utils_logger
-from hpc_utils.hpc import find_loc, get_ref_file
+from hpc_utils.hpc import get_loc, find_loc, get_ref_file as hpc_get_ref_file
 from ngs_utils.utils import set_locale; set_locale()
-from hpc_utils.hpc import get_loc, get_ref_file
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
@@ -31,6 +30,9 @@ config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster s
 py_path = sys.executable  # /miniconda/envs/umccrise/bin/python
 env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
 conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
+
+def get_ref_file(*args, **kwargs):
+    return hpc_get_ref_file(*args, **kwargs, genomes_dir=config.get('genomes_dir'))
 
 
 def prep_inputs(config_):
@@ -73,13 +75,13 @@ def prep_inputs(config_):
     batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
 
     ###########################################################
-    #### Reference files we are on known host?             ####
+    #### Reference files                                   ####
     ###########################################################
     ref_fa = get_ref_file(run.genome_build)
-    truth_regions = get_ref_file(run.genome_build, ['hmf_giab_conf'])
-    pon_dir = get_ref_file(run.genome_build, 'panel_of_normals_dir')
+    truth_regions = get_ref_file(run.genome_build, key=['hmf_giab_conf'])
+    pon_dir = get_ref_file(run.genome_build, key='panel_of_normals_dir')
     pcgr_data = get_ref_file(key='pcgr_data', loc=loc)
-    cacao_data = get_ref_file(key='cacao_data', loc=loc),
+    cacao_data = get_ref_file(key='cacao_data', loc=loc)
 
     ###########################################################
     #### Done looking for refernece files, now some checks ####

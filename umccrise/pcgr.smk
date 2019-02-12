@@ -13,12 +13,12 @@ from ngs_utils.file_utils import which
 rule run_pcgr:
     input:
         vcf = rules.somatic_vcf_filter_pass.output.vcf,
-        cns = '{batch}/purple/{batch}.purple.cnv',
+        # cns = '{batch}/purple/{batch}.purple.cnv',
         pcgr_data = pcgr_data
     output:
         '{batch}/pcgr/{batch}-somatic.pcgr.html',
         '{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',
-        '{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
+        # '{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
     params:
         output_dir = '{batch}/pcgr',
         genome = run.genome_build,
@@ -29,7 +29,7 @@ rule run_pcgr:
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
     shell:
         conda_cmd.format('pcgr') +
-        'pcgr {input.vcf} {input.cns} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '
+        'pcgr {input.vcf} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '
         '{params.opt} --pcgr-data {input.pcgr_data}'
 
 rule run_cpsr:

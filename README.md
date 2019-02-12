@@ -180,6 +180,32 @@ bgzip -f segdup.bed && tabix -f -p bed segdup.bed.gz
 rm segdup.bed_tmp genomicSuperDups.txt.gz
 ```
 
+#### SAGE
+
+Coding regions:
+
+```
+python vcf_stuff/vcf_stuff/hmf/generate_coding_bed.py\
+     | sort -k1,1V -k2,2n\
+     | grep -v ^MT\
+     | grep -v ^GL\
+     | bedtools merge -c 4 -o collapse -i -\
+     > coding_regions.canonical.sort.merged.bed
+```
+
+#### Ensembl annotation
+
+Using pyensembl package
+
+```
+export PYENSEMBL_CACHE_DIR=$ENSEMBL_DIR
+if [ ! -d $PYENSEMBL_CACHE_DIR/pyensembl ] ; then
+    # In 2 steps: first on loging node to make it download the files:
+    pyensembl install --release $ENSEMBL_VERSION --species human
+    # when it starts `Reading GTF from`, go into a worker node and run again.
+fi
+```
+
 
 ## Testing
 

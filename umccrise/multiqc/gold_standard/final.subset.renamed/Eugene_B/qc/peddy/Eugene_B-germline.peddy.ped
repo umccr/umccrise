@@ -1,2 +1,0 @@
-#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	Ethnicity	het_call_rate	het_ratio	het_mean_depth	het_idr_baf	ancestry-prediction	PC1	PC2	PC3	sex_het_ratio	sex_fixed
-E202	Eugene_B	-9	-9	0	0	-9	1	0.683151136560819	40.03609231303141	0.23636363636363633	EUR	-0.6593061086699593	-1.5525931485957252	-0.45903780815263506	0.2520965036769449	True
