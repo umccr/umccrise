@@ -185,12 +185,12 @@ rm segdup.bed_tmp genomicSuperDups.txt.gz
 Coding regions:
 
 ```
-python vcf_stuff/vcf_stuff/hmf/generate_coding_bed.py\
+python vcf_stuff/vcf_stuff/filtering/hmf/generate_coding_bed.py\
      | sort -k1,1V -k2,2n\
      | grep -v ^MT\
      | grep -v ^GL\
      | bedtools merge -c 4 -o collapse -i -\
-     > coding_regions.canonical.sort.merged.bed
+     > coding_regions.bed
 ```
 
 #### Ensembl annotation
@@ -205,6 +205,49 @@ if [ ! -d $PYENSEMBL_CACHE_DIR/pyensembl ] ; then
     # when it starts `Reading GTF from`, go into a worker node and run again.
 fi
 ```
+
+#### Hotspots
+
+Combining Hartwig's and PCGR hotspots. Stats:
+* Hartwigs: 10211 changes in 3650 locations, 
+* PCGR: 10627 changes in 2494 locations.
+* Overlap: 2960 changes in 968 locations.
+
+The overlap is small, so we better merge sources into a single VCF.
+
+First, download HMF TSV file and convert to VCF:
+
+```
+wget https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd/download?path=%2FHMF-Pipeline-Resources&files=KnownHotspots.tsv.gz -O KnownHotspots.tsv.gz
+
+echo "##fileformat=VCFv4.2" > hmf.vcf
+echo '##INFO=<ID=HMF,Number=.,Type=Flag,Description="Hotspot is from HMF">' >> hmf.vcf
+echo "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO" >> hmf.vcf
+gunzip -c KnownHotspots.tsv.gz | py -x "print('\t'.join([x.split()[0], x.split()[1], '.', x.split()[2], x.split()[3], '.', '.', 'HMF']))" >> hmf.vcf
+bgzip hmf.vcf
+tabix -p vcf hmf.vcf.gz
+```
+
+Prepare PCGR hotspots:
+
+```
+SRC=/Users/vsaveliev/bio/genomes/pcgr/data/grch37/cancer_hotspots/cancer_hotspots.vcf.gz
+bcftools view -h $SRC | grep ^## > pcgr.vcf
+echo '##INFO=<ID=PCGR,Number=.,Type=Flag,Description="Hotspot is from PCGR (cancerhotspots.org_v2)">' >> pcgr.vcf
+bcftools view -h $SRC | grep ^#CRHOM >> pcgr.vcf
+bcftools view -H $SRC | bioawk -t '{ print $1,$2,$3,$4,$5,$6,$7,$8";PCGR" }' >> pcgr.vcf
+
+bgzip pcgr.vcf
+tabix -p vcf pcgr.vcf.gz
+```
+
+Merge:
+
+```
+bcftools merge -m none hmf.vcf.gz pcgr.vcf.gz -Oz -o merged.vcf.gz
+tabix -p vcf merged.vcf.gz
+```
+
 
 
 ## Testing
