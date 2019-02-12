@@ -16,8 +16,8 @@ d = {
     "E199__PRJ180495_E199-B01-D": "Chen_B",
     "E190__PRJ180253_E190-T01-D": "Dakota_T",
     "E190__PRJ180254_E190-B01-D": "Dakota_B",
-    "E202__PRJ180499_E202-T01-D": "Eugene_T",
-    "E202__PRJ180500_E202-B01-D": "Eugene_B",
+    "E202__PRJ180499_E202-T01-D": "Elon_T",
+    "E202__PRJ180500_E202-B01-D": "Elon_B",
     "PRJ180506_E194-T01-D": "Alice_T",
     "PRJ180507_E194-B01-D": "Alice_B",
     "PRJ180492_E201-T01-D": "Bob_T",
@@ -26,8 +26,8 @@ d = {
     "PRJ180495_E199-B01-D": "Chen_B",
     "PRJ180253_E190-T01-D": "Dakota_T",
     "PRJ180254_E190-B01-D": "Dakota_B",
-    "PRJ180499_E202-T01-D": "Eugene_T",
-    "PRJ180500_E202-B01-D": "Eugene_B",
+    "PRJ180499_E202-T01-D": "Elon_T",
+    "PRJ180500_E202-B01-D": "Elon_B",
 }
 
 def rn(s):
