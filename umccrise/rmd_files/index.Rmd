@@ -240,11 +240,10 @@ if (length(readLines(con = params$sv_fname, n = 2)) > 1) {
 }
 ```
 
-### SV LoF in tumor suppressors (by Cancermine)
+### SV LoF in tumor suppressors
 
 ```{r sv_suppressors, message=FALSE}
 key_genes <- readr::read_tsv(params$key_genes)
-oncogenes <- key_genes %>% filter(oncogene)
 tsgenes <- key_genes %>% filter(tumorsuppressor)
 
 if (!is.null(sv_all)) {
