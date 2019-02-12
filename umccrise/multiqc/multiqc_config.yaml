@@ -83,8 +83,8 @@ umccr:
     - Chen_B
     - Dakota_T
     - Dakota_B
-    - Eugene_T
-    - Eugene_B
+    - Elon_T
+    - Elon_B
 
 module_order:
     - bcbio

@@ -92,7 +92,7 @@ python rename.py ${DIR_QCONLY} ${DIR_QCONLY}.renamed
 #conpair -T final/*E201-T*/*-ready.bam -N final/*E201-B*/*-ready.bam -tn Bob_T    -nn Bob_B    -o final.subset.renamed/conpair &
 #conpair -T final/*E199-T*/*-ready.bam -N final/*E199-B*/*-ready.bam -tn Chen_T   -nn Chen_B   -o final.subset.renamed/conpair &
 #conpair -T final/*E190-T*/*-ready.bam -N final/*E190-B*/*-ready.bam -tn Dakota_T -nn Dakota_B -o final.subset.renamed/conpair &
-#conpair -T final/*E202-T*/*-ready.bam -N final/*E202-B*/*-ready.bam -tn Eugene_T -nn Eugene_B -o final.subset.renamed/conpair &
+#conpair -T final/*E202-T*/*-ready.bam -N final/*E202-B*/*-ready.bam -tn Elon_T   -nn Elon_B   -o final.subset.renamed/conpair &
 #cd final.subset.renamed
 #rm conpair/*.pileup
 #ls conpair/concordance/* >> list_files_final.txt
