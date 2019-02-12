@@ -8,7 +8,7 @@ import itertools
 from cyvcf2 import VCF
 
 from ngs_utils.file_utils import safe_mkdir
-from ngs_utils.reference_data import get_key_genes, get_known_fusion_pairs, get_known_fusion_heads, get_known_fusion_tails
+from ngs_utils.reference_data import get_key_genes_txt, get_known_fusion_pairs, get_known_fusion_heads, get_known_fusion_tails
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
 
 vcftobedpe = 'vcfToBedpe'
@@ -38,11 +38,9 @@ rule prep_sv_prio_lists:
         fusion_pairs = get_known_fusion_pairs(),
         fusion_heads = get_known_fusion_heads(),
         fusion_tails = get_known_fusion_tails(),
-        cancer_genes = get_key_genes(),
     output:
         pairs = 'work/fusion_pairs.txt',
         promisc = 'work/fusion_promisc.txt',
-        cancer_genes = 'work/cancer_genes.txt',
     run:
         with open(input.fusion_pairs) as f, open(output.pairs, 'w') as out:
             for l in f:
@@ -58,14 +56,13 @@ rule prep_sv_prio_lists:
                     gene = l.split(',')[0]
                     if gene and gene != 'gene':
                         out.write(f'{gene}\n')
-        shell('grep -v symbol {input.cancer_genes} | cut -f1 > {output.cancer_genes}')
 
 rule sv_prioritize:
     input:
         vcf = lambda wc: get_manta_path(wc.batch),
         known_pairs = rules.prep_sv_prio_lists.output.pairs,
         known_promisc = rules.prep_sv_prio_lists.output.promisc,
-        cancer_genes = rules.prep_sv_prio_lists.output.cancer_genes,
+        cancer_genes = get_key_genes_txt(),
     output:
         vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz'
     run:
