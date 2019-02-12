@@ -72,9 +72,9 @@ rule run_sage:
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
         coding_bed = get_ref_file(run.genome_build, 'coding_regions'),
         ref_fa = ref_fa,
-        hotspots = get_ref_file(run.genome_build, key='hmf_hotspot'),
+        hotspots_vcf = get_ref_file(run.genome_build, key='hotspots'),
     output:
-        vcf = 'work/{batch}/small_variants/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz'
+        vcf = 'work/{batch}/small_variants/sage_call/{batch}-somatic-' + run.somatic_caller + '.vcf.gz'
     params:
         jar = join(package_path(), 'jars', 'sage-1.0-jar-with-dependencies.jar'),
         rundir = 'work/{batch}/purple',
@@ -83,11 +83,13 @@ rule run_sage:
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
         xms = 2000,
         xmx = min(40000, 3000*threads_per_batch),
+    resources:
+        mem_mb = min(40000, 3000*threads_per_batch)
     shell:
         'java -Xms{params.xms}m -Xmx{params.xmx}m -cp {params.jar} com.hartwig.hmftools.sage.SageHotspotApplication '
         '-tumor {params.tumor_sname} -tumor_bam {input.tumor_bam} '
         '-reference {params.normal_sname} -reference_bam {input.normal_bam} '
-        '-known_hotspots <(gunzip -c {input.hotspots}) '
+        '-known_hotspots <(bcftools query -f "%CHROM\\t%POS\\t%REF\\t%ALT\\n" {input.hotspots_vcf}) '
         '-coding_regions {input.coding_bed} '
         '-ref_genome {input.ref_fa} '
         '-out {output.vcf} '
@@ -98,7 +100,7 @@ rule annotate_from_sage:
         vcf = rules.somatic_vcf_annotate.output.vcf,
         sage_vcf = rules.run_sage.output.vcf,
     output:
-        vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '-sage.vcf.gz'
+        vcf = 'work/{batch}/small_variants/sage_anno/{batch}-somatic-' + run.somatic_caller + '-sage.vcf.gz'
     group: "somatic_filt"
     run:
         with open(input.sage_vcf + '_toml', 'w') as f:
@@ -113,6 +115,7 @@ ops = ["self", "self", "self"]
 rule somatic_vcf_filter:
     input:
         vcf = rules.annotate_from_sage.output.vcf,
+        # vcf = rules.somatic_vcf_annotate.output.vcf,
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         # vcf = 'work/{batch}/small_variants/filter/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
