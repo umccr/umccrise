@@ -249,18 +249,21 @@ rule prep_sv_tsv:
     run:
         tumor_id = VCF(input.vcf).samples.index(params.sample)
         with open(output[0], 'w') as out:
-            header = ["caller", "sample", "chrom", "start", "end", "svtype", "lof", "annotation",
-                      "split_read_support", "paired_support_PE", "paired_support_PR", "somaticscore", "tier"]
+            header = ["caller", "sample", "chrom", "start", "end", "svtype",
+                      "split_read_support", "paired_support_PE", "paired_support_PR", "somaticscore", "tier",
+                      "annotation", "lof"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 # import pdb; pdb.set_trace()
                 data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
-                        rec.INFO['SVTYPE'], rec.INFO.get('LOF', ''), rec.INFO.get('SIMPLE_ANN', ''),
+                        rec.INFO['SVTYPE'],
                         ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
                         rec.INFO.get('SOMATICSCORE', ''),
                         rec.INFO.get('SV_HIGHEST_TIER', ''),
+                        rec.INFO.get('SIMPLE_ANN', ''),
+                        rec.INFO.get('LOF', ''),
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 
