@@ -462,8 +462,9 @@ is used to generate a copy number profile for the somatic sample.
 
 ### QC, Purity and Ploidy Summary
 PURPLE outputs a QC status along with a summary
-for the inferred purity and ploidy of the somatic sample
-(see `Description` for more details).
+for the inferred purity and ploidy of the somatic sample.
+A failed QC status can be attributed to several factors 
+(see `Description` below).
 
 <details>
 <summary>Description</summary>
@@ -489,49 +490,63 @@ There are several reasons PURPLE may classify a sample as failed:
   
 </details>
 
-```{r purple-qc, eval=T}
-fn <- file.path(params$purple_qc)
-tab <- readr::read_tsv(fn, col_names = c("key", "value"), col_types = "cc")
-tab %>%
-  dplyr::mutate(
-    key = kableExtra::cell_spec(key, bold = TRUE),
-    value = toupper(value),
-    value = kableExtra::cell_spec(value, bold = TRUE,
-                                  color = dplyr::case_when(
-        value == "PASS" ~ "green",
-        grepl("FAIL", value) ~ "red",
-        value == "FEMALE" ~ "purple",
-        value == "MALE" ~ "blue",
-        value == "TRUE" ~ "green",
-        value == "FALSE" ~ "red",
-        TRUE ~ "black"))) %>%
-  knitr::kable(escape = FALSE) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
-```
+```{r pur-ply-qc, eval=T}
+# read both datasets
+purple_qc <- 
+  file.path(params$purple_qc) %>% 
+  readr::read_tsv(col_names = c("key", "value"), col_types = "cc") %>% 
+  dplyr::mutate(value = toupper(value))
+# turn into named vector
+purple_qc <- structure(purple_qc$value, names = purple_qc$key)
 
-### Purity and Ploidy Summary
-
-```{r purply, eval=T}
-fn <- file.path(params$purple_purity)
-x <- readr::read_tsv(fn, col_types = cols(.default = col_double(),
-                                          Gender = col_character(),
-                                          Status = col_character())) %>%
+purple_purity <-
+  file.path(params$purple_purity) %>%
+  readr::read_tsv(col_types = cols(.default = col_double(),
+                                   Gender = col_character(),
+                                   Status = col_character())) %>%
   dplyr::mutate_if(is.numeric, round, 2) %>%
   unlist()
 
-tribble(~key, ~value,
-        'Gender', x["Gender"],
-        'Purity', glue('{x["#Purity"]} ({x["MinPurity"]}-{x["MaxPurity"]})'),
-        'Ploidy', glue('{x["Ploidy"]} ({x["MinPloidy"]}-{x["MaxPloidy"]})'),
-        'Diploidy Proportion', glue('{x["DiploidProportion"]} ({x["MinDiploidProportion"]}-{x["MaxDiploidProportion"]})'),
-        'Polyclonal Proportion', x["PolyclonalProportion"],
-        'Purple Version', x["Version"]) %>%
+# sanity checks in case something changes between versions
+nms1 <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
+          "SegmentScore", "UnsupportedSegments", "Ploidy", 
+          "AmberGender", "CobaltGender", "DeletedGenes")
+stopifnot(all(names(purple_qc) == nms1))
+
+nms2 <- c("#Purity", "NormFactor", "Score", "DiploidProportion", "Ploidy", 
+          "Gender", "Status", "PolyclonalProportion", "MinPurity", "MaxPurity", 
+          "MinPloidy", "MaxPloidy", "MinDiploidProportion", "MaxDiploidProportion", 
+          "Version", "SomaticDeviation")
+stopifnot(all(names(purple_purity) == nms2))
+
+# for shorter reference in glue
+p <- purple_purity 
+q <- purple_qc
+tab <- dplyr::tribble(
+  ~Variable, ~value, ~details,
+  'QC_Status', glue('{q["QCStatus"]}'), "",
+  'Purity', glue('{p["#Purity"]}'), glue('range: {p["MinPurity"]}-{p["MaxPurity"]}'),
+  'Ploidy', glue('{p["Ploidy"]}'), glue('range: {p["MinPloidy"]}-{p["MaxPloidy"]}'),
+  'Gender', glue('{p["Gender"]}'), "",
+  'Polyclonal Prop', p["PolyclonalProportion"], "",
+  'Diploidy Prop', glue('{p["DiploidProportion"]}'), glue('range: {p["MinDiploidProportion"]}-{p["MaxDiploidProportion"]}'),
+  'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
+  'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
+  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
+  'Purple Version', p["Version"], "")
+
+tab %>% 
   dplyr::mutate(
-    key = kableExtra::cell_spec(key, bold = TRUE),
-    value = kableExtra::cell_spec(value, bold = TRUE, color = dplyr::case_when(
-        value == "FEMALE" ~ "purple",
-        value == "MALE" ~ "blue",
-        TRUE ~ "black"))) %>%
+    Variable = kableExtra::cell_spec(Variable, bold = TRUE),
+    value = kableExtra::cell_spec(value, bold = TRUE,
+                                  color = dplyr::case_when(
+                                    value == "PASS" ~ "green",
+                                    grepl("FAIL", value) ~ "red",
+                                    value == "FEMALE" ~ "purple",
+                                    value == "MALE" ~ "blue",
+                                    value == "TRUE" ~ "green",
+                                    value == "FALSE" ~ "red",
+                                    TRUE ~ "black"))) %>%
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
