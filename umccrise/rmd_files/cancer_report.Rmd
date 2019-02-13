@@ -31,9 +31,10 @@ title: "`r paste(params$title, params$batch_name)`"
 
 ```{r knitr-opts, include=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, echo = TRUE, eval=FALSE)
+
 ```
 
-```{r load_pkgs, message=FALSE, warning=FALSE, eval=TRUE}
+```{r load_pkgs, message=FALSE, warning=FALSE, eval=T}
 library(bookdown)
 library(BSgenome)
 library(devtools)
@@ -55,7 +56,7 @@ tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene"
 library(tx_ref_genome, character.only = TRUE)
 ```
 
-```{r render_book_inter, eval=FALSE, echo=FALSE}
+```{r render_book_inter, eval=F, echo=FALSE}
 params_spartan <- list(
   tumor_name='PRJ180471_BK221-NET1',
   batch_name='BK221-NET1__PRJ180471_BK221-NET1',
@@ -96,9 +97,11 @@ render_me <- function() {
 render_me()
 ```
 
+```{r create-img-dir, eval=T}
+img_dir <- file.path('img') # created before when copying purple files to tmp dir
+```
+
 # Signatures
-We can visualise the [mutational signature](https://cancer.sanger.ac.uk/cosmic/signatures) 
-and allelic frequency profile of the tumor sample.
 
 ## Allelic frequencies
 Summarised below are the allele frequencies (AFs) for somatic variants detected
@@ -135,15 +138,17 @@ The following post-processing steps occur:
 
 ```{r af_plot, warning=FALSE, eval=T}
 # Global AF
-af_global <- readr::read_tsv(params$af_global, col_types = "d") %>%
+af_global <-
+  readr::read_tsv(params$af_global, col_types = "d") %>%
   dplyr::mutate(set = "Global")
 
-af_keygenes <- readr::read_tsv(params$af_keygenes,
-                               col_types = "cicccd") %>%
+af_keygenes <-
+  readr::read_tsv(params$af_keygenes, col_types = "cicccd") %>%
   dplyr::select(af) %>%
   dplyr::mutate(set = 'Key genes CDS')
 
-af_both <- dplyr::bind_rows(af_global, af_keygenes) %>%
+af_both <-
+  dplyr::bind_rows(af_global, af_keygenes) %>%
   dplyr::mutate(set = factor(set, levels = c("Global", "Key genes CDS")))
 
 ggplot(data = af_both, aes(af)) +
@@ -176,26 +181,33 @@ af_both %>%
   kableExtra::column_spec(1, bold = TRUE)
 ```
 
-
-## Mutational signature
+## Mutational signature {.tabset .tabset-fade}
+Deciphering the mutational signature of a tumor sample can provide insight into the mutational
+processes involved in carcinogenesis and help in cancer treatment and prevention.
 The [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/MutationalPatterns.html)
-R package is used to generate a mutation signature for our sample. We use the final filtered somatic
-calls as input (adjusted to hg19-like format).
+R package is used to generate a mutation signature for the sample. We use the final filtered somatic
+calls as input.
 
-```{r importVCF, warning=FALSE}
-somatic_snv <- read_vcfs_as_granges(
-  params$somatic_snv,
-  sample_names = params$tumor_name,
-  genome = ref_genome,
-  group = "auto+sex")
+```{r importVCF, warning=FALSE, eval=T}
+somatic_snv <-
+  MutationalPatterns::read_vcfs_as_granges(
+    vcf_files = params$somatic_snv,
+    sample_names = params$tumor_name,
+    genome = ref_genome,
+    group = "auto+sex")
 ```
 
-### Somatic change distribution
+### 96 trinucleotide profile
 
-#### Point mutation spectrum
+```{r somProfile2, warning=FALSE, out.width="80%", eval=T}
+mut_mat <- mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
+plot_96_profile(mut_mat, condensed = TRUE)
+```
+
+### Point mutation spectrum
 
 <details>
-<summary>Desciption</summary>
+<summary>Description</summary>
 
 With `mut_type_occurrences`, you can count the mutation type occurrences for the input VCF.
 For `C>T` mutations, a distinction is made between `C>T` at CpG sites
@@ -210,19 +222,103 @@ distinguishes between `C>T` at CpG sites and other sites.
 
 </details>
 
-```{r somProfile1, warning=FALSE, out.width="60%"}
+```{r somProfile1, warning=FALSE, out.width="60%", eval=T}
 type_occurrences <- mut_type_occurrences(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_spectrum(type_occurrences, CT = TRUE)
 ```
 
-#### Profile of 96 trinucleotides
+### Transcriptional strand bias
 
-```{r somProfile2, warning=FALSE, out.width="60%"}
-mut_mat <- mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
-plot_96_profile(mut_mat, condensed = TRUE)
+<details>
+<summary>Description</summary>
+
+We can determine if a gene mutation is on the transcribed or non-transcribed
+strand, which can be used to evaluate the involvement of transcription-coupled
+repair. By convention base substitutions are regarded as C>X or T>X, so we try
+to determine whether the C or T base is on the same strand as the gene
+definition. Base substitutions on the same strand as the gene definition are
+considered 'untranscribed', and on the opposite strand 'transcribed', since the
+gene definitions report the coding or sense strand, which is untranscribed. No
+strand information is reported for base substitutions that overlap with more
+than one gene on different strands.
+
+</details>
+
+```{r tran_strand_bias, warning=FALSE, message=FALSE, out.width="60%", eval=T}
+# Get known genes table from UCSC
+if (params$genome_build == 'hg19') {
+  genes_list <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
+} else {
+  genes_list <- genes(TxDb.Hsapiens.UCSC.hg38.knownGene)
+}
+
+# Mutation count matrix with strand info (4*6*4=96 -> 96*2=192)
+mut_mat_s <- MutationalPatterns::mut_matrix_stranded(somatic_snv,
+                                 ref_genome = ref_genome,
+                                 ranges = genes_list,
+                                 mode = "transcription")
+
+# Mutation count per type and strand
+strand_counts <- MutationalPatterns::strand_occurrences(mut_mat_s, by = "all")
+# Poisson test for strand asymmetry significance testing
+strand_bias <- MutationalPatterns::strand_bias_test(strand_counts)
+
+# mutation spectrum with strand distinction
+MutationalPatterns::plot_strand(strand_counts, mode = "relative")
+# effect size of strand bias
+MutationalPatterns::plot_strand_bias(strand_bias)
 ```
 
-### Signature reference comparison
+### Replicative strand bias
+
+<details>
+<summary>Description</summary>
+
+The involvement of replication-associated mechanisms can be evaluated by
+testing for a mutational bias between the leading and lagging strand.
+The replication strand is dependent on the locations of replication
+origins from which DNA replication is fired.
+However, replication timing is dynamic and cell-type specific,
+which makes replication strand determination less straightforward than
+transcriptional strand bias analysis.
+Replication timing profiles can be generated with
+Repli-Seq experiments. Once the replication direction is defined,
+a strand asymmetry analysis can be performed similarly as the transcription
+strand bias analysis.
+
+</details>
+
+```{r rep_strand_bias, warning=FALSE, message=FALSE, out.width="60%", eval=T}
+repli_file <- system.file("extdata/ReplicationDirectionRegions.bed",
+                          package = "MutationalPatterns")
+# start/stop contain scientific notation, so need to be doubles
+repli_strand <-
+  readr::read_tsv(repli_file, col_names = TRUE, col_types = "cddcc") %>%
+  dplyr::mutate_if(is.character, as.factor)
+repli_strand_granges <- GRanges(
+  seqnames = repli_strand$Chr,
+  ranges = IRanges(start = repli_strand$Start + 1,
+                   end = repli_strand$Stop),
+  strand_info = repli_strand$Class)
+
+seqlevelsStyle(repli_strand_granges) <- seqlevelsStyle(base::get(ref_genome))
+
+mut_mat_s_rep <-
+  MutationalPatterns::mut_matrix_stranded(
+    vcf_list = somatic_snv,
+    ref_genome = ref_genome,
+    ranges = repli_strand_granges,
+    mode = "replication")
+# Mutation count per type and strand
+strand_counts_rep <- strand_occurrences(mut_mat_s_rep, by = "all")
+# Poisson test for strand asymmetry significance testing
+strand_bias_rep <- strand_bias_test(strand_counts_rep)
+
+MutationalPatterns::plot_strand(strand_counts_rep, mode = "relative")
+MutationalPatterns::plot_strand_bias(strand_bias_rep)
+```
+
+## Signature Contribution
 
 <details>
 <summary>Description</summary>
@@ -240,7 +336,7 @@ and reference signature plots from <https://cancer.sanger.ac.uk/cosmic/signature
 
 </details>
 
-```{r somSig}
+```{r somSig, eval=T}
 # Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
 sig_probs <- file.path("misc/sig/signatures_probabilities.txt")
 # better be explicit - the sig_probs file has 7 extra empty columns
@@ -281,26 +377,68 @@ result %>%
   kableExtra::scroll_box(height = "300px")
 ```
 
-### Rainfall plot
+## Rainfall plots {.tabset .tabset-fade}
+
+### Rainfall
 
 <details>
-<summary>description</summary>
+<summary>Description</summary>
 
-A rainfall plot visualizes mutation types and intermutation distance. Rainfall plots can be
-used to visualize the distribution of mutations along the genome or a subset of chromosomes.
-The y-axis corresponds to the distance of a mutation with the previous mutation and is log10
-transformed. Drop-downs from the plots indicate clusters or “hotspots” of mutations.
+Rainfall plots are used to visualize the distribution of mutations along the genome,
+including mutation types and intermutation distance.
+The y-axis corresponds to the distance of a mutation with the previous mutation
+and is log10 transformed. Drop-downs from the plots indicate clusters or
+"hotspots" of mutations.
 </details>
 
-```{r rainfall, out.width="60%"}
+
+```{r rainfall, out.width="100%", eval=T}
 chromosomes <- seqnames(get(ref_genome))[1:22]
-plot_rainfall(somatic_snv[[1]], chromosomes = chromosomes, cex = 1.5, ylim = 1e+09 )
+MutationalPatterns::plot_rainfall(somatic_snv[[1]], chromosomes = chromosomes, cex = 1.2, ylim = 1e+09)
+```
+
+### Circos
+
+<details>
+<summary>Description</summary>
+Generated from PURPLE.
+
+Somatic SNVs/Indels, Total/Minor CN, SVs
+
+* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
+  (centromeres, heterochromatin & missing short arms)
+* __Track2__: Somatic variants (incl. exon, intron and intergenic regions).
+    * outer ring: SNP allele frequencies, corrected for tumor purity and scaled from 0 to 100%.
+      Each dot represents a single somatic variant, coloured according to the
+      type of base change (e.g. C>T/G>A in red).
+    * inner ring: short insertion (yellow) and deletion (red) locations.
+* __Track3__: Observed __total__ copy number changes adjusted for tumor purity,
+  including focal and chromosomal somatic events.
+  <span style="color:red">Red</span> = Loss; <span style="color:#32CD32">Green</span> = Gain.
+  Scaled from 0 (complete loss) to 6 (high level gains).
+  If > 6, shown as 6 with a green dot on the outermost green gridline.
+* __Track4__: Observed __minor__ allele copy numbers. Range from 0 to 3.
+  Expected normal minor allele copy number is 1, and anything below 1 is shown
+  as a loss (<span style="color:#EE7600">Orange</span>), representing an LOH event.
+  Minor allele copy numbers above 1 (<span style="color:#7EC0EE">Blue</span>) indicate gains
+  of both A and B alleles.
+* __Track5__ (Inner circle): Observed structural variants within or between the chromosomes.
+    * <span style="color:#7EC0EE">Blue</span> = Translocations
+    * <span style="color:red">Red</span> = Deletions
+    * <span style="color:#e6e600">Yellow</span> = Insertions
+    * <span style="color:#32CD32">Green</span> = Tandem duplications
+    * <span style="color:#000000">Black</span> = Inversions
+
+</details>
+
+```{r circos-default1, out.width="100%", eval=T}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
 ```
 
 ## Prioritised SVs
 
 <details>
-<summary>Desciption</summary>
+<summary>Description</summary>
 
 * The input file corresponds to `umccrise/batch/structural/batch-sv-prioritize-manta-pass.tsv`
 * It's generated through the following steps:
@@ -377,94 +515,6 @@ if (!is.null(sv_all)) {
 }
 ```
 
-## Transcriptional strand bias analysis
-
-<details>
-<summary>Desciption</summary>
-
-We can determine if a gene mutation is on the transcribed or non-transcribed
-strand, which can be used to evaluate the involvement of transcription-coupled
-repair. By convention base substitutions are regarded as C>X or T>X, so we try
-to determine whether the C or T base is on the same strand as the gene
-definition. Base substitutions on the same strand as the gene definition are
-considered 'untranscribed', and on the opposite strand 'transcribed', since the
-gene definitions report the coding or sense strand, which is untranscribed. No
-strand information is reported for base substitutions that overlap with more
-than one gene on different strands.
-
-</details>
-
-```{r tran_strand_bias, warning=FALSE, message=FALSE, out.width="60%"}
-# Get known genes table from UCSC
-if (params$genome_build == 'hg19') {
-  genes_list <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
-} else {
-  genes_list <- genes(TxDb.Hsapiens.UCSC.hg38.knownGene)
-}
-
-# Mutation count matrix with strand info (4*6*4=96 -> 96*2=192)
-mut_mat_s <- mut_matrix_stranded(somatic_snv,
-                                 ref_genome = ref_genome,
-                                 ranges = genes_list,
-                                 mode = "transcription")
-
-# Mutation count per type and strand
-strand_counts <- strand_occurrences(mut_mat_s, by = "all")
-# Poisson test for strand asymmetry significance testing
-strand_bias <- strand_bias_test(strand_counts)
-
-# mutation spectrum with strand distinction
-plot_strand(strand_counts, mode = "relative")
-# effect size of strand bias
-plot_strand_bias(strand_bias)
-```
-
-
-## Replicative strand bias analysis
-
-<details>
-<summary>Desciption</summary>
-
-The involvement of replication-associated mechanisms can be evaluated by
-testing for a mutational bias between the leading and lagging strand.
-The replication strand is dependent on the locations of replication
-origins from which DNA replication is fired.
-However, replication timing is dynamic and cell-type specific,
-which makes replication strand determination less straightforward than
-transcriptional strand bias analysis.
-Replication timing profiles can be generated with
-Repli-Seq experiments. Once the replication direction is defined,
-a strand asymmetry analysis can be performed similarly as the transcription
-strand bias analysis.
-
-</details>
-
-```{r rep_strand_bias, warning=FALSE, message=FALSE, out.width="60%"}
-repli_file <- system.file("extdata/ReplicationDirectionRegions.bed",
-                          package = "MutationalPatterns")
-# start/stop contain scientific notation, so need to be doubles
-repli_strand <- read_tsv(repli_file, col_names = TRUE, col_types = "cddcc") %>%
-  mutate_if(is.character, as.factor)
-repli_strand_granges <- GRanges(
-  seqnames = repli_strand$Chr,
-  ranges = IRanges(start = repli_strand$Start + 1,
-                   end = repli_strand$Stop),
-  strand_info = repli_strand$Class)
-
-seqlevelsStyle(repli_strand_granges) <- seqlevelsStyle(base::get(ref_genome))
-
-mut_mat_s_rep <- mut_matrix_stranded(somatic_snv, ref_genome = ref_genome,
-                                     ranges = repli_strand_granges,
-                                     mode = "replication")
-# Mutation count per type and strand
-strand_counts_rep <- strand_occurrences(mut_mat_s_rep, by = "all")
-# Poisson test for strand asymmetry significance testing
-strand_bias_rep <- strand_bias_test(strand_counts_rep)
-
-plot_strand(strand_counts_rep, mode = "relative")
-plot_strand_bias(strand_bias_rep)
-```
-
 # PURPLE Results
 
 [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
@@ -480,7 +530,7 @@ tab %>%
   dplyr::mutate(
     key = kableExtra::cell_spec(key, bold = TRUE),
     value = toupper(value),
-    value = kableExtra::cell_spec(value, bold = TRUE, 
+    value = kableExtra::cell_spec(value, bold = TRUE,
                                   color = dplyr::case_when(
         value == "PASS" ~ "green",
         grepl("FAIL", value) ~ "red",
@@ -523,7 +573,7 @@ tribble(~key, ~value,
 ## Events in cancer genes
 
 <details>
-<summary>Desciption</summary>
+<summary>Description</summary>
 
 Listed are deletions in cancer genes, homozygous deletions of tumor suppressors,
 and gains in oncogenes. Oncogenes and tumor suppressors reported by
@@ -561,46 +611,10 @@ purple_gene_cnv %>%
 
 ## Circos
 
-### Plot 1: Somatic SNVs/Indels, Total/Minor CN, SVs
-
-<details>
-<summary>Desciption</summary>
-
-* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
-  (centromeres, heterochromatin & missing short arms)
-* __Track2__: Somatic variants (incl. exon, intron and intergenic regions).
-    * outer ring: SNP allele frequencies, corrected for tumor purity and scaled from 0 to 100%.
-      Each dot represents a single somatic variant, coloured according to the
-      type of base change (e.g. C>T/G>A in red).
-    * inner ring: short insertion (yellow) and deletion (red) locations.
-* __Track3__: Observed __total__ copy number changes adjusted for tumor purity,
-  including focal and chromosomal somatic events.
-  <span style="color:red">Red</span> = Loss; <span style="color:#32CD32">Green</span> = Gain.
-  Scaled from 0 (complete loss) to 6 (high level gains).
-  If > 6, shown as 6 with a green dot on the outermost green gridline.
-* __Track4__: Observed __minor__ allele copy numbers. Range from 0 to 3.
-  Expected normal minor allele copy number is 1, and anything below 1 is shown
-  as a loss (<span style="color:#EE7600">Orange</span>), representing an LOH event.
-  Minor allele copy numbers above 1 (<span style="color:#7EC0EE">Blue</span>) indicate gains
-  of both A and B alleles.
-* __Track5__ (Inner circle): Observed structural variants within or between the chromosomes.
-    * <span style="color:#7EC0EE">Blue</span> = Translocations
-    * <span style="color:red">Red</span> = Deletions
-    * <span style="color:#e6e600">Yellow</span> = Insertions
-    * <span style="color:#32CD32">Green</span> = Tandem duplications
-    * <span style="color:#000000">Black</span> = Inversions
-
-</details>
-
-```{r circos-default1, out.width="80%"}
-img_dir <- file.path('img') # created before when copying purple files to tmp dir
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
-```
-
 ### Plot 2: Tumor/Normal Allele Ratios, BAF
 
 <details>
-<summary>Desciption</summary>
+<summary>Description</summary>
 
 * __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
   (centromeres, heterochromatin & missing short arms)
@@ -617,7 +631,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 ### Plot 3: Total/Minor CN, SVs, BAF
 
 <details>
-<summary>Desciption</summary>
+<summary>Description</summary>
 
 * __Track1__: Chromosomes
 * __Track2__: <span style="color:#8A2BE2">Beta Allele Frequency</span>
@@ -694,7 +708,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.p
 
 ## umccrise version
 
-```{r um-version, eval=FALSE}
+```{r um-version, eval=F}
 umv <- system("umccrise --version", intern = TRUE)
 __`r umv`__
 ```
@@ -706,7 +720,7 @@ __`r umv`__
 <details>
 <summary>Session Info</summary>
 
-```{r session-info, eval=FALSE}
+```{r session-info, eval=F}
 si <- devtools::session_info(include_base = TRUE)
 si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
 si_pkg <- unclass(si$packages) %>%
