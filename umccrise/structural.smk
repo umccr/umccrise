@@ -74,7 +74,8 @@ rule sv_subset_to_canonical:
     input:
         vcf = lambda wc: get_manta_path(wc.batch),
     output:
-        vcf = 'work/{batch}/structural/canonical_ann/{batch}-manta.vcf.gz'
+        vcf = 'work/{batch}/structural/canonical_ann/{batch}-manta.vcf.gz',
+        tbi = 'work/{batch}/structural/canonical_ann/{batch}-manta.vcf.gz.tbi',
     group: "sv_vcf"
     run:
         assert vcf_contains_field(input.vcf, 'INFO/ANN'), f'Manta {input.vcf} must be annotated with SnpEff'
@@ -83,7 +84,7 @@ rule sv_subset_to_canonical:
         canon_tx = set(canon_tx_by_gname.values())
 
         def proc_line(rec, **kwargs):
-            ann = rec.INFO.get('ANN')
+            ann = rec.INFO.get('ANN', [])
             if isinstance(ann, str):
                 anns = ann.split(',')
             else:
@@ -121,7 +122,8 @@ rule sv_prioritize:
         known_promisc = rules.prep_sv_prio_lists.output.promisc,
         cancer_genes = get_key_genes_txt(),
     output:
-        vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz'
+        vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz',
+        tbi = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz.tbi',
     group: "sv_vcf"
     run:
         cmd = f'cat {input.vcf}'
@@ -140,37 +142,27 @@ rule sv_prioritize:
         after = count_vars(output.vcf)
         assert before == after, (before, after)
 
-# Keep variants with the FILTER values only in PASS, Intergenic, or MissingAnn.
-# Unlesss there are too many SV calls (FFPE?) - in this case keep *only* PASS.
+# Keep passed variants.
+# If there are too many SV calls (FFPE?), also remove unprioritized SVs
+# Also removing older very cluttered ANN field
 rule sv_keep_pass:
     input:
         vcf = rules.sv_prioritize.output.vcf
     output:
-        vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz'
+        vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf'
     group: "sv_vcf"
     run:
-        cmd = f'cat {input.vcf}'
-        if count_vars(input.vcf, filter='.,PASS,Intergenic,MissingAnn') <= 1000:
-            # Not too many variants, so Intergenic won't clutter the reports much - keeping them
-            filts_to_remove = [f'FILTER/{f}' for f in ['Intergenic', 'MissingAnn']
-                               if vcf_contains_field(input[0], f, 'FILTER')]
-            if filts_to_remove:
-                # Want to keep Intergenic variants from sv-prioritize.
-                # Note that `bcftools view -f .,PASS,Intergenic,MissingAnn` doesn't work because
-                # it keep variants with other values in FILTER also. That's why we remove those
-                # FILTER values with `bcftools annotate -x`.
-                cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
-        cmd += f' | bcftools view -f.,PASS'
-        if vcf_contains_field(input[0], 'ANN', 'INFO'):  # very cluttered ANN field, ran for all tanscripts
-            cmd += ' | bcftools annotate -x INFO/ANN'
-        cmd += f' -Oz -o {output.vcf}'
+        cmd = f'bcftools view -f.,PASS {input.vcf} | bcftools annotate -x INFO/ANN'
+        if count_vars(input.vcf, filter='.,PASS') > 1000:
+            cmd += ' | bcftools filter -i "SV_HIGHEST_TIER <= 3"'
+        cmd += f' -o {output.vcf}'
         shell(cmd)
 
 rule sv_maybe_keep_prioritize:
     input:
         vcf = rules.sv_keep_pass.output.vcf
     output:
-        vcf = 'work/{batch}/structural/maybe_keep_prio/{batch}-manta.vcf.gz'
+        vcf = 'work/{batch}/structural/maybe_keep_prio/{batch}-manta.vcf'
     group: "sv_vcf"
     run:
         if count_vars(input.vcf, filter='.,PASS') > 1000:
@@ -257,8 +249,8 @@ rule prep_sv_tsv:
     run:
         tumor_id = VCF(input.vcf).samples.index(params.sample)
         with open(output[0], 'w') as out:
-            header = ["caller", "sample", "chrom", "start", "end", "svtype",
-                "lof", "annotation", "split_read_support", "paired_support_PE", "paired_support_PR", "somaticscore", "tier"]
+            header = ["caller", "sample", "chrom", "start", "end", "svtype", "lof", "annotation",
+                      "split_read_support", "paired_support_PE", "paired_support_PR", "somaticscore", "tier"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 # import pdb; pdb.set_trace()
