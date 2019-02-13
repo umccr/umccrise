@@ -4,12 +4,11 @@ Structural variants
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
 import itertools
-
 from cyvcf2 import VCF
-
 from ngs_utils.file_utils import safe_mkdir
 from ngs_utils.reference_data import get_key_genes_txt, get_known_fusion_pairs, get_known_fusion_heads, get_known_fusion_tails
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
+from bed_annotation import get_canonical_transcripts_ids
 
 vcftobedpe = 'vcfToBedpe'
 
@@ -57,14 +56,73 @@ rule prep_sv_prio_lists:
                     if gene and gene != 'gene':
                         out.write(f'{gene}\n')
 
-rule sv_prioritize:
+#TODO: subset ANN or SIMPLE_ANN?
+#I think ANN because it's not readable anyway.
+"""
+explain this variant: why SIMPLE_ANN is only for 1 transcript?
+2       24896180        MantaDEL:31490:0:1:0:0:0        TTATGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTA    T       .       PASS    BPI_AF=0.128,0.131;BPI_END=24896233;BPI_START=24896182;CIGAR=1M51D;CIPOS=0,2;END=24896231;GCF=0.5;HOMLEN=2;HOMSEQ=TA;SOMATIC;SOMATICSCORE=43;SVLEN=-51;SVTYPE=DEL;ANN=T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000348332|protein_coding|4/20|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000406961|protein_coding|6/22|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000405141|protein_coding|7/24|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000407230|protein_coding|4/21|c.-197-52_-197-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000538539|protein_coding|5/22|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000288599|protein_coding|4/21|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000395856|protein_coding|4/20|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|upstream_gene_variant|MODIFIER|RNU6-936P|ENSG00000206732|transcript|ENST00000384005|snRNA||n.-2997_-2947delTATGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTA|||||2997|;LOF=(NCOA1|ENSG00000084676|12|0.58);SIMPLE_ANN=DEL|UPSTREAM_GENE_VARIANT|RNU6-936P|ENST00000384005|NOT_PRIORITISED|3;SV_HIGHEST_TIER=3       DHBFC:DHFC:DHFFC:DHSP:PR:SR     .:.:.:.:11,0:57,0       1.0:1.0:1.0:3:15,0:85,11
+"""
+
+# TODO: review canonical:
+#  update from snpEff -d.
+#  add https://www.slideshare.net/GenomeRef/mane-v2-final (The alpha dataset should be already released (Dec 2018) for 50% of coding genes (available in browsers spring this year). )
+#  add https://sci-hub.tw/https://pubs.acs.org/doi/full/10.1021/pr501286b
+
+# TODO: Rerun SnpEFF as well to target canonical transcripts, so we don't miss intergenic variants touching non-canonical transripts?
+
+rule sv_subset_to_canonical:
     input:
         vcf = lambda wc: get_manta_path(wc.batch),
+    output:
+        vcf = 'work/{batch}/structural/canonical_ann/{batch}-manta.vcf.gz'
+    group: "sv_vcf"
+    run:
+        assert vcf_contains_field(input.vcf, 'INFO/ANN'), f'Manta {input.vcf} must be annotated with SnpEff'
+
+        canon_tx_by_gname = get_canonical_transcripts_ids(run.genome_build)
+        canon_tx = set(canon_tx_by_gname.values())
+
+        def proc_line(rec, **kwargs):
+            ann = rec.INFO.get('ANN')
+            if isinstance(ann, str):
+                anns = ann.split(',')
+            else:
+                anns = ann
+
+            new_anns = []
+            for ann_line in anns:
+                ann_fields = ann_line.split('|')
+                assert len(ann_fields) >= 11, f'rec: {rec}, ann_line: {ann_line}'
+                allele, effect, impact, gene, geneid, feature, featureid, biotype, rank, c_change, p_change = ann_fields[:11]
+                # print(f'genes: {gene}, featureids: {featureid}')
+                featureids = set(featureid.split('-'))
+                # import pdb; pdb.set_trace()
+                # if feature == 'transcript' and all(t in canon_tx for t in featureids):
+                if feature == 'transcript' and featureids&canon_tx:
+                    new_anns.append(ann_line)
+
+            if isinstance(ann, str):
+                new_ann = ','.join(new_anns)
+            else:
+                new_ann = new_anns
+            if new_ann:
+                rec.INFO['ANN'] = new_ann
+            return rec
+
+        iter_vcf(input.vcf, output.vcf, proc_line)
+        before = count_vars(input.vcf)
+        after = count_vars(output.vcf)
+        assert before == after, (before, after)
+
+rule sv_prioritize:
+    input:
+        vcf = rules.sv_subset_to_canonical.output.vcf,
         known_pairs = rules.prep_sv_prio_lists.output.pairs,
         known_promisc = rules.prep_sv_prio_lists.output.promisc,
         cancer_genes = get_key_genes_txt(),
     output:
         vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz'
+    group: "sv_vcf"
     run:
         cmd = f'cat {input.vcf}'
         # remove previous annotation
@@ -167,10 +225,13 @@ rule filter_sv_vcf:
         vcf = rules.sv_maybe_bpi.output.vcf
     output:
         vcf = '{batch}/structural/{batch}-manta.vcf'
+    params:
+        sample = lambda wc: batch_by_name[wc.batch].tumor.name
     group: "sv_vcf"
     run:
         print(f'VCF samples: {VCF(input.vcf).samples}')
-        print(f'Bcbio batch tumor name:: {batch_by_name[wildcards.batch].tumor.name}')
+        print(f'Bcbio batch tumor name: {batch_by_name[wildcards.batch].tumor.name}')
+        tumor_id = VCF(input.vcf).samples.index(params.sample)
         tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
         shell('''
@@ -180,17 +241,34 @@ bcftools filter -e "FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (B
 > {output.vcf}
 ''')
 
-# Bring in the prioritized SV calls from Manta
+# Produce a TSV file for further analysis in Rmd
+# caller  sample                chrom   start       end         svtype  lof  annotation                                                                 split_read_support  paired_support_PE  paired_support_PR
+# manta   PRJ180253_E190-T01-D  1       161513440   161595209   DUP          DUP|GENE_FUSION|FCGR2B&RP11-25K21.6|ENSG00000273112|NOT_PRIORITISED|3,...                                         67,8
+# manta   PRJ180253_E190-T01-D  8       33320739    33321344    DEL          DEL|UPSTREAM_GENE_VARIANT|FUT10|ENST00000518672|NOT_PRIORITISED|3          76,7                                   33,1
+# manta   PRJ180253_E190-T01-D  11      118802640   118803304   DEL          DEL|DOWNSTREAM_GENE_VARIANT|RN7SL688P|ENST00000471754|NOT_PRIORITISED|3    61,8                                   07,2
 rule prep_sv_tsv:
     input:
-        sv_prio = lambda wc: get_sv_tsv_path(wc.batch),
         vcf = rules.filter_sv_vcf.output.vcf
     output:
         '{batch}/structural/{batch}-manta.tsv'
+    params:
+        sample = lambda wc: batch_by_name[wc.batch].tumor.name
     group: "sv_vcf"
-    shell: """
-head -n1 {input.sv_prio} > {output} && grep manta {input.sv_prio} | grep -f <(grep -v ^# {input.vcf} | cut -f1,2) | cat >> {output}
-    """
+    run:
+        tumor_id = VCF(input.vcf).samples.index(params.sample)
+        with open(output[0], 'w') as out:
+            header = ["caller", "sample", "chrom", "start", "end", "svtype",
+                "lof", "annotation", "split_read_support", "paired_support_PE", "paired_support_PR"]
+            out.write('\t'.join(header) + '\n')
+            for rec in VCF(input.vcf):
+                # import pdb; pdb.set_trace()
+                data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
+                        rec.INFO['SVTYPE'], rec.INFO.get('LOF', ''), rec.INFO.get('SIMPLE_ANN', ''),
+                        ','.join(rec.format('SR')[tumor_id]) if 'SR' in rec.FORMAT else '',
+                        ','.join(rec.format('PE')[tumor_id]) if 'PE' in rec.FORMAT else '',
+                        ','.join(rec.format('PR')[tumor_id]) if 'PR' in rec.FORMAT else '',
+                        ]
+                out.write('\t'.join(map(str, data)) + '\n')
 
 # At least for the most conservative manta calls, generate a file for viewing in Ribbon
 rule ribbon_filter_manta:
