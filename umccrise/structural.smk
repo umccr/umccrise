@@ -242,7 +242,7 @@ bcftools filter -e "FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (B
 ''')
 
 # Produce a TSV file for further analysis in Rmd
-# caller  sample                chrom   start       end         svtype  lof  annotation                                                                 split_read_support  paired_support_PE  paired_support_PR
+# caller  sample                chrom   start       end         svtype  lof  annotation                                                                 split_read_support  paired_support_PE  paired_support_PR  somaticscore  tier
 # manta   PRJ180253_E190-T01-D  1       161513440   161595209   DUP          DUP|GENE_FUSION|FCGR2B&RP11-25K21.6|ENSG00000273112|NOT_PRIORITISED|3,...                                         67,8
 # manta   PRJ180253_E190-T01-D  8       33320739    33321344    DEL          DEL|UPSTREAM_GENE_VARIANT|FUT10|ENST00000518672|NOT_PRIORITISED|3          76,7                                   33,1
 # manta   PRJ180253_E190-T01-D  11      118802640   118803304   DEL          DEL|DOWNSTREAM_GENE_VARIANT|RN7SL688P|ENST00000471754|NOT_PRIORITISED|3    61,8                                   07,2
@@ -258,15 +258,17 @@ rule prep_sv_tsv:
         tumor_id = VCF(input.vcf).samples.index(params.sample)
         with open(output[0], 'w') as out:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
-                "lof", "annotation", "split_read_support", "paired_support_PE", "paired_support_PR"]
+                "lof", "annotation", "split_read_support", "paired_support_PE", "paired_support_PR", "somaticscore", "tier"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 # import pdb; pdb.set_trace()
                 data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
                         rec.INFO['SVTYPE'], rec.INFO.get('LOF', ''), rec.INFO.get('SIMPLE_ANN', ''),
-                        ','.join(rec.format('SR')[tumor_id]) if 'SR' in rec.FORMAT else '',
-                        ','.join(rec.format('PE')[tumor_id]) if 'PE' in rec.FORMAT else '',
-                        ','.join(rec.format('PR')[tumor_id]) if 'PR' in rec.FORMAT else '',
+                        ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
+                        ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
+                        ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
+                        rec.INFO.get('SOMATICSCORE', ''),
+                        rec.INFO.get('SV_HIGHEST_TIER', ''),
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 
