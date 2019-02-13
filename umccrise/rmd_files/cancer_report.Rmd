@@ -10,7 +10,7 @@ output:
   rmdformats::material:
     highlight: kate
 params:
-  title: "Cancer Report for "
+  title: "Cancer Report for Sample "
   tumor_name: 'x'
   batch_name: 'x'
   genome_build: 'hg19'
@@ -30,7 +30,7 @@ title: "`r paste(params$title, params$batch_name)`"
 ---
 
 ```{r knitr-opts, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, echo = TRUE)
+knitr::opts_chunk$set(collapse = TRUE, echo = TRUE, eval=FALSE)
 ```
 
 ```{r load_pkgs, message=FALSE, warning=FALSE, eval=TRUE}
@@ -56,7 +56,7 @@ library(tx_ref_genome, character.only = TRUE)
 ```
 
 ```{r render_book_inter, eval=FALSE, echo=FALSE}
-params <- list(
+params_spartan <- list(
   tumor_name='PRJ180471_BK221-NET1',
   batch_name='BK221-NET1__PRJ180471_BK221-NET1',
   genome_build='hg19',
@@ -71,6 +71,23 @@ params <- list(
   purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity',
   purple_qc='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.qc')
 
+params_local <- list(
+  tumor_name='PRJ180201_1965_8073358T',
+  batch_name='1965__PRJ180201_1965_8073358T',
+  genome_build='hg19',
+  key_genes='/Users/pdiakumis/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
+  af_global='data/sig/af_tumor_notempty.txt',
+  af_keygenes= 'data/sig/keygenes_notempty.txt',
+  somatic_snv='data/sig/ensemble-with_chr_prefix.vcf',
+  somatic_sv='data/SFRC01115__PRJ180680_SFRC01115T-sv-prioritize-manta-pass.tsv',
+  purple_gene_cnv='data/purple/purple.tsv',
+  purple_cnv='data/purple/1965__PRJ180201_1965_8073358T.purple.cnv',
+  purple_germline_cnv='data/purple/1965__PRJ180201_1965_8073358T.purple.germline.cnv',
+  purple_purity='data/purple/1965__PRJ180201_1965_8073358T.purple.purity',
+  purple_qc='data/purple/1965__PRJ180201_1965_8073358T.purple.qc'
+)
+params <- params_local
+
 render_me <- function() {
   rmarkdown::render(
     "cancer_report.Rmd",
@@ -80,17 +97,23 @@ render_me()
 ```
 
 # Signatures
+We can visualise the [mutational signature](https://cancer.sanger.ac.uk/cosmic/signatures) 
+and allelic frequency profile of the tumor sample.
 
 ## Allelic frequencies
-
+Summarised below are the allele frequencies (AFs) for somatic variants detected
+genome-wide (__Global__) vs. within the coding sequence of ~1,300 UMCCR
+cancer genes (__Key Genes CDS__).
+AFs range from 0 to 1 (0%-100%).
+We discard variants that have somatic AF < 10%.
 
 <details>
-<summary>Desciption</summary>
+<summary>Details</summary>
 
-Allelic frequencies are based on the bcbio somatic ensemble
-calls (or the single somatic variant calls if run in single-caller mode).
+The variants used are inferred from the bcbio ensemble somatic
+caller (or from a single somatic caller if bcbio was run in non-ensemble mode).
 
-The following steps occur:
+The following post-processing steps occur:
 
 1. `somatic_vcf_sort`: simply sort the input VCF
 2. `somatic_vcf_annotate`: [annotate VCF](https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk)
@@ -110,7 +133,7 @@ The following steps occur:
 </details>
 
 
-```{r af_plot, warning=FALSE}
+```{r af_plot, warning=FALSE, eval=T}
 # Global AF
 af_global <- readr::read_tsv(params$af_global, col_types = "d") %>%
   dplyr::mutate(set = "Global")
@@ -131,12 +154,11 @@ ggplot(data = af_both, aes(af)) +
                      limits = c(0, 1), expand = c(0, 0)) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-        panel.grid.minor = element_blank())
+        panel.grid.minor = element_blank()) +
+  labs(title = paste("AF count distribution"))
 ```
 
-### AF summary stats
-
-```{r af_stats}
+```{r af_stats, eval=T}
 mode2 <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
@@ -149,7 +171,7 @@ af_both %>%
                    median = round(median(af), 2),
                    mode = round(mode2(af), 2)) %>%
   tidyr::complete(set, fill = list(n = 0)) %>%
-  knitr::kable(format = "html") %>%
+  knitr::kable(format = "html", caption = "AF Summary Stats") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE)
 ```
@@ -672,11 +694,11 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.p
 
 ## umccrise version
 
-```{r um-version}
+```{r um-version, eval=FALSE}
 umv <- system("umccrise --version", intern = TRUE)
+__`r umv`__
 ```
 
-__`r umv`__
 
 
 ## R package info
@@ -684,7 +706,7 @@ __`r umv`__
 <details>
 <summary>Session Info</summary>
 
-```{r session-info, eval=TRUE}
+```{r session-info, eval=FALSE}
 si <- devtools::session_info(include_base = TRUE)
 si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
 si_pkg <- unclass(si$packages) %>%
