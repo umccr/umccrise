@@ -5,10 +5,11 @@ Re-do the CNV plots. This will need lots of love (drop gene names, make the scat
 """
 import itertools
 from cyvcf2 import VCF
+from ngs_utils.utils import flatten
 from ngs_utils.file_utils import safe_mkdir
 from ngs_utils.reference_data import get_key_genes_txt, get_known_fusion_pairs, get_known_fusion_heads, get_known_fusion_tails
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
-from bed_annotation import get_canonical_transcripts_ids
+from bed_annotation import canon_transcript_per_gene
 
 vcftobedpe = 'vcfToBedpe'
 
@@ -63,12 +64,7 @@ explain this variant: why SIMPLE_ANN is only for 1 transcript?
 2       24896180        MantaDEL:31490:0:1:0:0:0        TTATGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTA    T       .       PASS    BPI_AF=0.128,0.131;BPI_END=24896233;BPI_START=24896182;CIGAR=1M51D;CIPOS=0,2;END=24896231;GCF=0.5;HOMLEN=2;HOMSEQ=TA;SOMATIC;SOMATICSCORE=43;SVLEN=-51;SVTYPE=DEL;ANN=T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000348332|protein_coding|4/20|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000406961|protein_coding|6/22|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000405141|protein_coding|7/24|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000407230|protein_coding|4/21|c.-197-52_-197-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000538539|protein_coding|5/22|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000288599|protein_coding|4/21|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000395856|protein_coding|4/20|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|upstream_gene_variant|MODIFIER|RNU6-936P|ENSG00000206732|transcript|ENST00000384005|snRNA||n.-2997_-2947delTATGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTA|||||2997|;LOF=(NCOA1|ENSG00000084676|12|0.58);SIMPLE_ANN=DEL|UPSTREAM_GENE_VARIANT|RNU6-936P|ENST00000384005|NOT_PRIORITISED|3;SV_HIGHEST_TIER=3       DHBFC:DHFC:DHFFC:DHSP:PR:SR     .:.:.:.:11,0:57,0       1.0:1.0:1.0:3:15,0:85,11
 """
 
-# TODO: review canonical:
-#  update from snpEff -d.
-#  add https://www.slideshare.net/GenomeRef/mane-v2-final (The alpha dataset should be already released (Dec 2018) for 50% of coding genes (available in browsers spring this year). )
-#  add https://sci-hub.tw/https://pubs.acs.org/doi/full/10.1021/pr501286b
-
-# TODO: Rerun SnpEFF as well to target canonical transcripts, so we don't miss intergenic variants touching non-canonical transripts?
+# TODO: ? Rerun SnpEFF as well to target canonical transcripts, so we don't miss intergenic variants touching non-canonical transripts?
 
 rule sv_subset_to_canonical:
     input:
@@ -80,11 +76,14 @@ rule sv_subset_to_canonical:
     run:
         assert vcf_contains_field(input.vcf, 'INFO/ANN'), f'Manta {input.vcf} must be annotated with SnpEff'
 
-        canon_tx_by_gname = get_canonical_transcripts_ids(run.genome_build)
-        canon_tx = set(canon_tx_by_gname.values())
+        principal_by_gids = canon_transcript_per_gene(run.genome_build, use_gene_id=True, only_principal=True)
+        all_princ_transcripts = set(principal_by_gids.values())
 
         def proc_line(rec, **kwargs):
-            ann = rec.INFO.get('ANN', [])
+            ann = rec.INFO.get('ANN')
+            if ann is None:
+                return rec
+
             if isinstance(ann, str):
                 anns = ann.split(',')
             else:
@@ -94,20 +93,32 @@ rule sv_subset_to_canonical:
             for ann_line in anns:
                 ann_fields = ann_line.split('|')
                 assert len(ann_fields) >= 11, f'rec: {rec}, ann_line: {ann_line}'
-                allele, effect, impact, gene, geneid, feature, featureid, biotype, rank, c_change, p_change = ann_fields[:11]
-                # print(f'genes: {gene}, featureids: {featureid}')
-                featureids = set(featureid.split('-'))
-                # import pdb; pdb.set_trace()
-                # if feature == 'transcript' and all(t in canon_tx for t in featureids):
-                if feature == 'transcript' and featureids&canon_tx:
+                allele, effect, impact, genename, geneid, feature, featureid, biotype, rank, c_change, p_change = ann_fields[:11]
+                if feature == 'chromosome':
                     new_anns.append(ann_line)
+                elif feature == 'transcript':
+                    if featureid == principal_by_gids.get(geneid):
+                        new_anns.append(ann_line)
+                else:  # 'interaction'?
+                    # Splitting 'interaction' feature ids like the following:
+                    # "3UVN:C_107-D_1494:ENST00000358625-ENST00000262519"
+                    # -> {'3UVN', 'C_107', 'D_1494', 'ENST00000262519', 'ENST00000358625'}
+                    feature_ids = set(fid for fid in flatten(fids.split('-') for fids in featureid.split(':'))
+                                      if fid.startswith('ENST'))
+                    principal_id = principal_by_gids.get(geneid)
+                    if (principal_id in feature_ids and        # - the main gene transcript id is principal;
+                        feature_ids - all_princ_transcripts    # - and all other transcript ids (interaction, fusion)
+                        ):                                     #   are principal too
+                        new_anns.append(ann_line)
 
-            if isinstance(ann, str):
-                new_ann = ','.join(new_anns)
-            else:
-                new_ann = new_anns
-            if new_ann:
+            if new_anns:
+                if isinstance(ann, str):
+                    new_ann = ','.join(new_anns)
+                else:
+                    new_ann = new_anns
                 rec.INFO['ANN'] = new_ann
+            else:
+                del rec.INFO['ANN']
             return rec
 
         iter_vcf(input.vcf, output.vcf, proc_line)
@@ -158,31 +169,31 @@ rule sv_keep_pass:
         cmd += f' -o {output.vcf}'
         shell(cmd)
 
-rule sv_maybe_keep_prioritize:
-    input:
-        vcf = rules.sv_keep_pass.output.vcf
-    output:
-        vcf = 'work/{batch}/structural/maybe_keep_prio/{batch}-manta.vcf'
-    group: "sv_vcf"
-    run:
-        if count_vars(input.vcf, filter='.,PASS') > 1000:
-            # Still too cluttered (FFPE?) - removing all NOT_PRIORITISED as well
-            def func(rec):
-                ann = rec.INFO.get('SIMPLE_ANN')
-                if ann:
-                    anns = [a for a in ann.split(',') if '|NOT_PRIORITISED|' not in a]
-                    if anns:
-                        ann = ','.join(anns)
-                        rec.INFO['SIMPLE_ANN'] = ann
-                        return rec
-            iter_vcf(input.vcf, output.vcf, func)
-        else:
-            shell('cp {input.vcf} {output.vcf}')
+# rule sv_maybe_keep_prioritize:
+#     input:
+#         vcf = rules.sv_keep_pass.output.vcf
+#     output:
+#         vcf = 'work/{batch}/structural/maybe_keep_prio/{batch}-manta.vcf'
+#     group: "sv_vcf"
+#     run:
+#         if count_vars(input.vcf, filter='.,PASS') > 1000:
+#             # Still too cluttered (FFPE?) - removing all tier=4 as well
+#             def func(rec):
+#                 ann = rec.INFO.get('SIMPLE_ANN')
+#                 if ann:
+#                     anns = [a for a in ann.split(',') if '|NOT_PRIORITISED|' not in a]
+#                     if anns:
+#                         ann = ','.join(anns)
+#                         rec.INFO['SIMPLE_ANN'] = ann
+#                         return rec
+#             iter_vcf(input.vcf, output.vcf, func)
+#         else:
+#             shell('cp {input.vcf} {output.vcf}')
 
 # if BPI was disabled in bcbio
 rule sv_maybe_bpi:
     input:
-        vcf = rules.sv_maybe_keep_prioritize.output.vcf,
+        vcf = rules.sv_keep_pass.output.vcf,
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
     output:
