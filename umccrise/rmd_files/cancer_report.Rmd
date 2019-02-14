@@ -5,7 +5,7 @@ output:
   html_document:
     theme: simplex
     toc: true
-    toc_float: true
+    toc_float: false
     code_folding: hide
   rmdformats::material:
     highlight: kate
@@ -30,7 +30,7 @@ title: "`r paste(params$title, params$batch_name)`"
 ---
 
 ```{r knitr-opts, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, echo = TRUE, eval=FALSE)
+knitr::opts_chunk$set(collapse = TRUE, echo = TRUE)
 ```
 
 ```{r load_pkgs, message=FALSE, warning=FALSE, eval=T}
@@ -100,7 +100,7 @@ render_me()
 
 ### Allelic Frequencies
 Summarised below are the allele frequencies (AFs) for somatic variants detected
-genome-wide (__Global__) vs. within the coding sequence of ~1,300 UMCCR
+genome-wide (__Global__) vs. within the coding sequence of ~1,100 UMCCR
 cancer genes (__Key Genes CDS__).
 AFs range from 0 to 1, or 0%-100% (here we discard variants that have somatic AF < 10%).
 
@@ -423,7 +423,7 @@ Generated from PURPLE.
 
 </details>
 
-```{r circos-default1, out.width="100%", eval=T}
+```{r circos-default1, out.width="100%"}
 img_dir <- file.path('img') # created before when copying purple files to tmp dir
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
 ```
@@ -456,14 +456,14 @@ prioritised using [sv_prioritize](https://github.com/AstraZeneca-NGS/simple_sv_a
 </details>
 
 ## Copy Number Variants
-The purity and ploidy estimator 
+The purity and ploidy estimator
 [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
 is used to generate a copy number profile for the somatic sample.
 
 ### QC, Purity and Ploidy Summary
 PURPLE outputs a QC status along with a summary
 for the inferred purity and ploidy of the somatic sample.
-A failed QC status can be attributed to several factors 
+A failed QC status can be attributed to several factors
 (see `Description` below).
 
 <details>
@@ -473,28 +473,28 @@ __QC__
 
 There are several reasons PURPLE may classify a sample as failed:
 
-* `FAIL_SEGMENT`: more than 120 copy number segments unsupported at either end 
-  by SV breakpoints. Indicates samples with extreme GC bias, with differences 
-  in depth of >= 10x between high and low GC regions. GC normalisation is 
+* `FAIL_SEGMENT`: more than 120 copy number segments unsupported at either end
+  by SV breakpoints. Indicates samples with extreme GC bias, with differences
+  in depth of >= 10x between high and low GC regions. GC normalisation is
   unreliable when the corrections are so extreme so it is recommended to fail
-  the sample (concerns with miscalled deletions or amplifications or have 
+  the sample (concerns with miscalled deletions or amplifications or have
   poor sensitivity in high GC regions.
-* `NO_TUMOR`: no aneuploidy found and the number of somatic SNVs found is 
+* `NO_TUMOR`: no aneuploidy found and the number of somatic SNVs found is
   less than 1,000
 * `MIN_PURITY`: fitted purity < 20%
-* `FAIL_DELETED_GENES`: more than 280 deleted genes. This QC step was added 
+* `FAIL_DELETED_GENES`: more than 280 deleted genes. This QC step was added
   after observing that in a handful of samples with high MB scale positive GC
-  bias we sometimes systematically underestimate the copy number in high GC 
-  regions. This can lead us to incorrectly infer homozygous loss of entire 
+  bias we sometimes systematically underestimate the copy number in high GC
+  regions. This can lead us to incorrectly infer homozygous loss of entire
   chromosomes, particularly on chromosome 19.
-  
+
 </details>
 
-```{r pur-ply-qc, eval=T}
+```{r purply-qc}
 # read both datasets
-purple_qc <- 
-  file.path(params$purple_qc) %>% 
-  readr::read_tsv(col_names = c("key", "value"), col_types = "cc") %>% 
+purple_qc <-
+  file.path(params$purple_qc) %>%
+  readr::read_tsv(col_names = c("key", "value"), col_types = "cc") %>%
   dplyr::mutate(value = toupper(value))
 # turn into named vector
 purple_qc <- structure(purple_qc$value, names = purple_qc$key)
@@ -509,18 +509,18 @@ purple_purity <-
 
 # sanity checks in case something changes between versions
 nms1 <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
-          "SegmentScore", "UnsupportedSegments", "Ploidy", 
+          "SegmentScore", "UnsupportedSegments", "Ploidy",
           "AmberGender", "CobaltGender", "DeletedGenes")
 stopifnot(all(names(purple_qc) == nms1))
 
-nms2 <- c("#Purity", "NormFactor", "Score", "DiploidProportion", "Ploidy", 
-          "Gender", "Status", "PolyclonalProportion", "MinPurity", "MaxPurity", 
-          "MinPloidy", "MaxPloidy", "MinDiploidProportion", "MaxDiploidProportion", 
+nms2 <- c("#Purity", "NormFactor", "Score", "DiploidProportion", "Ploidy",
+          "Gender", "Status", "PolyclonalProportion", "MinPurity", "MaxPurity",
+          "MinPloidy", "MaxPloidy", "MinDiploidProportion", "MaxDiploidProportion",
           "Version", "SomaticDeviation")
 stopifnot(all(names(purple_purity) == nms2))
 
 # for shorter reference in glue
-p <- purple_purity 
+p <- purple_purity
 q <- purple_qc
 tab <- dplyr::tribble(
   ~Variable, ~value, ~details,
@@ -535,7 +535,7 @@ tab <- dplyr::tribble(
   'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
   'Purple Version', p["Version"], "")
 
-tab %>% 
+tab %>%
   dplyr::mutate(
     Variable = kableExtra::cell_spec(Variable, bold = TRUE),
     value = kableExtra::cell_spec(value, bold = TRUE,
@@ -547,69 +547,30 @@ tab %>%
                                     value == "TRUE" ~ "green",
                                     value == "FALSE" ~ "red",
                                     TRUE ~ "black"))) %>%
-  knitr::kable(escape = FALSE) %>%
+  knitr::kable(escape = FALSE, caption = "QC, Purity & Ploidy Summary") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
 
-### Events in cancer genes
 
-<details>
-<summary>Description</summary>
 
-Listed are deletions in cancer genes, homozygous deletions of tumor suppressors,
-and gains in oncogenes. Oncogenes and tumor suppressors reported by
-[Cancermine](https://github.com/jakelever/cancermine).
-
-</details>
-
-```{r cnv_suppressors, message=FALSE, eval=F}
-purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicdd")
-
-purple_gene_cnv %>%
-  dplyr::select(Gene, MinCopyNumber, MaxCopyNumber) %>%
-  dplyr::mutate(del = MinCopyNumber < 1.5,
-                hom_del = MinCopyNumber < 0.5,
-                gain = MinCopyNumber >= 3) %>%
-  dplyr::filter(hom_del | gain) %>%
-  dplyr::mutate(oncogene = Gene %in% oncogenes$symbol,
-                tsgene = Gene %in% tsgenes$symbol,
-                key_gene = Gene %in% key_genes$symbol) %>%
-  dplyr::filter(oncogene & gain | tsgene & hom_del | key_gene & del) %>%
-  dplyr::mutate(
-    Event = dplyr::case_when(gain ~ 'Gain', hom_del ~ 'HomDel', TRUE ~ 'Del'),
-    Gene_Role = dplyr::case_when(oncogene ~ 'Oncogene', tsgene ~ 'Tumor Suppressor', TRUE ~ ''),
-    UMCCR_list = ifelse(key_gene, 'Yes', ''),
-    min_cn = round(MinCopyNumber),
-    max_cn = round(MaxCopyNumber),
-    CopyNumber = ifelse(min_cn == max_cn, min_cn, paste(min_cn, max_cn, sep = '-'))) %>%
-  dplyr::arrange(CopyNumber) %>%
-  dplyr::select(Gene, CopyNumber, Event, Gene_Role, UMCCR_list) %>%
-  DT::datatable(rownames = FALSE, filter = "top", extensions = c('Scroller', 'Buttons'),
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
-                               dom = 'Bfrtip', buttons = c('csv', 'excel')))
+```{r purple-cnv-summary}
+file.path(params$purple_cnv) %>%
+  readr::read_tsv(col_types = "ciididdccccccc") %>%
+  dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
+  dplyr::select(chrom, start, end, tot_cn) %>%
+  dplyr::mutate(seg_len = end - start) %>% 
+  dplyr::summarise(n = n(),
+                   mean_len = round(mean(seg_len), 0),
+                   med_len = round(median(seg_len), 0),
+                   min_cn = round(min(tot_cn), 2),
+                   max_cn = round(max(tot_cn), 2)) %>%
+  knitr::kable(format.args = list(big.mark = ","), caption = "CNV Summary") %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
 
+### Circos {.tabset .tabset-fade}
 
-### Circos
-
-#### Plot 1: Tumor/Normal Allele Ratios, BAF
-
-<details>
-<summary>Description</summary>
-
-* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
-  (centromeres, heterochromatin & missing short arms)
-* __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
-* __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
-
-</details>
-
-
-```{r circos-default2, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
-```
-
-#### Plot 2: Total/Minor CN, SVs, BAF
+#### Plot 1: Total/Minor CN, SVs, BAF
 
 <details>
 <summary>Description</summary>
@@ -626,61 +587,92 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
 ```
 
-### UMCCR Gene Somatic CNV Calls
+#### Plot 2: Tumor/Normal Allele Ratios, BAF
 
-```{r gene-tab, eval=F}
+<details>
+<summary>Description</summary>
+
+* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
+  (centromeres, heterochromatin & missing short arms)
+* __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
+* __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
+
+</details>
+
+
+```{r circos-default2, out.width="80%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
+```
+
+### UMCCR Gene CNV Calls
+
+<details>
+<summary>Description</summary>
+
+PURPLE outputs a file with copy number values per gene. Here, we include only
+the below information for ~1,100 genes in the UMCCR Cancer Gene list.
+
+* `Gene`: gene name 
+* `Min/MaxCN`: minimum/maximum copy number within the entire gene
+* `Chr`, `Start`, `End`: gene coordinates
+* `ChrBand`: chromosome band
+* `GeneType`: oncogene ('onco'), tumor suppressor ('ts'), or both ('onco+ts'),
+   as reported by [Cancermine](https://github.com/jakelever/cancermine)
+* `TxID`: Ensembl Transcript ID  
+
+</details>
+
+```{r gene-tab}
+key_genes <- readr::read_tsv(params$key_genes)
+oncogenes <- key_genes %>% filter(oncogene)
+tsgenes <- key_genes %>% filter(tumorsuppressor)
+
+purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcc")
+
 purple_gene_cnv %>%
-  dplyr::rename(min_cn = MinCopyNumber, max_cn = MaxCopyNumber) %>%
   dplyr::filter(Gene %in% key_genes$symbol) %>%
-  DT::datatable(filter = "top", rownames = FALSE, extensions = c('Scroller', 'Buttons'),
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500,
-                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>%
+  dplyr::mutate(oncogene = Gene %in% oncogenes$symbol,
+                tsgene = Gene %in% tsgenes$symbol,
+                GeneType = dplyr::case_when(
+                  oncogene & tsgene ~ "onco+ts",
+                  oncogene ~ "onco",
+                  tsgene ~ "ts",
+                  TRUE ~ "")) %>% 
+  dplyr::select(Gene,  MinCN = MinCopyNumber, MaxCN = MaxCopyNumber, 
+                Chr = Chromosome, Start, End, 
+                ChrBand = ChromosomeBand, GeneType, 
+                TxID = TranscriptId) %>% 
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE), 
+                rownames = FALSE, extensions = c("Scroller", "Buttons"),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400, 
+                               buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>% 
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0) %>%
-  DT::formatRound(~ min_cn + max_cn)
+  DT::formatRound(~ MinCN + MaxCN, digits = 1)
 ```
 
-### Global Somatic and Germline CNV Summary
+### Other PURPLE Charts {.tabset .tabset-fade}
 
-```{r germ-som-prep, eval=F}
-fn_som <- file.path(params$purple_cnv)
-fn_germ <- file.path(params$purple_germline_cnv)
-som <- readr::read_tsv(fn_som, col_types = "ciididdccccccc") %>%
-  dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
-  dplyr::select(chrom, start, end, tot_cn)
-germ <- readr::read_tsv(fn_germ, col_types = "ciiddddccccccc") %>%
-  dplyr::select(chrom = `#chromosome`, start, end, tot_cn = copyNumber)
+<details>
+<summary>Description</summary>
 
-cnv_all <- dplyr::bind_rows(somatic = som, germline = germ, .id = "type")
-cnv_all %>%
-  mutate(seg_len = end - start) %>%
-  group_by(type) %>%
-  summarise(n = n(),
-            mean_len = round(mean(seg_len), 0),
-            med_len = round(median(seg_len), 0),
-            min_cn = round(min(tot_cn), 2),
-            max_cn = round(max(tot_cn), 2)) %>%
-  knitr::kable(format.args = list(big.mark = ",")) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
-```
+Under Construction
 
-#### Somatic Calls
+</details>
 
-```{r som-tab, eval=F}
-som %>%
-  dplyr::mutate(seg_len = end - start) %>%
-  DT::datatable(filter = "top", rownames = FALSE,
-                extensions = c('Scroller', 'Buttons'),
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
-                               dom = 'Bfrtip', buttons = c('csv', 'excel'))) %>%
-  DT::formatCurrency(~ start + end + seg_len, currency = "", interval = 3, mark = ",", digits = 0) %>%
-  DT::formatRound('tot_cn')
-```
+#### Copy Number
 
-### Other PURPLE Charts
-
-```{r purple-other-plots, out.width="80%"}
+```{r purple-other-plots1, out.width="60%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.copyNumber.png')))
+```
+
+#### Minor Allele
+
+```{r purple-other-plots2, out.width="60%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.minor_allele.png')))
+```
+
+#### Ploidy
+```{r purple-other-plots3, out.width="60%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.png')))
 ```
 
@@ -693,12 +685,13 @@ umv <- system("umccrise --version", intern = TRUE)
 __`r umv`__
 ```
 
+
 ### R package info
 
 <details>
 <summary>Session Info</summary>
 
-```{r session-info, eval=F}
+```{r session-info}
 si <- devtools::session_info(include_base = TRUE)
 si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
 si_pkg <- unclass(si$packages) %>%
@@ -720,3 +713,4 @@ knitr::kable(si_pkg, format = "html") %>%
 ```
 
 </details>
+
