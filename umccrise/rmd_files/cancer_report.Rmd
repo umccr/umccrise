@@ -680,11 +680,11 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.p
 
 ### umccrise version
 
-```{r um-version, eval=F}
+```{r um-version}
 umv <- system("umccrise --version", intern = TRUE)
-__`r umv`__
 ```
 
+__`r umv`__
 
 ### R package info
 
