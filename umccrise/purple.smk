@@ -138,6 +138,7 @@ rule purple_run:
         ma_png       = 'work/{batch}/purple/plot/{batch}.minor_allele.png',
         variant_png  = 'work/{batch}/purple/plot/{batch}.variant.png',
         purity       = 'work/{batch}/purple/{batch}.purple.purity',
+        qc           = 'work/{batch}/purple/{batch}.purple.qc',
         baf          = 'work/{batch}/purple/circos/{batch}.baf.circos',
         cnv_circos   = 'work/{batch}/purple/circos/{batch}.cnv.circos',
         map          = 'work/{batch}/purple/circos/{batch}.map.circos',
@@ -180,9 +181,9 @@ rule purple_circos_baf:
         cnv = 'work/{batch}/purple/circos/{batch}.cnv.circos',
         map = 'work/{batch}/purple/circos/{batch}.map.circos',
         link = 'work/{batch}/purple/circos/{batch}.link.circos',
-        circos_baf_conf = package_path() + '/rmd_files/templates/circos/circos_baf.conf',
-        gaps_txt = package_path() + '/rmd_files/templates/circos/gaps.txt',
-        ideo_conf = package_path() + '/rmd_files/templates/circos/ideogram.conf',
+        circos_baf_conf = package_path() + '/rmd_files/misc/circos/circos_baf.conf',
+        gaps_txt = package_path() + '/rmd_files/misc/circos/gaps.txt',
+        ideo_conf = package_path() + '/rmd_files/misc/circos/ideogram.conf',
     output:
         png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
     params:
@@ -208,10 +209,12 @@ rule purple_symlink:
         rules.purple_run.output.cnv,
         rules.purple_run.output.gene_cnv,
         rules.purple_run.output.circos_png,
+        rules.purple_circos_baf.output.png,
     output:
         cnv = '{batch}/purple/{batch}.purple.cnv',
         gene_cnv = '{batch}/purple/{batch}.purple.gene.cnv',
         circos_png = '{batch}/purple/{batch}.purple.circos.png',
+        circos_baf_png = '{batch}/purple/{batch}.purple.circos_baf.png',
     params:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
@@ -220,9 +223,15 @@ rule purple_symlink:
             new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')
             shutil.copy(img_fpath, join(f'{wildcards.batch}/purple', new_name))
 
+        for img_fpath in glob.glob(f'{params.purple_outdir}/circos_baf/*.png'):
+            new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')
+            shutil.copy(img_fpath, join(f'{wildcards.batch}/purple', new_name))
+
         for fpath in glob.glob(f'{params.purple_outdir}/*.purple.*'):
             new_name = basename(fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}')
             shutil.copy(fpath, join(f'{wildcards.batch}/purple', new_name))
+
+
 
 rule purple:
     input:

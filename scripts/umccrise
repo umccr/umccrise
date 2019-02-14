@@ -36,19 +36,22 @@ from umccrise import _version as version
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
 @click.option('--restart-times', default=0, help='Propagated to snakemake. Default is 0.')
-@click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Just prints the rules and the commands '
-                                                             'to run without actually generating any files.')
+@click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Prints rules and commands '
+                                                             'to be run without actually executing them.')
+@click.option('--report', 'report', help='Propagated to snakemake. Create an HTML report with results and statistics. '
+                                         'Needs to end in ".html".')
+@click.option('--dag', 'dag', is_flag=True, help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
+                                                 'Usage: umccrise –-dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
 # Other:
 @click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
 @click.option('--no-igv', is_flag=True, help='Skip generating of minibams')
-
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, genomes_dir=None,
          jobs=None, cluster=False, cluster_cmd=None,
          unlock=False, rerun_incomplete=False, restart_times=None, dryrun=False,
-         no_s3=None, no_igv=False, docker_wrapper_mode=False):
+         no_s3=None, no_igv=False, docker_wrapper_mode=False, report=None, dag=False):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -142,12 +145,15 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         )
 
     snakefile = join(package_path(), 'Snakefile') if not docker_wrapper_mode else '/umccrise/umccrise/Snakefile'
+    report = f'--report {report} ' if report else ''
     cmd += (
         f'snakemake '
         f'{" ".join(target_rule)} '
         f'--snakefile {snakefile} '
         f'--printshellcmds '
         f'{"--dryrun " if dryrun else ""}'
+        f'{"--dag " if dag else ""}'
+        f'{report}'
         f'--directory {output_dir if not docker_wrapper_mode else "/output_dir"} '
         f'-j {jobs} '
         f'--rerun-incomplete '

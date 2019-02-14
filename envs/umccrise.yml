@@ -48,17 +48,30 @@ dependencies:
   - awscli
   - pyasn1  # for awscli - for some reason doesn't install automatically on macos
   - parallel
+  - pygraphviz # for snakemake report
   - gsort  # sort vcfs and beds - https://github.com/brentp/gsort
   - toml  # to read predisposition genes from PCGR toml
   # R libraries:
   # - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
   - r-base >=3.5.1
   - pandoc
-  - r-rmarkdown >=1.6
-  - r-ggplot2
-  - r-tidyr
+  - libgfortran-ng
+  - toml
+  - r-bookdown
+  - r-devtools
+  - r-dplyr
   - r-dt
-  - r-stringi >=1.1.7  # for pcgrr
+  - r-ggplot2
+  - r-htmlwidgets #>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
+  - r-kableextra
+  - r-purrr
+  - r-radix
+  - r-readr
+  - r-rmarkdown #>=1.6
+  - r-stringr
+  - r-stringi #>=1.1.7  # for pcgrr
+  - r-tidyr
+  - r-vcfr
   - bioconductor-delayedarray
   - bioconductor-summarizedexperiment >=1.8
   - bioconductor-mutationalpatterns
@@ -68,12 +81,3 @@ dependencies:
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
-  - bioconductor-omiccircos  # for Peter's circos rock
-  - libgfortran-ng
-  - r-kableextra             # from pdiakumis channel
-  - r-vcfr
-  - r-devtools
-  - r-readr
-  - r-stringr
-  - r-htmlwidgets >=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
-  - r-bookdown
