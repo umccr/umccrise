@@ -103,6 +103,7 @@ rule somatic_to_hg19:
             shell('gunzip -c {input} > {output}')
 
 
+# select chr, start, end, gene, min/max_cn, TranscriptID and ChromosomeBand
 rule rmd_purple_cnv:
     input:
         'work/{batch}/purple/{batch}.purple.gene.cnv',
@@ -110,7 +111,7 @@ rule rmd_purple_cnv:
         'work/{batch}/rmd/purple.tsv'
     group: "rmd"
     shell:
-        'cut -f1-6 {input} > {output}'
+        'cut -f1-6,11,13 {input} > {output}'
 
 ## Running Rmarkdown
 rule bookdown_report:
