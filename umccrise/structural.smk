@@ -265,6 +265,7 @@ rule prep_sv_tsv:
                         ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
+                        rec.INFO.get('BPI_AF', ''),
                         rec.INFO.get('SOMATICSCORE', ''),
                         rec.INFO.get('SV_HIGHEST_TIER', ''),
                         rec.INFO.get('SIMPLE_ANN', ''),
