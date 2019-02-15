@@ -7,7 +7,7 @@ import itertools
 from cyvcf2 import VCF
 from ngs_utils.utils import flatten
 from ngs_utils.file_utils import safe_mkdir
-from ngs_utils.reference_data import get_key_genes_txt, get_known_fusion_pairs, get_known_fusion_heads, get_known_fusion_tails
+from ngs_utils.reference_data import get_key_genes_txt, get_known_fusion_pairs, get_fusioncatcher_pairs, get_known_fusion_heads, get_known_fusion_tails
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
 from bed_annotation import canon_transcript_per_gene
 
@@ -32,37 +32,6 @@ if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
         critical('Could not find manta files for all batches neither under sample folders as '
                  '<tumor>/<batch>-sv-prioritize-manta.vcf.gz (conventional bcbio), nor in the project folder as'
                  'project/<tumor>-manta-prioritized.vcf.gz (CWL bcbio).')
-
-rule prep_sv_prio_lists:
-    input:
-        fusion_pairs = get_known_fusion_pairs(),
-        fusion_heads = get_known_fusion_heads(),
-        fusion_tails = get_known_fusion_tails(),
-    output:
-        pairs = 'work/fusion_pairs.txt',
-        promisc = 'work/fusion_promisc.txt',
-    run:
-        with open(input.fusion_pairs) as f, open(output.pairs, 'w') as out:
-            for l in f:
-                l = l.strip().replace('"', '')
-                if l:
-                    g1, g2 = l.split(',')[0:2]
-                    if g1 and g2 and g1 != 'H_gene':
-                        out.write(f'{g1},{g2}\n')
-        with open(input.fusion_heads) as f1, open(input.fusion_tails) as f2, open(output.promisc, 'w') as out:
-            for l in itertools.chain(f1, f2):
-                l = l.strip().replace('"', '')
-                if l:
-                    gene = l.split(',')[0]
-                    if gene and gene != 'gene':
-                        out.write(f'{gene}\n')
-
-#TODO: subset ANN or SIMPLE_ANN?
-#I think ANN because it's not readable anyway.
-"""
-explain this variant: why SIMPLE_ANN is only for 1 transcript?
-2       24896180        MantaDEL:31490:0:1:0:0:0        TTATGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTA    T       .       PASS    BPI_AF=0.128,0.131;BPI_END=24896233;BPI_START=24896182;CIGAR=1M51D;CIPOS=0,2;END=24896231;GCF=0.5;HOMLEN=2;HOMSEQ=TA;SOMATIC;SOMATICSCORE=43;SVLEN=-51;SVTYPE=DEL;ANN=T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000348332|protein_coding|4/20|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000406961|protein_coding|6/22|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000405141|protein_coding|7/24|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000407230|protein_coding|4/21|c.-197-52_-197-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000538539|protein_coding|5/22|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000288599|protein_coding|4/21|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|splice_acceptor_variant&splice_region_variant&intron_variant|HIGH|NCOA1|ENSG00000084676|transcript|ENST00000395856|protein_coding|4/20|c.257-52_257-2delTGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTATA||||||INFO_REALIGN_3_PRIME,T|upstream_gene_variant|MODIFIER|RNU6-936P|ENSG00000206732|transcript|ENST00000384005|snRNA||n.-2997_-2947delTATGGAAATAAGCTCTTTTCAGATATGTGATTTTTTTAAGTTTCTTTATTA|||||2997|;LOF=(NCOA1|ENSG00000084676|12|0.58);SIMPLE_ANN=DEL|UPSTREAM_GENE_VARIANT|RNU6-936P|ENST00000384005|NOT_PRIORITISED|3;SV_HIGHEST_TIER=3       DHBFC:DHFC:DHFFC:DHSP:PR:SR     .:.:.:.:11,0:57,0       1.0:1.0:1.0:3:15,0:85,11
-"""
 
 # TODO: ? Rerun SnpEFF as well to target canonical transcripts, so we don't miss intergenic variants touching non-canonical transripts?
 
@@ -126,10 +95,35 @@ rule sv_subset_to_canonical:
         after = count_vars(output.vcf)
         assert before == after, (before, after)
 
+rule prep_sv_prio_lists:
+    input:
+        fusion_pairs = get_known_fusion_pairs(),
+        fusion_heads = get_known_fusion_heads(),
+        fusion_tails = get_known_fusion_tails(),
+    output:
+        pairs = 'work/fusion_pairs.txt',
+        promisc = 'work/fusion_promisc.txt',
+    run:
+        with open(input.fusion_pairs) as f, open(output.pairs, 'w') as out:
+            for l in f:
+                l = l.strip().replace('"', '')
+                if l:
+                    g1, g2 = l.split(',')[0:2]
+                    if g1 and g2 and g1 != 'H_gene':
+                        out.write(f'{g1},{g2}\n')
+        with open(input.fusion_heads) as f1, open(input.fusion_tails) as f2, open(output.promisc, 'w') as out:
+            for l in itertools.chain(f1, f2):
+                l = l.strip().replace('"', '')
+                if l:
+                    gene = l.split(',')[0]
+                    if gene and gene != 'gene':
+                        out.write(f'{gene}\n')
+
 rule sv_prioritize:
     input:
         vcf = rules.sv_subset_to_canonical.output.vcf,
         known_pairs = rules.prep_sv_prio_lists.output.pairs,
+        known_pairs_fusioncatcher = get_fusioncatcher_pairs(),
         known_promisc = rules.prep_sv_prio_lists.output.promisc,
         cancer_genes = get_key_genes_txt(),
     output:
@@ -145,7 +139,7 @@ rule sv_prioritize:
         if filts_to_remove:
             cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
 
-        cmd += (f' | simple_sv_annotation.py - '
+        cmd += (f' | simple_sv_annotation.py - --tier2_fusion_pairs {input.known_pairs_fusioncatcher} '
                 f'--known_fusion_pairs {input.known_pairs} --known_fusion_promiscuous {input.known_promisc} '
                 f'--gene_list {input.cancer_genes} -o - | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
         shell(cmd)
@@ -261,7 +255,7 @@ rule prep_sv_tsv:
         tumor_id = VCF(input.vcf).samples.index(params.sample)
         with open(output[0], 'w') as out:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
-                      "split_read_support", "paired_support_PE", "paired_support_PR", "somaticscore", "tier",
+                      "split_read_support", "paired_support_PE", "paired_support_PR", "BPI_AF", "somaticscore", "tier",
                       "annotation", "lof"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
