@@ -4,6 +4,8 @@ Structural variants
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
 import itertools
+import re
+
 from cyvcf2 import VCF
 from ngs_utils.utils import flatten
 from ngs_utils.file_utils import safe_mkdir
@@ -63,21 +65,23 @@ rule sv_subset_to_canonical:
                 ann_fields = ann_line.split('|')
                 assert len(ann_fields) >= 11, f'rec: {rec}, ann_line: {ann_line}'
                 allele, effect, impact, genename, geneid, feature, featureid, biotype, rank, c_change, p_change = ann_fields[:11]
+
                 if feature == 'chromosome':
                     new_anns.append(ann_line)
+
                 elif feature == 'transcript':
-                    if featureid == principal_by_gids.get(geneid):
+                    feature_ids = set(featureid.split('&'))
+                    assert all(re.fullmatch(r'ENST\d+', fid) for fid in feature_ids), ann
+                    if not feature_ids - all_princ_transcripts:
                         new_anns.append(ann_line)
+
                 else:  # 'interaction'?
                     # Splitting 'interaction' feature ids like the following:
                     # "3UVN:C_107-D_1494:ENST00000358625-ENST00000262519"
                     # -> {'3UVN', 'C_107', 'D_1494', 'ENST00000262519', 'ENST00000358625'}
-                    feature_ids = set(fid for fid in flatten(fids.split('-') for fids in featureid.split(':'))
-                                      if fid.startswith('ENST'))
-                    principal_id = principal_by_gids.get(geneid)
-                    if (principal_id in feature_ids and        # - the main gene transcript id is principal;
-                        feature_ids - all_princ_transcripts    # - and all other transcript ids (interaction, fusion)
-                        ):                                     #   are principal too
+                    feature_ids = set(fid for fid in flatten(fids.split('-') for fids in featureid.split(':')) if fid.startswith('ENST'))
+                    assert all(re.fullmatch(r'ENST\d+', fid) for fid in feature_ids), ann
+                    if not feature_ids - all_princ_transcripts:
                         new_anns.append(ann_line)
 
             if new_anns:
@@ -88,6 +92,11 @@ rule sv_subset_to_canonical:
                 rec.INFO['ANN'] = new_ann
             else:
                 del rec.INFO['ANN']
+
+            if 'SIMPLE_ANN' in rec.INFO:
+                del rec.INFO['SIMPLE_ANN']
+                del rec.INFO['SV_HIGHEST_TIER']
+
             return rec
 
         iter_vcf(input.vcf, output.vcf, proc_line)
@@ -259,13 +268,12 @@ rule prep_sv_tsv:
                       "annotation", "lof"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
-                # import pdb; pdb.set_trace()
                 data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
                         rec.INFO['SVTYPE'],
                         ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
-                        rec.INFO.get('BPI_AF', ''),
+                        ','.join(map(str, rec.INFO['BPI_AF'])) if 'BPI_AF' in rec.INFO else '',
                         rec.INFO.get('SOMATICSCORE', ''),
                         rec.INFO.get('SV_HIGHEST_TIER', ''),
                         rec.INFO.get('SIMPLE_ANN', ''),
