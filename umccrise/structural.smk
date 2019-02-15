@@ -93,7 +93,7 @@ rule sv_subset_to_canonical:
             else:
                 del rec.INFO['ANN']
 
-            if 'SIMPLE_ANN' in rec.INFO:
+            if rec.INFO.get('SIMPLE_ANN') is not None:
                 del rec.INFO['SIMPLE_ANN']
                 del rec.INFO['SV_HIGHEST_TIER']
 
@@ -273,7 +273,7 @@ rule prep_sv_tsv:
                         ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
-                        ','.join(map(str, rec.INFO['BPI_AF'])) if 'BPI_AF' in rec.INFO else '',
+                        ','.join(map(str, rec.INFO['BPI_AF'])) if rec.INFO.get('BPI_AF') else '',
                         rec.INFO.get('SOMATICSCORE', ''),
                         rec.INFO.get('SV_HIGHEST_TIER', ''),
                         rec.INFO.get('SIMPLE_ANN', ''),
