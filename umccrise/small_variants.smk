@@ -64,6 +64,7 @@ rule somatic_vcf_annotate:
         mem_mb = 20000
     group: "somatic_anno"
     shell:
+        'rm {params.work_dir}/.snakemake/locks/*.lock && '
         'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}{params.genomes_dir_opt}'
 
 rule run_sage:
