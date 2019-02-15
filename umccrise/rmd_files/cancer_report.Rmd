@@ -117,12 +117,12 @@ The following post-processing steps occur:
 2. `somatic_vcf_filter`: [filter VCF](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf) 
     to remove germline variants and artefacts, but keep known hotspots
 3. As preparation for the allelic frequencies plots:
-   - `subset_to_giab`: keep variants in 'high confidence' regions as determined by the [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/)
-   - keep only variants with AF above 10%
+    * `subset_to_giab`: keep variants in 'high confidence' regions as determined by the [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/)
+    * keep only variants with AF above 10%
 4. Allele frequencies for global and keygenes:
-   - `afs`: grab only the `INFO/TUMOR_AF` field and output to final txt file
-   - `afs_keygenes`: grab the `CHROM`, `POS`, `ID`, `REF`, `ALT` and `INFO/TUMOR_AF`
-     for variants in the UMCCR cancer gene BED file, and output to final txt file
+    * `afs`: grab only the `INFO/TUMOR_AF` field and output to final txt file
+    * `afs_keygenes`: grab the `CHROM`, `POS`, `ID`, `REF`, `ALT` and `INFO/TUMOR_AF`
+      for variants in the UMCCR cancer gene BED file, and output to final txt file
 </details>
 
 
@@ -431,28 +431,39 @@ prioritised using [sv_prioritize](https://github.com/AstraZeneca-NGS/simple_sv_a
 <details>
 <summary>Details</summary>
 
-* The input file corresponds to `umccrised/<batch>/structural/<batch>-manta.tsv`
-* It's generated through the following steps:
+The input file corresponds to `umccrised/<batch>/structural/<batch>-manta.tsv`.
 
-1. Calls SVs with manta
+It's generated through the following steps:
+
+1. Call variants with manta SV caller
 2. Filter:
-  - require split or paired reads support at least 5x,
-  - for low frequency variants (<10% at both breakpoints), require read support 10x,
-  - require paired reads support to be higher than split read support for BND events
+   * require split or paired reads support at least 5x,
+   * for low frequency variants (<10% at both breakpoints), require read support 10x,
+   * require paired reads support to be higher than split read support for BND events
 3. Annotate with [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) based on Ensembl gene model
 4. Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/)
 5. Prioritize variants with [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation):
-   * tier1: [known gene fusion](https://github.com/vladsaveliev/NGS_Utils/tree/master/ngs_utils/reference_data/fusions) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
-   * tier2: 
+   * tier1: known gene fusion (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
+   * tier2:
       - exon loss in [cancer genes](https://github.com/vladsaveliev/NGS_Utils/blob/master/ngs_utils/reference_data/key_genes/umccr_cancer_genes.2019-02-12.tsv)
+      - fusion known in the literature, but not a high confidence (from [FusionCatcher list](https://github.com/ndaniel/fusioncatcher/blob/master/bin/generate_known.py))
       - fusion affecting a cancer gene
+      - bidirectional fusion (opposite stands, likely non-coding) curated by HMF
       - breakpoint in a upstream or downstream region of a cancer gene
    * tier3:
       - any other fusion
       - any other exon loss
       - LoF of a tumor suppressor
+      - bidirectional fusion known from FusionCatcher
 
 Variants are ordered by tier, then by effect, then by AF.
+
+The "effect" columns could be one of the following:
+   * "gene_fusion" - could lead to a coding fusion. If also tier=1 or 2, means it's a known fusion in the literature, regardless of order.
+   * "bidirectional_gene_fusion" is likely non-coding (opposing frames, _if_ inference correct). Tier=2 or 3 means a known pair, though again regardless of direction and order.
+   * "EXON_DEL" - a single or few exons where deleted, but not the whole gene
+   * "downstream_gene_variant" or "upstream_gene_variant" - an even down/upstream of a cancer gene, might mean a gene falling under control of a promoter of another gene
+   * "LoF_TS" - any loss of function event (according to SnpEFF) in a tumor suppressor gene
 
 </details>
 
@@ -470,7 +481,8 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
     
     tidyr::separate(BPI_AF, c("AF1", "AF2"), ",") %>% 
     dplyr::mutate(AF = (as.double(AF1) + as.double(AF2)) / 1,
-                  AF = format(AF * 100, nsmall=2)) %>%
+                  AF = AF * 100,
+                  AF = format(AF, nsmall=2)) %>%
     tidyr::separate(split_read_support, c("SR_ALT", "SR_REF"), ",") %>% 
     dplyr::mutate(SR = as.integer(SR_ALT)) %>% 
     tidyr::separate(paired_support_PR, c("PR_ALT", "PR_REF"), ",") %>% 
