@@ -480,6 +480,8 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
     tidyr::separate(paired_support_PR, c("PR_ALT", "PR_REF"), ",") %>% 
     dplyr::mutate(PR = as.integer(PR_ALT)) %>% 
     
+    dplyr::filter(is.na(SR) | PR>SR) %>% 
+    
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>%  # Unpack multiple annotations per region
     tidyr::separate(annotation,
                     c('event', 'effect', 'gene', 'transcript', 'detail', 'tier'),
