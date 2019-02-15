@@ -40,6 +40,9 @@ git clone https://github.com/umccr/umccrise
 Install conda
 
 ```
+# soruce ~/reset_path.sh
+unset PYTHONPATH
+unset CONDA_PREFIX
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
 export PATH=$(pwd)/miniconda/bin:$PATH
@@ -54,17 +57,8 @@ conda env create -p $(pwd)/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccr
 conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_purple --file umccrise/envs/purple.yml
 # conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
 conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
-export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
+conda activate $(pwd)/miniconda/envs/${ENV_NAME}  # export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
 pip install -e umccrise
-```
-
-Dirty fix for Raijin [DEPRECATED]
-
-```
-ENV_NAME=umccrise
-cd ./miniconda/envs/${ENV_NAME}_purple/lib
-if [ ! -e libwebp.so.7 ] ; then ln -s libwebp.so.6 libwebp.so.7; fi
-cd -
 ```
 
 To automate sourcing in the future, you can create a loader script
@@ -77,6 +71,13 @@ unset PERL5LIB
 export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$(pwd)/miniconda/bin:\$PATH
 export CONDA_PREFIX=$(pwd)/miniconda/envs/${ENV_NAME}
 EOT
+```
+
+## Testing
+
+```
+git clone https://github.com/umccr/umccrise_test_data
+TEST_OPTS="-c -j2" nosetests -s umccrise_test_data/test.py
 ```
 
 ## Updating

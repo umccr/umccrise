@@ -32,14 +32,7 @@ dependencies:
   - break-point-inspector
   - gatk4  # Conpair
   - scipy  # Conpair
-  - pip:
-    - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
-    - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
-    - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
-    - "--editable=git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
-    - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
-    - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
-    - "git+https://github.com/vladsaveliev/simple_sv_annotation"
+  - vcf_stuff
   - natsort  # for bcbio.py in ngs_utils
   # - pybedtools  # for ref data generation
   # - sambamba  # for test data generation
@@ -81,3 +74,12 @@ dependencies:
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
+  - pip:
+    - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
+    - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
+    - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
+    - "--editable=git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
+    - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
+    - "--editable=git+https://github.com/vladsaveliev/simple_sv_annotation"
+    - "--editable=git+https://github.com/vladsaveliev/snakemake"
+    - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
