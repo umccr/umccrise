@@ -438,22 +438,25 @@ prioritised using [sv_prioritize](https://github.com/AstraZeneca-NGS/simple_sv_a
 * The input file corresponds to `umccrised/<batch>/structural/<batch>-manta.tsv`
 * It's generated through the following steps:
 
-1. `prep_sv_vcf`:
-  * Input: `final/tumor/batch-sv-priorize-manta.vcf.gz`
-  * Process: keep variants with FILTER values only in `.`, `PASS`, `Intergenic`, or `MissingAnn`.
-  * Output: `umccrise/batch/structural/batch-sv-prioritize-manta.vcf`.
-2. `filter_sv_vcf`:
-  * Input: above output VCF
-  * Process: exclude variants where the `SR` _and_ `PR` alt support of the tumor is less
-    than 5; also for those variants where `BPI_AF` of one of the breakpoints
-    is less than 10%, exclude them if their `SR` and `PR` alt are less than 10.
-  * Output: `umccrise/batch/structural/batch-sv-prioritize-manta-filter.vcf`
-3. `prep_sv_tsv`:
-  * Input: above output VCF and `final/tumor/batch-sv-prioritize.tsv`
-  * Process: find positions in the VCF that are in the TSV file
-  * Output: `umccrise/batch/structural/batch-sv-prioritize-manta-pass.tsv`
+1. Calls SVs with manta
+2. Filter: 
+  - require split or paired reads support at least 5x
+  - for low frequency variants (<10% at both breakpoints), require read support 10x
+  - require paired reads support to be higher than split read support for BND events
+3. Annotate with [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) based on Ensembl gene model
+4. Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/)
+5. Prioritize variants with [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation):
+   * tier1: [known gene fusion](https://github.com/vladsaveliev/NGS_Utils/tree/master/ngs_utils/reference_data/fusions) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
+   * tier2: 
+      - exon loss in [cancer genes](https://github.com/vladsaveliev/NGS_Utils/blob/master/ngs_utils/reference_data/key_genes/umccr_cancer_genes.2019-02-12.tsv)
+      - fusion affecting a cancer gene
+      - breakpoint in a upstream or downstream region of a cancer gene
+   * tier3:
+      - any other fusion
+      - any other exon loss
+      - LoF of a tumor suppressor
 
-Sorted in order: tier, effect AF.
+Variants are ordered by tier, then by effect, then by AF.
 
 </details>
 
@@ -470,12 +473,8 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
     dplyr::select(-caller, -sample, -lof) %>% 
     
     tidyr::separate(BPI_AF, c("AF1", "AF2"), ",") %>% 
-    dplyr::mutate(AF1 = as.double(AF1)) %>% 
-    dplyr::mutate(AF2 = as.double(AF2)) %>% 
-    dplyr::mutate(AF = (AF1 + AF2) / 1) %>% 
-    dplyr::mutate(AF = AF * 100) %>% 
-    dplyr::mutate(AF = format(AF, nsmall=2)) %>%
-    
+    dplyr::mutate(AF = (as.double(AF1) + as.double(AF2)) / 1,
+                  AF = format(AF * 100, nsmall=2)) %>%
     tidyr::separate(split_read_support, c("SR_ALT", "SR_REF"), ",") %>% 
     dplyr::mutate(SR = as.integer(SR_ALT)) %>% 
     tidyr::separate(paired_support_PR, c("PR_ALT", "PR_REF"), ",") %>% 
@@ -488,10 +487,8 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
     dplyr::mutate(effect = ifelse(str_detect(detail, 'LOF'), 'LoF_in_TS', effect)) %>% 
     dplyr::filter(effect != "LoF_in_TS" | gene %in% tsgenes) %>% 
 
-    dplyr::rename(
-      chr = chrom,
-      somScore = somaticscore
-    ) %>%
+    dplyr::rename(chr = chrom,
+                  somScore = somaticscore) %>%
     dplyr::select(chr, gene, tier, AF, effect, SR, PR, start, end, event, detail) %>%
     dplyr::distinct() %>%
     dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
@@ -667,7 +664,7 @@ the below information for ~1,100 genes in the UMCCR Cancer Gene list.
 * `Min/MaxCN`: minimum/maximum copy number within the entire gene
 * `Chr`, `Start`, `End`: gene coordinates
 * `ChrBand`: chromosome band
-* `GeneType`: oncogene ('onco'), tumor suppressor ('ts'), or both ('onco+ts'),
+* `Role`: oncogene ('onco'), tumor suppressor ('ts'), or both ('onco+ts'),
    as reported by [Cancermine](https://github.com/jakelever/cancermine)
 * `TxID`: Ensembl Transcript ID  
 
@@ -684,14 +681,14 @@ purple_gene_cnv %>%
   dplyr::filter(Gene %in% key_genes$symbol) %>%
   dplyr::mutate(oncogene = Gene %in% oncogenes$symbol,
                 tsgene = Gene %in% tsgenes$symbol,
-                role = dplyr::case_when(
+                Role = dplyr::case_when(
                   oncogene & tsgene ~ "onco+ts",
                   oncogene ~ "oncogene",
                   tsgene ~ "tsgene",
                   TRUE ~ "")) %>% 
   dplyr::select(Gene,  MinCN = MinCopyNumber, MaxCN = MaxCopyNumber, 
                 Chr = Chromosome, Start, End, 
-                ChrBand = ChromosomeBand, GeneType) %>% 
+                ChrBand = ChromosomeBand, Role) %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE), 
                 rownames = FALSE, extensions = c("Scroller", "Buttons"),
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400, 
