@@ -1,4 +1,4 @@
-0.13 (13 Feb 2019)
+0.13 (15 Feb 2019)
 
 - Re-enable [CACAO](https://github.com/vladsaveliev/cacao)
 - Support Cromwell runs
@@ -15,7 +15,11 @@
   - Hard subset small variants to non-gnomad if >500k, subset to cancer genes if doesn't help
   - Hard subset SVs to non-intergenic if >1000, subset to prioritized if doesn't help
   - Rerun BPI on priority SVs when disabled in bcbio
-- Much faster Rmd report generation
+- Cancer report significantly updated (thanks to Peter's work!):
+  - Add mutational signatures descriptions
+  - Discontinue bookdown for a speed boost
+  - Restructure tables and plots
+  - Add explanations how files are generated in the pipeline
 
 0.12 (23 Jan 2019)
 
