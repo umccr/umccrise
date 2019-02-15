@@ -435,7 +435,7 @@ prioritised using [sv_prioritize](https://github.com/AstraZeneca-NGS/simple_sv_a
 <details>
 <summary>Details</summary>
 
-* The input file corresponds to `umccrise/batch/structural/batch-sv-prioritize-manta-pass.tsv`
+* The input file corresponds to `umccrised/<batch>/structural/<batch>-manta.tsv`
 * It's generated through the following steps:
 
 1. `prep_sv_vcf`:
@@ -453,6 +453,8 @@ prioritised using [sv_prioritize](https://github.com/AstraZeneca-NGS/simple_sv_a
   * Process: find positions in the VCF that are in the TSV file
   * Output: `umccrise/batch/structural/batch-sv-prioritize-manta-pass.tsv`
 
+Sorted in order: tier, effect AF.
+
 </details>
 
 ```{r sv_prioritize, message=FALSE}
@@ -461,8 +463,6 @@ sv_all = NULL
 key_genes <- readr::read_tsv(params$key_genes)
 tsgenes <- key_genes %>% filter(tumorsuppressor)
 tsgenes = tsgenes$symbol
-
-#"123.0" %>% as.double() %>% `*`(100) %>% format(nsmall=2)
 
 if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
   sv_all <- 
@@ -492,9 +492,10 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
       chr = chrom,
       somScore = somaticscore
     ) %>%
-    dplyr::select(chr, event, tier, gene, AF, effect, SR, PR, start, end, somScore, detail) %>%
+    dplyr::select(chr, gene, tier, AF, effect, SR, PR, start, end, event, detail) %>%
     dplyr::distinct() %>%
-    dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT")))
+    dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
+    dplyr::arrange(tier, effect, desc(AF), gene)
 
   DT::datatable(sv_all, rownames = FALSE, filter = "top",
                 extensions = c('Scroller', 'Buttons'),
@@ -683,15 +684,14 @@ purple_gene_cnv %>%
   dplyr::filter(Gene %in% key_genes$symbol) %>%
   dplyr::mutate(oncogene = Gene %in% oncogenes$symbol,
                 tsgene = Gene %in% tsgenes$symbol,
-                GeneType = dplyr::case_when(
+                role = dplyr::case_when(
                   oncogene & tsgene ~ "onco+ts",
-                  oncogene ~ "onco",
-                  tsgene ~ "ts",
+                  oncogene ~ "oncogene",
+                  tsgene ~ "tsgene",
                   TRUE ~ "")) %>% 
   dplyr::select(Gene,  MinCN = MinCopyNumber, MaxCN = MaxCopyNumber, 
                 Chr = Chromosome, Start, End, 
-                ChrBand = ChromosomeBand, GeneType, 
-                TxID = TranscriptId) %>% 
+                ChrBand = ChromosomeBand, GeneType) %>% 
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE), 
                 rownames = FALSE, extensions = c("Scroller", "Buttons"),
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400, 
