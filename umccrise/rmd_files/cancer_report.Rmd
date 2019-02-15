@@ -107,26 +107,22 @@ AFs range from 0 to 1, or 0%-100% (here we discard variants that have somatic AF
 <details>
 <summary>Details</summary>
 
-The variants used are inferred from the bcbio ensemble somatic
-caller (or from a single somatic caller if bcbio was run in non-ensemble mode).
+The variants are called in bcbio by 3 different callers, and calls supported by at least 2 of 3 are used ("ensemble" approach).
+Unless only a single caller was used due to technical reasons (e.g. difficult highly mutated FFPE sample).
 
 The following post-processing steps occur:
 
-1. `somatic_vcf_sort`: simply sort the input VCF
-2. `somatic_vcf_annotate`: [annotate VCF](https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk)
-3. `somatic_vcf_filter`: [filter VCF](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf)
-4. `somatic_vcf_filter_af10`: soft filter variants where `TUMOR_AF < 0.1`
-5. `somatic_vcf_filter_pass`: keep only `.,PASS` variants
-6. `subset_to_giab`: keep variants in 'high confidence' regions as determined by the
-   [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/)
-7. `split_multiallelic`:
-   - keep only the `TUMOR_AF` field from `INFO` column
-   - split multiallelics into multiple rows
-8. Allele frequencies for global and keygenes:
+1. `somatic_vcf_annotate`: [annotate VCF](https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk) 
+    against databases of known hotspots, germline variants, low mappability regions, UMCCR panel of normals
+2. `somatic_vcf_filter`: [filter VCF](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf) 
+    to remove germline variants and artefacts, but keep known hotspots
+3. As preparation for the allelic frequencies plots:
+   - `subset_to_giab`: keep variants in 'high confidence' regions as determined by the [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/)
+   - keep only variants with AF above 10%
+4. Allele frequencies for global and keygenes:
    - `afs`: grab only the `INFO/TUMOR_AF` field and output to final txt file
    - `afs_keygenes`: grab the `CHROM`, `POS`, `ID`, `REF`, `ALT` and `INFO/TUMOR_AF`
      for variants in the UMCCR cancer gene BED file, and output to final txt file
-
 </details>
 
 
@@ -439,9 +435,9 @@ prioritised using [sv_prioritize](https://github.com/AstraZeneca-NGS/simple_sv_a
 * It's generated through the following steps:
 
 1. Calls SVs with manta
-2. Filter: 
-  - require split or paired reads support at least 5x
-  - for low frequency variants (<10% at both breakpoints), require read support 10x
+2. Filter:
+  - require split or paired reads support at least 5x,
+  - for low frequency variants (<10% at both breakpoints), require read support 10x,
   - require paired reads support to be higher than split read support for BND events
 3. Annotate with [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) based on Ensembl gene model
 4. Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/)
