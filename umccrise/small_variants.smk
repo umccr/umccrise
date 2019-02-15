@@ -60,12 +60,13 @@ rule somatic_vcf_annotate:
         genome = run.genome_build,
         genomes_dir_opt = f" --genomes-dir {config.get('genomes_dir')}" if config.get('genomes_dir') else "",
         work_dir = 'work/{batch}/small_variants',
+        unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else ''
     resources:
         mem_mb = 20000
     group: "somatic_anno"
     shell:
-        'rm {params.work_dir}/.snakemake/locks/*.lock && '
-        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} -w {params.work_dir}{params.genomes_dir_opt}'
+        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} '
+        '-w {params.work_dir}{params.genomes_dir_opt}{params.unlock_opt}'
 
 rule run_sage:
     input:

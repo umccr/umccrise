@@ -107,6 +107,9 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 
     conf['total_cores'] = jobs
 
+    if unlock:
+        conf['unlock'] = 'yes'
+
     #########################
     #### Setting cluster ####
     #########################
@@ -161,7 +164,6 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         f'{cluster_param} '
         f'--config {" ".join(k + "=" + str(v) for k, v in conf.items())} '
     )
-
 
     #################
     #### Running ####
