@@ -156,7 +156,7 @@ rule sv_prioritize:
                 f'--known_fusion_pairs {input.known_pairs} '
                 f'--known_fusion_promiscuous {input.known_promisc} '
                 f'--gene_list {input.cancer_genes} '
-                f'--tumor_suppressors <(grep  {input.tsgenes} '
+                f'--tumor_suppressors {input.tsgenes} '
                 f'-o - | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
         shell(cmd)
         before = count_vars(input.vcf)
