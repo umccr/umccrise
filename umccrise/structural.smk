@@ -9,7 +9,8 @@ import re
 from cyvcf2 import VCF
 from ngs_utils.utils import flatten
 from ngs_utils.file_utils import safe_mkdir
-from ngs_utils.reference_data import get_key_genes_txt, get_known_fusion_pairs, get_fusioncatcher_pairs, get_known_fusion_heads, get_known_fusion_tails
+from ngs_utils.reference_data import get_key_genes_txt, get_key_tsgenes_txt, \
+    get_known_fusion_pairs, get_fusioncatcher_pairs, get_known_fusion_heads, get_known_fusion_tails
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
 from bed_annotation import canon_transcript_per_gene
 
@@ -93,6 +94,7 @@ rule sv_subset_to_canonical:
             else:
                 del rec.INFO['ANN']
 
+            # Also remove older SIMPLE_ANN as we are rerunning for canonical transcripts
             if rec.INFO.get('SIMPLE_ANN') is not None:
                 del rec.INFO['SIMPLE_ANN']
                 del rec.INFO['SV_HIGHEST_TIER']
@@ -135,6 +137,7 @@ rule sv_prioritize:
         known_pairs_fusioncatcher = get_fusioncatcher_pairs(),
         known_promisc = rules.prep_sv_prio_lists.output.promisc,
         cancer_genes = get_key_genes_txt(),
+        tsgenes = get_key_tsgenes_txt(),
     output:
         vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz',
         tbi = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz.tbi',
@@ -148,9 +151,13 @@ rule sv_prioritize:
         if filts_to_remove:
             cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
 
-        cmd += (f' | simple_sv_annotation.py - --tier2_fusion_pairs {input.known_pairs_fusioncatcher} '
-                f'--known_fusion_pairs {input.known_pairs} --known_fusion_promiscuous {input.known_promisc} '
-                f'--gene_list {input.cancer_genes} -o - | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        cmd += (f' | simple_sv_annotation.py - '
+                f'--tier2_fusion_pairs {input.known_pairs_fusioncatcher} '
+                f'--known_fusion_pairs {input.known_pairs} '
+                f'--known_fusion_promiscuous {input.known_promisc} '
+                f'--gene_list {input.cancer_genes} '
+                f'--tumor_suppressors <(grep  {input.tsgenes} '
+                f'-o - | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
@@ -277,7 +284,7 @@ rule prep_sv_tsv:
                         rec.INFO.get('SOMATICSCORE', ''),
                         rec.INFO.get('SV_HIGHEST_TIER', ''),
                         rec.INFO.get('SIMPLE_ANN', ''),
-                        rec.INFO.get('LOF', ''),
+                        rec.INFO.get('LOF_GENES', ''),
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 

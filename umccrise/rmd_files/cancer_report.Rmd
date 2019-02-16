@@ -448,13 +448,11 @@ It's generated through the following steps:
       - exon loss in [cancer genes](https://github.com/vladsaveliev/NGS_Utils/blob/master/ngs_utils/reference_data/key_genes/umccr_cancer_genes.2019-02-12.tsv)
       - fusion known in the literature, but not a high confidence (from [FusionCatcher list](https://github.com/ndaniel/fusioncatcher/blob/master/bin/generate_known.py))
       - fusion affecting a cancer gene
-      - bidirectional fusion (opposite stands, likely non-coding) curated by HMF
       - breakpoint in a upstream or downstream region of a cancer gene
+      - LoF of a tumor suppressor
    * tier3:
       - any other fusion
       - any other exon loss
-      - LoF of a tumor suppressor
-      - bidirectional fusion known from FusionCatcher
 
 Variants are ordered by tier, then by effect, then by AF.
 
@@ -470,9 +468,6 @@ The "effect" columns could be one of the following:
 ```{r sv_prioritize, message=FALSE}
 col_types <- "ccciiccccciicc"
 sv_all = NULL
-key_genes <- readr::read_tsv(params$key_genes)
-tsgenes <- key_genes %>% filter(tumorsuppressor)
-tsgenes = tsgenes$symbol
 
 if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
   sv_all <- 
@@ -488,14 +483,12 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
     tidyr::separate(paired_support_PR, c("PR_ALT", "PR_REF"), ",") %>% 
     dplyr::mutate(PR = as.integer(PR_ALT)) %>% 
     
-    dplyr::filter(is.na(SR) | PR>SR) %>% 
+    dplyr::filter(svtype != 'BND' | is.na(SR) | PR>SR) %>%  # remove BND with split read support higher than paired
     
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>%  # Unpack multiple annotations per region
     tidyr::separate(annotation,
                     c('event', 'effect', 'gene', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-    dplyr::mutate(effect = ifelse(str_detect(detail, 'LOF'), 'LoF_in_TS', effect)) %>% 
-    dplyr::filter(effect != "LoF_in_TS" | gene %in% tsgenes) %>% 
 
     dplyr::rename(chr = chrom,
                   somScore = somaticscore) %>%
@@ -684,6 +677,7 @@ the below information for ~1,100 genes in the UMCCR Cancer Gene list.
 key_genes <- readr::read_tsv(params$key_genes)
 oncogenes <- key_genes %>% filter(oncogene)
 tsgenes <- key_genes %>% filter(tumorsuppressor)
+# TODO: replace with real tsgenes list
 
 purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcc")
 
