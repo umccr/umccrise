@@ -173,7 +173,7 @@ rule sv_keep_pass:
         vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf'
     group: "sv_vcf"
     run:
-        cmd = f'bcftools view -f.,PASS {input.vcf} | bcftools annotate -x INFO/ANN'
+        cmd = f'bcftools view -f.,PASS {input.vcf}'
         if count_vars(input.vcf, filter='.,PASS') > 1000:
             cmd += ' | bcftools filter -i "SV_HIGHEST_TIER <= 3"'
         cmd += f' -o {output.vcf}'

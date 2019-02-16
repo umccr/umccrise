@@ -1,7 +1,7 @@
 from os.path import join
 
 from ngs_utils.logger import warn
-from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
+from ngs_utils.reference_data import get_key_genes, get_key_genes_bed, get_key_tsgenes_txt
 from ngs_utils.file_utils import safe_mkdir
 import glob
 
@@ -116,8 +116,9 @@ rule rmd_purple_cnv:
 ## Running Rmarkdown
 rule bookdown_report:
     input:
-        rmd_files_dir = join(package_path(), 'rmd_files'),
-        key_genes = get_key_genes(),
+        rmd_files_dir       = join(package_path(), 'rmd_files'),
+        key_genes           = get_key_genes(),
+        tsgenes             = get_key_tsgenes_txt(),
         af_global           = rules.afs.output[0],
         af_keygenes         = rules.afs_keygenes.output[0],
         somatic_snv         = rules.somatic_to_hg19.output[0],
@@ -176,6 +177,7 @@ tumor_name='{params.tumor_name}', \
 batch_name='{wildcards.batch}', \
 genome_build='{params.rmd_genome_build}', \
 key_genes='{input.key_genes}', \
+tsgenes='{input.tsgenes}', \
 af_global='{params.af_global}', \
 af_keygenes='{params.af_keygenes}', \
 somatic_snv='{params.somatic_snv}', \

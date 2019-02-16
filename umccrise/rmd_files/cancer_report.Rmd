@@ -61,6 +61,7 @@ params_spartan <- list(
   batch_name='BK221-NET1__PRJ180471_BK221-NET1',
   genome_build='hg19',
   key_genes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
+  tsgenes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.tsgenes.latest.genes',
   af_global=      '~/spa/tmp/umccrise_test_sv_newtsv_cluster2/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor.txt',
   af_keygenes=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster2/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor_keygenes.txt',
   somatic_snv=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster2/work/E180__PRJ180261_E180-T01-D/rmd/ensemble-with_chr_prefix.vcf',
@@ -76,6 +77,7 @@ params_local <- list(
   batch_name='1965__PRJ180201_1965_8073358T',
   genome_build='hg19',
   key_genes='/Users/pdiakumis/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
+  tsgenes='/Users/pdiakumis/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.tsgenes.latest.genes',
   af_global='data/sig/af_tumor_notempty.txt',
   af_keygenes= 'data/sig/keygenes_notempty.txt',
   somatic_snv='data/sig/ensemble-with_chr_prefix.vcf',
@@ -676,8 +678,7 @@ the below information for ~1,100 genes in the UMCCR Cancer Gene list.
 ```{r gene-tab}
 key_genes <- readr::read_tsv(params$key_genes)
 oncogenes <- key_genes %>% filter(oncogene)
-tsgenes <- key_genes %>% filter(tumorsuppressor)
-# TODO: replace with real tsgenes list
+tsgenes <- readr::read_csv(params$tsgenes, col_names = c('symbol'))
 
 purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcc")
 
