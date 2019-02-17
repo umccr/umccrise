@@ -19,7 +19,7 @@ params:
   af_global: 'x'
   af_keygenes: 'x'
   somatic_snv: 'x'
-  somatic_sv: '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster2/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
+  somatic_sv: '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster5/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
   purple_gene_cnv: 'x'
   purple_circos_baf: 'x'
   purple_purity: 'x'
@@ -63,11 +63,11 @@ params_spartan <- list(
   genome_build='hg19',
   key_genes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
   tsgenes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.tsgenes.latest.genes',
-  af_global=      '~/spa/tmp/umccrise_test_sv_newtsv_cluster2/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor.txt',
-  af_keygenes=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster2/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor_keygenes.txt',
-  somatic_snv=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster2/work/E180__PRJ180261_E180-T01-D/rmd/ensemble-with_chr_prefix.vcf',
+  af_global=      '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor.txt',
+  af_keygenes=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor_keygenes.txt',
+  somatic_snv=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/ensemble-with_chr_prefix.vcf',
   somatic_sv='/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster2/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv',
-  purple_gene_cnv='~/spa/tmp/umccrise_test_sv_newtsv_cluster2/work/E180__PRJ180261_E180-T01-D/rmd/purple.tsv',
+  purple_gene_cnv='~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/purple.tsv',
   purple_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.cnv',
   purple_germline_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.germline.cnv',
   purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity',
@@ -493,9 +493,10 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
                     c('event', 'effect', 'gene', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
   
-    dplyr::mutate(loc = str_c(chr, ':', start, sep = ''),
-                  loc = ifelse(is_na(end), loc, str_c(loc, '-', end, sep = ''))) %>% 
+    dplyr::mutate(loc = str_c(chrom, ':', start, sep = ''),
+                  loc = ifelse(is.na(end), loc, str_c(loc, '-', end, sep = ''))) %>% 
     dplyr::rename(somScore = somaticscore) %>%
+    dplyr::mutate(gene = str_replace_all(gene, '&', ', ')) %>% 
     dplyr::select(loc, event, tier, effect, detail, AF, SR, PR, gene) %>%
     dplyr::distinct() %>%
     # dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 

@@ -33,6 +33,7 @@ from umccrise import _version as version
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 
 # Snakemake:
+@click.option('--forcerun', 'forcerun', 'Comma-separated rules that will be run even if the outputs exist. Propagated to snakemake, space-separated.')
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
 @click.option('--restart-times', default=0, help='Propagated to snakemake. Default is 0.')
@@ -49,7 +50,7 @@ from umccrise import _version as version
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, genomes_dir=None,
-         jobs=None, cluster=False, cluster_cmd=None,
+         jobs=None, cluster=False, cluster_cmd=None, forcerun=None,
          unlock=False, rerun_incomplete=False, restart_times=None, dryrun=False,
          no_s3=None, no_igv=False, docker_wrapper_mode=False, report=None, dag=False):
     """
@@ -148,7 +149,6 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         )
 
     snakefile = join(package_path(), 'Snakefile') if not docker_wrapper_mode else '/umccrise/umccrise/Snakefile'
-    report = f'--report {report} ' if report else ''
     cmd += (
         f'snakemake '
         f'{" ".join(target_rule)} '
@@ -156,7 +156,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         f'--printshellcmds '
         f'{"--dryrun " if dryrun else ""}'
         f'{"--dag " if dag else ""}'
-        f'{report}'
+        f'{f"--report {report}" if report else ""}'
         f'--directory {output_dir if not docker_wrapper_mode else "/output_dir"} '
         f'-j {jobs} '
         f'--rerun-incomplete '
