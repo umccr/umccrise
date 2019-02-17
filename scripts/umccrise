@@ -33,7 +33,7 @@ from umccrise import _version as version
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 
 # Snakemake:
-@click.option('--forcerun', 'forcerun', 'Comma-separated rules that will be run even if the outputs exist. Propagated to snakemake, space-separated.')
+@click.option('--forcerun', 'forcerun', help='Comma-separated rules that will be run even if the outputs exist. Propagated to snakemake, space-separated.')
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
 @click.option('--restart-times', default=0, help='Propagated to snakemake. Default is 0.')
