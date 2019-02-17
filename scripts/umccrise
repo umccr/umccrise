@@ -156,7 +156,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         f'--printshellcmds '
         f'{"--dryrun " if dryrun else ""}'
         f'{"--dag " if dag else ""}'
-        f'{f"--report {report}" if report else ""}'
+        f'{f"--report {report} " if report else ""}'
         f'--directory {output_dir if not docker_wrapper_mode else "/output_dir"} '
         f'-j {jobs} '
         f'--rerun-incomplete '
