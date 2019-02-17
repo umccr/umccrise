@@ -97,6 +97,7 @@ rule sv_subset_to_canonical:
             # Also remove older SIMPLE_ANN as we are rerunning for canonical transcripts
             if rec.INFO.get('SIMPLE_ANN') is not None:
                 del rec.INFO['SIMPLE_ANN']
+            if rec.INFO.get('SV_HIGHEST_TIER') is not None:
                 del rec.INFO['SV_HIGHEST_TIER']
 
             return rec
@@ -175,7 +176,7 @@ rule sv_keep_pass:
     run:
         cmd = f'bcftools view -f.,PASS {input.vcf}'
         if count_vars(input.vcf, filter='.,PASS') > 1000:
-            cmd += ' | bcftools filter -i "SV_HIGHEST_TIER <= 3"'
+            cmd += ' | bcftools filter -i "SV_TOP_TIER <= 3"'
         cmd += f' -o {output.vcf}'
         shell(cmd)
 
@@ -271,8 +272,8 @@ rule prep_sv_tsv:
         tumor_id = VCF(input.vcf).samples.index(params.sample)
         with open(output[0], 'w') as out:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
-                      "split_read_support", "paired_support_PE", "paired_support_PR", "BPI_AF", "somaticscore", "tier",
-                      "annotation", "lof"]
+                      "split_read_support", "paired_support_PE", "paired_support_PR", "BPI_AF", "somaticscore",
+                      "tier", "annotation"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
@@ -282,9 +283,8 @@ rule prep_sv_tsv:
                         ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
                         ','.join(map(str, rec.INFO['BPI_AF'])) if rec.INFO.get('BPI_AF') else '',
                         rec.INFO.get('SOMATICSCORE', ''),
-                        rec.INFO.get('SV_HIGHEST_TIER', ''),
-                        rec.INFO.get('SIMPLE_ANN', ''),
-                        rec.INFO.get('LOF_GENES', ''),
+                        rec.INFO.get('SV_TOP_TIER', ''),
+                        rec.INFO.get('SIMPLE_ANN', '')
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 

@@ -15,6 +15,7 @@ params:
   batch_name: 'x'
   genome_build: 'hg19'
   key_genes: '/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
+  tsgenes: 'x'
   af_global: 'x'
   af_keygenes: 'x'
   somatic_snv: 'x'
@@ -474,7 +475,7 @@ sv_all = NULL
 if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
   sv_all <- 
     readr::read_tsv(params$somatic_sv, col_names = TRUE, col_types = col_types) %>%
-    dplyr::select(-caller, -sample, -lof) %>% 
+    dplyr::select(-caller, -sample) %>% 
     
     tidyr::separate(BPI_AF, c("AF1", "AF2"), ",") %>% 
     dplyr::mutate(AF = (as.double(AF1) + as.double(AF2)) / 1,
@@ -491,12 +492,13 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
     tidyr::separate(annotation,
                     c('event', 'effect', 'gene', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-
-    dplyr::rename(chr = chrom,
-                  somScore = somaticscore) %>%
-    dplyr::select(chr, gene, tier, AF, effect, SR, PR, start, end, event, detail) %>%
+  
+    dplyr::mutate(loc = str_c(chr, ':', start, sep = ''),
+                  loc = ifelse(is_na(end), loc, str_c(loc, '-', end, sep = ''))) %>% 
+    dplyr::rename(somScore = somaticscore) %>%
+    dplyr::select(loc, event, tier, effect, detail, AF, SR, PR, gene) %>%
     dplyr::distinct() %>%
-    dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
+    # dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
     dplyr::arrange(tier, effect, desc(AF), gene)
 
   DT::datatable(sv_all, rownames = FALSE, filter = "top",
