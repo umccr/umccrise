@@ -208,16 +208,6 @@ rule germline_vcf_prep:
     shell:
         'pcgr_prep {input.vcf} | bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
-# rule bcftools_stats_germline:
-#     input:
-#         vcf = lambda wc: get_germline_vcf_path(wc.batch, vcf_suffix)
-#     output:
-#         '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
-#     params:
-#         sname = lambda wc: batch_by_name[wc.batch].normal.name,
-#     shell:
-#         'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
-
 rule somatic_stats_report:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf,
@@ -258,61 +248,6 @@ rule somatic_stats_report:
                 }
             }
             yaml.dump(data, out, default_flow_style=False)
-
-            # out.write('\t'.join(['Sample Name', 'somatic', 'filtered', 'snps', 'indels'] + [['other'] if others else [])) + '\n')
-            # out.write('\t'.join(map(str, [params.sample, pass_cnt, total_cnt - pass_cnt, ])) + '\n')
-            # yaml.dump(data, out, default_flow_style=False)
-
-        # data = dict(
-        #     id='umccrise',
-        #     plot_type='generalstats',
-        #     # pconfig=[
-        #     #     dict(
-        #     #         pon=dict(
-        #     #             title='PoN',
-        #     #             description='Variants found in UMCCR panel of normals',
-        #     #             id='pon',
-        #     #             min=0,
-        #     #             max=100,
-        #     #             scale='RdYlGn',
-        #     #             suffix='%',
-        #     #         ),
-        #     #     ),
-        #     #     dict(
-        #     #         passed=dict(
-        #     #             title='PASS',
-        #     #             description='Variants passed umccrise somatic filters',
-        #     #             id='passed',
-        #     #             min=0,
-        #     #             max=100,
-        #     #             scale='RdYlGn',
-        #     #             suffix='%',
-        #     #         ),
-        #     #     ),
-        #     #     dict(
-        #     #         pon_filt=dict(
-        #     #             title='PoN filt',
-        #     #             description='Variants filtered due to hits in UMCCR panel of normals '
-        #     #                         '(filtering threshold - 2 hits, but keeping all hotspots and TIER 1-3)',
-        #     #             id='pon_filt',
-        #     #             min=0,
-        #     #             max=100,
-        #     #             scale='RdYlGn',
-        #     #             suffix='%',
-        #     #             hidden=True,
-        #     #         )
-        #     #     )
-        #     # ],
-        #     data={
-        #         params.sample: {
-        #             'PoN': pon_pct,
-        #             'PASS': pass_cnt,
-        #             'PoN_filt': pon_filt_pct,
-        #             # TODO: add germline hits (gnomad cnt?)
-        #         }
-        #     },
-        # )
-
 
 rule germline_stats_report:
     input:
