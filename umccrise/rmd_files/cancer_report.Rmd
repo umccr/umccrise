@@ -5,7 +5,7 @@ output:
   html_document:
     theme: simplex
     toc: true
-    toc_float: true
+    toc_float: false
     code_folding: hide
   rmdformats::material:
     highlight: kate
@@ -515,16 +515,16 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     readr::read_tsv(sv_path, col_names = TRUE, col_types = col_types) %>%
     dplyr::select(-caller, -sample) %>% 
     
-    tidyr::separate(BPI_AF, c("AF_BP1", "AF_BP2"), ",") %>% 
-    dplyr::mutate(AF = (as.double(AF_BP1) + as.double(AF_BP2)) / 1,
+    tidyr::separate(BPI_AF, c("AF at breakpoint 1", "AF at breakpoint 2"), ",") %>% 
+    dplyr::mutate(AF = (as.double(`AF at breakpoint 2`) + as.double(`AF at breakpoint 2`)) / 1,
                   AF = AF * 100,
                   AF = format(AF, nsmall=2)) %>%
-    tidyr::separate(split_read_support, c("SR_ALT", "SR_REF"), ",") %>% 
-    dplyr::mutate(SR = as.integer(SR_ALT)) %>% 
-    tidyr::separate(paired_support_PR, c("PR_ALT", "PR_REF"), ",") %>% 
-    dplyr::mutate(PR = as.integer(PR_ALT)) %>% 
-    tidyr::separate(paired_support_PE, c("PE_ALT", "PE_REF"), ",") %>% 
-    dplyr::mutate(PE = as.integer(PE_ALT)) %>% 
+    tidyr::separate(split_read_support, c("SR (alt)", "SR (ref)"), ",") %>% 
+    dplyr::mutate(SR = as.integer(`SR_alt`)) %>% 
+    tidyr::separate(paired_support_PR, c("PR (alt)", "PR (ref)"), ",") %>% 
+    dplyr::mutate(PR = as.integer(`PR alt`)) %>% 
+    tidyr::separate(paired_support_PE, c("PE (alt)", "PE (ref)"), ",") %>% 
+    dplyr::mutate(PE = as.integer(`PE alt`)) %>% 
     
     dplyr::filter(svtype != 'BND' | is.na(SR) | PR>SR) %>%  # remove BND with split read support higher than paired
     
@@ -553,13 +553,23 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     dplyr::select(Location = location, 
                   Event = event, 
                   Tier = tier,  
-                  Detail = detail, 
-                  AF, SR, PR, Gene, 
-                  `Other effects`,
-                  `Other affected genes`,
-                  SR_REF, PR_REF, PE, PE_REF, AF_BP1, AF_BP2, 
+                  Effect = Effect,
+                  Detail = detail,
+                  AF, 
+                  SR, 
+                  PR, 
+                  Gene, 
+                  `SR (ref)`, 
+                  `PR (ref)`, 
+                  PE, 
+                  `PE (ref)`, 
+                  `AF at breakpoint 1`, 
+                  `AF at breakpoint 2`, 
                   `Somatic score` = somaticscore, 
-                  transcript) %>%
+                  Transcript = transcript,
+                  `Other effects`,
+                  `Other affected genes`
+    ) %>%
     dplyr::distinct()
     # dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
 
