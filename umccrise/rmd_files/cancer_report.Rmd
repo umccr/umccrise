@@ -578,7 +578,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
 
   DT::datatable(sv_all, rownames = FALSE,
                 extensions = c('Scroller', 'Responsive', 'Buttons'), 
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500,
+                options = list(scroller = TRUE, scrollX = F, scrollY = 500,
                                dom = 'Bfrtip', buttons = c('csv', 'excel')))
 } else {
   warning('No prioritized events detected')
