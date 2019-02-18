@@ -430,7 +430,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 
 ## Structural Variants
 Structural variants are inferred with [Manta](https://github.com/illumina/manta) and
-prioritised using [sv_prioritize](https://github.com/AstraZeneca-NGS/simple_sv_annotation).
+prioritised using [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation).
 
 <details>
 <summary>Details</summary>
@@ -476,6 +476,39 @@ sv_all = NULL
 
 sv_path = params$somatic_sv
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
+# sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E183__PRJ180263_E183_T01_D/structural/E183__PRJ180263_E183_T01_D-manta.tsv'
+
+# d =     readr::read_tsv(sv_path, col_names = TRUE, col_types = col_types) %>%
+#     dplyr::select(-caller, -sample) %>% 
+#     
+#     tidyr::separate(BPI_AF, c("AF_BP1", "AF_BP2"), ",") %>% 
+#     dplyr::mutate(AF = (as.double(AF_BP1) + as.double(AF_BP2)) / 1,
+#                   AF = AF * 100,
+#                   AF = format(AF, nsmall=2)) %>%
+#     tidyr::separate(split_read_support, c("SR_ALT", "SR_REF"), ",") %>% 
+#     dplyr::mutate(SR = as.integer(SR_ALT)) %>% 
+#     tidyr::separate(paired_support_PR, c("PR_ALT", "PR_REF"), ",") %>% 
+#     dplyr::mutate(PR = as.integer(PR_ALT)) %>% 
+#     tidyr::separate(paired_support_PE, c("PE_ALT", "PE_REF"), ",") %>% 
+#     dplyr::mutate(PE = as.integer(PE_ALT)) %>% 
+#     
+#     dplyr::filter(svtype != 'BND' | is.na(SR) | PR>SR) %>%  # remove BND with split read support higher than paired
+#     
+#     tidyr::unnest(annotation = strsplit(annotation, ',')) %>%  # Unpack multiple annotations per region
+#     tidyr::separate(annotation,
+#                     c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
+#                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
+#   
+#     dplyr::mutate(start = format(start, big.mark = ',', trim = T),
+#                   end = format(end, big.mark = ',', trim = T)) %>% 
+#     dplyr::mutate(location = str_c(chrom, ':', start, sep = ''),
+#                   location = ifelse(is.na(end), location, str_c(location))) %>% 
+#     dplyr::arrange(tier, effect, desc(AF), genes)
+# d <- d %>% dplyr::select(genes, effect)
+
+subset_genes = function(genes, ind) {
+  genes %>% str_split('&') %>% map(~ .[ind] %>% replace("", NA) %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
+}
 
 if (length(readLines(con = sv_path, n = 2)) > 1) {
   sv_all <- 
@@ -507,11 +540,11 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     dplyr::arrange(tier, effect, desc(AF), genes) %>% 
 
         
-    dplyr::mutate(Gene = genes %>% str_split('&') %>% map(~ .[c(1,2)] %>% .[!is.na(.)]) %>% map_chr(~ str_c(., collapse = '&')),
+    dplyr::mutate(Gene = subset_genes(genes, c(1,2)),
                   Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
                                 str_c(Gene, '...', sep = ', '),
                                 Gene),
-                  `Other affected genes` = genes %>% str_split('&') %>% map(~ .[c(-1,-2)] %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = ', '), '')),
+                  `Other affected genes` = subset_genes(genes, -c(1,2)),
                   Gene = ifelse(str_detect(effect, "gene_fusion"),
                                 Gene,
                                 Gene %>% str_replace_all('&', ', '))
