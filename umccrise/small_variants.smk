@@ -76,7 +76,8 @@ rule run_sage:
         ref_fa = ref_fa,
         hotspots_vcf = get_ref_file(run.genome_build, key='hotspots'),
     output:
-        vcf = 'work/{batch}/small_variants/sage_call/{batch}-somatic-' + run.somatic_caller + '.vcf.gz'
+        vcf = 'work/{batch}/small_variants/sage_call/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        tbi = 'work/{batch}/small_variants/sage_call/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
     params:
         jar = join(package_path(), 'jars', 'sage-1.0-jar-with-dependencies.jar'),
         rundir = 'work/{batch}/purple',
@@ -95,7 +96,7 @@ rule run_sage:
         '-coding_regions {input.coding_bed} '
         '-ref_genome {input.ref_fa} '
         '-out {output.vcf} '
-        '&& tabix -p vcf {output.vcf}'
+        '&& tabix -f -p vcf {output.vcf}'
 
 rule annotate_from_sage:
     input:

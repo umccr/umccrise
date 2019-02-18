@@ -515,16 +515,20 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     readr::read_tsv(sv_path, col_names = TRUE, col_types = col_types) %>%
     dplyr::select(-caller, -sample) %>% 
     
-    tidyr::separate(BPI_AF, c("AF at breakpoint 1", "AF at breakpoint 2"), ",") %>% 
-    dplyr::mutate(AF = (as.double(`AF at breakpoint 2`) + as.double(`AF at breakpoint 2`)) / 1,
-                  AF = AF * 100,
-                  AF = format(AF, nsmall=2)) %>%
+    tidyr::separate(BPI_AF, c("AF1", "AF2"), ",") %>% 
+    dplyr::mutate(AF1 = as.double(AF1) * 100,
+                  AF2 = as.double(AF2) * 100,
+                  AF = (AF1 + AF2) / 2,
+                  AF = format(AF, nsmall = 2),
+                  AF1 = format(AF1, nsmall = 2),
+                  AF2 = format(AF2, nsmall = 2)
+                  ) %>%
     tidyr::separate(split_read_support, c("SR (alt)", "SR (ref)"), ",") %>% 
-    dplyr::mutate(SR = as.integer(`SR_alt`)) %>% 
+    dplyr::mutate(SR = as.integer(`SR (alt)`)) %>% 
     tidyr::separate(paired_support_PR, c("PR (alt)", "PR (ref)"), ",") %>% 
-    dplyr::mutate(PR = as.integer(`PR alt`)) %>% 
+    dplyr::mutate(PR = as.integer(`PR (alt)`)) %>% 
     tidyr::separate(paired_support_PE, c("PE (alt)", "PE (ref)"), ",") %>% 
-    dplyr::mutate(PE = as.integer(`PE alt`)) %>% 
+    dplyr::mutate(PE = as.integer(`PE (alt)`)) %>% 
     
     dplyr::filter(svtype != 'BND' | is.na(SR) | PR>SR) %>%  # remove BND with split read support higher than paired
     
@@ -538,7 +542,6 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     dplyr::mutate(location = str_c(chrom, ':', start, sep = ''),
                   location = ifelse(is.na(end), location, str_c(location))) %>% 
     dplyr::arrange(tier, effect, desc(AF), genes) %>% 
-
         
     dplyr::mutate(Gene = subset_genes(genes, c(1,2)),
                   Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
@@ -552,7 +555,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     separate(effect, c("Effect", "Other effects"), sep = '&') %>% 
     dplyr::select(Location = location, 
                   Event = event, 
-                  Tier = tier,  
+                  Tier = tier,
                   Effect = Effect,
                   Detail = detail,
                   AF, 
@@ -563,8 +566,8 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   `PR (ref)`, 
                   PE, 
                   `PE (ref)`, 
-                  `AF at breakpoint 1`, 
-                  `AF at breakpoint 2`, 
+                  `AF at breakpoint 1` = AF1, 
+                  `AF at breakpoint 2` = AF2, 
                   `Somatic score` = somaticscore, 
                   Transcript = transcript,
                   `Other effects`,
@@ -573,8 +576,8 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     dplyr::distinct()
     # dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
 
-  DT::datatable(sv_all, rownames = FALSE, filter = "top",
-                extensions = c('Scroller', 'Buttons', 'Responsive'),
+  DT::datatable(sv_all, rownames = FALSE,
+                extensions = c('Scroller', 'Responsive', 'Buttons'), 
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500,
                                dom = 'Bfrtip', buttons = c('csv', 'excel')))
 } else {
