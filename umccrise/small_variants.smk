@@ -85,9 +85,9 @@ rule run_sage:
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
         xms = 2000,
-        xmx = 40000,
+        xmx = 19000,
     resources:
-        mem_mb = 40000
+        mem_mb = 20000
     shell:
         'java -Xms{params.xms}m -Xmx{params.xmx}m -cp {params.jar} com.hartwig.hmftools.sage.SageHotspotApplication '
         '-tumor {params.tumor_sname} -tumor_bam {input.tumor_bam} '
