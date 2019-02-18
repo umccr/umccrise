@@ -42,7 +42,7 @@ from umccrise import _version as version
 @click.option('--report', 'report', help='Propagated to snakemake. Create an HTML report with results and statistics. '
                                          'Needs to end in ".html".')
 @click.option('--dag', 'dag', is_flag=True, help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
-                                                 'Usage: umccrise –-dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
+                                                 'Usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
 # Other:
 @click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
 @click.option('--no-igv', is_flag=True, help='Skip generating of minibams')
