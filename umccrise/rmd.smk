@@ -6,7 +6,6 @@ from ngs_utils.file_utils import safe_mkdir
 import glob
 
 
-# localrules: purple_bcbio_stats, rmd
 localrules: rmd
 
 
@@ -114,7 +113,7 @@ rule rmd_purple_cnv:
         'cut -f1-6,11,13 {input} > {output}'
 
 ## Running Rmarkdown
-rule bookdown_report:
+rule cancer_report:
     input:
         rmd_files_dir       = join(package_path(), 'rmd_files'),
         key_genes           = get_key_genes(),
@@ -237,7 +236,7 @@ workdir='{params.work_dir}' \
 
 rule rmd:
     input:
-        expand(rules.bookdown_report.output[0], batch=batch_by_name.keys())
+        expand(rules.cancer_report.output[0], batch=batch_by_name.keys())
     output:
         temp(touch('log/rmd.done'))
 

@@ -19,7 +19,7 @@ params:
   af_global: 'x'
   af_keygenes: 'x'
   somatic_snv: 'x'
-  somatic_sv: '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster5/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
+  somatic_sv: 'x'
   purple_gene_cnv: 'x'
   purple_circos_baf: 'x'
   purple_purity: 'x'
@@ -470,12 +470,15 @@ The "effect" columns could be one of the following:
 </details>
 
 ```{r sv_prioritize, message=FALSE}
-col_types <- "ccciiccccciicc"
+col_types <- "ccciiccccciic"
 sv_all = NULL
 
-if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
+sv_path = params$somatic_sv
+# sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
+
+if (length(readLines(con = sv_path, n = 2)) > 1) {
   sv_all <- 
-    readr::read_tsv(params$somatic_sv, col_names = TRUE, col_types = col_types) %>%
+    readr::read_tsv(sv_path, col_names = TRUE, col_types = col_types) %>%
     dplyr::select(-caller, -sample) %>% 
     
     tidyr::separate(BPI_AF, c("AF_BP1", "AF_BP2"), ",") %>% 
@@ -493,23 +496,42 @@ if (length(readLines(con = params$somatic_sv, n = 2)) > 1) {
     
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>%  # Unpack multiple annotations per region
     tidyr::separate(annotation,
-                    c('event', 'effect', 'gene', 'transcript', 'detail', 'tier'),
+                    c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
   
     dplyr::mutate(start = format(start, big.mark = ',', trim = T),
                   end = format(end, big.mark = ',', trim = T)) %>% 
     dplyr::mutate(location = str_c(chrom, ':', start, sep = ''),
                   location = ifelse(is.na(end), location, str_c(location))) %>% 
-    dplyr::rename(somScore = somaticscore) %>%
-    dplyr::mutate(gene = str_replace_all(gene, '&', ', ')) %>% 
-    dplyr::select(location, event, tier, effect, detail, AF, SR, PR, gene, SR_REF, PR_REF, PE, PE_REF, AF_BP1, AF_BP2, somScore, transcript) %>%
-    dplyr::distinct() %>%
+    dplyr::arrange(tier, effect, desc(AF), genes) %>% 
+
+        
+    dplyr::mutate(Gene = genes %>% str_split('&') %>% map(~ .[c(1,2)] %>% .[!is.na(.)]) %>% map_chr(~ str_c(., collapse = '&')),
+                  Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
+                                str_c(Gene, '...', sep = ', '),
+                                Gene),
+                  `Other affected genes` = genes %>% str_split('&') %>% map(~ .[c(-1,-2)] %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = ', '), '')),
+                  Gene = ifelse(str_detect(effect, "gene_fusion"),
+                                Gene,
+                                Gene %>% str_replace_all('&', ', '))
+                  ) %>% 
+    separate(effect, c("Effect", "Other effects"), sep = '&') %>% 
+    dplyr::select(Location = location, 
+                  Event = event, 
+                  Tier = tier,  
+                  Detail = detail, 
+                  AF, SR, PR, Gene, 
+                  `Other effects`,
+                  `Other affected genes`,
+                  SR_REF, PR_REF, PE, PE_REF, AF_BP1, AF_BP2, 
+                  `Somatic score` = somaticscore, 
+                  transcript) %>%
+    dplyr::distinct()
     # dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
-    dplyr::arrange(tier, effect, desc(AF), gene)
 
   DT::datatable(sv_all, rownames = FALSE, filter = "top",
                 extensions = c('Scroller', 'Buttons', 'Responsive'),
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 300,
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 500,
                                dom = 'Bfrtip', buttons = c('csv', 'excel')))
 } else {
   warning('No prioritized events detected')
