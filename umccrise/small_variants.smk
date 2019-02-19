@@ -44,19 +44,17 @@ rule somatic_vcf_pass_sort:
     input:
         vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix),
     output:
-        vcf = 'work/{batch}/small_variants/passsort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-        tbi = 'work/{batch}/small_variants/passsort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
-    group: "somatic_anno"
+        vcf = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        tbi = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
     shell:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
-
 
 include: "sage.smk"
 
 rule somatic_vcf_annotate:
     input:
-        vcf = rules.add_novel_sage_calls.output.vcf,
+        vcf = rules.annotate_from_sage.output.vcf,
     output:
         vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml',
