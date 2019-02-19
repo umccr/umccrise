@@ -59,7 +59,7 @@ rule somatic_vcf_annotate:
         vcf = rules.add_novel_sage_calls.output.vcf,
     output:
         vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-        subset_to_cancer = 'work/{batch}/small_variants/somatic_anno/subset_to_cancer_genes.flag',
+        subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml',
     params:
         genome = run.genome_build,
         genomes_dir_opt = f" --genomes-dir {config.get('genomes_dir')}" if config.get('genomes_dir') else "",
@@ -74,8 +74,7 @@ rule somatic_vcf_annotate:
 
 rule somatic_vcf_filter:
     input:
-        vcf = rules.annotate_from_sage.output.vcf,
-        # vcf = rules.somatic_vcf_annotate.output.vcf,
+        vcf = rules.somatic_vcf_annotate.output.vcf,
     output:
         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         # vcf = 'work/{batch}/small_variants/filter/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
@@ -170,7 +169,7 @@ rule somatic_stats_report:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf,
         full_vcf = rules.somatic_vcf_pass_sort.output.vcf,
-        subset_to_cancer = rules.somatic_vcf_annotate.output.subset_to_cancer,
+        subset_highly_mutated_stats = rules.somatic_vcf_annotate.output.subset_highly_mutated_stats,
     output:
         'work/{batch}/small_variants/somatic_stats.yml',
     params:
@@ -179,12 +178,18 @@ rule somatic_stats_report:
     run:
         snps, indels, others = cnt_vars(input.vcf, passed=True)
         all_snps, all_indels, all_others = cnt_vars(input.full_vcf)
-        ori = None
-        if open(input.subset_to_cancer).read().strip() == 'YES':
-            # In this case, "all" correspond to pre-cancer-gene subset variants,
-            # Thus we can't compare it with cancer-gene-subset PASSing variants
-            ori = all_snps + all_indels + all_others
-            all_snps, all_indels, all_others = cnt_vars(input.vcf, passed=False)
+        before_filt = None
+
+        with open(input.subset_highly_mutated_stats) as inp:
+            stats = yaml.load(inp)
+            total_vars = stats['total_vars']
+            vars_no_gnomad = stats.get('vars_no_gnomad')
+            vars_cancer_genes = stats.get('vars_cancer_genes')
+            if vars_cancer_genes is not None:
+                # In this case, "all_snps", "all_indels", "all_others" correspond to pre-cancer-gene subset variants
+                # Thus we can't compare it with out final cancer-gene-subset PASSing variants.
+                before_filt = vars_cancer_genes / total_vars * 100.0
+                all_snps, all_indels, all_others = cnt_vars(input.vcf, passed=False)
 
         data = dict(
             snps=snps,
@@ -194,9 +199,9 @@ rule somatic_stats_report:
             filt_indels=(all_indels - indels) / all_indels * 100.0,
             filt_others=(((all_others - others) / all_others * 100.0) if others and all_others else None),
         )
-        if ori is not None:
+        if before_filt is not None:
             data.update(dict(
-                ori = ori
+                before_filt=before_filt
             ))
 
         with open(output[0], 'w') as out:

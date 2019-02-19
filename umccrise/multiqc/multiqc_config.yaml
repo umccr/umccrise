@@ -120,7 +120,7 @@ custom_data:
         plot_type: generalstats
         pconfig:
 
-        - ori:
+        - before_filt:
             title: 'Before filt'
             description: 'Number of variants before filtering. Somatic variants were subset to cancer genes in order to start filtering, because they were exceeding 500k even after removing germline variants. Possibly indicates a noisy data'
             min: 0
