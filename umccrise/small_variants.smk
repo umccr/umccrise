@@ -44,15 +44,19 @@ rule somatic_vcf_pass_sort:
     input:
         vcf = lambda wc: get_somatic_vcf_path(wc.batch, vcf_suffix),
     output:
-        vcf = 'work/{batch}/small_variants/input/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        vcf = 'work/{batch}/small_variants/passsort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        tbi = 'work/{batch}/small_variants/passsort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
     group: "somatic_anno"
     shell:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
+
+include: "sage.smk"
+
 rule somatic_vcf_annotate:
     input:
-        vcf = rules.somatic_vcf_pass_sort.output[0],
+        vcf = rules.add_novel_sage_calls.output.vcf,
     output:
         vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         subset_to_cancer = 'work/{batch}/small_variants/somatic_anno/subset_to_cancer_genes.flag',
@@ -67,53 +71,6 @@ rule somatic_vcf_annotate:
     shell:
         'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} '
         '-w {params.work_dir}{params.genomes_dir_opt}{params.unlock_opt}'
-
-rule run_sage:
-    input:
-        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        coding_bed = get_ref_file(run.genome_build, 'coding_regions'),
-        ref_fa = ref_fa,
-        hotspots_vcf = get_ref_file(run.genome_build, key='hotspots'),
-    output:
-        vcf = 'work/{batch}/small_variants/sage_call/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-        tbi = 'work/{batch}/small_variants/sage_call/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
-    params:
-        jar = join(package_path(), 'jars', 'sage-1.0-jar-with-dependencies.jar'),
-        rundir = 'work/{batch}/purple',
-        outdir = 'work/{batch}/purple',
-        normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
-        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
-        xms = 2000,
-        xmx = 19000,
-    resources:
-        mem_mb = 20000
-    shell:
-        'java -Xms{params.xms}m -Xmx{params.xmx}m -cp {params.jar} com.hartwig.hmftools.sage.SageHotspotApplication '
-        '-tumor {params.tumor_sname} -tumor_bam {input.tumor_bam} '
-        '-reference {params.normal_sname} -reference_bam {input.normal_bam} '
-        '-known_hotspots <(bcftools query -f "%CHROM\\t%POS\\t%REF\\t%ALT\\n" {input.hotspots_vcf}) '
-        '-coding_regions {input.coding_bed} '
-        '-ref_genome {input.ref_fa} '
-        '-out {output.vcf} '
-        '&& tabix -f -p vcf {output.vcf}'
-
-rule annotate_from_sage:
-    input:
-        vcf = rules.somatic_vcf_annotate.output.vcf,
-        sage_vcf = rules.run_sage.output.vcf,
-    output:
-        vcf = 'work/{batch}/small_variants/sage_anno/{batch}-somatic-' + run.somatic_caller + '-sage.vcf.gz'
-    group: "somatic_filt"
-    run:
-        with open(input.sage_vcf + '_toml', 'w') as f:
-            f.write(f"""[[annotation]]
-file="{input.sage_vcf}"
-fields = ["FILTER", "AF", "HOTSPOT"]
-names = ["SAGE_FILTER", "SAGE_AF", "SAGE_HOTSPOT"]
-ops = ["self", "self", "self"]
-""")
-        shell(f'vcfanno {input.sage_vcf}_toml {input.vcf} | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
 
 rule somatic_vcf_filter:
     input:
