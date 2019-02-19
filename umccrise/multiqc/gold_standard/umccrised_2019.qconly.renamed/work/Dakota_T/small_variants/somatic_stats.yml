@@ -1,8 +1,8 @@
 data:
   Dakota_T:
-    filt_indels: 874
+    filt_indels: 91.62303664921467
     filt_others: null
-    filt_snps: 756
-    indels: 81
+    filt_snps: 42.81674208144796
+    indels: 80
     others: null
-    snps: 1012
+    snps: 1011
