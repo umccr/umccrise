@@ -10,7 +10,9 @@
   - clean up
 - Integrate [SAGE](https://github.com/hartwigmedical/hmftools/tree/master/sage): to refine variant calls in hotspot locations
 - SVs:
-  - Prioritize with [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation) using [HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd?path=%2FHMF-Pipeline-Resources) and UMCCR cancer genes
+  - Prioritize with [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation) 
+    using [HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd?path=%2FHMF-Pipeline-Resources) 
+    and UMCCR cancer genes
 - FFPE:
   - Hard subset small variants to non-gnomad if >500k, subset to cancer genes if doesn't help
   - Hard subset SVs to non-intergenic if >1000, subset to prioritized if doesn't help

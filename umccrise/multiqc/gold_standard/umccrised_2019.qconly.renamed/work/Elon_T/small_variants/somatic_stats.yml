@@ -1,0 +1,8 @@
+data:
+  Elon_T:
+    filt_indels: 705
+    filt_others: null
+    filt_snps: 674
+    indels: 53
+    others: null
+    snps: 536

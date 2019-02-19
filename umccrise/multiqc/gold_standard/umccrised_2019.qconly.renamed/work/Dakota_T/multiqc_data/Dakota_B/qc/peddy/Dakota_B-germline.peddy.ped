@@ -1,0 +1,2 @@
+#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	Ethnicity	het_call_rate	het_ratio	het_mean_depth	het_idr_baf	ancestry-prediction	PC1	PC2	PC3	sex_het_ratio	sex_fixed
+E190	Dakota_B	-9	-9	0	0	-9	1	0.6782972784368457	33.09647592463364	0.25435696017537424	AMR	-0.6026373422717184	-0.8152687466951443	1.4492394471758887	2.7622483858716294	True

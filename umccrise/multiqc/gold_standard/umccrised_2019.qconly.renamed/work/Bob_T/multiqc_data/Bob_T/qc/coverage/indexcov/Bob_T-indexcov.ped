@@ -1,0 +1,2 @@
+#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	CNX	CNY	bins.out	bins.lo	bins.hi	bins.in	slope	p.out	mapped	unmapped
+unknown	Bob_T	-9	-9	1	-9	1.03	1.07	30910	11798	10971	145216	108.107	0.21	1751679407	3186967
