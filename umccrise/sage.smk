@@ -83,7 +83,6 @@ rule sage_pass:
     input:
         sage_vcf = rules.sage_reorder_samples.output.sage_vcf,
         sage_tbi = rules.sage_reorder_samples.output.sage_tbi,
-        vcf = rules.somatic_vcf_pass_sort.output.vcf,
     output:
         sage_vcf = 'work/{batch}/sage/pass/{batch}.vcf.gz',
         sage_tbi = 'work/{batch}/sage/pass/{batch}.vcf.gz.tbi',
@@ -93,12 +92,26 @@ rule sage_pass:
         '&& tabix -p vcf {output.sage_vcf}'
 
 
+rule sage_pass_novel:
+    input:
+        sage_vcf = rules.sage_pass.output.sage_vcf,
+        sage_tbi = rules.sage_pass.output.sage_tbi,
+        vcf = rules.somatic_vcf_pass_sort.output.vcf,
+    output:
+        sage_vcf = 'work/{batch}/sage/pass_novel/{batch}.vcf.gz',
+        sage_tbi = 'work/{batch}/sage/pass_novel/{batch}.vcf.gz.tbi',
+    group: "sage"
+    shell:
+        'bcftools isec {input.sage_vcf} {input.vcf} -C -w1 -Oz -o {output.sage_vcf} '
+        '&& tabix -p vcf {output.sage_vcf}'
+
+
 rule add_novel_sage_calls:
     input:
         vcf = rules.somatic_vcf_pass_sort.output.vcf,
         tbi = rules.somatic_vcf_pass_sort.output.vcf,
-        sage_vcf = rules.sage_pass.output.sage_vcf,
-        sage_tbi = rules.sage_pass.output.sage_tbi,
+        sage_vcf = rules.sage_pass_novel.output.sage_vcf,
+        sage_tbi = rules.sage_pass_novel.output.sage_tbi,
     output:
         vcf = 'work/{batch}/small_variants/sage_add/{batch}-somatic-' + run.somatic_caller + '-sage.vcf.gz',
         tbi = 'work/{batch}/small_variants/sage_add/{batch}-somatic-' + run.somatic_caller + '-sage.vcf.gz.tbi',
@@ -115,6 +128,7 @@ rule sort_saged:
     output:
         vcf = 'work/{batch}/small_variants/sorted/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         tbi = 'work/{batch}/small_variants/sorted/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+    group: "sage"
     shell:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -136,6 +150,9 @@ rule annotate_from_sage:
             key = (rec.CHROM, rec.POS, rec.REF, rec.ALT[0])
             sage_calls[key] = rec
 
+        def proc_hdr(vcf):
+            vcf.add_filter_to_header({'ID': 'SAGE_lowconf', 'Description': 'SAGE assigned low confidence to this call'})
+
         def proc_rec(rec, tumor_index, normal_index):
             key = (rec.CHROM, rec.POS, rec.REF, rec.ALT[0])
             sage_call = sage_calls.get(key)
@@ -148,13 +165,12 @@ rule annotate_from_sage:
                     rec.FILTER = 'PASS'
                 else:
                     add_cyvcf2_filter(rec, 'SAGE_lowconf')
-                    rec.INFO['SAGE_FILTER'] = sage_call.FILTER
                 rec.set_format('DP', sage_call.format('DP'))
                 rec.set_format('AD', sage_call.format('AD'))
             return rec
 
         tumor_index, normal_index = get_sample_ids(input.vcf)
-        iter_vcf(input.vcf, output.vcf, proc_rec, tumor_index=tumor_index, normal_index=normal_index)
+        iter_vcf(input.vcf, output.vcf, proc_rec, proc_hdr=proc_hdr, tumor_index=tumor_index, normal_index=normal_index)
 
 #         with open(input.sage_vcf + '_toml', 'w') as f:
 #             f.write(f"""[[annotation]]
