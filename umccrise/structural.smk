@@ -170,7 +170,7 @@ rule sv_keep_pass:
     group: "sv_vcf"
     run:
         cmd = f'bcftools view -f.,PASS {input.vcf}'
-        if count_vars(input.vcf, filter='.,PASS') > 1000:
+        if count_vars(input.vcf, filter='.,PASS') > 100000:
             cmd += ' | bcftools filter -i "SV_TOP_TIER <= 3"'
         cmd += f' -o {output.vcf}'
         shell(cmd)
