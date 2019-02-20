@@ -547,7 +547,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
                                 str_c(Gene, '...', sep = ', '),
                                 Gene),
-                  `Other affected genes` = subset_genes(genes, -c(1,2)),
+                  `Other affected genes` = subset_genes(genes, -c(1,2)) %>% str_replace_all('&', ', '),
                   Gene = ifelse(str_detect(effect, "gene_fusion"),
                                 Gene,
                                 Gene %>% str_replace_all('&', ', '))
