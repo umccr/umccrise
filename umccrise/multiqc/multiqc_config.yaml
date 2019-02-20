@@ -120,11 +120,13 @@ custom_data:
         plot_type: generalstats
         pconfig:
 
-        - before_filt:
-            title: 'Before filt'
-            description: 'Number of variants before filtering. Somatic variants were subset to cancer genes in order to start filtering, because they were exceeding 500k even after removing germline variants. Possibly indicates a noisy data'
+        - subset_genes:
+            title: 'Subset to key genes'
+            description: 'Percentage of variants removed by subsetting to cancer genes. This happens when there are more than 500k calls to avoid choking the reporting'
             min: 0
-            format: '{:,.0f}'
+            max: 100
+            format: '{:,.2f}'
+            suffix: '%'
 
         - filt_snps:
             title: 'SNP-filt'
