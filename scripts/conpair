@@ -5,7 +5,7 @@ import click
 from ngs_utils.file_utils import splitext_plus, verify_file, safe_mkdir
 from ngs_utils.logger import err, critical
 from ngs_utils.snakemake_utils import run_snakemake
-from hpc_utils.hpc import find_loc, get_ref_file
+from hpc_utils import hpc
 from umccrise import package_path
 from ngs_utils.utils import set_locale; set_locale()
 
@@ -13,7 +13,8 @@ from ngs_utils.utils import set_locale; set_locale()
 @click.command()
 @click.option('-N', 'normal_bam', type=click.Path(exists=True), required=True, help='Normal BAM')
 @click.option('-T', 'tumor_bam', type=click.Path(exists=True), required=True, help='Tumor BAM')
-@click.option('-g', 'genome', required=True, help='Genome build')
+@click.option('-g', 'genome', help='Genome build')
+@click.option('--ref-fa', 'ref_fa', help='Reference genome fasta')
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory (will be created if does not exist)')
 @click.option('-tn', 'tumor_name', help='Normal sample name')
 @click.option('-nn', 'normal_name', help='Tumor sample name')
@@ -29,16 +30,14 @@ from ngs_utils.utils import set_locale; set_locale()
                    'to run without actually generating any files.')
 @click.option('--target', 'target_rule', help='Target rule (concordance, contamination, or all)')
 
-def main(normal_bam, tumor_bam, genome, output_dir=None,
+def main(normal_bam, tumor_bam, genome=None, ref_fa=None, output_dir=None,
          tumor_name=None, normal_name=None, use_het_markers=None,
          jobs=None, unlock=False, dryrun=False, target_rule=None):
 
     output_dir = output_dir or 'conpairred'
     output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
-    if genome is None:
-        genome = 'GRCh37'
-    ref_fa = get_ref_file(genome)
+    ref_fa = ref_fa or hpc.get_ref_file(genome, 'fa')
 
     tumor_name = tumor_name or splitext(basename(tumor_bam))[0]
     normal_name = normal_name or splitext(basename(normal_bam))[0]

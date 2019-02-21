@@ -33,7 +33,7 @@ rule subset_to_giab:
     input:
         vcf = rules.somatic_vcf_filter_pass.output.vcf
     params:
-        regions = truth_regions
+        regions = hpc.get_ref_file(run.genome_build, key=['hmf_giab_conf'])
     output:
         'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident.vcf.gz'
     group: "rmd"
@@ -44,7 +44,7 @@ rule subset_to_giab:
 rule split_multiallelic:
     input:
         vcf = 'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident.vcf.gz',
-        ref_fa = ref_fa
+        ref_fa = hpc.get_ref_file(run.genome_build, key='fa')
     output:
         'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident-singleallelic.vcf.gz'
     group: "rmd"

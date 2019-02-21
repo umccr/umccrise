@@ -296,7 +296,7 @@ rule ribbon_filter_manta:
 rule ribbon_filter_vcfbedtope_starts:
     input:
         bed = rules.ribbon_filter_manta.output[0],
-        fai = ref_fa + '.fai'
+        fai = hpc.get_ref_file(run.genome_build, key='fa') + '.fai'
     output:
         'work/{batch}/structural/ribbon/manta-starts.bed'
     params:
@@ -311,7 +311,7 @@ rule ribbon_filter_vcfbedtope_starts:
 rule ribbon_filter_vcfbedtope_ends:
     input:
         bed = rules.ribbon_filter_manta.output[0],
-        fai = ref_fa + '.fai'
+        fai = hpc.get_ref_file(run.genome_build, key='fa') + '.fai'
     output:
         'work/{batch}/structural/ribbon/manta-ends.bed'
     params:

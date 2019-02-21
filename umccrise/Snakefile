@@ -8,21 +8,11 @@ from ngs_utils.bcbio import BcbioProject
 from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug
 from ngs_utils import logger as ngs_utils_logger
-from hpc_utils.hpc import get_loc, find_loc, get_ref_file as hpc_get_ref_file
+from hpc_utils import hpc
 from ngs_utils.utils import set_locale; set_locale()
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
-
-loc = find_loc()
-is_spartan = loc and loc.name == 'spartan'
-is_raijin = loc and loc.name == 'raijin'
-is_hpc = is_spartan or is_raijin
-upload_proxy = ''
-if is_spartan:
-    upload_proxy = 'HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000 '
-
-upload_igv = is_hpc and config.get('no_s3', 'no') == 'no'
 
 within_sub_workflow = 'within_sub_workflow' in config
 config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster sub-executions of the Snakefile
@@ -30,9 +20,6 @@ config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster s
 py_path = sys.executable  # /miniconda/envs/umccrise/bin/python
 env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
 conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
-
-def get_ref_file(*args, **kwargs):
-    return hpc_get_ref_file(*args, **kwargs, genomes_dir=config.get('genomes_dir'))
 
 
 def prep_inputs(config_):
@@ -74,39 +61,26 @@ def prep_inputs(config_):
 
     batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
 
-    ###########################################################
-    #### Reference files                                   ####
-    ###########################################################
-    ref_fa = get_ref_file(run.genome_build)
-    truth_regions = get_ref_file(run.genome_build, key=['hmf_giab_conf'])
-    pon_dir = get_ref_file(run.genome_build, key='panel_of_normals_dir')
-    pcgr_data = get_ref_file(key='pcgr_data', loc=loc)
-    cacao_data = get_ref_file(key='cacao_data', loc=loc)
+    # Reference files
+    if config_.get('genomes_dir'):
+        hpc.genomes_dir = config_.get('genomes_dir')
 
-    ###########################################################
-    #### Done looking for refernece files, now some checks ####
-    ###########################################################
-    truth_regions = verify_file(truth_regions, is_critical=True, description='GiaB truth regions')
-
-    ref_fa = verify_file(ref_fa, is_critical=True, description='Reference fasta')
-    verify_file(ref_fa + '.fai', is_critical=True, description='Reference fasta fai index')
-
-    if pon_dir:
-        verify_dir(pon_dir, 'Panel of normals directory', is_critical=True)
-        verify_file(join(pon_dir, 'panel_of_normals.snps.vcf.gz'), is_critical=True, description='Panel of normals SNPs file in user provided folder')
-        verify_file(join(pon_dir, 'panel_of_normals.snps.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
-        verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz'), is_critical=True, description='Panel of normals indels file in user provided folder')
-        verify_file(join(pon_dir, 'panel_of_normals.indels.vcf.gz.tbi'), is_critical=True, description='Please index panel of normal files with tabix')
-
-    verify_dir(pcgr_data, is_critical=True, description='PCGR data directory')
-
-    return run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data, cacao_data
+    return run, batch_by_name
 
 
-run, batch_by_name, ref_fa, truth_regions, pon_dir, pcgr_data, cacao_data = prep_inputs(config)
+run, batch_by_name = prep_inputs(config)
+
+is_spartan = hpc.name == 'spartan'
+is_raijin = hpc.name == 'raijin'
+is_hpc = is_spartan or is_raijin
+upload_proxy = ''
+if is_spartan:
+    upload_proxy = 'HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000 '
+
+upload_igv = is_hpc and config.get('no_s3', 'no') == 'no'
 
 
-threads_on_node = loc.threads_on_node
+threads_on_node = hpc.threads_on_node or 1
 total_cores = config.get('total_cores', 128)
 threads_per_batch  = max(1, min(threads_on_node, total_cores // len(batch_by_name)))
 threads_per_sample = max(1, min(threads_on_node, total_cores // len(run.samples)))

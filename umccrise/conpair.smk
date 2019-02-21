@@ -7,6 +7,7 @@ rule run_conpair:
     input:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        ref_fa = hpc.get_ref_file(run.genome_build, key='fa')
     output:
         concord = directory('{batch}/conpair/concordance'),
         contam = directory('{batch}/conpair/contamination'),
@@ -22,7 +23,7 @@ rule run_conpair:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
     shell:
-        'conpair -T {input.tumor_bam} -N {input.normal_bam} -g {params.genome} -j {threads} '
+        'conpair -T {input.tumor_bam} -N {input.normal_bam} --ref-fa {input.ref_fa} -g {params.genome} -j {threads} '
         '-o {params.out_dir} -tn {params.tumor_name} -nn {params.normal_name}'
 
 

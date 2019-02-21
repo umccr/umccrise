@@ -8,7 +8,6 @@ from os.path import isfile, join, dirname, abspath, basename, exists
 import click
 import subprocess
 
-from hpc_utils.hpc import get_ref_file
 from ngs_utils.call_process import run, run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
 from ngs_utils import logger
@@ -24,15 +23,19 @@ from umccrise import package_path
 @click.option('-s', 'sample')
 @click.option('--germline', is_flag=True)
 @click.option('--docker/--no-docker', 'use_docker', is_flag=True, default=None)
-@click.option('--pcgr-data', type=click.Path(exists=True), help='Path to PCGR data directory (defaults are known for spartan and raijin)')
-def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, germline=False, use_docker=None, pcgr_data=None):
+@click.option('--pcgr-data', type=click.Path(exists=True),
+              help='Path to PCGR data directory (defaults are known for spartan and raijin, or if --genomes-dir is provided)')
+@click.option('--genomes-dir', 'genomes_dir')
+def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, germline=False, use_docker=None,
+         pcgr_data=None, genomes_dir=None):
 
     if not pcgr_data:
-        from hpc_utils.hpc import find_loc
-        loc = find_loc()
-        pcgr_data = get_ref_file(key='pcgr_data', loc=loc)
+        from hpc_utils import hpc
+        if genomes_dir:
+            hpc.genomes_dir = genomes_dir
+        pcgr_data = hpc.get_ref_file(key='pcgr_data')
         if not pcgr_data:
-            logger.critical(f'PCGR data is not found on the system "{loc.name}".'
+            logger.critical(f'PCGR data is not found on the system "{hpc.hostname}".'
                             f' Please, provide the path to PCGR data with --pcgr-data.'
                             f' Follow `https://github.com/vladsaveliev/pcgr` to get it.')
     output_dir = output_dir or 'pcgrred'
@@ -91,6 +94,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
         expected_file_base = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.pcgr')
 
+        purple_tsv_fixed = None
         if purple_tsv:
             purple_tsv_fixed = join(output_dir, sample + '_cnv_input.tsv')
             prep_cnv_cmd = f'(echo -e "Chromosome\\tStart\\tEnd\\tSegment_Mean" ; cat {abspath(purple_tsv)} | ' \
@@ -101,7 +105,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
         cmd = (f'{rlibs_env}'
                f'pcgr.py'
                f' --input_vcf {abspath(vcf_path)}' +
-              (f' --input_cna {purple_tsv_fixed}' if purple_tsv else '') +
+              (f' --input_cna {purple_tsv_fixed}' if purple_tsv_fixed else '') +
                f' {dirname(pcgr_data)}'
                f' {output_dir}'
                f' {pcgr_genome}'

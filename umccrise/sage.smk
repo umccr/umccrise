@@ -16,9 +16,9 @@ rule run_sage:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        coding_bed = get_ref_file(run.genome_build, 'coding_regions'),
-        ref_fa = ref_fa,
-        hotspots_vcf = get_ref_file(run.genome_build, key='hotspots'),
+        coding_bed   = hpc.get_ref_file(run.genome_build, key='coding_regions'),
+        ref_fa       = hpc.get_ref_file(run.genome_build, key='fa'),
+        hotspots_vcf = hpc.get_ref_file(run.genome_build, key='hotspots'),
     output:
         sage_vcf = 'work/{batch}/sage/call/{batch}.vcf.gz',
         sage_tbi = 'work/{batch}/sage/call/{batch}.vcf.gz.tbi',
@@ -122,6 +122,11 @@ rule add_novel_sage_calls:
          assert len(cyvcf2.VCF(output.vcf).samples) == 2
 
 
+
+# - add all PASS SAGE variants into the resulting VCF
+# - add FILTER=SAGE_lowconf into resulting VCF if a passthreads_on_nodeing variants is not confirmed by SAGE
+# - extend the set of hotspots by adding PCGR sources?
+# - CACAO: compare hotspots and genes with PCGR and HMF hotspots
 rule sort_saged:
     input:
         vcf = rules.add_novel_sage_calls.output.vcf,

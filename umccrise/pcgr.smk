@@ -14,7 +14,7 @@ rule run_pcgr:
     input:
         vcf = rules.somatic_vcf_filter_pass.output.vcf,
         # cns = '{batch}/purple/{batch}.purple.cnv',
-        pcgr_data = pcgr_data
+        pcgr_data = hpc.get_ref_file(key='pcgr_data')
     output:
         '{batch}/pcgr/{batch}-somatic.pcgr.html',
         '{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',
@@ -35,7 +35,7 @@ rule run_pcgr:
 rule run_cpsr:
     input:
         vcf = rules.germline_vcf_prep.output.vcf,
-        pcgr_data = pcgr_data
+        pcgr_data = hpc.get_ref_file(key='pcgr_data')
     output:
         '{batch}/pcgr/{batch}-normal.cpsr.html'
     params:

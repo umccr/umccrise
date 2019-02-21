@@ -46,8 +46,8 @@ rule purple_amber:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        snp_bed = get_ref_file(run.genome_build, 'purple_het'),
-        ref_fa = ref_fa,
+        snp_bed = hpc.get_ref_file(run.genome_build, 'purple_het'),
+        ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         'work/{batch}/purple/amber/{batch}.amber.baf',
     params:
@@ -80,7 +80,7 @@ rule purple_cobalt:
     input:
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        gc = get_ref_file(run.genome_build, 'purple_gc'),
+        gc = hpc.get_ref_file(run.genome_build, 'purple_gc'),
     output:
         'work/{batch}/purple/cobalt/{batch}.cobalt',
         'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
@@ -126,7 +126,7 @@ rule purple_run:
         cobalt_dummy_pcf  = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
         amber_dummy       = 'work/{batch}/purple/amber/{batch}.amber.baf',
         manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
-        gc                = get_ref_file(run.genome_build, 'purple_gc'),
+        gc                = hpc.get_ref_file(run.genome_build, 'purple_gc'),
         somatic_vcf       = rules.purple_somatic_vcf.output,
     output:
         cnv          = 'work/{batch}/purple/{batch}.purple.cnv',
