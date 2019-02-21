@@ -9,6 +9,7 @@ channels:
 dependencies:
   - python ==3.6.*
   - ngs_utils
+  - tsvtools
   - cython
   - bcftools >=1.9
   - bedtools
