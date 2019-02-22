@@ -106,7 +106,7 @@ render_me()
 Summarised below are the allele frequencies (AFs) for somatic variants detected
 genome-wide (__Global__) vs. within the coding sequence of ~1,100 UMCCR
 cancer genes (__Key Genes CDS__).
-AFs range from 0 to 1, or 0%-100% (here we discard variants that have somatic AF < 10%).
+AFs range from 0 to 1, or 0%-100% (we filter out all novel variants with AF < 10%).
 
 <details>
 <summary>Details</summary>
