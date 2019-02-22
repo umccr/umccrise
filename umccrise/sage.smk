@@ -117,7 +117,7 @@ rule add_novel_sage_calls:
         tbi = 'work/{batch}/small_variants/sage_add/{batch}-somatic-' + run.somatic_caller + '-sage.vcf.gz.tbi',
     group: "sage"
     run:
-         shell('bcftools concat -a {input.sage_vcf} {input.vcf} -Oz -o {output.vcf} '
+         shell('bcftools concat -a {input.vcf} {input.sage_vcf} -Oz -o {output.vcf} '
                '&& tabix -p vcf {output.vcf}')
          assert len(cyvcf2.VCF(output.vcf).samples) == 2
 
