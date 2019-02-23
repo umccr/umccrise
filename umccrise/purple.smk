@@ -12,7 +12,9 @@ localrules: purple, purple_symlink
 
 circos_macos_patch = ('export PERL5LIB=' +
     env_path + '_purple/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
-    env_path + '_purple/lib/perl5/site_perl/5.22.0 && ') if platform.system() == 'Darwin' else ''
+    env_path + '_purple/lib/perl5/site_perl/5.22.0; ') \
+    if platform.system() == 'Darwin' \
+    else ''
 
 
 # if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
@@ -50,6 +52,7 @@ rule purple_amber:
         ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         'work/{batch}/purple/amber/{batch}.amber.baf',
+        'work/{batch}/purple/amber/{batch}.amber.baf.pcf',
     params:
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
         outdir = 'work/{batch}/purple/amber',
@@ -125,6 +128,7 @@ rule purple_run:
         cobalt_dummy      = 'work/{batch}/purple/cobalt/{batch}.cobalt',
         cobalt_dummy_pcf  = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
         amber_dummy       = 'work/{batch}/purple/amber/{batch}.amber.baf',
+        amber_dummy_pcf   = 'work/{batch}/purple/amber/{batch}.amber.baf.pcf',
         manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
         gc                = hpc.get_ref_file(run.genome_build, 'purple_gc'),
         somatic_vcf       = rules.purple_somatic_vcf.output,
@@ -161,9 +165,9 @@ rule purple_run:
     resources:
         mem_mb = min(40000, 3000*threads_per_batch)
     shell:
-        conda_cmd.format('purple') +
-        'circos -modules ; circos -v ; ' +
-        circos_macos_patch +
+        conda_cmd.format('purple') +\
+        circos_macos_patch +\
+        'circos -modules ; circos -v ; '
         'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
         '-run_dir {params.rundir} '
         '-output_dir {params.outdir} '
