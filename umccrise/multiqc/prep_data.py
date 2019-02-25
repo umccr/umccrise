@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import tarfile
 from inspect import getsourcefile
 from os.path import join, dirname, abspath, pardir, isfile, isdir, islink, basename, relpath, getmtime, exists
 from time import localtime, strftime
@@ -47,10 +48,33 @@ def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, 
     return conf, additional_files
 
 
+def _extract_qc_file(fp, new_mq_data_dir, final_dir, f_by_fp=None):
+    """ Extracts QC file `fp` either by copying from `final_dir` (native bcbio),
+        or from tar.gz file `tar_path` (CWL bcbio). Writes into a new file at new_mq_data_dir
+    """
+    if fp.startswith('report/metrics/'):
+        fp = fp.replace('report/metrics/', 'project/multiqc/')  # for CWL _bcbio.txt files
+
+    dst_fp = join(new_mq_data_dir, fp)
+
+    fp_in_final = join(final_dir, fp)
+    if isfile(fp_in_final):
+        safe_mkdir(dirname(dst_fp))
+        shutil.copy2(fp_in_final, dst_fp)
+        return dst_fp
+
+    elif f_by_fp and fp in f_by_fp:
+        safe_mkdir(dirname(dst_fp))
+        with open(dst_fp, 'wb') as out:
+            out.write(f_by_fp[fp].read())
+        return dst_fp
+
+
 def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
                       generated_conf, out_filelist_file, out_conf_yaml,
                       additional_files, exclude_files=None, include_files=None,
                       bcbio_mq_yaml=None, new_bcbio_mq_yaml=None):
+
     if generated_conf:
         with file_transaction(None, out_conf_yaml) as tx:
             with open(tx, 'w') as f:
@@ -59,8 +83,23 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
     if bcbio_mq_yaml and new_bcbio_mq_yaml:
         shutil.copy(bcbio_mq_yaml, new_bcbio_mq_yaml)
 
+    ########################################
+    ###### Processing bcbio file list ######
+
     verify_file(bcbio_mq_filelist, is_critical=True)
     qc_files_not_found = []
+
+    # Cromwell?
+    cwl_targz = join(dirname(bcbio_mq_filelist), 'multiqc-inputs.tar.gz')
+    tar_f_by_fp = dict()
+    if isfile(cwl_targz):
+        logger.info(f'Found CWL MultiQC output {cwl_targz}, extracting required QC files from the archive')
+        if cwl_targz:
+            tar = tarfile.open(cwl_targz)
+            for member in tar.getmembers():
+                assert 'call-multiqc_summary/execution/qc/multiqc/' in member.name, member.name
+                rel_fp = member.name.split('call-multiqc_summary/execution/qc/multiqc/')[1]
+                tar_f_by_fp[rel_fp] = tar.extractfile(member)
 
     with file_transaction(None, out_filelist_file) as tx:
         try:
@@ -78,17 +117,13 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
                             include_files = [include_files]
                         if not any(re.search(ptn, fp) for ptn in include_files):
                             continue
-                    old_fpath = join(bcbio_final_dir, fp)
-                    new_fpath = join(new_mq_data_dir, fp)
-                    if not verify_file(old_fpath, silent=True):
-                        fp = fp.replace('inputs/', '').replace('report/metrics/', 'project/multiqc/')  # CWL?
-                        old_fpath = join(bcbio_final_dir, fp)
-                        if not verify_file(old_fpath, silent=True):
-                            qc_files_not_found.append(old_fpath)
-                            continue
-                    safe_mkdir(dirname(new_fpath))
-                    shutil.copy2(old_fpath, new_fpath)
-                    out.write(new_fpath + '\n')
+
+                    new_fp = _extract_qc_file(fp, new_mq_data_dir, bcbio_final_dir, tar_f_by_fp)
+                    if not new_fp:
+                        qc_files_not_found.append(fp)
+                        continue
+                    else:
+                        out.write(new_fp + '\n')
 
                 if qc_files_not_found:
                     warn('-')

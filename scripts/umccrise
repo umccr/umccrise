@@ -46,6 +46,7 @@ from umccrise import _version as version
 # Other:
 @click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
 @click.option('--no-igv', is_flag=True, help='Skip generating of minibams')
+
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 
