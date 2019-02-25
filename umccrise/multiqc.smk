@@ -15,17 +15,6 @@ rule copy_config:
         'cp -r {input.conf_dir} {output.conf_dir}'
 
 
-# rule copy_logs:
-#     input:
-#         versions = versions,
-#         programs = programs,
-#     output:
-#         versions = 'log/data_versions.csv',
-#         programs = 'log/programs.txt',
-#     shell:
-#         'cp -r {input.versions} {output.versions} && ' \
-#         'cp -r {input.programs} {output.programs}'
-
 rule prep_multiqc_data:
     input:
         bcbio_mq_filelist       = join(run.date_dir, 'multiqc/list_files_final.txt'),

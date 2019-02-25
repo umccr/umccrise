@@ -87,7 +87,7 @@ rule somatic_vcf_filter:
 #         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
 #     params:
 #         tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.name,
-#     # group: "small_variants"
+#     group: "somatic_filt"
 #     shell:
 #         'bcftools view -s {params.tumor_sample} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 

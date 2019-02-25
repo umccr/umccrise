@@ -17,33 +17,6 @@ circos_macos_patch = ('export PERL5LIB=' +
     else ''
 
 
-# if glob.glob(join(run.work_dir, f'structural/*/purple/amber')):
-#     rule copy_inputs_from_bcbio:
-#         input:
-#             bcbio_amber_dir  = lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/amber'),
-#             bcbio_cobalt_dir = lambda wc: join(run.work_dir, f'structural/{batch_by_name[wc.batch].tumor.name}/purple/cobalt'),
-#         output:
-#             'work/{batch}/purple/cobalt/{batch}.cobalt',
-#             'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
-#             'work/{batch}/purple/amber/{batch}.amber.baf',
-#         group: 'purple'
-#         params:
-#             tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
-#             cobalt_dir = 'work/{batch}/purple/cobalt',
-#             amber_dir = 'work/{batch}/purple/amber',
-#         run:
-#             for bcbio_fp in glob.glob(f'{input.bcbio_amber_dir}/*'):
-#                 bcbio_fn = basename(bcbio_fp)
-#                 umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
-#                 umccrise_fp = join(params.amber_dir, umccrise_fn)
-#                 shell(f'cp {bcbio_fp} {umccrise_fp}')
-#             for bcbio_fp in glob.glob(f'{input.bcbio_cobalt_dir}/*'):
-#                 bcbio_fn = basename(bcbio_fp)
-#                 umccrise_fn = bcbio_fn.replace(params.tumor_name, wildcards.batch)
-#                 umccrise_fp = join(params.cobalt_dir, umccrise_fn)
-#                 shell(f'cp {bcbio_fp} {umccrise_fp}')
-#
-# else:
 rule purple_amber:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
