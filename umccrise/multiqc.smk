@@ -24,6 +24,7 @@ rule prep_multiqc_data:
         somatic_stats           = rules.somatic_stats_report.output[0],
         germline_stats          = rules.germline_stats_report.output[0],
         bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
+        bcftools_germline_stats = rules.bcftools_stats_germline.output[0],
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -58,7 +59,8 @@ rule prep_multiqc_data:
             join(input.conpair_concord, params.tumor_name + '.txt'),
             input.somatic_stats,
             input.germline_stats,
-            input.bcftools_somatic_stats
+            input.bcftools_somatic_stats,
+            input.bcftools_germline_stats,
         ])
 
         multiqc_prep_data(
@@ -69,9 +71,11 @@ rule prep_multiqc_data:
             out_filelist_file=output.filelist,
             out_conf_yaml=output.generated_conf_yaml,
             additional_files=additional_files,
+            # exclude and include applies only to the sample files, not to the background.
+            # first excluding, then including from the remaining.
             exclude_files=[
                 '.*qsignature.*',
-                '.*bcftools_stats.txt',  # adding somatic stats, but keeping germline stats
+                '.*bcftools_stats*.txt',
                 '.*indexcov.tsv',
                 '.*ped_check.rel-difference.csv',
                 '.*sort-chr.qsig.vcf.*',

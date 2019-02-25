@@ -234,6 +234,20 @@ rule germline_stats_report:
             }
             yaml.dump(data, out, default_flow_style=False)
 
+# Produces the same stats as bcbio file in QC, but have to rerun because of CWL version,
+# which doesn't suffix the file with _germline, so MultiQC can't relate it to the germline
+# stats section.
+rule bcftools_stats_germline:
+    input:
+        rules.germline_vcf_pass.output.vcf,
+    output:
+        '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
+    group: "germline_snv"
+    params:
+        sname = lambda wc: batch_by_name[wc.batch].normal.name,
+    shell:
+        'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
+
 
 #############
 
