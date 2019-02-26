@@ -101,16 +101,6 @@ rule somatic_vcf_filter_pass:
     shell:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
 
-rule somatic_vcf_filter_pass_af10:
-    input:
-        vcf = rules.somatic_vcf_filter_pass.output.vcf
-    output:
-        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS-AF10.vcf.gz',
-        tbi = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS-AF10.vcf.gz.tbi',
-    group: "somatic_filt"
-    shell:
-        'bcftools filter -e "INFO/TUMOR_AF<0.1" -Oz {input.vcf} -o {output.vcf} && tabix -f -p vcf -f {output.vcf}'
-
 rule bcftools_stats_somatic:
     input:
         rules.somatic_vcf_filter_pass.output.vcf
@@ -255,7 +245,6 @@ rule small_variants:
     input:
         expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
         expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
-        expand(rules.somatic_vcf_filter_pass_af10.output.vcf, batch=batch_by_name.keys()),
         expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/small_variants.done'))
