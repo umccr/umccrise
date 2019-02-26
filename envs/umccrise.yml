@@ -31,7 +31,7 @@ dependencies:
   - multiqc-bcbio
   - pyensembl
   - break-point-inspector
-  - gatk4  # Conpair
+  - gatk4>=4.1.0.0  # Conpair and panel of normals
   - scipy  # Conpair
   - vcf_stuff
   - natsort  # for bcbio.py in ngs_utils
