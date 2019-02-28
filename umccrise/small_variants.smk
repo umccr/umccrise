@@ -7,6 +7,7 @@ import toml
 from vcf_stuff import iter_vcf
 import cyvcf2
 import yaml
+from hpc_utils import hpc
 
 
 localrules: small_variants
@@ -50,7 +51,25 @@ rule somatic_vcf_pass_sort:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
-include: "sage.smk"
+rule sage:
+    input:
+        vcf = rules.somatic_vcf_pass_sort.output.vcf,
+        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+    output:
+        vcf = 'work/{batch}/small_variants/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        tbi = 'work/{batch}/small_variants/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+    params:
+        genome = run.genome_build,
+        genomes_dir = hpc.genomes_dir,
+        work_dir = 'work/{batch}/small_variants/sage',
+        unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else ''
+    resources:
+        mem_mb = 20000
+    shell:
+        'sage -t {input.tumor_bam} -n {input.normal_bam} -v {input.vcf} -o {output.vcf} '
+        '-w {params.work_dir} -g {parmas.genome} --genomes-dir {params.genomes_dir} '
+        '{params.unlock_opt}'
 
 rule somatic_vcf_annotate:
     input:
@@ -60,15 +79,16 @@ rule somatic_vcf_annotate:
         subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml',
     params:
         genome = run.genome_build,
-        genomes_dir_opt = f" --genomes-dir {config.get('genomes_dir')}" if config.get('genomes_dir') else "",
+        genomes_dir = hpc.genomes_dir,
         work_dir = 'work/{batch}/small_variants',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else ''
     resources:
         mem_mb = 20000
     group: "somatic_anno"
     shell:
-        'anno_somatic_vcf {input.vcf} -g {params.genome} -o {output.vcf} '
-        '-w {params.work_dir}{params.genomes_dir_opt}{params.unlock_opt}'
+        'anno_somatic_vcf {input.vcf} -o {output.vcf} '
+        '-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
+        '{params.unlock_opt}'
 
 rule somatic_vcf_filter:
     input:
