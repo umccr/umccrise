@@ -120,20 +120,11 @@ rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
 
 #### GNOMAD
 
-Version 2.0.1 (26G, hosted by ensmble, same as in bcbio):
-
-```
-wget http://ftp.ensemblorg.ebi.ac.uk/pub/data_files/homo_sapiens/GRCh37/variation_genotype/gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz
-bcftools filter -i 'FILTER="PASS" & (AN_POPMAX>=500 & AF_POPMAX>=0.01 | AN_POPMAX>=100 & AF_POPMAX>=0.01)' gnomad.genomes.r2.0.1.sites.noVEP.vcf.gz -Ob | \
-    bcftools annotate -x ID,^INFO/AN_POPMAX,^INFO/AF_POPMAX,FORMAT -Oz -o gnomad_genome.common_pass_clean.vcf.gz
-tabix -p vcf gnomad_genome.common_pass_clean.vcf.gz
-```
-
 Version 2.1 (latest, 500G, hosted by broad):
 
 ```
-wget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgzwget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgz |\
-    #can optionally remove LCR becaues we annoatate vs LCR futher anywasy, but the file will be already small enough:
+wget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgz |\
+    #can optionally remove LCR becaues we annoatate vs LCR futher anyway, but the file will be already small enough:
        #bcftools filter -i 'FILTER="PASS" & segdup=0 & lcr=0 & decoy=0 & (AN_popmax>=500 & AF_popmax>=0.01 | AN_popmax>=100 & AF_popmax>=0.01)' gnomad.genomes.r2.1.sites.vcf.bgz -Ob |\
     bcftools annotate -x ID,^INFO/AN_popmax,^INFO/AF_popmax,FORMAT -Oz -o gnomad_genome.r2.1.common_pass_clean.vcf.gz
 tabix -p vcf gnomad_genome.r2.1.common_pass_clean.vcf.gz
@@ -155,6 +146,16 @@ bcftools view gnomad_genome.common_pass_clean.vcf.gz -H | wc
 21273673
 ```
 
+Convert to hg38
+
+```
+# spartan
+CrossMap.py vcf /data/cephfs/punim0010/extras/hg19ToHg38.over.chain.gz ../GRCh37/gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz hg38.fa gnomad_genome.
+r2.1.common_pass_clean.norm.vcf.unsorted
+bcftools view gnomad_genome.r2.1.common_pass_clean.norm.vcf.unsorted | bcftools sort -Oz -o gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
+tabix -p vcf gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
+```
+
 #### PCGR
 
 The PCGR data bundle gets refreshed every release, so please select the appropriate one from [PCGR's README](https://github.com/sigven/pcgr#step-2-download-pcgr-and-data-bundle)!
@@ -170,7 +171,16 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.YYYMMDD.tgz
 ```
 
-#### SegDup
+
+#### Problem regions
+
+Copy GRCh37 from bcbio
+
+```
+cp -r /g/data/gx8/local/development/bcbio/genomes/Hsapiens/GRCh37/coverage/problem_regions problem_regions
+```
+
+Generate SegDup
 
 ```
 cd problem_regions
@@ -182,17 +192,52 @@ bgzip -f segdup.bed && tabix -f -p bed segdup.bed.gz
 rm segdup.bed_tmp genomicSuperDups.txt.gz
 ```
 
-#### SAGE
 
-Coding regions:
+Lift over to hg38:
 
 ```
-python vcf_stuff/vcf_stuff/filtering/hmf/generate_coding_bed.py\
-     | sort -k1,1V -k2,2n\
-     | grep -v ^MT\
-     | grep -v ^GL\
-     | bedtools merge -c 4 -o collapse -i -\
-     > coding_regions.bed
+convert () {
+    f=$(basename $1)
+    echo "Processing $f"
+    zless $1 | py -x "('chr' + x) if not x.startswith('MT') else 'chrM'" | grep -v chrG > $f.hg19
+    CrossMap.py bed /g/data3/gx8/extras/hg19ToHg38.over.chain.gz $f.hg19 $f.unsorted
+    bedtools sort -i $f.unsorted | bgzip -c > $f
+    tabix -p vcf $f
+}
+
+convert ../../GRCh37/problem_regions/segdup.bed.gz
+
+mkdir GA4GH ENCODE repeats
+
+cd GA4GH
+for fp in $(ls ../../../GRCh37/problem_regions/GA4GH/*.bed.gz) ; do convert $fp ; done
+
+cd ../ENCODE
+convert ../../../GRCh37/problem_regions/ENCODE/wgEncodeDacMapabilityConsensusExcludable.bed.gz
+
+cd ../repeats
+convert ../../../GRCh37/problem_regions/repeats/LCR.bed.gz
+convert ../../../GRCh37/problem_regions/repeats/polyx.bed.gz
+
+cat ../../../GRCh37/problem_regions/repeats/sv_repeat_telomere_centromere.bed | py -x "('chr' + x) if not x.startswith('MT') else 'chrM'" | grep -v chrG > sv_repeat_telomere_centromere.bed_hg19
+CrossMap.py bed /g/data3/gx8/extras/hg19ToHg38.over.chain.gz sv_repeat_telomere_centromere.bed_hg19 sv_repeat_telomere_centromere.bed_unsorted
+bedtools sort -i sv_repeat_telomere_centromere.bed_unsorted | > sv_repeat_telomere_centromere.bed
+```
+
+
+#### Coding regions (SAGE)
+
+```
+cd GRCh37/hmf
+generate_bed.py -g GRCh37\
+   --principal --key-genes --features CDS | sort -k1,1V -k2,2n | grep -v ^MT | grep -v ^GL\
+   | bedtools merge -c 4 -o collapse -i - > coding_regions.bed
+
+cd hg38/hmf   
+generate_bed.py -g hg38\
+   --principal --key-genes --features CDS | sort -k1,1V -k2,2n | grep -v ^chrM\
+   | bedtools merge -c 4 -o collapse -i -\
+   > coding_regions.bed
 ```
 
 #### Ensembl annotation
@@ -200,6 +245,7 @@ python vcf_stuff/vcf_stuff/filtering/hmf/generate_coding_bed.py\
 Using pyensembl package
 
 ```
+# use ENSEMBL_VERSION=75 for GRCh37, ENSEMBL_VERSION=95 for hg38
 export PYENSEMBL_CACHE_DIR=$ENSEMBL_DIR
 if [ ! -d $PYENSEMBL_CACHE_DIR/pyensembl ] ; then
     # In 2 steps: first on loging node to make it download the files:
@@ -207,6 +253,7 @@ if [ ! -d $PYENSEMBL_CACHE_DIR/pyensembl ] ; then
     # when it starts `Reading GTF from`, go into a worker node and run again.
 fi
 ```
+
 
 #### Hotspots
 
@@ -248,6 +295,25 @@ Merge:
 ```
 bcftools merge -m none hmf.vcf.gz pcgr.vcf.gz -Oz -o merged.vcf.gz
 tabix -p vcf merged.vcf.gz
+```
+
+Convert to hg38
+
+```
+cd ../hg38/hotspots
+CrossMap.py vcf /g/data3/gx8/extras/hg19ToHg38.over.chain.gz ../../GRCh37/hotspots/merged.vcf.gz ../hg38.fa merged.vcf.gz
+```
+
+#### Other HMF files
+
+Download NA12878_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_ALLCHROM_v3.2.2_highconf.bed.gz and out_150_hg19.mappability.bed.gz 
+from https://resources.hartwigmedicalfoundation.nl
+
+To hg38:
+
+```
+convert ../../GRCh37/hmf/NA12878_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_ALLCHROM_v3.2.2_highconf.bed.gz
+convert ../../GRCh37/hmf/out_150_hg19.mappability.bed.gz
 ```
 
 #### Fusions
