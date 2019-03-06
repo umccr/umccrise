@@ -63,17 +63,17 @@ rule sage:
         genome = run.genome_build,
         genomes_dir = hpc.genomes_dir,
         work_dir = 'work/{batch}/small_variants/sage',
-        unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else ''
+        unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
     resources:
         mem_mb = 20000
     shell:
         'sage -t {input.tumor_bam} -n {input.normal_bam} -v {input.vcf} -o {output.vcf} '
-        '-w {params.work_dir} -g {parmas.genome} --genomes-dir {params.genomes_dir} '
+        '-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
         '{params.unlock_opt}'
 
 rule somatic_vcf_annotate:
     input:
-        vcf = rules.annotate_from_sage.output.vcf,
+        vcf = rules.sage.output.vcf,
     output:
         vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml',
@@ -156,7 +156,7 @@ rule germline_vcf_subset:
     run:
         pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
         genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
-        def func(rec):
+        def func(rec, vcf):
             if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
                 return rec
         iter_vcf(input.vcf, output.vcf, func)

@@ -46,7 +46,7 @@ rule sv_subset_to_canonical:
         principal_by_gids = canon_transcript_per_gene(run.genome_build, use_gene_id=True, only_principal=True)
         all_princ_transcripts = set(principal_by_gids.values())
 
-        def proc_line(rec, **kwargs):
+        def proc_line(rec, vcf, **kwargs):
             ann = rec.INFO.get('ANN')
             if ann is None:
                 return rec
