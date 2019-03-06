@@ -67,7 +67,7 @@ rule sv_subset_to_canonical:
 
                 elif feature == 'transcript':
                     feature_ids = set(featureid.split('&'))
-                    assert all(re.fullmatch(r'ENST\d+', fid) for fid in feature_ids), ann
+                    assert all(re.fullmatch(r'ENST[\d.]+', fid) for fid in feature_ids), ann
                     if not feature_ids - all_princ_transcripts:
                         new_anns.append(ann_line)
 
@@ -76,7 +76,7 @@ rule sv_subset_to_canonical:
                     # "3UVN:C_107-D_1494:ENST00000358625-ENST00000262519"
                     # -> {'3UVN', 'C_107', 'D_1494', 'ENST00000262519', 'ENST00000358625'}
                     feature_ids = set(fid for fid in flatten(fids.split('-') for fids in featureid.split(':')) if fid.startswith('ENST'))
-                    assert all(re.fullmatch(r'ENST\d+', fid) for fid in feature_ids), ann
+                    assert all(re.fullmatch(r'ENST[\d.]+', fid) for fid in feature_ids), ann
                     if not feature_ids - all_princ_transcripts:
                         new_anns.append(ann_line)
 
