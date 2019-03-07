@@ -7,7 +7,7 @@ channels:
   - defaults
 
 dependencies:
-  - python ==3.6.*
+  - python
   - ngs_utils
   - tsvtools
   - cython
