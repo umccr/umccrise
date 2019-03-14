@@ -147,7 +147,7 @@ rule sv_prioritize:
         if filts_to_remove:
             cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
 
-        cmd += (f' | simple_sv_annotation.py - '
+        cmd += (f' | simple_sv_annotation - '
                 f'--tier2_fusion_pairs {input.known_pairs_fusioncatcher} '
                 f'--known_fusion_pairs {input.known_pairs} '
                 f'--known_fusion_promiscuous {input.known_promisc} '

@@ -3,14 +3,16 @@
 #############################
 # ssh spa
 
-cd /data/cephfs/punim0010/data/Results/Tothill-A5/2018-08-11/making_background_qc
+cd /data/cephfs/punim0010/data/Results/Tothill-A5/2018-08-11
 
-DIR=umccrised_2019
+DIR=umccrised
 # Run recent version of umccrise:
-umccrise ../final -c -j30 -o ${DIR} multiqc -s E201,E199,E194,E190,E202
+umccrise final -c -j30 -o ${DIR} multiqc -s E201,E199,E194,E190,E202
+
+cd making_background_qc
 
 # Subset filelist to QC files only:
-DIR_QCONLY=${DIR}.qconly
+DIR_QCONLY=making_background_qc/${DIR}.qconly
 mkdir ${DIR_QCONLY}
 for batch in E201 E199 E194 E190 E202 ; do
     cat ${DIR}/work/${batch}_*/multiqc_data/filelist.txt | grep -v gold_standard | grep ${batch}\
