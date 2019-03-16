@@ -192,6 +192,16 @@ bgzip -f segdup.bed && tabix -f -p bed segdup.bed.gz
 rm segdup.bed_tmp genomicSuperDups.txt.gz
 ```
 
+Generate ENCODE
+
+```
+git clone git clone https://github.com/Boyle-Lab/Blacklist
+gunzip -c hg19-blacklist.v2.bed.gz | py -x "x[3:]" > GRCh37-blacklist.v2.bed
+gunzip hg38-blacklist.v2.bed.gz
+
+cp GRCh37-blacklist.v2.bed GRCh37/problem_regions/ENCODE/blacklist.v2.bed
+cp hg38-blacklist.v2.bed hg38/problem_regions/ENCODE/blacklist.v2.bed
+```
 
 Lift over to hg38:
 
@@ -207,13 +217,10 @@ convert () {
 
 convert ../../GRCh37/problem_regions/segdup.bed.gz
 
-mkdir GA4GH ENCODE repeats
+mkdir GA4GH repeats
 
 cd GA4GH
 for fp in $(ls ../../../GRCh37/problem_regions/GA4GH/*.bed.gz) ; do convert $fp ; done
-
-cd ../ENCODE
-convert ../../../GRCh37/problem_regions/ENCODE/wgEncodeDacMapabilityConsensusExcludable.bed.gz
 
 cd ../repeats
 convert ../../../GRCh37/problem_regions/repeats/LCR.bed.gz
