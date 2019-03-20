@@ -108,9 +108,9 @@ rule all:
 
 
 include: "small_variants.smk"
-include: "coverage.smk"
 include: "structural.smk"
 include: "purple.smk"
+include: "coverage.smk"
 include: "pcgr.smk"
 include: "rmd.smk"
 include: "igv.smk"
