@@ -265,6 +265,7 @@ fi
 #### Hotspots
 
 Combining Hartwig's and PCGR hotspots. Stats:
+
 * Hartwigs: 10211 changes in 3650 locations, 
 * PCGR: 10627 changes in 2494 locations.
 * Overlap: 2960 changes in 968 locations.
