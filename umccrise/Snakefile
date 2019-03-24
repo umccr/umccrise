@@ -38,6 +38,9 @@ def prep_inputs(config_):
         exclude_names = str(exclude_names).split(',')
         exclude_names = [v for v in flatten([sn.split('__') for sn in exclude_names])]  # support "batch__sample" notation
 
+    if config_.get('debug', 'no') == 'yes':
+        ngs_utils_logger.is_debug = True
+
     ngs_utils_logger.is_silent = within_sub_workflow  # to avoid redundant logging in cluster sub-executions of the Snakefile
     run = BcbioProject(config_.get('bcbio_project', abspath(os.getcwd())),
                        exclude_samples=exclude_names,

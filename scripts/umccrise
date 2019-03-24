@@ -49,11 +49,12 @@ from umccrise import _version as version
 
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
+@click.option('--debug', 'debug', is_flag=True, help='Increases verbosity of messages')
 
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, genomes_dir=None,
          jobs=None, cluster=False, cluster_cmd=None, forcerun=None,
          unlock=False, rerun_incomplete=False, restart_times=None, dryrun=False,
-         no_s3=None, no_igv=False, docker_wrapper_mode=False, report=None, dag=False):
+         no_s3=None, no_igv=False, docker_wrapper_mode=False, report=None, dag=False, debug=False):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -115,8 +116,9 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 
     conf['total_cores'] = jobs
 
-    if unlock:
-        conf['unlock'] = 'yes'
+    if unlock: conf['unlock'] = 'yes'
+
+    if debug: conf['debug'] = 'yes'
 
     #########################
     #### Setting cluster ####
