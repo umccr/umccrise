@@ -17,6 +17,10 @@ circos_macos_patch = ('export PERL5LIB=' +
     else ''
 
 
+purple_cpu = min(threads_per_batch, 15)
+purple_mem = min(30000, 5000*threads_per_batch)
+
+
 rule purple_amber:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
@@ -31,13 +35,13 @@ rule purple_amber:
         outdir = 'work/{batch}/purple/amber',
         jar = join(package_path(), 'jars', 'amber.jar'),
         xms = 5000,
-        xmx = min(40000, 8000*threads_per_batch),
+        xmx = purple_mem,
     log:
         'log/purple/{batch}/{batch}.amber.log',
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        mem_mb = min(40000, 8000*threads_per_batch),
+        mem_mb = purple_mem,
     threads:
         threads_per_batch
     shell:
@@ -64,7 +68,7 @@ rule purple_cobalt:
         outdir = 'work/{batch}/purple/cobalt',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         xms = 2000,
-        xmx = min(40000, 3000*threads_per_batch),
+        xmx = purple_mem
     log:
         'log/purple/{batch}/{batch}.cobalt.log'
     benchmark:
@@ -72,7 +76,7 @@ rule purple_cobalt:
     threads:
         threads_per_batch
     resources:
-        mem_mb = min(40000, 3000*threads_per_batch)
+        mem_mb = purple_mem
     shell:
         conda_cmd.format('purple') +
         'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
@@ -128,7 +132,7 @@ rule purple_run:
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
         xms = 2000,
-        xmx = min(40000, 3000*threads_per_batch),
+        xmx = purple_mem,
     log:
         'log/purple/{batch}/{batch}.purple.log'
     benchmark:
@@ -136,7 +140,7 @@ rule purple_run:
     threads:
         threads_per_batch
     resources:
-        mem_mb = min(40000, 3000*threads_per_batch)
+        mem_mb = purple_mem
     shell:
         conda_cmd.format('purple') +\
         circos_macos_patch +\
