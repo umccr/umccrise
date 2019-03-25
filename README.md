@@ -40,7 +40,7 @@ git clone https://github.com/umccr/umccrise
 Install conda
 
 ```
-# soruce ~/reset_path.sh
+# source ~/reset_path.sh
 unset PYTHONPATH
 unset CONDA_PREFIX
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -197,10 +197,11 @@ Generate ENCODE
 ```
 git clone git clone https://github.com/Boyle-Lab/Blacklist
 gunzip -c hg19-blacklist.v2.bed.gz | py -x "x[3:]" > GRCh37-blacklist.v2.bed
-gunzip hg38-blacklist.v2.bed.gz
 
-cp GRCh37-blacklist.v2.bed GRCh37/problem_regions/ENCODE/blacklist.v2.bed
-cp hg38-blacklist.v2.bed hg38/problem_regions/ENCODE/blacklist.v2.bed
+bgzip GRCh37-blacklist.v2.bed -c > GRCh37/problem_regions/ENCODE/blacklist.v2.bed.gz
+cp hg38-blacklist.v2.bed.gz hg38/problem_regions/ENCODE/blacklist.v2.bed.gz
+tabix -p bed GRCh37/problem_regions/ENCODE/blacklist.v2.bed.gz
+tabix -p bed hg38/problem_regions/ENCODE/blacklist.v2.bed.gz
 ```
 
 Lift over to hg38:
@@ -309,7 +310,17 @@ Convert to hg38
 
 ```
 cd ../hg38/hotspots
-CrossMap.py vcf /g/data3/gx8/extras/hg19ToHg38.over.chain.gz ../../GRCh37/hotspots/merged.vcf.gz ../hg38.fa merged.vcf.gz
+INP=../../GRCh37/hotspots/merged.vcf.gz
+
+gunzip -c $INP \
+| py -x "x.replace('##contig=<ID=', '##contig=<ID=chr') if x.startswith('#') else 'chr' + x" \
+| py -x "x.replace('chrMT', 'chrM')" \
+| grep -v chrG \
+| gzip -c > merged_hg19.vcf.gz
+
+CrossMap.py vcf /g/data3/gx8/extras/hg19ToHg38.over.chain.gz merged_hg19.vcf.gz ../hg38.fa merged_unsorted.vcf
+bcftools sort merged_unsorted.vcf -Oz -o merged.vcf.gz
+tabix -p vcf merged.vcf.gz
 ```
 
 #### Other HMF files
