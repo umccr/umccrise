@@ -1,6 +1,6 @@
 ## Cancer gene coverage
 
-localrules: coverage, cacao, cacao_symlink_somatic, cacao_symlink_normal
+localrules: coverage, cacao, cacao_symlink
 
 
 from ngs_utils.reference_data import get_key_genes_bed
