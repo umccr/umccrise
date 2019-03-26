@@ -38,7 +38,7 @@ rule subset_to_giab:
         'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident.vcf.gz'
     group: "rmd"
     shell:
-        'bcftools view {input.vcf} -T {params.regions} -Oz -o {output}'
+        'bcftools view {input.vcf} -R {params.regions} -Oz -o {output}'
 
 # Split multiallelics to avoid R parsing issues
 rule split_multiallelic:
