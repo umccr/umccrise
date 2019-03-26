@@ -9,7 +9,7 @@ channels:
   - defaults
 
 dependencies:
-  - python==3.6
+  - python >=3.7
   - click
-  - ngs_utils>=2.0.4
+  - ngs_utils >=2.0.4
   - nose

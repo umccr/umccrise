@@ -7,7 +7,7 @@ channels:
   - defaults
 
 dependencies:
-  - python
+  - python >=3.7
   - ngs_utils
   - tsvtools
   - cython
@@ -31,9 +31,8 @@ dependencies:
   - multiqc-bcbio
   - pyensembl
   - break-point-inspector
-  - gatk4>=4.1.0.0  # Conpair and panel of normals
+  - gatk4 >=4.1.0.0  # Conpair and panel of normals
   - scipy  # Conpair
-  - vcf_stuff
   - natsort  # for bcbio.py in ngs_utils
   # - pybedtools  # for ref data generation
   # - sambamba  # for test data generation

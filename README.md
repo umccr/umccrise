@@ -102,6 +102,7 @@ pip install -e hpc-utils
 pip install -e vcf-stuff
 pip install -e multiqc
 pip install -e multiqc-bcbio
+pip install -e simple-sv-annotation
 ```
 
 ## Reference data bundle
