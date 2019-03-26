@@ -27,6 +27,8 @@ dependencies:
   - snakemake-minimal
   - nose
   - versionpy
+  # - vcf_stuff
+  - bed_annotation
   - multiqc
   - multiqc-bcbio
   - pyensembl
@@ -80,6 +82,6 @@ dependencies:
     - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
     - "--editable=git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
-    - "--editable=git+https://github.com/vladsaveliev/simple_sv_annotation#egg=simple_sv_annotationsimple"
+    - "--editable=git+https://github.com/vladsaveliev/simple_sv_annotation#egg=simple_sv_annotation"
     - "--editable=git+https://bitbucket.org/vladsaveliev/snakemake#egg=snakemake"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
