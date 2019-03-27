@@ -126,7 +126,7 @@ rule purple_run:
         link         = 'work/{batch}/purple/circos/{batch}.link.circos',
     group: 'purple_main'
     params:
-        jar = join(package_path(), 'jars', 'purple.jar'),
+        jar = join(package_path(), 'jars', 'purple-2.20.jar'),
         rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
