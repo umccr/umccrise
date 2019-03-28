@@ -97,8 +97,9 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
         if cwl_targz:
             tar = tarfile.open(cwl_targz)
             for member in tar.getmembers():
-                assert 'call-multiqc_summary/execution/qc/multiqc/' in member.name, member.name
-                rel_fp = member.name.split('call-multiqc_summary/execution/qc/multiqc/')[1]
+                rel_fp = member.name
+                if 'call-multiqc_summary/execution/qc/multiqc/' in rel_fp:
+                    rel_fp = rel_fp.split('call-multiqc_summary/execution/qc/multiqc/')[1]
                 tar_f_by_fp[rel_fp] = tar.extractfile(member)
 
     with file_transaction(None, out_filelist_file) as tx:
