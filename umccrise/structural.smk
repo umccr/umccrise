@@ -116,7 +116,7 @@ rule sv_prioritize:
         if filts_to_remove:
             cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
 
-        cmd += (f' | simple_sv_annotation -o - | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        cmd += (f' | simple_sv_annotation | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
@@ -196,7 +196,7 @@ rule filter_sv_vcf:
     input:
         vcf = rules.sv_maybe_bpi.output.vcf
     output:
-        vcf = '{batch}/structural/{batch}-manta.vcf'
+        vcf = 'work/{batch}/structural/filt/{batch}-manta.vcf'
     params:
         sample = lambda wc: batch_by_name[wc.batch].tumor.name
     group: "sv_vcf"
@@ -213,6 +213,17 @@ bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tu
 > {output.vcf}
 ''')
 
+rule copy_purple_rescued_svs:
+    input:
+        vcf = rules.purple_run.output.rescued_sv,
+        tbi = rules.purple_run.output.rescued_sv + '.tbi',
+    output:
+        vcf = '{batch}/structural/{batch}-manta.vcf.gz',
+        tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
+    shell:
+        'cp -r {input.vcf} {output.vcf} ; cp -r {input.tbi} {output.tbi}'
+
+
 # Produce a TSV file for further analysis in Rmd
 # caller  sample                chrom   start       end         svtype  lof  annotation                                                                 split_read_support  paired_support_PE  paired_support_PR  somaticscore  tier
 # manta   PRJ180253_E190-T01-D  1       161513440   161595209   DUP          DUP|GENE_FUSION|FCGR2B&RP11-25K21.6|ENSG00000273112|NOT_PRIORITISED|3,...                                         67,8
@@ -220,7 +231,7 @@ bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tu
 # manta   PRJ180253_E190-T01-D  11      118802640   118803304   DEL          DEL|DOWNSTREAM_GENE_VARIANT|RN7SL688P|ENST00000471754|NOT_PRIORITISED|3    61,8                                   07,2
 rule prep_sv_tsv:
     input:
-        vcf = rules.filter_sv_vcf.output.vcf
+        vcf = rules.copy_purple_rescued_svs.output.vcf
     output:
         '{batch}/structural/{batch}-manta.tsv'
     params:
@@ -249,7 +260,7 @@ rule prep_sv_tsv:
 # At least for the most conservative manta calls, generate a file for viewing in Ribbon
 rule ribbon_filter_manta:
     input:
-        manta_vcf = rules.filter_sv_vcf.output.vcf
+        manta_vcf = rules.copy_purple_rescued_svs.output.vcf
     output:
         'work/{batch}/structural/ribbon/manta.vcf'
     group: "sv_vcf"
@@ -303,7 +314,7 @@ rule ribbon:
 #### Convert matna VCF to bedpe ####
 rule bedpe:
     input:
-        manta_vcf = rules.filter_sv_vcf.output.vcf
+        manta_vcf = rules.copy_purple_rescued_svs.output.vcf
     output:
         '{batch}/structural/{batch}-manta.bedpe'
     params:

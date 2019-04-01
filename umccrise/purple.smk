@@ -113,6 +113,7 @@ rule purple_run:
         cnv          = 'work/{batch}/purple/{batch}.purple.cnv',
         gene_cnv     = 'work/{batch}/purple/{batch}.purple.gene.cnv',
         germline_cnv = 'work/{batch}/purple/{batch}.purple.germline.cnv',
+        rescued_sv   = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
         circos_png   = 'work/{batch}/purple/plot/{batch}.circos.png',
         input_png    = 'work/{batch}/purple/plot/{batch}.input.png',
         cn_png       = 'work/{batch}/purple/plot/{batch}.copyNumber.png',
@@ -158,9 +159,9 @@ rule purple_run:
 
 rule purple_circos_baf:
     input:
-        baf = 'work/{batch}/purple/circos/{batch}.baf.circos',
-        cnv = 'work/{batch}/purple/circos/{batch}.cnv.circos',
-        map = 'work/{batch}/purple/circos/{batch}.map.circos',
+        baf  = 'work/{batch}/purple/circos/{batch}.baf.circos',
+        cnv  = 'work/{batch}/purple/circos/{batch}.cnv.circos',
+        map  = 'work/{batch}/purple/circos/{batch}.map.circos',
         link = 'work/{batch}/purple/circos/{batch}.link.circos',
         circos_baf_conf = package_path() + '/rmd_files/misc/circos/circos_baf.conf',
         gaps_txt = package_path() + '/rmd_files/misc/circos/gaps.txt',
@@ -211,7 +212,6 @@ rule purple_symlink:
         for fpath in glob.glob(f'{params.purple_outdir}/*.purple.*'):
             new_name = basename(fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}')
             shutil.copy(fpath, join(f'{wildcards.batch}/purple', new_name))
-
 
 
 rule purple:
