@@ -446,17 +446,28 @@ It's generated through the following steps:
    * require paired reads support to be higher than split read support for BND events
 3. Annotate with [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) based on Ensembl gene model
 4. Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/)
-5. Prioritize variants with [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation):
-   * tier1: known gene fusion (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
-   * tier2:
-        - exon loss in [cancer genes](https://github.com/vladsaveliev/NGS_Utils/blob/master/ngs_utils/reference_data/key_genes/umccr_cancer_genes.2019-02-12.tsv)
-        - fusion known in the literature, but not a high confidence (from [FusionCatcher list](https://github.com/ndaniel/fusioncatcher/blob/master/bin/generate_known.py))
-        - fusion affecting a cancer gene
-        - breakpoint in a upstream or downstream region of a cancer gene
-        - LoF of a tumor suppressor
-   * tier3:
-      - any other fusion
-      - any other exon loss
+5. Prioritize variants with [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation) 1(high)-2(moderate)-3(low)-4(no interest):
+
+    * exon loss
+       - on prioritisation gene list (1)
+       - other (2)
+    * gene_fusion
+       - paired (hits two genes)
+          - on list of known pairs (1) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
+          - one gene is a known promiscuous fusion gene (1) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
+          - on list of FusionCatcher known pairs (2)
+          - other:
+             - one or two genes on prioritisation gene list (2)
+             - neither gene on prioritisation gene list (3)
+       - unpaired (hits one gene)
+           - on prioritisation gene list (2)
+           - others (3)
+    * upstream or downstream
+       - on prioritisation gene list genes (2)  - e.g. one gene is got into control of another gene's promoter and get overexpressed (oncogene) or underexpressed (tsgene)
+    * LoF or HIGH impact in a tumor suppressor
+       - on prioritisation gene list (2)
+       - other TS gene (3)
+    * other (4)
 
 Variants are ordered by tier, then by effect, then by AF.
 
