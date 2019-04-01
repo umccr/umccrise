@@ -9,8 +9,6 @@ import re
 from cyvcf2 import VCF
 from ngs_utils.utils import flatten
 from ngs_utils.file_utils import safe_mkdir
-from ngs_utils.reference_data import get_key_genes_txt, get_key_tsgenes_txt, \
-    get_known_fusion_pairs, get_fusioncatcher_pairs, get_known_fusion_heads, get_known_fusion_tails
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
 from bed_annotation import canon_transcript_per_gene
 
@@ -102,38 +100,9 @@ rule sv_subset_to_canonical:
         after = count_vars(output.vcf)
         assert before == after, (before, after)
 
-rule prep_sv_prio_lists:
-    input:
-        fusion_pairs = get_known_fusion_pairs(),
-        fusion_heads = get_known_fusion_heads(),
-        fusion_tails = get_known_fusion_tails(),
-    output:
-        pairs = 'work/fusion_pairs.txt',
-        promisc = 'work/fusion_promisc.txt',
-    run:
-        with open(input.fusion_pairs) as f, open(output.pairs, 'w') as out:
-            for l in f:
-                l = l.strip().replace('"', '')
-                if l:
-                    g1, g2 = l.split(',')[0:2]
-                    if g1 and g2 and g1 != 'H_gene':
-                        out.write(f'{g1},{g2}\n')
-        with open(input.fusion_heads) as f1, open(input.fusion_tails) as f2, open(output.promisc, 'w') as out:
-            for l in itertools.chain(f1, f2):
-                l = l.strip().replace('"', '')
-                if l:
-                    gene = l.split(',')[0]
-                    if gene and gene != 'gene':
-                        out.write(f'{gene}\n')
-
 rule sv_prioritize:
     input:
         vcf = rules.sv_subset_to_canonical.output.vcf,
-        known_pairs = rules.prep_sv_prio_lists.output.pairs,
-        known_pairs_fusioncatcher = get_fusioncatcher_pairs(),
-        known_promisc = rules.prep_sv_prio_lists.output.promisc,
-        cancer_genes = get_key_genes_txt(),
-        tsgenes = get_key_tsgenes_txt(),
     output:
         vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz',
         tbi = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz.tbi',
@@ -147,13 +116,7 @@ rule sv_prioritize:
         if filts_to_remove:
             cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
 
-        cmd += (f' | simple_sv_annotation - '
-                f'--tier2_fusion_pairs {input.known_pairs_fusioncatcher} '
-                f'--known_fusion_pairs {input.known_pairs} '
-                f'--known_fusion_promiscuous {input.known_promisc} '
-                f'--gene_list {input.cancer_genes} '
-                f'--tumor_suppressors {input.tsgenes} '
-                f'-o - | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        cmd += (f' | simple_sv_annotation -o - | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
