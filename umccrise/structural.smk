@@ -215,8 +215,8 @@ bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tu
 
 rule copy_purple_rescued_svs:
     input:
-        vcf = rules.purple_run.output.rescued_sv,
-        tbi = rules.purple_run.output.rescued_sv + '.tbi',
+        vcf = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
+        tbi = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz.tbi',
     output:
         vcf = '{batch}/structural/{batch}-manta.vcf.gz',
         tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
