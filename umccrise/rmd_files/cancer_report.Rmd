@@ -429,8 +429,11 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 ```
 
 ## Structural Variants
-Structural variants are inferred with [Manta](https://github.com/illumina/manta) and
+Structural variants are inferred with [Manta](https://github.com/illumina/manta),
+adjusted using [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator#7-structural-variant-recovery-and-single-breakend-filtering),
 prioritised using [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation).
+
+AFs, CNs, CN changes and ploidy are all purity-adjusted.
 
 <details>
 <summary>Details</summary>
@@ -489,34 +492,6 @@ sv_path = params$somatic_sv
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E183__PRJ180263_E183_T01_D/structural/E183__PRJ180263_E183_T01_D-manta.tsv'
 
-# d =     readr::read_tsv(sv_path, col_names = TRUE, col_types = col_types) %>%
-#     dplyr::select(-caller, -sample) %>% 
-#     
-#     tidyr::separate(BPI_AF, c("AF_BP1", "AF_BP2"), ",") %>% 
-#     dplyr::mutate(AF = (as.double(AF_BP1) + as.double(AF_BP2)) / 1,
-#                   AF = AF * 100,
-#                   AF = format(AF, nsmall=2)) %>%
-#     tidyr::separate(split_read_support, c("SR_ALT", "SR_REF"), ",") %>% 
-#     dplyr::mutate(SR = as.integer(SR_ALT)) %>% 
-#     tidyr::separate(paired_support_PR, c("PR_ALT", "PR_REF"), ",") %>% 
-#     dplyr::mutate(PR = as.integer(PR_ALT)) %>% 
-#     tidyr::separate(paired_support_PE, c("PE_ALT", "PE_REF"), ",") %>% 
-#     dplyr::mutate(PE = as.integer(PE_ALT)) %>% 
-#     
-#     dplyr::filter(svtype != 'BND' | is.na(SR) | PR>SR) %>%  # remove BND with split read support higher than paired
-#     
-#     tidyr::unnest(annotation = strsplit(annotation, ',')) %>%  # Unpack multiple annotations per region
-#     tidyr::separate(annotation,
-#                     c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
-#                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-#   
-#     dplyr::mutate(start = format(start, big.mark = ',', trim = T),
-#                   end = format(end, big.mark = ',', trim = T)) %>% 
-#     dplyr::mutate(location = str_c(chrom, ':', start, sep = ''),
-#                   location = ifelse(is.na(end), location, str_c(location))) %>% 
-#     dplyr::arrange(tier, effect, desc(AF), genes)
-# d <- d %>% dplyr::select(genes, effect)
-
 subset_genes = function(genes, ind) {
   genes %>% str_split('&') %>% map(~ .[ind] %>% replace("", NA) %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
 }
@@ -526,14 +501,43 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     readr::read_tsv(sv_path, col_names = TRUE, col_types = col_types) %>%
     dplyr::select(-caller, -sample) %>% 
     
-    tidyr::separate(BPI_AF, c("AF1", "AF2"), ",") %>% 
+    tidyr::separate(BPI_AF, c("BPI_AF1", "BPI_AF2"), ",") %>% 
+    dplyr::mutate(BPI_AF1 = as.double(BPI_AF1) * 100,
+                  BPI_AF2 = as.double(BPI_AF2) * 100,
+                  BPI_AF = (BPI_AF1 + BPI_AF2) / 2,
+                  BPI_AF = format(BPI_AF, nsmall = 2),
+                  BPI_AF1 = format(BPI_AF1, nsmall = 2),
+                  BPI_AF2 = format(BPI_AF2, nsmall = 2)
+    ) %>% 
+    tidyr::separate(AF_purity_adj, c("AF1", "AF2"), ",") %>% 
     dplyr::mutate(AF1 = as.double(AF1) * 100,
                   AF2 = as.double(AF2) * 100,
                   AF = (AF1 + AF2) / 2,
                   AF = format(AF, nsmall = 2),
                   AF1 = format(AF1, nsmall = 2),
                   AF2 = format(AF2, nsmall = 2)
-                  ) %>%
+    ) %>% 
+    tidyr::separate(CN, c("CN1", "CN2"), ",") %>% 
+    dplyr::mutate(CN1 = as.double(CN1) * 100,
+                  CN2 = as.double(CN2) * 100,
+                  CN = (CN1 + CN2) / 2,
+                  CN = format(CN, nsmall = 2),
+                  CN1 = format(CN1, nsmall = 2),
+                  CN2 = format(CN2, nsmall = 2)
+    ) %>% 
+    tidyr::separate(CN_change, c("CN_change1", "CN_change2"), ",") %>% 
+    dplyr::mutate(CN_change1 = as.double(CN_change1) * 100,
+                  CN_change2 = as.double(CN_change2) * 100,
+                  CN_change = (CN_change1 + CN_change2) / 2,
+                  CN_change = format(CN_change, nsmall = 2),
+                  CN_change1 = format(CN_change1, nsmall = 2),
+                  CN_change2 = format(CN_change2, nsmall = 2)
+    ) %>% 
+    
+    dplyr::mutate(Ploidy = as.double(Ploidy),
+                  Ploidy = format(Ploidy, nsmall = 2)
+    ) %>% 
+                  
     tidyr::separate(split_read_support, c("SR (alt)", "SR (ref)"), ",") %>% 
     dplyr::mutate(SR = as.integer(`SR (alt)`)) %>% 
     tidyr::separate(paired_support_PR, c("PR (alt)", "PR (ref)"), ",") %>% 
@@ -569,16 +573,26 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   Tier = tier,
                   Effect = Effect,
                   Detail = detail,
-                  AF, 
+                  AF,
                   SR, 
                   PR, 
                   Gene, 
+                  CN,
+                  CN_chg = CN_change,
+                  Ploidy,
                   `SR (ref)`, 
                   `PR (ref)`, 
                   PE, 
                   `PE (ref)`, 
                   `AF at breakpoint 1` = AF1, 
                   `AF at breakpoint 2` = AF2, 
+                  `CN at breakpoint 1` = CN1,
+                  `CN at breakpoint 2` = CN2, 
+                  `CN change at breakpoint 1` = CN_change1,
+                  `CN change at breakpoint 2` = CN_change2,
+                  `Is recovered by PURPLE` = PURPLE_recovered,
+                  `AF before adjustment, bp 1` = BPI_AF1,
+                  `AF before adjustment, bp 2` = BPI_AF2,
                   `Somatic score` = somaticscore, 
                   Transcript = transcript,
                   `Other effects`,

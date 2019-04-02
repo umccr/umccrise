@@ -1,3 +1,12 @@
+0.14 (1 Apr 2019)
+
+- Update SV prioritization method
+- New SV table in the rmd report
+- New PURPLE tools, PURPLE annotates and rescues SVs
+- Panel of normals rebuilt with lowfreq tumor-only Mutect2, threshold is raised to 5
+- Coverage report threshold: adjust to purity (CACAO and mosdepth)
+- Support of Cromwell MultiQC
+
 0.13 (15 Feb 2019)
 
 - Re-enable [CACAO](https://github.com/vladsaveliev/cacao)

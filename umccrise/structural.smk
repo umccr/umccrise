@@ -242,7 +242,8 @@ rule prep_sv_tsv:
         with open(output[0], 'w') as out:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
                       "split_read_support", "paired_support_PE", "paired_support_PR", "BPI_AF", "somaticscore",
-                      "tier", "annotation"]
+                      "tier", "annotation",
+                      'AF_purity_adj', 'CN_purity_adj', 'CN_change_purity_adj', 'Ploidy_purity_adj', 'PURPLE_recovered']
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
@@ -253,9 +254,16 @@ rule prep_sv_tsv:
                         ','.join(map(str, rec.INFO['BPI_AF'])) if rec.INFO.get('BPI_AF') else '',
                         rec.INFO.get('SOMATICSCORE', ''),
                         rec.INFO.get('SV_TOP_TIER', ''),
-                        rec.INFO.get('SIMPLE_ANN', '')
+                        rec.INFO.get('SIMPLE_ANN', ''),
+                        ','.join(map(str, rec.INFO['PURPLE_AF'])) if rec.INFO.get('PURPLE_AF') else '',
+                        ','.join(map(str, rec.INFO['PURPLE_CN'])) if rec.INFO.get('PURPLE_CN') else '',
+                        ','.join(map(str, rec.INFO['PURPLE_CN_CHANGE'])) if rec.INFO.get('PURPLE_CN_CHANGE') else '',
+                        rec.INFO.get('PURPLE_PLOIDY', ''),
+                        rec.INFO.get('RECOVERED', ''),
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
+
+
 
 # At least for the most conservative manta calls, generate a file for viewing in Ribbon
 rule ribbon_filter_manta:
