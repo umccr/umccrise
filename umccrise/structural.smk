@@ -224,6 +224,16 @@ rule copy_purple_rescued_svs:
         'cp -r {input.vcf} {output.vcf} ; cp -r {input.tbi} {output.tbi}'
 
 
+def parse_info_field(rec, name):
+    val = rec.INFO.get(name)
+    if val is None:
+        return ''
+    elif isinstance(val, float) or isinstance(val, int) or isinstance(val, bool) or isinstance(val, str):
+        return str(val)
+    else:
+        return ','.join(map(str, val))
+
+
 # Produce a TSV file for further analysis in Rmd
 # caller  sample                chrom   start       end         svtype  lof  annotation                                                                 split_read_support  paired_support_PE  paired_support_PR  somaticscore  tier
 # manta   PRJ180253_E190-T01-D  1       161513440   161595209   DUP          DUP|GENE_FUSION|FCGR2B&RP11-25K21.6|ENSG00000273112|NOT_PRIORITISED|3,...                                         67,8
@@ -248,21 +258,32 @@ rule prep_sv_tsv:
             for rec in VCF(input.vcf):
                 data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
                         rec.INFO['SVTYPE'],
-                        ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
-                        ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
-                        ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
-                        ','.join(map(str, rec.INFO['BPI_AF'])) if rec.INFO.get('BPI_AF') else '',
-                        rec.INFO.get('SOMATICSCORE', ''),
-                        rec.INFO.get('SV_TOP_TIER', ''),
-                        rec.INFO.get('SIMPLE_ANN', ''),
-                        ','.join(map(str, rec.INFO['PURPLE_AF'])) if rec.INFO.get('PURPLE_AF') else '',
-                        ','.join(map(str, rec.INFO['PURPLE_CN'])) if rec.INFO.get('PURPLE_CN') else '',
-                        ','.join(map(str, rec.INFO['PURPLE_CN_CHANGE'])) if rec.INFO.get('PURPLE_CN_CHANGE') else '',
-                        rec.INFO.get('PURPLE_PLOIDY', ''),
-                        rec.INFO.get('RECOVERED', ''),
+                        parse_info_field(rec, 'SR'),
+                        parse_info_field(rec, 'PE'),
+                        parse_info_field(rec, 'PR'),
+                        parse_info_field(rec, 'BPI_AF'),
+                        parse_info_field(rec, 'SOMATICSCORE'),
+                        parse_info_field(rec, 'SV_TOP_TIER'),
+                        parse_info_field(rec, 'SIMPLE_ANN'),
+                        parse_info_field(rec, 'PURPLE_AF'),
+                        parse_info_field(rec, 'PURPLE_CN'),
+                        parse_info_field(rec, 'PURPLE_CN_CHANGE'),
+                        parse_info_field(rec, 'PURPLE_PLOIDY'),
+                        parse_info_field(rec, 'RECOVERED'),
+                        # ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
+                        # ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
+                        # ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
+                        # ','.join(map(str, rec.INFO['BPI_AF'])) if rec.INFO.get('BPI_AF') else '',
+                        # rec.INFO.get('SOMATICSCORE', ''),
+                        # rec.INFO.get('SV_TOP_TIER', ''),
+                        # rec.INFO.get('SIMPLE_ANN', ''),
+                        # ','.join(map(str, rec.INFO['PURPLE_AF'])) if rec.INFO.get('PURPLE_AF') else '',
+                        # ','.join(map(str, rec.INFO['PURPLE_CN'])) if rec.INFO.get('PURPLE_CN') else '',
+                        # ','.join(map(str, rec.INFO['PURPLE_CN_CHANGE'])) if rec.INFO.get('PURPLE_CN_CHANGE') else '',
+                        # rec.INFO.get('PURPLE_PLOIDY', ''),
+                        # rec.INFO.get('RECOVERED', ''),
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
-
 
 
 # At least for the most conservative manta calls, generate a file for viewing in Ribbon
