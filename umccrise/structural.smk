@@ -253,14 +253,14 @@ rule prep_sv_tsv:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
                       "split_read_support", "paired_support_PE", "paired_support_PR", "BPI_AF", "somaticscore",
                       "tier", "annotation",
-                      'AF_purity_adj', 'CN_purity_adj', 'CN_change_purity_adj', 'Ploidy_purity_adj', 'PURPLE_recovered']
+                      'AF', 'CN', 'CN_change', 'Ploidy', 'PURPLE_recovered']
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
                         rec.INFO['SVTYPE'],
-                        parse_info_field(rec, 'SR'),
-                        parse_info_field(rec, 'PE'),
-                        parse_info_field(rec, 'PR'),
+                        ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
+                        ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
+                        ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
                         parse_info_field(rec, 'BPI_AF'),
                         parse_info_field(rec, 'SOMATICSCORE'),
                         parse_info_field(rec, 'SV_TOP_TIER'),
@@ -270,18 +270,6 @@ rule prep_sv_tsv:
                         parse_info_field(rec, 'PURPLE_CN_CHANGE'),
                         parse_info_field(rec, 'PURPLE_PLOIDY'),
                         parse_info_field(rec, 'RECOVERED'),
-                        # ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
-                        # ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
-                        # ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
-                        # ','.join(map(str, rec.INFO['BPI_AF'])) if rec.INFO.get('BPI_AF') else '',
-                        # rec.INFO.get('SOMATICSCORE', ''),
-                        # rec.INFO.get('SV_TOP_TIER', ''),
-                        # rec.INFO.get('SIMPLE_ANN', ''),
-                        # ','.join(map(str, rec.INFO['PURPLE_AF'])) if rec.INFO.get('PURPLE_AF') else '',
-                        # ','.join(map(str, rec.INFO['PURPLE_CN'])) if rec.INFO.get('PURPLE_CN') else '',
-                        # ','.join(map(str, rec.INFO['PURPLE_CN_CHANGE'])) if rec.INFO.get('PURPLE_CN_CHANGE') else '',
-                        # rec.INFO.get('PURPLE_PLOIDY', ''),
-                        # rec.INFO.get('RECOVERED', ''),
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 

@@ -485,59 +485,49 @@ The "effect" columns could be one of the following:
 </details>
 
 ```{r sv_prioritize, message=FALSE}
-col_types <- "ccciiccccciic"
+col_types <- "ccciiccccciiccccdl"
 sv_all = NULL
 
 sv_path = params$somatic_sv
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E183__PRJ180263_E183_T01_D/structural/E183__PRJ180263_E183_T01_D-manta.tsv'
+# sv_path = '~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/structural/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A-manta.tsv'
 
 subset_genes = function(genes, ind) {
   genes %>% str_split('&') %>% map(~ .[ind] %>% replace("", NA) %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
+}
+
+split_sv_field = function(.data, field, is_pct = F) {
+  f_q = rlang::enquo(field)
+  f_str = rlang::quo_name(f_q)
+  f1_str = str_c(f_str, '1')
+  f2_str = str_c(f_str, '2')
+  f1_q = sym(f1_str)
+  f2_q = sym(f2_str)
+  .data %>% 
+    separate(!!f_q, c(f1_str, f2_str), ",") %>% 
+    mutate(
+      !!f1_q := as.double(!!f1_q) * ifelse(is_pct, 100, 1),
+      !!f2_q := as.double(!!f2_q) * ifelse(is_pct, 100, 1),
+      !!f_q := (!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2,
+      !!f_q := format(!!f_q, nsmall = 2),
+      !!f1_q := format(!!f1_q, nsmall = 2),
+      !!f2_q := format(!!f2_q, nsmall = 2)
+    )
 }
 
 if (length(readLines(con = sv_path, n = 2)) > 1) {
   sv_all <- 
     readr::read_tsv(sv_path, col_names = TRUE, col_types = col_types) %>%
     dplyr::select(-caller, -sample) %>% 
-    
-    tidyr::separate(BPI_AF, c("BPI_AF1", "BPI_AF2"), ",") %>% 
-    dplyr::mutate(BPI_AF1 = as.double(BPI_AF1) * 100,
-                  BPI_AF2 = as.double(BPI_AF2) * 100,
-                  BPI_AF = (BPI_AF1 + BPI_AF2) / 2,
-                  BPI_AF = format(BPI_AF, nsmall = 2),
-                  BPI_AF1 = format(BPI_AF1, nsmall = 2),
-                  BPI_AF2 = format(BPI_AF2, nsmall = 2)
+    split_sv_field(BPI_AF, is_pct = T) %>% 
+    split_sv_field(AF, is_pct = T) %>% 
+    split_sv_field(CN) %>% 
+    split_sv_field(CN_change) %>% 
+    dplyr::mutate(
+      Ploidy = as.double(Ploidy),
+      Ploidy = format(Ploidy, nsmall = 2)
     ) %>% 
-    tidyr::separate(AF_purity_adj, c("AF1", "AF2"), ",") %>% 
-    dplyr::mutate(AF1 = as.double(AF1) * 100,
-                  AF2 = as.double(AF2) * 100,
-                  AF = (AF1 + AF2) / 2,
-                  AF = format(AF, nsmall = 2),
-                  AF1 = format(AF1, nsmall = 2),
-                  AF2 = format(AF2, nsmall = 2)
-    ) %>% 
-    tidyr::separate(CN, c("CN1", "CN2"), ",") %>% 
-    dplyr::mutate(CN1 = as.double(CN1) * 100,
-                  CN2 = as.double(CN2) * 100,
-                  CN = (CN1 + CN2) / 2,
-                  CN = format(CN, nsmall = 2),
-                  CN1 = format(CN1, nsmall = 2),
-                  CN2 = format(CN2, nsmall = 2)
-    ) %>% 
-    tidyr::separate(CN_change, c("CN_change1", "CN_change2"), ",") %>% 
-    dplyr::mutate(CN_change1 = as.double(CN_change1) * 100,
-                  CN_change2 = as.double(CN_change2) * 100,
-                  CN_change = (CN_change1 + CN_change2) / 2,
-                  CN_change = format(CN_change, nsmall = 2),
-                  CN_change1 = format(CN_change1, nsmall = 2),
-                  CN_change2 = format(CN_change2, nsmall = 2)
-    ) %>% 
-    
-    dplyr::mutate(Ploidy = as.double(Ploidy),
-                  Ploidy = format(Ploidy, nsmall = 2)
-    ) %>% 
-                  
     tidyr::separate(split_read_support, c("SR (alt)", "SR (ref)"), ",") %>% 
     dplyr::mutate(SR = as.integer(`SR (alt)`)) %>% 
     tidyr::separate(paired_support_PR, c("PR (alt)", "PR (ref)"), ",") %>% 
@@ -590,7 +580,6 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   `CN at breakpoint 2` = CN2, 
                   `CN change at breakpoint 1` = CN_change1,
                   `CN change at breakpoint 2` = CN_change2,
-                  `Is recovered by PURPLE` = PURPLE_recovered,
                   `AF before adjustment, bp 1` = BPI_AF1,
                   `AF before adjustment, bp 2` = BPI_AF2,
                   `Somatic score` = somaticscore, 
