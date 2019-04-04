@@ -12,7 +12,7 @@ MIN_VD = 12     # minimal coverage to call a pure heterozygous variant
 HIGH_VD = 100   # purity-normalized coverage above this is suspiciously high (lcr? repeat? CN?)
 
 def _get_low_high_covs(phenotype, purple_file):
-    p = _get_purity(phenotype, purple_file)
+    p = _get_purity(phenotype, purple_file) if purple_file else 1
     return round(MIN_VD / p), round(HIGH_VD / p)
 
 def _get_purity(phenotype, purple_file):
@@ -43,7 +43,8 @@ rule mosdepth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
-        purple_purity = rules.purple_run.output.purity
+        purple_purity = rules.purple_run.output.purity,
+        ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         '{batch}/coverage/{batch}-{phenotype}.quantized.bed.gz',
         '{batch}/coverage/{batch}-{phenotype}.regions.bed.gz',
@@ -57,13 +58,18 @@ rule mosdepth:
             'export MOSDEPTH_Q1=LOW_COVERAGE && '
             'export MOSDEPTH_Q2=CALLABLE && '
             'export MOSDEPTH_Q3=HIGH_COVERAGE && '
-            f'mosdepth {params.prefix} -q {cutoffs} --no-per-base {input.bam} --by {input.bed}'
+            f'mosdepth {params.prefix} '
+            f'-q {cutoffs} '
+            f'--fasta {input.ref_fa} '
+            f'--no-per-base {input.bam} '
+            f'--by {input.bed}'
         )
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
 rule goleft_plots:
     input:
         bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        fai = hpc.get_ref_file(run.genome_build, 'fa') + '.fai',
     params:
         directory = '{batch}/coverage/{batch}-indexcov',
         xchr = 'X' if run.genome_build == 'GRCh37' else 'chrX'
@@ -72,15 +78,19 @@ rule goleft_plots:
     resources:
         mem_mb=2000
     shell:
-        'goleft indexcov --directory {params.directory} {input.bam} --sex {params.xchr}'
+        'goleft indexcov {input.bam} '
+        '--fai {input.fai} '
+        '--directory {params.directory} '
+        '--sex {params.xchr} '
 
 
 pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'
 
-rule run_cacao_somatic:
+rule run_cacao:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        purple_purity = rules.purple_run.output.purity
+        purple_purity = rules.purple_run.output.purity,
+        ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         report = '{batch}/coverage/cacao_{phenotype}/{batch}_' + pcgr_genome + '_coverage_cacao.html'
     params:
@@ -100,12 +110,12 @@ rule run_cacao_somatic:
             conda_cmd.format('pcgr') +
             f'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' +
             f' {params.mode} {params.sample_id} {params.docker_opt} --threads {threads}'
-            f' --callability_levels_{params.levels} {cutoffs}'
+            f' --callability_levels_{params.levels} {cutoffs} --ref-fasta {input.ref_fa}'
         )
 
 rule cacao_symlink:
     input:
-        rules.run_cacao_somatic.output.report
+        rules.run_cacao.output.report
     output:
         '{batch}/{batch}-{phenotype}.cacao.html'
     run:
