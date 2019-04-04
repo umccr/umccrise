@@ -639,9 +639,6 @@ There are several reasons PURPLE may classify a sample as failed:
 qc_path = params$purple_qc
 purity_path = params$purple_purity
 
-qc_path = "~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/work/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/purple/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A.purple.qc"
-purity_path = "~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/work/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/purple/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A.purple.purity"
-  
 purple_qc <-
   file.path(qc_path) %>%
   readr::read_tsv(col_names = c("key", "value"), col_types = "cc") %>%
