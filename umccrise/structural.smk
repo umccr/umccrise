@@ -262,7 +262,7 @@ rule prep_sv_tsv:
                 simple_ann = parse_info_field(rec, 'SIMPLE_ANN')
 
                 PURPLE_status = ''
-                if 'INFERRED' in rec.FILTER:
+                if rec.FILTER and 'INFERRED' in rec.FILTER:
                     PURPLE_status = 'INFERRED'
                     if not simple_ann:
                         simple_ann = f'{rec.INFO["SVTYPE"]}||||From_CNV|{tier}'
