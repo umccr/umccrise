@@ -491,7 +491,8 @@ sv_all = NULL
 sv_path = params$somatic_sv
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E183__PRJ180263_E183_T01_D/structural/E183__PRJ180263_E183_T01_D-manta.tsv'
-# sv_path = '~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/structural/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A-manta.tsv'
+#sv_path = '~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/structural/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A-manta.tsv'
+#sv_path = '~/rjn/projects/Hofmann_Cromwell/sync/bcbio_114a0_GRCh37_native/2016.249.17.MH.P033/umccrised_014/2016_249_17_MH_P033__CCR170115b_MH17T002P033/structural/2016_249_17_MH_P033__CCR170115b_MH17T002P033-manta.tsv'
 
 subset_genes = function(genes, ind) {
   genes %>% str_split('&') %>% map(~ .[ind] %>% replace("", NA) %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
@@ -509,10 +510,10 @@ split_sv_field = function(.data, field, is_pct = F) {
     mutate(
       !!f1_q := as.double(!!f1_q) * ifelse(is_pct, 100, 1),
       !!f2_q := as.double(!!f2_q) * ifelse(is_pct, 100, 1),
-      !!f_q := (!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2,
-      !!f_q := format(!!f_q, nsmall = 2),
-      !!f1_q := format(!!f1_q, nsmall = 2),
-      !!f2_q := format(!!f2_q, nsmall = 2)
+      !!f_q  := (!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2,
+      !!f_q  := format(!!f_q,  digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
+      !!f1_q := format(!!f1_q, digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
+      !!f2_q := format(!!f2_q, digits = 1) %>% str_c(ifelse(is_pct, "%", ""))
     )
 }
 
@@ -548,7 +549,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   location = ifelse(is.na(end), location, str_c(location))) %>% 
     dplyr::arrange(tier, effect, desc(AF), genes) %>% 
         
-    dplyr::mutate(Gene = subset_genes(genes, c(1,2)),
+    dplyr::mutate(Gene = subset_genes(genes, c(1, 2)),
                   Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
                                 str_c(Gene, '...', sep = ', '),
                                 Gene),
@@ -558,17 +559,17 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                                 Gene %>% str_replace_all('&', ', '))
                   ) %>% 
     separate(effect, c("Effect", "Other effects"), sep = '&') %>% 
-    dplyr::select(Location = location, 
+    dplyr::select(Tier = tier,
                   Event = event, 
-                  Tier = tier,
+                  Gene,
                   Effect = Effect,
                   Detail = detail,
+                  Location = location, 
                   AF,
+                  CN_chg = CN_change,
                   SR, 
                   PR, 
-                  Gene, 
                   CN,
-                  CN_chg = CN_change,
                   Ploidy,
                   `SR (ref)`, 
                   `PR (ref)`, 
