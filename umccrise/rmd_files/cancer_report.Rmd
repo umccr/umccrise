@@ -485,11 +485,8 @@ col_types <- "ccciiccccciiccccdl"
 sv_all = NULL
 
 sv_path = params$somatic_sv
-# sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv'
-# sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E183__PRJ180263_E183_T01_D/structural/E183__PRJ180263_E183_T01_D-manta.tsv'
 #sv_path = '~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/structural/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A-manta.tsv'
-#sv_path = '~/rjn/projects/Hofmann_Cromwell/sync/bcbio_114a0_GRCh37_native/2016.249.17.MH.P033/umccrised_014/2016_249_17_MH_P033__CCR170115b_MH17T002P033/structural/2016_249_17_MH_P033__CCR170115b_MH17T002P033-manta.tsv'
-sv_path = '~/rjn/extras/vlad/tmp/umccrised_svpurpleinf/2016_249_18_NH_P008__CCR180177_NH18F002P008/structural/2016_249_18_NH_P008__CCR180177_NH18F002P008-manta.tsv'
+#sv_path = '~/rjn/extras/vlad/tmp/umccrised_svpurpleinf/2016_249_18_NH_P008__CCR180177_NH18F002P008/structural/2016_249_18_NH_P008__CCR180177_NH18F002P008-manta.tsv'
 
 subset_genes = function(genes, ind) {
   genes %>% str_split('&') %>% map(~ .[ind] %>% replace("", NA) %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
