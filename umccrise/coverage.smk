@@ -66,9 +66,13 @@ rule mosdepth:
         )
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
+# For CRAM, indexcov takes the .crai files directly on input.
+#  crai resolution is often much less than 100KB (compared to) 16KB for the bam index,
+#  but it is sufficient to find large-scale differences in coverage.
 rule goleft_plots:
     input:
-        bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        bam = lambda wc: batch_by_name[wc.batch].tumor.bam + \
+            ('.crai' if batch_by_name[wc.batch].tumor.bam.endswith('.cram') else ''),
         fai = hpc.get_ref_file(run.genome_build, 'fa') + '.fai',
     params:
         directory = '{batch}/coverage/{batch}-indexcov',
