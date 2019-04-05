@@ -471,16 +471,12 @@ It's generated through the following steps:
        - on prioritisation gene list (2)
        - other TS gene (3)
     * other (4)
+    
+6. Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
 
 Variants are ordered by tier, then by effect, then by AF.
 
-The "effect" columns could be one of the following:
-
-   * "gene_fusion" - could lead to a coding fusion. If also tier=1 or 2, means it's a known fusion in the literature, regardless of order.
-   * "exon_loss" - a single or few exons where deleted, but not the whole gene
-   * "downstream_gene_variant" or "upstream_gene_variant" - an even down/upstream of a cancer gene, might mean a gene falling under control of a promoter of another gene
-   * "LOF" - any loss of function event (according to SnpEff) in a tumor suppressor gene
-   * All other types are unprioritized, but you can refer to them at [SnpEff documentation](http://snpeff.sourceforge.net/SnpEff_manual.html#input) -> Effect prediction details.
+The "effect" column can contain any effect predicted by [SnpEff documentation](http://snpeff.sourceforge.net/SnpEff_manual.html#input), with standardised terms from [Sequence ontology](http://www.sequenceontology.org).
 
 </details>
 
@@ -493,6 +489,7 @@ sv_path = params$somatic_sv
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E183__PRJ180263_E183_T01_D/structural/E183__PRJ180263_E183_T01_D-manta.tsv'
 #sv_path = '~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/structural/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A-manta.tsv'
 #sv_path = '~/rjn/projects/Hofmann_Cromwell/sync/bcbio_114a0_GRCh37_native/2016.249.17.MH.P033/umccrised_014/2016_249_17_MH_P033__CCR170115b_MH17T002P033/structural/2016_249_17_MH_P033__CCR170115b_MH17T002P033-manta.tsv'
+# sv_path = '~/rjn/projects/Hofmann_Avner/2019-04-03T0002_Avner_WGS_2016.249.18.NH.P008/2019-04-03T0002_Avner_WGS_2016_249_18_NH_P008-merged/umccrised/2016_249_18_NH_P008__CCR180177_NH18F002P008/structural/2016_249_18_NH_P008__CCR180177_NH18F002P008-manta.tsv'
 
 subset_genes = function(genes, ind) {
   genes %>% str_split('&') %>% map(~ .[ind] %>% replace("", NA) %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
@@ -560,15 +557,15 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   ) %>% 
     separate(effect, c("Effect", "Other effects"), sep = '&') %>% 
     dplyr::select(Tier = tier,
-                  Event = event, 
+                  Event = svtype, 
                   Gene,
                   Effect = Effect,
                   Detail = detail,
                   Location = location, 
                   AF,
-                  CN_chg = CN_change,
-                  SR, 
-                  PR, 
+                  `CN chg` = CN_change,
+                  SR,
+                  PR,
                   CN,
                   Ploidy,
                   `SR (ref)`, 

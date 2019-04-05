@@ -253,9 +253,22 @@ rule prep_sv_tsv:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
                       "split_read_support", "paired_support_PE", "paired_support_PR", "BPI_AF", "somaticscore",
                       "tier", "annotation",
-                      'AF', 'CN', 'CN_change', 'Ploidy', 'PURPLE_recovered']
+                      'AF', 'CN', 'CN_change', 'Ploidy', 'PURPLE_status']
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
+                tier = parse_info_field(rec, 'SV_TOP_TIER')
+                if not tier:
+                    tier = '4'
+                simple_ann = parse_info_field(rec, 'SIMPLE_ANN')
+
+                PURPLE_status = ''
+                if 'INFERRED' in rec.FILTER:
+                    PURPLE_status = 'INFERRED'
+                    if not simple_ann:
+                        simple_ann = f'{rec.INFO["SVTYPE"]}||||From_CNV|{tier}'
+                elif rec.INFO.get('RECOVERED'):
+                    PURPLE_status = 'RECOVERED'
+
                 data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
                         rec.INFO['SVTYPE'],
                         ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
@@ -263,13 +276,13 @@ rule prep_sv_tsv:
                         ','.join(map(str, rec.format('PR')[tumor_id])) if 'PR' in rec.FORMAT else '',
                         parse_info_field(rec, 'BPI_AF'),
                         parse_info_field(rec, 'SOMATICSCORE'),
-                        parse_info_field(rec, 'SV_TOP_TIER'),
-                        parse_info_field(rec, 'SIMPLE_ANN'),
+                        tier,
+                        simple_ann,
                         parse_info_field(rec, 'PURPLE_AF'),
                         parse_info_field(rec, 'PURPLE_CN'),
                         parse_info_field(rec, 'PURPLE_CN_CHANGE'),
                         parse_info_field(rec, 'PURPLE_PLOIDY'),
-                        parse_info_field(rec, 'RECOVERED'),
+                        PURPLE_status
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 
