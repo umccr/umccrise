@@ -33,7 +33,7 @@ rule purple_amber:
     params:
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
         outdir = 'work/{batch}/purple/amber',
-        jar = join(package_path(), 'jars', 'amber.jar'),
+        jar = join(package_path(), 'jars', 'amber-2.3.jar'),
         xms = 5000,
         xmx = purple_mem,
     log:
@@ -61,11 +61,13 @@ rule purple_cobalt:
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
         gc = hpc.get_ref_file(run.genome_build, 'purple_gc'),
+        ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         'work/{batch}/purple/cobalt/{batch}.cobalt',
         'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
     params:
         outdir = 'work/{batch}/purple/cobalt',
+        jar = join(package_path(), 'jars', 'count-bam-lines-1.6.jar'),
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         xms = 2000,
         xmx = purple_mem
@@ -79,11 +81,12 @@ rule purple_cobalt:
         mem_mb = purple_mem
     shell:
         conda_cmd.format('purple') +
-        'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
+        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
         '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
         '-tumor {wildcards.batch} '
         '-tumor_bam {input.tumor_bam} '
+        '-ref_genome {input.ref_fa} '
         '-threads {threads} '
         '-gc_profile {input.gc} '
         '-output_dir {params.outdir} 2>&1 | tee {log} '
