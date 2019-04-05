@@ -489,10 +489,16 @@ sv_path = params$somatic_sv
 # sv_path = '/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster9/E183__PRJ180263_E183_T01_D/structural/E183__PRJ180263_E183_T01_D-manta.tsv'
 #sv_path = '~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/structural/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A-manta.tsv'
 #sv_path = '~/rjn/projects/Hofmann_Cromwell/sync/bcbio_114a0_GRCh37_native/2016.249.17.MH.P033/umccrised_014/2016_249_17_MH_P033__CCR170115b_MH17T002P033/structural/2016_249_17_MH_P033__CCR170115b_MH17T002P033-manta.tsv'
-# sv_path = '~/rjn/projects/Hofmann_Avner/2019-04-03T0002_Avner_WGS_2016.249.18.NH.P008/2019-04-03T0002_Avner_WGS_2016_249_18_NH_P008-merged/umccrised/2016_249_18_NH_P008__CCR180177_NH18F002P008/structural/2016_249_18_NH_P008__CCR180177_NH18F002P008-manta.tsv'
+sv_path = '~/rjn/extras/vlad/tmp/umccrised_svpurpleinf/2016_249_18_NH_P008__CCR180177_NH18F002P008/structural/2016_249_18_NH_P008__CCR180177_NH18F002P008-manta.tsv'
 
 subset_genes = function(genes, ind) {
   genes %>% str_split('&') %>% map(~ .[ind] %>% replace("", NA) %>% .[!is.na(.)]) %>% map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
+}
+
+format_val = function(val, is_pct = F) {
+  ifelse(!is.na(val), 
+         format(val,  digits = 1) %>% str_c(ifelse(is_pct, "%", "")), 
+         NA)
 }
 
 split_sv_field = function(.data, field, is_pct = F) {
@@ -508,9 +514,9 @@ split_sv_field = function(.data, field, is_pct = F) {
       !!f1_q := as.double(!!f1_q) * ifelse(is_pct, 100, 1),
       !!f2_q := as.double(!!f2_q) * ifelse(is_pct, 100, 1),
       !!f_q  := (!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2,
-      !!f_q  := format(!!f_q,  digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
-      !!f1_q := format(!!f1_q, digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
-      !!f2_q := format(!!f2_q, digits = 1) %>% str_c(ifelse(is_pct, "%", ""))
+      !!f_q  := format_val(!!f_q, is_pct),
+      !!f1_q := format_val(!!f1_q, is_pct),
+      !!f2_q := format_val(!!f2_q, is_pct)
     )
 }
 
@@ -568,10 +574,15 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   PR,
                   CN,
                   Ploidy,
+                  PURPLE_status,
                   `SR (ref)`, 
                   `PR (ref)`, 
                   PE, 
-                  `PE (ref)`, 
+                  `PE (ref)`,
+                  `Somatic score` = somaticscore, 
+                  Transcript = transcript,
+                  `Other effects`,
+                  `Other affected genes`,
                   `AF at breakpoint 1` = AF1, 
                   `AF at breakpoint 2` = AF2, 
                   `CN at breakpoint 1` = CN1,
@@ -579,11 +590,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   `CN change at breakpoint 1` = CN_change1,
                   `CN change at breakpoint 2` = CN_change2,
                   `AF before adjustment, bp 1` = BPI_AF1,
-                  `AF before adjustment, bp 2` = BPI_AF2,
-                  `Somatic score` = somaticscore, 
-                  Transcript = transcript,
-                  `Other effects`,
-                  `Other affected genes`
+                  `AF before adjustment, bp 2` = BPI_AF2
     ) %>%
     dplyr::distinct()
     # dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
