@@ -6,6 +6,7 @@
 - Panel of normals rebuilt with lowfreq tumor-only Mutect2, threshold is raised to 5
 - Coverage report threshold: adjust to purity (CACAO and mosdepth)
 - Support of Cromwell MultiQC
+- Report somatic germine leakage (gnomAD variants) in CPSR
 
 0.13 (15 Feb 2019)
 
