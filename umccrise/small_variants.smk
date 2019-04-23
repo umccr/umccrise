@@ -143,8 +143,8 @@ rule germline_vcf_pass:
     shell:
         'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
 
-# Annotate any events found in ~200 cancer predisposition gene set.
-rule germline_vcf_subset:
+# Subset to ~200 cancer predisposition gene set.
+rule germline_predispose_subset:
     input:
         vcf = rules.germline_vcf_pass.output.vcf,
     output:
@@ -161,17 +161,68 @@ rule germline_vcf_subset:
                 return rec
         iter_vcf(input.vcf, output.vcf, func)
 
-# Preparations: annotate TUMOR_X and NORMAL_X fields, remove non-standard chromosomes and mitochondria, remove non-PASSed calls.
-# Suites for PCGR, but for all other processing steps too
-rule germline_vcf_prep:
+# Preparations: annotate TUMOR_X and NORMAL_X fields
+# Used for PCGR, but for all other processing steps too
+rule germline_predispose_subset_vcf_prep:
     input:
-        vcf = rules.germline_vcf_subset.output.vcf
+        vcf = rules.germline_predispose_subset.output.vcf
     output:
-        vcf = '{batch}/small_variants/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
-        tbi = '{batch}/small_variants/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
+        vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
+        tbi = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
     group: "germline_snv"
     shell:
         'pcgr_prep {input.vcf} | bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
+
+# # TODO: merge with filtered out somatic varians.
+# #  1. PoN, normal fail     - low freq (< 1/3 of purity) - remove; otherwise add to germline
+# #  2. PoN, normal ok       - low freq (< 1/3 of purity) - remove; any normal support - add; otherwise remove
+# #  3. gnomAD, normal fail  - add to germline
+# #  4. gnomAD, normal ok    - add to germline if has any normal support
+rule germline_leakage:
+    input:
+        vcf = rules.somatic_vcf_filter.output.vcf
+    output:
+        vcf = 'work/{batch}/small_variants/germline/{batch}-tumor-germline-leakage.vcf.gz',
+    group: "germline_snv"
+    params:
+        toremove = 'INFO/AC,INFO/AF,INFO/TUMOR_AF,INFO/TUMOR_VD,INFO_TUMOR_MQ,INFO/TUMOR_DP,FORMAT/AD,FORMAT/ADJAF,FORMAT/AF,FORMAT/VD,FILTER',
+        tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.name,
+        normal_sample = lambda wc: batch_by_name[wc.batch].normal.name,
+    shell:
+        'bcftools filter -i "Germline=1" {input.vcf} | '
+        'bcftools annotate -x "{params.toremove}" | ' \
+        'bcftools view -s {params.tumor_sample} | ' \
+        'sed \'s/{params.tumor_sample}/{params.normal_sample}/\' | ' \
+        'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
+
+# Subset to ~200 cancer predisposition gene set.
+rule germline_leakage_predispose_subset:
+    input:
+        vcf = rules.germline_leakage.output.vcf,
+    output:
+        vcf = 'work/{batch}/small_variants/germline/{batch}-tumor-germline-leakage-predispose_genes.vcf.gz',
+        tbi = 'work/{batch}/small_variants/germline/{batch}-tumor-germline-leakage-predispose_genes.vcf.gz.tbi',
+    params:
+        ungz = lambda wc, output: get_ungz_gz(output[0])[0]
+    group: "germline_snv"
+    run:
+        pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
+        genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
+        def func(rec, vcf):
+            if rec.INFO.get('PCGR_SYMBOL') is not None and rec.INFO['PCGR_SYMBOL'] in genes:
+                return rec
+        iter_vcf(input.vcf, output.vcf, func)
+
+rule germline_merge_with_leakage:
+    input:
+        vcf_germ = rules.germline_predispose_subset_vcf_prep.output.vcf,
+        vcf_lkge = rules.germline_leakage_predispose_subset.output.vcf,
+    output:
+        vcf = '{batch}/small_variants/{batch}-germline-leakage-predispose_genes.vcf.gz'
+    group: "germline_snv"
+    shell:
+        'bcftools concat -a {input.vcf_germ} {input.vcf_lkge} -Oz -o {output.vcf} '
+        '&& tabix -p vcf {output.vcf}'
 
 rule somatic_stats_report:
     input:
@@ -222,7 +273,7 @@ rule somatic_stats_report:
 
 rule germline_stats_report:
     input:
-        vcf = rules.germline_vcf_pass.output.vcf,
+        vcf = rules.germline_merge_with_leakage.output.vcf,
     output:
         'work/{batch}/small_variants/germline_stats.yml',
     params:
@@ -249,7 +300,7 @@ rule germline_stats_report:
 # stats section.
 rule bcftools_stats_germline:
     input:
-        rules.germline_vcf_pass.output.vcf,
+        rules.germline_merge_with_leakage.output.vcf,
     output:
         '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
     group: "germline_snv"
@@ -265,7 +316,7 @@ rule small_variants:
     input:
         expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
         expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
-        expand(rules.germline_vcf_prep.output, batch=batch_by_name.keys()),
+        expand(rules.germline_merge_with_leakage.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/small_variants.done'))
 

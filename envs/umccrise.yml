@@ -79,7 +79,7 @@ dependencies:
   - pip:
     - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
-    - "--editable=git+https://github.com/umccr/vcf_stuff#egg=vcf_stuff"
+    - "--editable=git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
     - "--editable=git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
     - "--editable=git+https://github.com/vladsaveliev/simple_sv_annotation#egg=simple_sv_annotation"

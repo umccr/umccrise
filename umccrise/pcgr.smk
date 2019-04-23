@@ -34,7 +34,7 @@ rule run_pcgr:
 
 rule run_cpsr:
     input:
-        vcf = rules.germline_vcf_prep.output.vcf,
+        vcf = rules.germline_merge_with_leakage.output.vcf,
         pcgr_data = hpc.get_ref_file(key='pcgr_data')
     output:
         '{batch}/pcgr/{batch}-normal.cpsr.html'
