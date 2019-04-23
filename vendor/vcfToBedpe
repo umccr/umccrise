@@ -316,7 +316,10 @@ def vcfToBedpe(vcf_file, bedpe_out):
             if sep not in var.alt:
                 sep = ']'
             r = re.compile(r'\%s(.+?)\%s' % (sep, sep))
-            chrom2, b2 = r.findall(var.alt)[0].split(':')
+            try:
+                chrom2, b2 = r.findall(var.alt)[0].split(':')
+            except:
+                continue
             b2 = int(b2)
             if 'EVENT' in var.info :
                 name = var.info['EVENT']
