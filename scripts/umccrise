@@ -221,7 +221,7 @@ def extract_tarball_input(output_dir, path, description):
     input_dir = safe_mkdir(join(output_dir, 'input'))
     tmp_dir = tempfile.TemporaryDirectory(prefix=input_dir)
     run_simple(f'tar -xzf {path} --directory {tmp_dir.name}')
-    bcbio_project = os.listdir(tmp_dir.name)[0]
+    bcbio_project = join(tmp_dir.name, os.listdir(tmp_dir.name)[0])
     assert isdir(bcbio_project), bcbio_project + " " + str(os.listdir(tmp_dir.name))
     return bcbio_project, tmp_dir
 
