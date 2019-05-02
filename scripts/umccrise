@@ -4,6 +4,8 @@ import sys
 from os.path import isfile, join, dirname, abspath, isdir
 import click
 import subprocess
+from glob import glob
+import tempfile
 
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir, splitext_plus
@@ -79,8 +81,11 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if docker_wrapper_mode:
         docker_mounts[output_dir] = '/output_dir'
 
+    tmp_dirs = []
+
     if isfile(bcbio_project):
-        bcbio_project = extract_tarball_input(output_dir, bcbio_project, 'Bcbio project input')
+        bcbio_project, tmp_dir = extract_tarball_input(output_dir, bcbio_project, 'Bcbio project input')
+        tmp_dirs.append(tmp_dir)
 
     conf['bcbio_project'] = verify_dir(bcbio_project, is_critical=True)
     if docker_wrapper_mode:
@@ -88,7 +93,8 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 
     if genomes_dir:
         if isfile(genomes_dir):
-            genomes_dir = extract_tarball_input(output_dir, genomes_dir, 'Genomes directory')
+            genomes_dir, tmp_dir = extract_tarball_input(output_dir, genomes_dir, 'Genomes directory')
+            tmp_dirs.append(tmp_dir)
 
         conf['genomes_dir'] = verify_dir(genomes_dir, is_critical=True)
         if docker_wrapper_mode:
@@ -191,6 +197,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         if cluster_log_dir:
             run_simple(f'chmod -R a+r {cluster_log_dir}', silent=True)
             logger.error(f'Review cluster job logs in {cluster_log_dir}')
+        for tmp_dir in tmp_dirs: tmp_dir.cleanup()
         sys.exit(1)
     except KeyboardInterrupt:
         logger.error('--------')
@@ -198,22 +205,25 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
         if cluster_log_dir:
             run_simple(f'chmod -R a+r {cluster_log_dir}', silent=True)
             logger.error(f'Review cluster job logs in {cluster_log_dir}')
+        for tmp_dir in tmp_dirs: tmp_dir.cleanup()
         sys.exit(1)
     else:
         logger.info('--------')
         if cluster_log_dir:
             run_simple(f'chmod -R a+r {cluster_log_dir}', silent=True)
         logger.info(f'Finished. Output directory: {output_dir}')
+        for tmp_dir in tmp_dirs: tmp_dir.cleanup()
 
 
 def extract_tarball_input(output_dir, path, description):
     if not path.endswith('.tar.gz'):
         critical(f'{description} must be either a directory, or a .tar.gz file: {path}')
-    work_dir = safe_mkdir(join(output_dir, 'work'))
-    run_simple(f'tar -xzf {path} --directory {work_dir}')
-    bcbio_project = join(work_dir, splitext_plus(path)[0])
-    assert isdir(bcbio_project), os.listdir(work_dir)
-    return bcbio_project
+    input_dir = safe_mkdir(join(output_dir, 'input'))
+    tmp_dir = tempfile.TemporaryDirectory(prefix=input_dir)
+    run_simple(f'tar -xzf {path} --directory {tmp_dir.name}')
+    bcbio_project = os.listdir(tmp_dir.name)[0]
+    assert isdir(bcbio_project), bcbio_project + " " + str(os.listdir(tmp_dir.name))
+    return bcbio_project, tmp_dir
 
 
 if __name__ == '__main__':
