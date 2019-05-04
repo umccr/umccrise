@@ -273,7 +273,7 @@ rule somatic_stats_report:
 
 rule germline_stats_report:
     input:
-        vcf = rules.germline_merge_with_leakage.output.vcf,
+        vcf = rules.germline_vcf_pass.output.vcf,
     output:
         'work/{batch}/small_variants/germline_stats.yml',
     params:
@@ -300,7 +300,7 @@ rule germline_stats_report:
 # stats section.
 rule bcftools_stats_germline:
     input:
-        rules.germline_merge_with_leakage.output.vcf,
+        rules.germline_vcf_pass.output.vcf,
     output:
         '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
     group: "germline_snv"
