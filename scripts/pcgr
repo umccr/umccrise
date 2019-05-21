@@ -113,6 +113,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                f' {sample}'
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
+               f' --no_vcf_validate'
         )
     try:
         run_simple(cmd)
