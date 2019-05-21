@@ -26,8 +26,10 @@ from umccrise import package_path
 @click.option('--pcgr-data', type=click.Path(exists=True),
               help='Path to PCGR data directory (defaults are known for spartan and raijin, or if --genomes-dir is provided)')
 @click.option('--genomes-dir', 'genomes_dir')
+@click.option('--puriry', 'puriry', type=click.FLOAT)
+@click.option('--ploidy', 'ploidy', type=click.FLOAT)
 def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, germline=False, use_docker=None,
-         pcgr_data=None, genomes_dir=None):
+         pcgr_data=None, genomes_dir=None, puriry=None, ploidy=None):
 
     if not pcgr_data:
         from hpc_utils import hpc
@@ -89,6 +91,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                f' {sample}'
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
+               f' --no_vcf_validate'
         )
     else:
         expected_file_base = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}')
@@ -113,7 +116,9 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                f' {sample}'
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
-               f' --no_vcf_validate'
+               f' --no_vcf_validate' +
+              (f' --purity {puriry}' if puriry else '') +
+              (f' --ploidy {ploidy}' if ploidy else '')
         )
     try:
         run_simple(cmd)

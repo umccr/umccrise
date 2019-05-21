@@ -11,31 +11,18 @@ from ngs_utils.file_utils import which
 MIN_VD = 12     # minimal coverage to call a pure heterozygous variant
 HIGH_VD = 100   # purity-normalized coverage above this is suspiciously high (lcr? repeat? CN?)
 
-def _get_low_high_covs(phenotype, purple_file):
-    p = _get_purity(phenotype, purple_file) if purple_file else 1
-    return round(MIN_VD / p), round(HIGH_VD / p)
 
-def _get_purity(phenotype, purple_file):
-    """ Reading purity fro somatic sample from Purple output
-        Assuming purity 100% for normal
-    """
-    purity = 1.0
-    if phenotype == 'tumor':
-        with open(purple_file) as f:
-            header, values = f.read().split('\n')[:2]
-        # #Purity  NormFactor  Score   DiploidProportion  Ploidy  Gender  Status  PolyclonalProportion  MinPurity  MaxPurity  MinPloidy  MaxPloidy  MinDiploidProportion  MaxDiploidProportion  Version  SomaticDeviation
-        # 0.7200   1.0400      0.3027  0.8413             1.8611  FEMALE  NORMAL  0.0000                0.6600     0.7700     1.8508     1.8765     0.8241                0.8558                2.17     0.0006
-        data = dict(zip(header.strip('#').split('\t'), values.split('\t')))
-        purity = float(data['Purity'])
-        # pure min cov  purity  min cov
-        # 12            0.4     30
-        # 12            0.5     24
-        # 12            0.6     20
-        # 12            0.7     17
-        # 12            0.8     15
-        # 12            0.9     13
-        # 12            1.0     12
-    return purity
+def _get_low_high_covs(phenotype, purple_file):
+    # pure min cov  purity  min cov
+    # 12            0.4     30
+    # 12            0.5     24
+    # 12            0.6     20
+    # 12            0.7     17
+    # 12            0.8     15
+    # 12            0.9     13
+    # 12            1.0     12
+    p = get_purity(purple_file, phenotype) if purple_file else 1.0
+    return round(MIN_VD / p), round(HIGH_VD / p)
 
 
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
@@ -43,7 +30,7 @@ rule mosdepth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
-        purple_purity = rules.purple_run.output.purity,
+        purple_file = rules.purple_run.output.purity,
         ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         '{batch}/coverage/{batch}-{phenotype}.quantized.bed.gz',
@@ -51,7 +38,7 @@ rule mosdepth:
     params:
         prefix = '{batch}/coverage/{batch}-{phenotype}'
     run:
-        low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_purity)
+        low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)
         cutoffs = f'0:1:{low_cov}:{high_cov}:'
         shell(
             'export MOSDEPTH_Q0=NO_COVERAGE && '
@@ -93,7 +80,7 @@ pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'
 rule run_cacao:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        purple_purity = rules.purple_run.output.purity,
+        purple_file = rules.purple_run.output.purity,
         ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         report = '{batch}/coverage/cacao_{phenotype}/{batch}_' + pcgr_genome + '_coverage_cacao.html'
@@ -108,7 +95,7 @@ rule run_cacao:
         mem_mb=2000
     threads: threads_per_sample
     run:
-        low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_purity)
+        low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)
         cutoffs = f'0:{low_cov}:{high_cov}'
         shell(
             conda_cmd.format('pcgr') +

@@ -14,7 +14,8 @@ rule run_pcgr:
     input:
         vcf = rules.somatic_vcf_filter_pass.output.vcf,
         # cns = '{batch}/purple/{batch}.purple.cnv',
-        pcgr_data = hpc.get_ref_file(key='pcgr_data')
+        pcgr_data = hpc.get_ref_file(key='pcgr_data'),
+        purple_file = rules.purple_run.output.purity,
     output:
         '{batch}/pcgr/{batch}-somatic.pcgr.html',
         '{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',
@@ -27,10 +28,14 @@ rule run_pcgr:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 20000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
-    shell:
-        conda_cmd.format('pcgr') +
-        'pcgr {input.vcf} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '
-        '{params.opt} --pcgr-data {input.pcgr_data}'
+    run:
+        purity = get_purity(input.purple_file)
+        ploidy = get_ploidy(input.purple_file)
+        shell(
+            conda_cmd.format('pcgr') +
+            'pcgr {input.vcf} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '
+            '{params.opt} --pcgr-data {input.pcgr_data} --puriry {purity} --ploidy {ploidy}'
+        )
 
 rule run_cpsr:
     input:

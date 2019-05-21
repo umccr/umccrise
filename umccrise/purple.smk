@@ -21,6 +21,33 @@ purple_cpu = min(threads_per_batch, 15)
 purple_mem = min(30000, 5000*threads_per_batch)
 
 
+def get_purple_metric(purple_file, metric='Purity'):
+    """ Reading the value from somatic sample from Purple output
+    """
+    with open(purple_file) as f:
+        header, values = f.read().split('\n')[:2]
+    # #Purity  NormFactor  Score   DiploidProportion  Ploidy  Gender  Status  PolyclonalProportion  MinPurity  MaxPurity  MinPloidy  MaxPloidy  MinDiploidProportion  MaxDiploidProportion  Version  SomaticDeviation
+    # 0.7200   1.0400      0.3027  0.8413             1.8611  FEMALE  NORMAL  0.0000                0.6600     0.7700     1.8508     1.8765     0.8241                0.8558                2.17     0.0006
+    data = dict(zip(header.strip('#').split('\t'), values.split('\t')))
+    purity = float(data[metric])
+    return purity
+
+
+def get_purity(purple_file, phenotype='tumor'):
+    """ Reading purity from somatic sample from Purple output
+        Assuming purity 100% for normal
+    """
+    purity = 1.0
+    if phenotype == 'tumor':
+        purity = get_purple_metric(purple_file, 'Purity')
+    purity = min(purity, 1.0)
+    return purity
+
+
+def get_ploidy(purple_file):
+    return get_purple_metric(purple_file, metric='Ploidy')
+
+
 rule purple_amber:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
