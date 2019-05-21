@@ -1,3 +1,8 @@
+0.15 (21 May 2019)
+
+- Update CPSR and PCGR
+- Pass tumor purity and ploidy into PCGR
+
 0.14 (1 Apr 2019)
 
 - Update SV prioritization method
