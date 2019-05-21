@@ -117,8 +117,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
                f' --no_vcf_validate' +
-              (f' --purity {puriry}' if puriry else '') +
-              (f' --ploidy {ploidy}' if ploidy else '')
+              (f' --tumor_purity {puriry}' if puriry else '') +
+              (f' --tumor_ploidy {ploidy}' if ploidy else '')
         )
     try:
         run_simple(cmd)
