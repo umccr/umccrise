@@ -5,7 +5,7 @@ UMCCRization of bcbio results: filter, normalise, generate plots and reports
 
 Umccrise post-processess an output from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) somatic variant calling pipeline for cancer samples:
 
-- Filters small somatic calls with [panel of normals](https://github.com/umccr/vcf_stuff#panel-of-normals)
+- Filters small somatic calls with [panel of normals](https://github.com/vladsaveliev/vcf_stuff#panel-of-normals)
 - Filters small germline calls with key genes
 - Runs [PCGR](https://github.com/sigven/pcgr) for somatic and germline variants
 - Generates an Rmd report with mutational signatures and strand bias analysis

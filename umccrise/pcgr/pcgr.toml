@@ -89,4 +89,4 @@ vep_skip_intergenic = false
 vcf2maf = true
 
 [tumor_type]
-type = "Cancer_Unknown_Primary_NOS"
+type = ""
