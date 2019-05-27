@@ -115,9 +115,9 @@ Unless only a single caller was used due to technical reasons (e.g. difficult hi
 
 The following post-processing steps occur:
 
-1. `somatic_vcf_annotate`: [annotate VCF](https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk) 
+1. `somatic_vcf_annotate`: [annotate VCF](https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk)
     against databases of known hotspots, germline variants, low mappability regions, UMCCR panel of normals
-2. `somatic_vcf_filter`: [filter VCF](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf) 
+2. `somatic_vcf_filter`: [filter VCF](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf)
     to remove germline variants and artefacts, but keep known hotspots
 3. As preparation for the allelic frequencies plots:
     * `subset_to_giab`: keep variants in 'high confidence' regions as determined by the [Genome in a Bottle consortium](http://jimb.stanford.edu/giab/)
@@ -470,7 +470,7 @@ It's generated through the following steps:
        - on prioritisation gene list (2)
        - other TS gene (3)
     * other (4)
-    
+
 6. Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
 
 Variants are ordered by tier, then by effect, then by AF.
@@ -492,8 +492,8 @@ subset_genes = function(genes, ind) {
 }
 
 format_val = function(val, is_pct = F) {
-  ifelse(!is.na(val), 
-         format(val,  digits = 1) %>% str_c(ifelse(is_pct, "%", "")), 
+  ifelse(!is.na(val),
+         format(val,  digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
          NA)
 }
 
@@ -504,8 +504,8 @@ split_sv_field = function(.data, field, is_pct = F) {
   f2_str = str_c(f_str, '2')
   f1_q = sym(f1_str)
   f2_q = sym(f2_str)
-  .data %>% 
-    separate(!!f_q, c(f1_str, f2_str), ",") %>% 
+  .data %>%
+    separate(!!f_q, c(f1_str, f2_str), ",") %>%
     mutate(
       !!f1_q := as.double(!!f1_q) * ifelse(is_pct, 100, 1),
       !!f2_q := as.double(!!f2_q) * ifelse(is_pct, 100, 1),
@@ -517,37 +517,37 @@ split_sv_field = function(.data, field, is_pct = F) {
 }
 
 if (length(readLines(con = sv_path, n = 2)) > 1) {
-  sv_all <- 
+  sv_all <-
     readr::read_tsv(sv_path, col_names = TRUE, col_types = col_types) %>%
-    dplyr::select(-caller, -sample) %>% 
-    split_sv_field(BPI_AF, is_pct = T) %>% 
-    split_sv_field(AF, is_pct = T) %>% 
-    split_sv_field(CN) %>% 
-    split_sv_field(CN_change) %>% 
+    dplyr::select(-caller, -sample) %>%
+    split_sv_field(BPI_AF, is_pct = T) %>%
+    split_sv_field(AF, is_pct = T) %>%
+    split_sv_field(CN) %>%
+    split_sv_field(CN_change) %>%
     dplyr::mutate(
       Ploidy = as.double(Ploidy),
       Ploidy = format(Ploidy, nsmall = 2)
-    ) %>% 
-    tidyr::separate(split_read_support, c("SR (alt)", "SR (ref)"), ",") %>% 
-    dplyr::mutate(SR = as.integer(`SR (alt)`)) %>% 
-    tidyr::separate(paired_support_PR, c("PR (alt)", "PR (ref)"), ",") %>% 
-    dplyr::mutate(PR = as.integer(`PR (alt)`)) %>% 
-    tidyr::separate(paired_support_PE, c("PE (alt)", "PE (ref)"), ",") %>% 
-    dplyr::mutate(PE = as.integer(`PE (alt)`)) %>% 
-    
+    ) %>%
+    tidyr::separate(split_read_support, c("SR (alt)", "SR (ref)"), ",") %>%
+    dplyr::mutate(SR = as.integer(`SR (alt)`)) %>%
+    tidyr::separate(paired_support_PR, c("PR (alt)", "PR (ref)"), ",") %>%
+    dplyr::mutate(PR = as.integer(`PR (alt)`)) %>%
+    tidyr::separate(paired_support_PE, c("PE (alt)", "PE (ref)"), ",") %>%
+    dplyr::mutate(PE = as.integer(`PE (alt)`)) %>%
+
     dplyr::filter(svtype != 'BND' | is.na(SR) | PR>SR) %>%  # remove BND with split read support higher than paired
-    
+
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>%  # Unpack multiple annotations per region
     tidyr::separate(annotation,
                     c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-  
+
     dplyr::mutate(start = format(start, big.mark = ',', trim = T),
-                  end = format(end, big.mark = ',', trim = T)) %>% 
+                  end = format(end, big.mark = ',', trim = T)) %>%
     dplyr::mutate(location = str_c(chrom, ':', start, sep = ''),
-                  location = ifelse(is.na(end), location, str_c(location))) %>% 
-    dplyr::arrange(tier, effect, desc(AF), genes) %>% 
-        
+                  location = ifelse(is.na(end), location, str_c(location))) %>%
+    dplyr::arrange(tier, effect, desc(AF), genes) %>%
+
     dplyr::mutate(Gene = subset_genes(genes, c(1, 2)),
                   Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
                                 str_c(Gene, '...', sep = ', '),
@@ -556,14 +556,14 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   Gene = ifelse(str_detect(effect, "gene_fusion"),
                                 Gene,
                                 Gene %>% str_replace_all('&', ', '))
-                  ) %>% 
-    separate(effect, c("Effect", "Other effects"), sep = '&') %>% 
+                  ) %>%
+    separate(effect, c("Effect", "Other effects"), sep = '&') %>%
     dplyr::select(Tier = tier,
-                  Event = svtype, 
+                  Event = svtype,
                   Gene,
                   Effect = Effect,
                   Detail = detail,
-                  Location = location, 
+                  Location = location,
                   AF,
                   `CN chg` = CN_change,
                   SR,
@@ -571,28 +571,28 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   CN,
                   Ploidy,
                   PURPLE_status,
-                  `SR (ref)`, 
-                  `PR (ref)`, 
-                  PE, 
+                  `SR (ref)`,
+                  `PR (ref)`,
+                  PE,
                   `PE (ref)`,
-                  `Somatic score` = somaticscore, 
+                  `Somatic score` = somaticscore,
                   Transcript = transcript,
                   `Other effects`,
                   `Other affected genes`,
-                  `AF at breakpoint 1` = AF1, 
-                  `AF at breakpoint 2` = AF2, 
+                  `AF at breakpoint 1` = AF1,
+                  `AF at breakpoint 2` = AF2,
                   `CN at breakpoint 1` = CN1,
-                  `CN at breakpoint 2` = CN2, 
+                  `CN at breakpoint 2` = CN2,
                   `CN change at breakpoint 1` = CN_change1,
                   `CN change at breakpoint 2` = CN_change2,
                   `AF before adjustment, bp 1` = BPI_AF1,
                   `AF before adjustment, bp 2` = BPI_AF2
     ) %>%
     dplyr::distinct()
-    # dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>% 
+    # dplyr::mutate(chr = factor(chr, levels = c(1:22, "X", "Y", "MT"))) %>%
 
   DT::datatable(sv_all, rownames = FALSE,
-                extensions = c('Scroller', 'Responsive', 'Buttons'), 
+                extensions = c('Scroller', 'Responsive', 'Buttons'),
                 options = list(scroller = TRUE, scrollX = F, scrollY = 500,
                                dom = 'Bfrtip', buttons = c('csv', 'excel')))
 } else {
@@ -706,7 +706,7 @@ file.path(params$purple_cnv) %>%
   readr::read_tsv(col_types = "ciididdccccccc") %>%
   dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
   dplyr::select(chrom, start, end, tot_cn) %>%
-  dplyr::mutate(seg_len = end - start) %>% 
+  dplyr::mutate(seg_len = end - start) %>%
   dplyr::summarise(n = n(),
                    mean_len = round(mean(seg_len), 0),
                    med_len = round(median(seg_len), 0),
@@ -760,13 +760,13 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 PURPLE outputs a file with copy number values per gene. Here, we include only
 the below information for ~1,100 genes in the UMCCR Cancer Gene list.
 
-* `Gene`: gene name 
+* `Gene`: gene name
 * `Min/MaxCN`: minimum/maximum copy number within the entire gene
 * `Chr`, `Start`, `End`: gene coordinates
 * `ChrBand`: chromosome band
 * `Role`: oncogene ('onco'), tumor suppressor ('ts'), or both ('onco+ts'),
    as reported by [Cancermine](https://github.com/jakelever/cancermine)
-* `TxID`: Ensembl Transcript ID  
+* `TxID`: Ensembl Transcript ID
 
 </details>
 
@@ -785,14 +785,14 @@ purple_gene_cnv %>%
                   oncogene & tsgene ~ "onco+ts",
                   oncogene ~ "oncogene",
                   tsgene ~ "tsgene",
-                  TRUE ~ "")) %>% 
-  dplyr::select(Gene,  MinCN = MinCopyNumber, MaxCN = MaxCopyNumber, 
-                Chr = Chromosome, Start, End, 
+                  TRUE ~ "")) %>%
+  dplyr::select(Gene,  MinCN = MinCopyNumber, MaxCN = MaxCopyNumber,
+                Chr = Chromosome, Start, End,
                 ChrBand = ChromosomeBand, Role) %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE), 
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 rownames = FALSE, extensions = c("Scroller", "Buttons"),
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400, 
-                               buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>% 
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
+                               buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0) %>%
   DT::formatRound(~ MinCN + MaxCN, digits = 1)
 ```
