@@ -1,92 +1,172 @@
-UMCCRization of bcbio results: filter, normalise, generate plots and reports
-----------------------------------------------------------------------------
+Umccrise
+--------
 
 [![Build Status](https://travis-ci.org/umccr/umccrise.svg?branch=master)](https://travis-ci.org/umccr/umccrise)
 
-Umccrise post-processess an output from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) somatic variant calling pipeline for cancer samples:
+Umccrise is designed to post-processess outputs from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) cancer variant calling analysis pipeline.
 
-- Filters small somatic calls with [panel of normals](https://github.com/vladsaveliev/vcf_stuff#panel-of-normals)
-- Filters small germline calls with key genes
-- Runs [PCGR](https://github.com/sigven/pcgr) for somatic and germline variants
-- Generates an Rmd report with mutational signatures and strand bias analysis
-- QCs coverage for 300 key cancer genes
-- Filters CNV and plots a diagram
-- Filters SV and generates files to view in Ribbon
-- Generates mini-bams to view in IGV
-- Copies MultiQC reports and summaries from bcbio
+- Filter artefacts and germline leakage from somatic calls
+- Run [PCGR](https://github.com/sigven/pcgr) to annotate, prioritize and report somatic variants
+- Run [CPSR](https://github.com/sigven/cpsr) to annotate, prioritize and report germline variants
+- Filter, annotate, prioritize and report SV
+- Run [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) to call CNV, purity, ploidy, and recover SV
+- Generate a MutliQC report comparing QC to "reference" samples
+- Generate a cancer report with mutational signatures, strand bias analysis, PURPLE results, and prioritized SVs
+- Run [CACAO](https://github.com/sigven/cacao) to calculate coverage in common hotspots, as well as goleft to estimate coverage problems
+- Run [Conpair](https://github.com/nygenome/Conpair) to tumor/normal concordance and sample contamination
+
+See the [workflow.md](workflow.md) for the complete description of the workflow.
+
+See the [HISTORY.md](HISTORY.md) for the version history.
+
 
 Contents:
 
 - [Installation](#installation)
-- [Updating](#updating)
+- [Reference data](#reference-data)
 - [Testing](#testing)
-- [Loading](#loading)
+- [UMCCR HPC](#umccr-hpc)
 - [Usage](#usage)
     + [Run selected steps](#run-selected-steps)
     + [Run on selected samples](#run-on-selected-samples)
     + [Use HPC cluster](#use-hpc-cluster)
-- [Output explanation](#output-explanation)
-- [Version history](#version-history)
+- [Updating](#updating)
+- [Development](#development)
+- [Docker](#docker)
+- [Building reference data](#building-reference-data)
 
 
 ## Installation
 
-Clone the repository
+Run the following to create a directory "umccrise" and install into it
 
 ```
-git clone https://github.com/umccr/umccrise
+mkdir umccrise
+cd umccrise
+source <(curl -s https://github.com/umccr/umccrise/blob/master/install.sh)
 ```
 
-Install conda
+It will generate `load_umccrise.sh` script that can be sourced to load the umccrise environment:
 
 ```
-# source ~/reset_path.sh
-unset PYTHONPATH
-unset CONDA_PREFIX
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
-export PATH=$(pwd)/miniconda/bin:$PATH
-conda update conda
+source load_umccrise.sh
 ```
 
-Install environments
+## Reference data
+
+Also you will need the reference data. Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle mounted to the Docker image under `/genomes`. You can specify a custom path with `--genomes <path>` (the path can be a tarball, which is useful for runs in a pipeline). You can copy the genome bundle from NCI (`/g/data3/gx8/extras/umccrise_2019_Mar/genomes`) anywhere else. To build the bundle from scratch, see [below](#building-reference-data).
+
+For the reference, to sync the reference data from Spartan to NCI, you can use:
 
 ```
-ENV_NAME=umccrise
-conda env create -p $(pwd)/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
-conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_purple --file umccrise/envs/purple.yml
-# conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
-conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
-conda activate $(pwd)/miniconda/envs/${ENV_NAME}  # export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
-pip install -e umccrise
+cd /data/cephfs/punim0010/extras/umccrise
+rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
 ```
 
-To automate sourcing in the future, you can create a loader script
-
-```
-ENV_NAME=umccrise
-cat <<EOT > load_umccrise.sh
-unset PYTHONPATH
-unset PERL5LIB
-export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$(pwd)/miniconda/bin:\$PATH
-export CONDA_PREFIX=$(pwd)/miniconda/envs/${ENV_NAME}
-EOT
-```
 
 ## Testing
 
+Load the umccrise environment, clone the repo with toy test data, and run nosetests: 
+
 ```
+source load_umccrise.sh
 git clone https://github.com/umccr/umccrise_test_data
 TEST_OPTS="-c -j2" nosetests -s umccrise_test_data/test.py
 ```
 
+## UMCCR HPC
+
+Load in Raijin
+
+```
+source /g/data3/gx8/extras/umccrise/load_umccrise.sh
+```
+
+Load on Spartan
+
+```
+source /data/cephfs/punim0010/extras/umccrise/load_umccrise.sh
+```
+
+## Usage
+
+Runs the patient analysis pipeline on bcbio-nextgen `final` folder.
+
+```
+umccrise /path/to/bcbio/project/final -j 30   # run using 30 CPUs
+```
+
+The output will be created in `umccrised` folder. To override, use `-o`:
+
+```
+umccrise /path/to/bcbio/project/final -o umccrised_results
+```
+
+#### Run selected steps
+
+Umccrise workflow consists of the following steps: `pcgr`, `coverage`, `structural`, `small_variants`, `rmd`, `multiqc`, `purple`, `igv`.
+
+To run just a particular step (or steps), use:
+
+```
+umccrise /path/to/bcbio/project/final <step_name>
+```
+
+Where `<step_name>` is from the list above. E.g.:
+
+```
+umccrise /path/to/bcbio/project/final pcgr
+```
+
+Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-igv`) takes ~5 hours for a WGS sample compared to ~20 minutes for all other steps combined. For that reason, it is always executed in the end of the pipeline, so you can expect that when it is being executed, all other output is ready.
+
+#### Run on selected samples
+
+By default, Umccrise will process all batches in the run in parallel. You can submit only certain samples/batchs using `--sample` or `--batch` arguments, e.g.:
+
+```
+umccrise /path/to/bcbio/project/final --batch cup-batch
+umccrise /path/to/bcbio/project/final --sample cup-tumor_1,cup-tumor_2
+```
+
+Or you might want to exclude certain samples/batches with `--exclude`:
+
+```
+umccrise /path/to/bcbio/project/final --exclude cup-tumor_1,cup-batch_2
+```
+
+#### Use HPC cluster
+
+Set `--cluster-auto` (`-c`) option to submit jobs on HPC cluster. Supports Spartan for now.
+
+```
+umccrise /path/to/bcbio/project/final -j 30 -c
+```
+
+Alternatively, you can specify a custom submission template with `--cluster-cmd`, e.g.:
+
+```
+umccrise /path/to/bcbio/project/final -j 30 --cluster-cmd "sbatch -p vccc -n {threads} -t 24:00:00 --mem {resources.mem_mb} -J umccrise"
+```
+
+Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use at single moment.
+
+
 ## Updating
 
 ```
-source load_umccrise.sh
-git pull                                                                  # if the code base changed
-conda env update -f envs/umccrise.yml                                     # if dependencies changed
-python setup.py develop && source deactivate && source load_umccrise.sh   # if added/renamed packages or scripts
+source load_umccrise.sh            # load the umccrise environment
+cd umccrise ; git pull ; cd ..     # if the code base changed
+```
+
+If dependencies changed:
+
+```
+conda activate miniconda/envs/umccrise
+conda env update -f umccrise/envs/umccrise.yml -p miniconda/envs/umccrise
+conda env update -f umccrise/envs/pcgr_linux.yml -p miniconda/envs/umccrise_pcgr
+# conda env update -f umccrise/envs/pcgr_macos.yml -p miniconda/envs/umccrise_pcgr  # for macos
+conda env update -f umccrise/envs/purple.yml -p miniconda/envs/umccrise_purple
 ```
 
 ## Development
@@ -95,29 +175,24 @@ Changes pulled in `umccrise` repository clone folder will affect immidiately due
 
 ```
 source load_umccrise.sh
-mv ./umccrise/envs/src/* .
-rm pip-delete-this-directory.txt
-pip install -e ngs-utils
-pip install -e hpc-utils
-pip install -e vcf-stuff
-pip install -e multiqc
-pip install -e multiqc-bcbio
-pip install -e simple-sv-annotation
+git clone https://github.com/vladsaveliev/NGS_Utils ngs_utils   ; pip intall -e ngs_utils
+git clone https://github.com/umccr/hpc_utils                    ; pip intall -e hpc_utils
+git clone https://github.com/vladsaveliev/vcf_stuff             ; pip intall -e vcf_stuff
 ```
 
-## Reference data bundle
 
-Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle 
-mounted to the Docker image under `/genomes`.
+## Docker
 
-To sync the reference data from Spartan to NCI, use:
+You can pull the ready-to-run docker image from DockerHub:
 
 ```
-cd /data/cephfs/punim0010/extras/umccrise
-rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
+docker pull umccr/umccrise:latest
 ```
 
-### Sources for the reference data
+## Building reference data
+
+To build the bundle from scratch, follow instructions for each kind of data below.
+
 
 #### GNOMAD
 
@@ -341,174 +416,6 @@ convert ../../GRCh37/hmf/out_150_hg19.mappability.bed.gz
 We use [HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd?path=%2FHMF-Pipeline-Resources) for SV prioritization. See `NGS_Utils/ngs_utils/refernece_data/__init__.py` for details.
 
 
-## Testing
-
-Tests are stored in a separate repository https://github.com/umccr/umccrise_test_data
-
-```
-source load_umccrise.sh
-git clone https://github.com/umccr/umccrise_test_data
-nosetests -s umccrise_test_data/test.py -a normal
-```
-
-## Loading
-
-*Raijin:*
-
-```
-source /g/data3/gx8/extras/umccrise/load_umccrise.sh
-```
-
-*Spartan:*
-
-```
-source /data/cephfs/punim0010/extras/umccrise/load_umccrise.sh
-```
-
-## Usage
-
-Runs the patient analysis pipeline on bcbio-nextgen `final` folder.
-
-```
-umccrise /path/to/bcbio/project/final -j 30  # run using 30 CPUs
-```
-
-The output will be created in `umccrised` folder. To override, use `-o`:
-
-```
-umccrise /path/to/bcbio/project/final -o umccrised_results
-```
-
-#### Run selected steps
-
-Umccrise workflow consists of the following steps: `pcgr`, `coverage`, `structural`, `small_variants`, `rmd`, `multiqc`, `copy_logs`, `igv`.
-
-To run just a particular step (or steps), use:
-
-```
-umccrise /path/to/bcbio/project/final <step_name>
-```
-
-Where `<step_name>` is from the list above. E.g.:
-
-```
-umccrise /path/to/bcbio/project/final pcgr
-```
-
-Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-igv`) takes ~5 hours for a WGS sample compared to ~20 minutes for all other steps combined. For that reason, it is always executed in the end of the pipeline, so you can expect that when it is being executed, all other output is ready.
-
-#### Run on selected samples
-
-By default, Umccrise will process all batches in the run in parallel. You can submit only certain samples/batchs using `--sample` or `--batch` arguments, e.g.:
-
-```
-umccrise /path/to/bcbio/project/final --batch cup-batch
-umccrise /path/to/bcbio/project/final --sample cup-tumor_1,cup-tumor_2
-```
-
-Or you might want to exclude certain samples/batches with `--exclude`:
-
-```
-umccrise /path/to/bcbio/project/final --exclude cup-tumor_1,cup-batch_2
-```
-
-#### Use HPC cluster
-
-Set `--cluster-auto` (`-c`) option to submit jobs on HPC cluster. Supports Spartan for now.
-
-```
-umccrise /path/to/bcbio/project/final -j 30 -c
-```
-
-Alternatively, you can specify a custom submission template with `--cluster-cmd`, e.g.:
-
-```
-umccrise /path/to/bcbio/project/final -j 30 --cluster-cmd "sbatch -p vccc -n {threads} -t 24:00:00 --mem {resources.mem_mb} -J umccrise"
-```
-
-Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use at single moment.
-
-
-## Output explanation
-
-```
-umccrised/
-    {batch}/                               # - Folder with a batch {batch} (tumor/normal pair) analysis
-        {batch}-{sample}-rmd_report.html   # - Rmd report with mutational signatures, AF frequencies,
-                                           #   structural variants, and strand bias plots
-        coverage/
-            {batch}-{sample}-indexcov/index.html  # - Plots by `goleft indexcov`
-            {batch}-{sample}-normal.callable.bed  # - Coverage for exons of 300 AstraZeneca key cancer genes,
-            {batch}-{sample}-tumor.callable.bed   #   calculated by `goleft depth`. The "callable" coverage
-            {batch}-{sample}-normal.depth.bed     #   thresholds: 10x for normal, 30x for tumor.
-            {batch}-{sample}-tumor.depth.bed      #       
-        igv/ 
-            {batch}-{sample}-normal-mini.bam      # - Minibams, containing locations of AZ 300 cancer genes,
-            {batch}-{sample}-tumor-mini.bam       #   and areas around passed variants (SNV, indels, SV, CNV)
-        pcgr/
-            {batch}-{sample}-somatic.pcgr_acmg.html
-            {batch}-{sample}-normal.pcgr_acmg.html
-        snv/
-            {batch}-{sample}-somatic-ensemble-pon_softfiltered.vcf.gz  # - Somatic small variants (SNV and indels), soft- and
-            {batch}-{sample}-somatic-ensemble-pon_hardfiltered.vcf.gz  #   hard-filtered against the panel of normals
-            {batch}-{sample}-normal-ensemble-cancer_genes.vcf.gz       # - Germline small variants, subset to 106 cancer genes
-        structural/
-            {batch}-{sample}-sv-prioritize-manta-pass.bedpe       # - Prioritized Manta SV calls in differrent
-            {batch}-{sample}-sv-prioritize-manta-pass.ribbon.bed  #   formats (e.g. to view in Ribbon)
-            {batch}-{sample}-sv-prioritize-manta-pass.tsv         #
-            {batch}-{sample}-sv-prioritize-manta-pass.vcf         #
-            {batch}-{sample}-cnvkit-diagram.pdf                   # - Diagram of CNV called by CNVkit
-    log/
-        config/                            # - Copy of config folder from the original bcbio-nextgen run
-            {project-name}-template.yaml   #
-            {project-name}.csv             #
-            {project-name}.yaml            #
-        {project-name}-data_versions.csv   # - Copy of the bcbio-nextgen file with reference data versions
-        {project-name}-programs.txt        # - Copy of the bcbio-nextgen file with software versions
-    {project-name}-multiqc_report.html     # - Project-level MultiQC summary report: coverage stats and more
-```
-
-## Dockerized installation
-
-Download conda
-
-```
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-bash miniconda.sh -b -p ./miniconda && rm miniconda.sh
-. miniconda/etc/profile.d/conda.sh
-```
-
-Create minimal environment
-
-```
-conda env create --file deploy/env_docker_wrapper.yml
-conda activate umccrise
-pip install -e .
-```
-
-Pull docker
-
-```
-docker pull umccr/umccrise:latest
-```
-
-Testing
-
-```
-git clone https://github.com/umccr/umccrise_test_data
-nosestests -s umccrise_test_data/test.py -a docker
-```
-
-Usage
-
-```
-umccrise --docker \
-    umccrise_test_data/data/bcbio_test_project \
-    -o umccrise_test_data/results/dockerized \
-    -j 2 \
-    --bcbio-genomes umccrise_test_data/data/genomes \
-    --pon umccrise_test_data/data/panel_of_normals
-```
 
 
 

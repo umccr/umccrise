@@ -77,11 +77,11 @@ dependencies:
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
   - pip:
-    - "--editable=git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
-    - "--editable=git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
-    - "--editable=git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
-    - "--editable=git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
-    - "--editable=git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
-    - "--editable=git+https://github.com/vladsaveliev/simple_sv_annotation#egg=simple_sv_annotation"
-    - "--editable=git+https://bitbucket.org/vladsaveliev/snakemake#egg=snakemake"
+    - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
+    - "git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
+    - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
+    - "git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
+    - "git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
+    - "git+https://github.com/vladsaveliev/simple_sv_annotation#egg=simple_sv_annotation"
+    - "git+https://bitbucket.org/vladsaveliev/snakemake#egg=snakemake"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
