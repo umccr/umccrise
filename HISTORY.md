@@ -2,6 +2,7 @@
 
 - Update PCGR to 0.8.1 and CPSR to 0.4.1 (with a new scheme for germline filtering)
 - Pass tumor purity and ploidy into PCGR
+- VEP annotation pick order: pick APPRIS first instead of canonical (to match with SV)
 
 0.14 (1 Apr 2019)
 

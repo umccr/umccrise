@@ -5,26 +5,45 @@
 
 ### Somatic
 
-Umccrise post-processes somatic variants in order to remove most of the artefacts and germline leakage, but at the same time be conservative in known hotspot loci in order to never miss actionable variants. The following post-processing scheme is designed for that purpose:
+Umccrise post-processes somatic variants in order to remove most of the artefacts and germline leakage, but at the same time be conservative enough in known hotspot loci to make sure to preserve actionable variants. The following post-processing scheme is designed for that purpose:
 
 1. Take passing "ensemble" somatic VCF from [bcbio](https://github.com/umccr/workflows/tree/master/bcbio). "Ensemble" has variants supported by at least 2 of 3 callers (we use [strelka2](https://github.com/Illumina/strelka), [vardict](https://github.com/AstraZeneca-NGS/VarDict), and [mutect2](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)). Unless it's an FFPE sample, in which case usually only strelka2 is used. 
-2. Sort VCF by coordinate, extract PASS calls,
-3. Run [SAGE](https://github.com/hartwigmedical/hmftools/tree/master/sage) low frequency variant caller and add result to the VCF. SAGE looks at coding regions for inframe indels, and the following hotspots with high prior probability:
+2. Sort VCF by coordinate, extract PASS calls (which applies only to strelka2, as ensemble is already PASS-only).
+3. Run [SAGE](https://github.com/hartwigmedical/hmftools/tree/master/sage) and add the result to the VCF. SAGE is a low-frequency variant caller with a high precision, created by Hartwig Medical Foundation. Instead of the whole genome, it targets only coding regions for inframe indels, and known hotspot sites from the following list:
 	*  [Cancer Genome Interpreter](https://www.cancergenomeinterpreter.org/home) 
 	*  [CIViC](http://civic.genome.wustl.edu/) - Clinical interpretations of variants in cancer
 	*  [OncoKB](https://oncokb.org/) - Precision Oncology Knowledge Base
-4. Annotate the VCF against:
+4. Annotate the VCF against the reference sources:
 	*  SAGE hotspots (CGI, CiViC, OncoKB), 
 	*  GiaB confidence regions,
-	*  GnomAD common variants (max population frequency > 1%),
+	*  [GnomAD](https://gnomad.broadinstitute.org) whole genome common variants (max population frequency > 1%),
 	*  Low complexity regions (Heng Li's)
 	*  LCR, low and high GC regions, self-chain and bad promoter regions (GA4GH),
 	*  [ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist),
 	*  Segmental duplication regions (UCSC),
 	*  UMCCR [panel of normals](https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/panel_of_normals/story/panel_of_normals.md), build from tumor-only mutect2 calls from ~200 normal samples.
-5. If after removing non-hotspot GnomAD variants there is still > 500k somatic variant left, consider sample highly mutated (FFPE?) and reduce to cancer genes (to avoid downstream PCGR and UMCCR cancer report choking).
-6. Standardize VCF fields: add new INFO fields TUMOR_AF, NORMAL_AF, TUMOR_DP, NORMAL_DP, TUMOR_VD, NORMAL_VD (for PCGR), and AD FORMAT field (for PURPLE).
-7. Run [PCGR](https://github.com/sigven/pcgr) to annotate VCF with more external sources, run VEP to annotate the impact, and classify by tiers. Adds INFO fields: TIER, SYMBOL, CONSEQUENCE, MUTATION_HOTSPOT, INTOGEN_DRIVER_MUT, TCGA_PANCANCER_COUNT, CLINVAR_CLNSIG, ICGC_PCAWG_HITS, COSMIC_CNT.
+5. If after removing non-hotspot GnomAD variants there is still > 500k somatic variant left, consider sample highly mutated (FFPE?) and reduce to cancer genes (to avoid downstream PCGR and UMCCR cancer reports choking).
+6. Standardize the VCF fields: add new INFO fields TUMOR_AF, NORMAL_AF, TUMOR_DP, NORMAL_DP, TUMOR_VD, NORMAL_VD (for PCGR), and AD FORMAT field (for PURPLE).
+7. Run [PCGR](https://github.com/sigven/pcgr) to annotate VCF with more external sources:
+	* [VEP](http://www.ensembl.org/info/docs/tools/vep/index.html)  to infer the functional impact
+	* TCGA and ICGC recurrent variants
+	* [Open Targets Platform](https://targetvalidation.org/)
+    * [ClinVar](http://www.ncbi.nlm.nih.gov/clinvar/) - Database of variants with clinical significance
+    * [CancerMine](https://zenodo.org/record/2662509#.XM0xMdMzaL4) - Literature-derived database of tumor suppressor genes/proto-oncogenes
+    * [DoCM](http://docm.genome.wustl.edu) - Database of curated mutations
+    * [CBMDB](http://www.cancergenomeinterpreter.org/biomarkers) - Cancer Biomarkers database 
+    * [DisGeNET](http://www.disgenet.org) - Database of gene-tumor type associations
+    * [Cancer Hotspots](http://cancerhotspots.org) - Resource for statistically significant mutations in cancer
+    * [dBNSFP](https://sites.google.com/site/jpopgen/dbNSFP) - Database of non-synonymous functional predictions
+    * [UniProt/SwissProt KnowledgeBase](http://www.uniprot.org) - Resource on protein sequence and functional information
+    * [Pfam](http://pfam.xfam.org) - Database of protein families and domains
+    * [DGIdb](http://dgidb.genome.wustl.edu) - Database of targeted cancer drugs
+    * [ChEMBL](https://www.ebi.ac.uk/chembl/) - Manually curated database of bioactive molecules
+    
+    PCGR also classifies by tiers based on annotations and functional impact.
+
+    At the end, this step adds INFO fields into the VCF: TIER, SYMBOL, CONSEQUENCE, MUTATION_HOTSPOT, INTOGEN_DRIVER_MUT, TCGA_PANCANCER_COUNT, CLINVAR_CLNSIG, ICGC_PCAWG_HITS, COSMIC_CNT.
+
 8. [Filter variants](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf) to remove germline variants and artefacts, but rescue known hotspots/actionable variants:
 	*  Rescue SAGE hotspots (CGI, CiViC, OncoKB),
 	*  Rescue PCGR TIER 1 and 2 (strong and potential clinical significance, according to [ACMG](https://www.ncbi.nlm.nih.gov/pubmed/27993330) standard guidelines,
@@ -48,7 +67,7 @@ The idea is to simply bring germline variants in cancer predisposition genes:
 
 1. Take passing "ensemble" somatic VCF from [bcbio](https://github.com/umccr/workflows/tree/master/bcbio). "Ensemble" has variants supported by at least 2 of 3 callers (we use strelka2, vardict, and mutect2).
 2. Sort VCF by coordinate, extract PASS calls.
-3. Add variants from somatic calling filtered as common GnomAD.
+3. Add back variants from somatic calling filtered as common GnomAD.
 4. Subset variants to a list of ~200 cancer predisposition genes, which is build by [CPSR](https://github.com/sigven/cpsr) from 3 curated sources: [TCGA](https://www.ncbi.nlm.nih.gov/pubmed/29625052) pan-cancer study, [COSMIC CGC](https://cancer.sanger.ac.uk/census), and [Norwegian Cancer Genomics Consortium](http://cancergenomics.no/).
 5. Report variants using CPSR, which classifies variants in the context of cancer predisposition, by overlapping with [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) pathogenic and VUS variants and GnomAD rare variants. It also ranks variants according pathogenicity score by ACMG and cancer-specific criteria.
 
