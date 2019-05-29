@@ -24,7 +24,7 @@ params:
   purple_circos_baf: 'x'
   purple_purity: 'x'
   purple_cnv: 'x'
-  purple_germline_cnv: 'x'
+  purple_fitted_cnv: 'x'
   purple_qc: 'x'
 description: "Analysis of tumor/normal samples at UMCCR"
 title: "`r paste(params$title, params$batch_name)`"
@@ -48,7 +48,6 @@ library(readr)
 library(rmarkdown)
 library(stringr)
 library(tidyr)
-library(vcfR)
 library(purrr)
 ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
 library(ref_genome, character.only = TRUE)
@@ -57,39 +56,57 @@ library(tx_ref_genome, character.only = TRUE)
 ```
 
 ```{r render_book_inter, eval=F, echo=FALSE}
-params_spartan <- list(
-  tumor_name='PRJ180471_BK221-NET1',
-  batch_name='BK221-NET1__PRJ180471_BK221-NET1',
-  genome_build='hg19',
-  key_genes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-  tsgenes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.tsgenes.latest.genes',
-  af_global=      '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor.txt',
-  af_keygenes=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor_keygenes.txt',
-  somatic_snv=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/ensemble-with_chr_prefix.vcf',
-  somatic_sv='/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster2/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv',
-  purple_gene_cnv='~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/purple.tsv',
-  purple_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.cnv',
-  purple_germline_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.germline.cnv',
-  purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity',
-  purple_qc='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.qc')
+params_tmp <- list(
+  spartan = list(
+    tumor_name='PRJ180471_BK221-NET1',
+    batch_name='BK221-NET1__PRJ180471_BK221-NET1',
+    genome_build='hg19',
+    key_genes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
+    tsgenes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.tsgenes.latest.genes',
+    af_global=      '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor.txt',
+    af_keygenes=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor_keygenes.txt',
+    somatic_snv=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/ensemble-with_chr_prefix.vcf',
+    somatic_sv='/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster2/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv',
+    purple_gene_cnv='~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/purple.tsv',
+    purple_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.cnv',
+    purple_fitted_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.fitted',
+    purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity',
+    purple_qc='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.qc'),
 
-params_local <- list(
-  tumor_name='PRJ180201_1965_8073358T',
-  batch_name='1965__PRJ180201_1965_8073358T',
-  genome_build='hg19',
-  key_genes='/Users/pdiakumis/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-  tsgenes='/Users/pdiakumis/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.tsgenes.latest.genes',
-  af_global='data/sig/af_tumor_notempty.txt',
-  af_keygenes= 'data/sig/keygenes_notempty.txt',
-  somatic_snv='data/sig/ensemble-with_chr_prefix.vcf',
-  somatic_sv='data/E198__PRJ180490_E198-T01-D-manta.tsv',
-  purple_gene_cnv='data/purple/purple.tsv',
-  purple_cnv='data/purple/1965__PRJ180201_1965_8073358T.purple.cnv',
-  purple_germline_cnv='data/purple/1965__PRJ180201_1965_8073358T.purple.germline.cnv',
-  purple_purity='data/purple/1965__PRJ180201_1965_8073358T.purple.purity',
-  purple_qc='data/purple/1965__PRJ180201_1965_8073358T.purple.qc'
+  raijin = list(
+    tumor_name='PRJ180598_SFRC01073-S2T',
+    batch_name='SFRC01073__PRJ180598_SFRC01073-S2T',
+    genome_build='hg19',
+    key_genes='/g/data3/gx8/projects/Diakumis/umccrise/umccrise/envs/src/ngs-utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
+    tsgenes='/g/data3/gx8/projects/Diakumis/umccrise/umccrise/envs/src/ngs-utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.tsgenes.latest.genes',
+    af_global='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/afs/af_tumor.txt',
+    af_keygenes='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/afs/af_tumor_keygenes.txt',
+    somatic_snv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/ensemble-with_chr_prefix.vcf',
+    somatic_sv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/SFRC01073__PRJ180598_SFRC01073-S2T/structural/SFRC01073__PRJ180598_SFRC01073-S2T-manta.tsv',
+    purple_gene_cnv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/purple.tsv',
+    purple_cnv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.cnv',
+    purple_fitted_cnv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.fitted',
+    purple_purity='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.purity',
+    purple_qc='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.qc'),
+
+  local = list(
+    tumor_name='PRJ180598_SFRC01073-S2T',
+    batch_name='SFRC01073__PRJ180598_SFRC01073-S2T',
+    genome_build='hg19',
+    key_genes='~/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
+    tsgenes='~/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.tsgenes.latest.genes',
+    af_global='data/sig/af_tumor_notempty.txt',
+    af_keygenes= 'data/sig/keygenes_notempty.txt',
+    somatic_snv='data/sig/ensemble-with_chr_prefix.vcf',
+    somatic_sv='data/E198__PRJ180490_E198-T01-D-manta.tsv',
+    purple_gene_cnv='data/purple/purple.tsv',
+    purple_cnv='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.cnv',
+    purple_fitted_cnv='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.fitted',
+    purple_purity='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.purity',
+    purple_qc='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.qc')
 )
-params <- params_spartan
+
+params <- params_tmp[["local"]]
 
 render_me <- function() {
   rmarkdown::render(
@@ -110,8 +127,8 @@ AFs range from 0 to 1, or 0%-100% (we filter out all novel variants with AF < 10
 <details>
 <summary>Details</summary>
 
-The variants are called in bcbio by 3 different callers, and calls supported by at least 2 of 3 are used ("ensemble" approach).
-Unless only a single caller was used due to technical reasons (e.g. difficult highly mutated FFPE sample).
+Variants are typically called in bcbio by 3 different callers, with calls supported by at least 2 of them used ("ensemble" approach).
+In some cases only a single caller is used due to technical reasons (e.g. highly mutated FFPE sample).
 
 The following post-processing steps occur:
 
@@ -432,7 +449,7 @@ Structural variants are inferred with [Manta](https://github.com/illumina/manta)
 adjusted using [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator#7-structural-variant-recovery-and-single-breakend-filtering),
 prioritised using [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation).
 
-AFs, CNs, CN changes and ploidy are all purity-adjusted.
+AFs, CN changes and ploidy are all purity-adjusted.
 
 <details>
 <summary>Details</summary>
@@ -535,7 +552,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     tidyr::separate(paired_support_PE, c("PE (alt)", "PE (ref)"), ",") %>%
     dplyr::mutate(PE = as.integer(`PE (alt)`)) %>%
 
-    dplyr::filter(svtype != 'BND' | is.na(SR) | PR>SR) %>%  # remove BND with split read support higher than paired
+    dplyr::filter(svtype != 'BND' | is.na(SR) | PR > SR) %>%  # remove BND with split read support higher than paired
 
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>%  # Unpack multiple annotations per region
     tidyr::separate(annotation,
@@ -616,6 +633,11 @@ A failed QC status can be attributed to several factors
 
 __QC__
 
+QC description:
+
+* `foo`:
+
+
 There are several reasons PURPLE may classify a sample as failed:
 
 * `FAIL_SEGMENT`: more than 120 copy number segments unsupported at either end
@@ -637,8 +659,8 @@ There are several reasons PURPLE may classify a sample as failed:
 
 ```{r purply-qc}
 # read both datasets
-qc_path = params$purple_qc
-purity_path = params$purple_purity
+qc_path <- params$purple_qc
+purity_path <- params$purple_purity
 
 purple_qc <-
   file.path(qc_path) %>%
@@ -656,16 +678,16 @@ purple_purity <-
   unlist()
 
 # sanity checks in case something changes between versions
-nms1 <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
-          "SegmentScore", "UnsupportedSegments", "Ploidy",
-          "AmberGender", "CobaltGender", "DeletedGenes")
-stopifnot(all(names(purple_qc) == nms1))
+nms_purple_qc <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
+                   "SegmentScore", "UnsupportedSegments", "Ploidy",
+                   "AmberGender", "CobaltGender", "DeletedGenes")
+stopifnot(all(names(purple_qc) == nms_purple_qc))
 
-nms2 <- c("#Purity", "NormFactor", "Score", "DiploidProportion", "Ploidy",
-          "Gender", "Status", "PolyclonalProportion", "MinPurity", "MaxPurity",
-          "MinPloidy", "MaxPloidy", "MinDiploidProportion", "MaxDiploidProportion",
-          "Version", "SomaticPenalty")
-stopifnot(all(names(purple_purity) == nms2))
+nms_purple_purity <- c("#Purity", "NormFactor", "Score", "DiploidProportion", "Ploidy",
+                       "Gender", "Status", "PolyclonalProportion", "MinPurity", "MaxPurity",
+                       "MinPloidy", "MaxPloidy", "MinDiploidProportion", "MaxDiploidProportion",
+                       "Version", "SomaticPenalty")
+stopifnot(all(names(purple_purity) == nms_purple_purity))
 
 # for shorter reference in glue
 p <- purple_purity
@@ -692,27 +714,11 @@ tab %>%
                                     grepl("FAIL", value) ~ "red",
                                     value == "FEMALE" ~ "purple",
                                     value == "MALE" ~ "blue",
+                                    value == "MALE_KLINEFELTER" ~ "red",
                                     value == "TRUE" ~ "green",
                                     value == "FALSE" ~ "red",
                                     TRUE ~ "black"))) %>%
   knitr::kable(escape = FALSE, caption = "QC, Purity & Ploidy Summary") %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
-```
-
-
-
-```{r purple-cnv-summary}
-file.path(params$purple_cnv) %>%
-  readr::read_tsv(col_types = "ciididdccccccc") %>%
-  dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
-  dplyr::select(chrom, start, end, tot_cn) %>%
-  dplyr::mutate(seg_len = end - start) %>%
-  dplyr::summarise(n = n(),
-                   mean_len = round(mean(seg_len), 0),
-                   med_len = round(median(seg_len), 0),
-                   min_cn = round(min(tot_cn), 2),
-                   max_cn = round(max(tot_cn), 2)) %>%
-  knitr::kable(format.args = list(big.mark = ","), caption = "CNV Summary") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
 
@@ -764,38 +770,92 @@ the below information for ~1,100 genes in the UMCCR Cancer Gene list.
 * `Min/MaxCN`: minimum/maximum copy number within the entire gene
 * `Chr`, `Start`, `End`: gene coordinates
 * `ChrBand`: chromosome band
-* `Role`: oncogene ('onco'), tumor suppressor ('ts'), or both ('onco+ts'),
+* `Role`: oncogene ('oncogene'), tumor suppressor ('tsgene'), or both ('onco+ts'),
    as reported by [Cancermine](https://github.com/jakelever/cancermine)
 * `TxID`: Ensembl Transcript ID
 
 </details>
 
-```{r gene-tab}
-key_genes <- readr::read_tsv(params$key_genes)
-oncogenes <- key_genes %>% filter(oncogene)
-tsgenes <- readr::read_csv(params$tsgenes, col_names = c('symbol'))
+```{r purple-gene-tab}
+key_genes <-
+  readr::read_tsv(params$key_genes, col_types = cols(oncogene = "l", tumorsuppressor = "l")) %>%
+  dplyr::select(symbol, oncogene, tumorsuppressor)
+
+oncogenes <- key_genes %>% dplyr::filter(oncogene) %>% dplyr::pull(symbol)
+tsgenes <- key_genes %>% dplyr::filter(tumorsuppressor) %>% dplyr::pull(symbol)
 
 purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcc")
 
 purple_gene_cnv %>%
   dplyr::filter(Gene %in% key_genes$symbol) %>%
-  dplyr::mutate(oncogene = Gene %in% oncogenes$symbol,
-                tsgene = Gene %in% tsgenes$symbol,
-                Role = dplyr::case_when(
+  dplyr::mutate(Chromosome = as.factor(Chromosome),
+                oncogene = Gene %in% oncogenes,
+                tsgene = Gene %in% tsgenes,
+                role = dplyr::case_when(
                   oncogene & tsgene ~ "onco+ts",
                   oncogene ~ "oncogene",
                   tsgene ~ "tsgene",
                   TRUE ~ "")) %>%
-  dplyr::select(Gene,  MinCN = MinCopyNumber, MaxCN = MaxCopyNumber,
-                Chr = Chromosome, Start, End,
-                ChrBand = ChromosomeBand, Role) %>%
+  dplyr::select(gene = Gene,  minCN = MinCopyNumber, maxCN = MaxCopyNumber,
+                chrom = Chromosome, start = Start, end = End,
+                chrBand = ChromosomeBand, role) %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 rownames = FALSE, extensions = c("Scroller", "Buttons"),
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
                                buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
-  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0) %>%
-  DT::formatRound(~ MinCN + MaxCN, digits = 1)
+  DT::formatCurrency(~ start + end, currency = "", interval = 3, mark = ",", digits = 0) %>%
+  DT::formatRound(~ minCN + maxCN, digits = 1)
 ```
+
+### Genome-wide CNV Segments
+
+#### Summary
+```{r purple-cnv-summary}
+purple_cnv <- file.path(params$purple_cnv) %>%
+  readr::read_tsv(col_types = "ciididdcccdddddd")
+
+nms_purple_cnv <- c("#chromosome", "start", "end", "copyNumber", "bafCount", "observedBAF",
+                    "baf", "segmentStartSupport", "segmentEndSupport", "method",
+                    "depthWindowCount", "gcContent", "minStart", "maxStart", "minorAllelePloidy",
+                    "majorAllelePloidy")
+
+# keep track of column changes through versions
+stopifnot(all(names(purple_cnv) == nms_purple_cnv))
+
+purple_cnv %>%
+  dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
+  dplyr::select(chrom, start, end, tot_cn) %>%
+  dplyr::mutate(seg_len = end - start) %>%
+  dplyr::summarise(n = n(),
+                   mean_len = round(mean(seg_len), 0),
+                   med_len = round(median(seg_len), 0),
+                   min_cn = round(min(tot_cn), 2),
+                   max_cn = round(max(tot_cn), 2)) %>%
+  knitr::kable(format.args = list(big.mark = ",")) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
+
+#### Segments
+
+```{r}
+purple_cnv %>%
+  dplyr::mutate(minorAllelePloidy = round(minorAllelePloidy, 1),
+                majorAllelePloidy = round(majorAllelePloidy, 1),
+                min_maj_AllelePloidy = paste0(minorAllelePloidy, "+", majorAllelePloidy),
+                copyNumber = round(copyNumber, 1),
+                bafAdj = round(baf, 2)) %>%
+  dplyr::select(chrom = `#chromosome`, start, end, cn_tot = copyNumber, min_maj_AllelePloidy,
+                segStartSupport = segmentStartSupport,
+                segEndSupport = segmentEndSupport, method, windowCount = depthWindowCount,
+                bafCount, bafAdj,
+                gc = gcContent, minStart, maxStart) %>%
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                rownames = FALSE, extensions = c("Scroller", "Responsive", "Buttons"),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
+                               buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
+  DT::formatCurrency(~ start + end, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
 
 ### Other PURPLE Charts {.tabset .tabset-fade}
 
