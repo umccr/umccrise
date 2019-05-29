@@ -142,7 +142,7 @@ rule purple_run:
     output:
         cnv          = 'work/{batch}/purple/{batch}.purple.cnv',
         gene_cnv     = 'work/{batch}/purple/{batch}.purple.gene.cnv',
-        germline_cnv = 'work/{batch}/purple/{batch}.purple.germline.cnv',
+        fitted_cnv   = 'work/{batch}/purple/{batch}.purple.fitted',
         resc_sv_vcf  = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
         resc_sv_tbi  = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz.tbi',
         circos_png   = 'work/{batch}/purple/plot/{batch}.circos.png',

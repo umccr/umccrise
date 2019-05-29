@@ -124,7 +124,7 @@ rule cancer_report:
         somatic_sv          = rules.prep_sv_tsv.output[0],
         purple_gene_cnv     = rules.rmd_purple_cnv.output[0],
         purple_cnv          = rules.purple_run.output.cnv,
-        purple_germline_cnv = rules.purple_run.output.germline_cnv,
+        purple_fitted_cnv   = rules.purple_run.output.fitted_cnv,
         purple_purity       = rules.purple_run.output.purity,
         purple_qc           = rules.purple_run.output.qc,
         purple_circos_png   = rules.purple_run.output.circos_png,
@@ -145,7 +145,7 @@ rule cancer_report:
         somatic_sv          = lambda wc, input: abspath(input.somatic_sv),
         purple_gene_cnv     = lambda wc, input: abspath(input.purple_gene_cnv),
         purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
-        purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
+        purple_fitted_cnv   = lambda wc, input: abspath(input.purple_fitted_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
         purple_qc           = lambda wc, input: abspath(input.purple_qc),
     output:
@@ -183,7 +183,7 @@ somatic_snv='{params.somatic_snv}', \
 somatic_sv='{params.somatic_sv}', \
 purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
-purple_germline_cnv='{params.purple_germline_cnv}', \
+purple_fitted_cnv='{params.purple_fitted_cnv}', \
 purple_purity='{params.purple_purity}', \
 purple_qc='{params.purple_qc}' \
 ))" ; \
