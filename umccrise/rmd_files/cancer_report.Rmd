@@ -616,16 +616,11 @@ A failed QC status can be attributed to several factors
 <details>
 <summary>Description</summary>
 
-__QC__
-
-QC description:
-
-* `foo`:
-
+__QC Failure__
 
 There are several reasons PURPLE may classify a sample as failed:
 
-* `FAIL_SEGMENT`: more than 120 copy number segments unsupported at either end
+* `FAIL_SEGMENT`: more than 120 copy number segments __not__ supported at either end
   by SV breakpoints. Indicates samples with extreme GC bias, with differences
   in depth of >= 10x between high and low GC regions. GC normalisation is
   unreliable when the corrections are so extreme so it is recommended to fail
@@ -639,6 +634,8 @@ There are several reasons PURPLE may classify a sample as failed:
   bias we sometimes systematically underestimate the copy number in high GC
   regions. This can lead us to incorrectly infer homozygous loss of entire
   chromosomes, particularly on chromosome 19.
+* `FAIL_GENDER`: if the AMBER and COBALT inferred genders are inconsistent
+  then the COBALT one is used but the sample is failed.
 
 </details>
 
@@ -680,11 +677,11 @@ q <- purple_qc
 tab <- dplyr::tribble(
   ~Variable, ~value, ~details,
   'QC_Status', glue('{q["QCStatus"]}'), "",
-  'Purity', glue('{p["#Purity"]}'), glue('range: {p["MinPurity"]}-{p["MaxPurity"]}'),
-  'Ploidy', glue('{p["Ploidy"]}'), glue('range: {p["MinPloidy"]}-{p["MaxPloidy"]}'),
+  'Purity', glue('{p["#Purity"]} ({p["MinPurity"]}-{p["MaxPurity"]})'), "Purity of tumor",
+  'Ploidy', glue('{p["Ploidy"]} ({p["MinPloidy"]}-{p["MaxPloidy"]})'), "Average ploidy of tumor sample (purity-adjusted)",
   'Gender', glue('{p["Gender"]}'), "",
-  'Polyclonal Prop', p["PolyclonalProportion"], "",
-  'Diploidy Prop', glue('{p["DiploidProportion"]}'), glue('range: {p["MinDiploidProportion"]}-{p["MaxDiploidProportion"]}'),
+  'Polyclonal Prop', p["PolyclonalProportion"], "Proportion of CN regions that are more than 0.25 from a whole copy number",
+  'Diploidy Prop', glue('{p["DiploidProportion"]} ({p["MinDiploidProportion"]}-{p["MaxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
   'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
   'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
   'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
@@ -870,18 +867,22 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.p
 
 ## Software Versions
 
-### umccrise version
-
 ```{r um-version}
-umv <- system("umccrise --version", intern = TRUE)
+umv <- "unavailable"
+if (Sys.which("umccrise") != "") {
+  umv <- system("umccrise --version", intern = TRUE) %>%
+    sub("umccrise, version (.*)", "\\1", .)
+}
+
 ```
 
-__`r umv`__
-
-### R package info
 
 <details>
-<summary>Session Info</summary>
+<summary>Summary</summary>
+
+* umccrise: __`r umv`__
+
+* R Session Info:
 
 ```{r session-info}
 si <- devtools::session_info(include_base = TRUE)
