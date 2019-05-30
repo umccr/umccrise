@@ -566,21 +566,21 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     tidyr::separate(annotation, c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
     dplyr::arrange(tier, effect, desc(AF), genes) %>%
-    tidyr::separate(effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
-    dplyr::mutate(start = format(start, big.mark = ',', trim = TRUE),
-                  end = format(end, big.mark = ',', trim = TRUE),
-                  location = str_c(chrom, ':', start, sep = ''),
-                  location = ifelse(is.na(end), location, str_c(location)),
-                  Ploidy = as.double(Ploidy),
-                  Ploidy = format(Ploidy, nsmall = 2),
-                  Gene = subset_genes(genes, c(1, 2)),
+    dplyr::mutate(Gene = subset_genes(genes, c(1, 2)),
                   Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
                                 str_c(Gene, '...', sep = ', '),
                                 Gene),
                   `Other affected genes` = subset_genes(genes, -c(1,2)) %>% str_replace_all('&', ', '),
                   Gene = ifelse(str_detect(effect, "gene_fusion"),
                                 Gene,
-                                Gene %>% str_replace_all('&', ', '))) %>%
+                                Gene %>% str_replace_all('&', ', '))) %>% 
+    tidyr::separate(effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
+    dplyr::mutate(start = format(start, big.mark = ',', trim = TRUE),
+                  end = format(end, big.mark = ',', trim = TRUE),
+                  location = str_c(chrom, ':', start, sep = ''),
+                  location = ifelse(is.na(end), location, str_c(location)),
+                  Ploidy = as.double(Ploidy),
+                  Ploidy = format(Ploidy, nsmall = 2)) %>%
     dplyr::select(Tier = tier, Event = svtype, Gene,
                   Effect = Effect, Detail = detail, Location = location,
                   AF, `CN chg` = CN_change,
