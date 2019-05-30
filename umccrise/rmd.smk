@@ -1,7 +1,7 @@
 from os.path import join
 
 from ngs_utils.logger import warn
-from ngs_utils.reference_data import get_key_genes, get_key_genes_bed, get_key_tsgenes_txt
+from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
 import glob
 
@@ -117,14 +117,12 @@ rule cancer_report:
     input:
         rmd_files_dir       = join(package_path(), 'rmd_files'),
         key_genes           = get_key_genes(),
-        tsgenes             = get_key_tsgenes_txt(),
         af_global           = rules.afs.output[0],
         af_keygenes         = rules.afs_keygenes.output[0],
         somatic_snv         = rules.somatic_to_hg19.output[0],
         somatic_sv          = rules.prep_sv_tsv.output[0],
         purple_gene_cnv     = rules.rmd_purple_cnv.output[0],
         purple_cnv          = rules.purple_run.output.cnv,
-        purple_germline_cnv = rules.purple_run.output.germline_cnv,
         purple_purity       = rules.purple_run.output.purity,
         purple_qc           = rules.purple_run.output.qc,
         purple_circos_png   = rules.purple_run.output.circos_png,
@@ -145,7 +143,6 @@ rule cancer_report:
         somatic_sv          = lambda wc, input: abspath(input.somatic_sv),
         purple_gene_cnv     = lambda wc, input: abspath(input.purple_gene_cnv),
         purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
-        purple_germline_cnv = lambda wc, input: abspath(input.purple_germline_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
         purple_qc           = lambda wc, input: abspath(input.purple_qc),
     output:
@@ -176,14 +173,12 @@ tumor_name='{params.tumor_name}', \
 batch_name='{wildcards.batch}', \
 genome_build='{params.rmd_genome_build}', \
 key_genes='{input.key_genes}', \
-tsgenes='{input.tsgenes}', \
 af_global='{params.af_global}', \
 af_keygenes='{params.af_keygenes}', \
 somatic_snv='{params.somatic_snv}', \
 somatic_sv='{params.somatic_sv}', \
 purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
-purple_germline_cnv='{params.purple_germline_cnv}', \
 purple_purity='{params.purple_purity}', \
 purple_qc='{params.purple_qc}' \
 ))" ; \
