@@ -23,7 +23,6 @@ params:
   purple_circos_baf: 'x'
   purple_purity: 'x'
   purple_cnv: 'x'
-  purple_fitted_cnv: 'x'
   purple_qc: 'x'
 description: "Analysis of tumor/normal samples at UMCCR"
 title: "`r paste(params$title, params$batch_name)`"
@@ -67,7 +66,6 @@ params_tmp <- list(
     somatic_sv='/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster2/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv',
     purple_gene_cnv='~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/purple.tsv',
     purple_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.cnv',
-    purple_fitted_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.fitted',
     purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity',
     purple_qc='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.qc'),
 
@@ -82,7 +80,6 @@ params_tmp <- list(
     somatic_sv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/SFRC01073__PRJ180598_SFRC01073-S2T/structural/SFRC01073__PRJ180598_SFRC01073-S2T-manta.tsv',
     purple_gene_cnv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/purple.tsv',
     purple_cnv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.cnv',
-    purple_fitted_cnv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.fitted',
     purple_purity='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.purity',
     purple_qc='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.qc'),
 
@@ -97,7 +94,6 @@ params_tmp <- list(
     somatic_sv='data/SFRC01073__PRJ180598_SFRC01073-S2T-manta.tsv',
     purple_gene_cnv='data/purple/purple.tsv',
     purple_cnv='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.cnv',
-    purple_fitted_cnv='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.fitted',
     purple_purity='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.purity',
     purple_qc='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.qc')
 )
