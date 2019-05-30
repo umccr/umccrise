@@ -573,7 +573,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   `Other affected genes` = subset_genes(genes, -c(1,2)) %>% str_replace_all('&', ', '),
                   Gene = ifelse(str_detect(effect, "gene_fusion"),
                                 Gene,
-                                Gene %>% str_replace_all('&', ', '))) %>% 
+                                Gene %>% str_replace_all('&', ', '))) %>%
     tidyr::separate(effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
     dplyr::mutate(start = format(start, big.mark = ',', trim = TRUE),
                   end = format(end, big.mark = ',', trim = TRUE),
@@ -801,7 +801,7 @@ nms_purple_cnv <- c("#chromosome", "start", "end", "copyNumber", "bafCount", "ob
                     "depthWindowCount", "gcContent", "minStart", "maxStart", "minorAllelePloidy",
                     "majorAllelePloidy")
 
-# keep track of column changes through versions
+# keep track of column changes through PURPLE versions
 stopifnot(all(names(purple_cnv) == nms_purple_cnv))
 
 purple_cnv %>%
@@ -819,23 +819,50 @@ purple_cnv %>%
 
 #### Segments
 
+<details>
+<summary>Description</summary>
+
+PURPLE outputs a file with the copy number profile of all contiguous segments
+of the tumor sample:
+
+* `CN`:  Fitted absolute copy number of segment adjusted for purity and ploidy
+* `Ploidy Min+Maj`: Ploidy of minor + major allele adjusted for purity
+* `BAF`: Tumor BAF after adjusted for purity and ploidy
+* `BafCount`: Count of AMBER baf points covered by this segment
+* `SegSupport`: Type of SV support for the CN breakpoint at start/end of region.
+  Allowed values: `CENTROMERE`, `TELOMERE`, `INV`, `DEL`, `DUP`, `BND` (translocation),
+  `SGL` (single breakend SV support), `NONE` (no SV support for CN breakpoint),
+  `MULT` (multiple SV support at exact breakpoint)
+* `Method`: Method used to determine the CN of the region.
+  Allowed values: `BAF_WEIGHTED` (avg of all depth windows for the region),
+  `STRUCTURAL_VARIANT` (inferred using ploidy of flanking SVs),
+  `LONG_ARM` (inferred from the long arm),
+  `GERMLINE_AMPLIFICATION` (inferred using special logic to handle
+  regions of germline amplification)
+* `windowCount`: Count of COBALT windows covered by this segment
+* `GC`: Proportion of segment that is G or C
+
+
+</details>
 ```{r}
 purple_cnv %>%
-  dplyr::mutate(minorAllelePloidy = round(minorAllelePloidy, 1),
+  dplyr::mutate(Chrom = as.factor(`#chromosome`),
+                minorAllelePloidy = round(minorAllelePloidy, 1),
                 majorAllelePloidy = round(majorAllelePloidy, 1),
-                min_maj_AllelePloidy = paste0(minorAllelePloidy, "+", majorAllelePloidy),
+                `Ploidy Min+Maj` = paste0(minorAllelePloidy, "+", majorAllelePloidy),
                 copyNumber = round(copyNumber, 1),
-                bafAdj = round(baf, 2)) %>%
-  dplyr::select(chrom = `#chromosome`, start, end, cn_tot = copyNumber, min_maj_AllelePloidy,
-                segStartSupport = segmentStartSupport,
-                segEndSupport = segmentEndSupport, method, windowCount = depthWindowCount,
-                bafCount, bafAdj,
-                gc = gcContent, minStart, maxStart) %>%
+                bafAdj = round(baf, 2),
+                gcContent = round(gcContent, 2),
+                `Start/End SegSupport` = paste0(segmentStartSupport, "-", segmentEndSupport),
+                `BAF (count)` = paste0(bafAdj, " (", bafCount, ")"),
+                `GC (windowCount)` = paste0(gcContent, " (", depthWindowCount, ")")) %>%
+  dplyr::select(Chrom, Start = start, End = end, CN = copyNumber, `Ploidy Min+Maj`,
+                `Start/End SegSupport`, Method = method, `BAF (count)`, `GC (windowCount)`) %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                rownames = FALSE, extensions = c("Scroller", "Responsive", "Buttons"),
+                rownames = FALSE, extensions = c("Scroller", "Buttons"),
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
                                buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
-  DT::formatCurrency(~ start + end, currency = "", interval = 3, mark = ",", digits = 0)
+  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 
