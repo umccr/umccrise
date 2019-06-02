@@ -110,7 +110,7 @@ rule batch_multiqc:
             s.name for s in run.samples if s.name not in [batch_by_name[wildcards.batch].tumor.name,
                                                           batch_by_name[wildcards.batch].normal.name]]
         if other_samples:
-            greps = ''.join(f' | grep -v {sn}' for sn in other_samples)
+            greps = ''.join(f' | grep -v "__{sn}/" | grep -v "/{sn}/" | grep -v "/{sn}_bcbio.txt"' for sn in other_samples)
             list_files = f'<(cat {input.filelist}{greps})'
         else:
             list_files = input.filelist
