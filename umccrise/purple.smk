@@ -60,7 +60,6 @@ rule purple_amber:
     params:
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
         outdir = 'work/{batch}/purple/amber',
-        jar = join(package_path(), 'jars', 'amber-2.3.jar'),
         xms = 5000,
         xmx = purple_mem,
     log:
@@ -73,7 +72,7 @@ rule purple_amber:
         threads_per_batch
     shell:
         conda_cmd.format('purple') +
-        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
+        'AMBER -Xms{params.xms}m -Xmx{params.xmx}m '
         '-tumor {wildcards.batch} '
         '-tumor_bam {input.tumor_bam} '
         '-reference {params.normal_name} '
@@ -94,7 +93,6 @@ rule purple_cobalt:
         'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
     params:
         outdir = 'work/{batch}/purple/cobalt',
-        jar = join(package_path(), 'jars', 'count-bam-lines-1.6.jar'),
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         xms = 2000,
         xmx = purple_mem
@@ -108,7 +106,7 @@ rule purple_cobalt:
         mem_mb = purple_mem
     shell:
         conda_cmd.format('purple') +
-        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
+        'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
         '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
         '-tumor {wildcards.batch} '
@@ -158,7 +156,6 @@ rule purple_run:
         link         = 'work/{batch}/purple/circos/{batch}.link.circos',
     group: 'purple_main'
     params:
-        jar = join(package_path(), 'jars', 'purple-2.25.jar'),
         rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
@@ -177,7 +174,7 @@ rule purple_run:
         conda_cmd.format('purple') +\
         circos_macos_patch +\
         'circos -modules ; circos -v ; '
-        'java -Xms{params.xms}m -Xmx{params.xmx}m -jar {params.jar} '
+        'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
         '-run_dir {params.rundir} '
         '-output_dir {params.outdir} '
         '-reference {params.normal_sname} '

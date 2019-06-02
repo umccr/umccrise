@@ -12,6 +12,6 @@ dependencies:
   - circos>=0.69.6                   # for circos
   - libgd                            # for circos
   - perl>=5.26.2                     # for circos
-  - hmftools-purple
-  - hmftools-cobalt
   - hmftools-amber
+  - hmftools-cobalt
+  - hmftools-purple
