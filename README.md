@@ -22,18 +22,28 @@ See the [HISTORY.md](HISTORY.md) for the version history.
 
 Contents:
 
+- [Umccrise](#umccrise)
 - [Installation](#installation)
 - [Reference data](#reference-data)
 - [Testing](#testing)
+- [UMCCRISE on AWS](#umccrise-on-aws)
 - [UMCCR HPC](#umccr-hpc)
 - [Usage](#usage)
-    + [Run selected steps](#run-selected-steps)
-    + [Run on selected samples](#run-on-selected-samples)
-    + [Use HPC cluster](#use-hpc-cluster)
+    - [Run selected steps](#run-selected-steps)
+    - [Run on selected samples](#run-on-selected-samples)
+    - [Use HPC cluster](#use-hpc-cluster)
 - [Updating](#updating)
 - [Development](#development)
 - [Docker](#docker)
 - [Building reference data](#building-reference-data)
+    - [GNOMAD](#gnomad)
+    - [PCGR](#pcgr)
+    - [Problem regions](#problem-regions)
+    - [Coding regions (SAGE)](#coding-regions-sage)
+    - [Ensembl annotation](#ensembl-annotation)
+    - [Hotspots](#hotspots)
+    - [Other HMF files](#other-hmf-files)
+    - [Fusions](#fusions)
 
 
 ## Installation
@@ -73,6 +83,10 @@ source load_umccrise.sh
 git clone https://github.com/umccr/umccrise_test_data
 TEST_OPTS="-c -j2" nosetests -s umccrise_test_data/test.py
 ```
+
+## UMCCRISE on AWS
+
+umccrise on AWS is run via AWS Batch in a defined compute environment. This is set up and maintained via the [umccrise Terraform Stack][umccrise_tf_stack]. This stack also defines the version of umccrise that is used within AWS and how umccrise jobs are triggered.
 
 ## UMCCR HPC
 
@@ -417,8 +431,5 @@ We use [HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUr
 
 
 
-
-
-
-
+[umccrise_tf_stack]: https://github.com/umccr/infrastructure/tree/master/terraform/stacks/umccrise
 
