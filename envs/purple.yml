@@ -6,12 +6,12 @@ channels:
   - defaults
 
 dependencies:
-  - r-base>=3.5.1
+  - r-base >=3.5.1
   - java-jdk                         # for all purple tools
   - bioconductor-copynumber>=1.22.0  # for amber
   - circos>=0.69.6                   # for circos
   - libgd                            # for circos
-  - perl>=5.26.2                     # for circos
+  - perl >=5.26.2                     # for circos
   - hmftools-amber
   - hmftools-cobalt
   - hmftools-purple
