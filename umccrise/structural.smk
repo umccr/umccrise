@@ -220,9 +220,9 @@ rule reprioritize_rescued_svs:
     output:
         vcf = '{batch}/structural/{batch}-manta.vcf.gz',
         tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
-    group: "sv_vcf"
+    group: "sv_after_purple"
     run:
-        cmd += (f'cat input.vcf | simple_sv_annotation | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        cmd = f'cat input.vcf | simple_sv_annotation | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
@@ -251,7 +251,7 @@ rule prep_sv_tsv:
         '{batch}/structural/{batch}-manta.tsv'
     params:
         sample = lambda wc: batch_by_name[wc.batch].tumor.name
-    group: "sv_vcf"
+    group: "sv_after_purple"
     run:
         tumor_id = VCF(input.vcf).samples.index(params.sample)
         with open(output[0], 'w') as out:
@@ -298,7 +298,7 @@ rule ribbon_filter_manta:
         manta_vcf = rules.reprioritize_rescued_svs.output.vcf
     output:
         'work/{batch}/structural/ribbon/manta.vcf'
-    group: "sv_vcf"
+    group: "sv_after_purple"
     shell:
         'bcftools view {input.manta_vcf} > {output}'
 
@@ -310,7 +310,7 @@ rule ribbon_filter_vcfbedtope_starts:
         'work/{batch}/structural/ribbon/manta-starts.bed'
     params:
         vcftobedpe = vcftobedpe
-    group: "sv_vcf"
+    group: "sv_after_purple"
     shell:
         'cat {input.bed} | {params.vcftobedpe}'
         ' | cut -f 1-3'
@@ -325,7 +325,7 @@ rule ribbon_filter_vcfbedtope_ends:
         'work/{batch}/structural/ribbon/manta-ends.bed'
     params:
         vcftobedpe = vcftobedpe
-    group: "sv_vcf"
+    group: "sv_after_purple"
     shell:
         'cat {input.bed} | {params.vcftobedpe}'
         ' | cut -f 4-6'
@@ -341,7 +341,7 @@ rule ribbon:
         '{batch}/structural/{batch}-manta.ribbon.bed'
     params:
         vcftobedpe = vcftobedpe
-    group: "sv_vcf"
+    group: "sv_after_purple"
     shell:
         'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
 
@@ -354,7 +354,7 @@ rule bedpe:
         '{batch}/structural/{batch}-manta.bedpe'
     params:
         vcftobedpe = vcftobedpe
-    group: "sv_vcf"
+    group: "sv_after_purple"
     shell:
         'bcftools view {input.manta_vcf}'
         ' | {params.vcftobedpe}'
