@@ -65,6 +65,7 @@ rule sv_subset_to_canonical:
 
                 elif feature == 'transcript':
                     feature_ids = set(featureid.split('&'))
+                    feature_ids = set([fid.split('.')[0] for fid in feature_ids])  # get rid of version suffix
                     assert all(re.fullmatch(r'ENST[\d.]+', fid) for fid in feature_ids), ann
                     if not feature_ids - all_princ_transcripts:
                         new_anns.append(ann_line)
@@ -74,6 +75,7 @@ rule sv_subset_to_canonical:
                     # "3UVN:C_107-D_1494:ENST00000358625-ENST00000262519"
                     # -> {'3UVN', 'C_107', 'D_1494', 'ENST00000262519', 'ENST00000358625'}
                     feature_ids = set(fid for fid in flatten(fids.split('-') for fids in featureid.split(':')) if fid.startswith('ENST'))
+                    feature_ids = set([fid.split('.')[0] for fid in feature_ids])  # get rid of version suffix
                     assert all(re.fullmatch(r'ENST[\d.]+', fid) for fid in feature_ids), ann
                     if not feature_ids - all_princ_transcripts:
                         new_anns.append(ann_line)
@@ -222,7 +224,7 @@ rule reprioritize_rescued_svs:
         tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
     group: "sv_after_purple"
     run:
-        cmd = f'cat input.vcf | simple_sv_annotation | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
+        cmd = f'gunzip -c {input.vcf} | simple_sv_annotation | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
