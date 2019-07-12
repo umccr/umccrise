@@ -32,27 +32,6 @@ title: "`r paste(params$title, params$batch_name)`"
 knitr::opts_chunk$set(collapse = TRUE, echo = TRUE)
 ```
 
-```{r load_pkgs, message=FALSE, warning=FALSE, eval=T}
-library(BSgenome)
-library(devtools)
-library(DT)
-library(dplyr)
-library(glue)
-library(ggplot2)
-library(knitr)
-library(kableExtra)
-library(MutationalPatterns)
-library(readr)
-library(rmarkdown)
-library(stringr)
-library(tidyr)
-library(purrr)
-ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
-library(ref_genome, character.only = TRUE)
-tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
-library(tx_ref_genome, character.only = TRUE)
-```
-
 ```{r render_book_inter, eval=F, echo=FALSE}
 params_tmp <- list(
   spartan = list(
@@ -107,6 +86,28 @@ render_me <- function() {
 }
 render_me()
 ```
+
+```{r load_pkgs, message=FALSE, warning=FALSE, eval=T}
+library(BSgenome)
+library(devtools)
+library(DT)
+library(dplyr)
+library(glue)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(MutationalPatterns)
+library(readr)
+library(rmarkdown)
+library(stringr)
+library(tidyr)
+library(purrr)
+ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
+library(ref_genome, character.only = TRUE)
+tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
+library(tx_ref_genome, character.only = TRUE)
+```
+
 
 ## Somatic Mutation Profiles
 
