@@ -28,11 +28,12 @@ description: "Analysis of tumor/normal samples at UMCCR"
 title: "`r paste(params$title, params$batch_name)`"
 ---
 
-```{r knitr-opts, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, echo = TRUE)
+```{r knitr_opts, include=F}
+knitr::opts_chunk$set(collapse = TRUE, echo = TRUE,
+                      warning = FALSE, message = FALSE)
 ```
 
-```{r render_book_inter, eval=F, echo=FALSE}
+```{r render_book_inter, eval=F, echo=F}
 params_tmp <- list(
   spartan = list(
     tumor_name='PRJ180471_BK221-NET1',
@@ -70,7 +71,8 @@ params_tmp <- list(
     af_global='data/sig/af_tumor_notempty.txt',
     af_keygenes= 'data/sig/keygenes_notempty.txt',
     somatic_snv='data/sig/ensemble-with_chr_prefix.vcf',
-    somatic_sv='data/SFRC01073__PRJ180598_SFRC01073-S2T-manta.tsv',
+    somatic_sv='data/empty_manta.tsv',
+    # somatic_sv='data/SFRC01073__PRJ180598_SFRC01073-S2T-manta.tsv',
     purple_gene_cnv='data/purple/purple.tsv',
     purple_cnv='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.cnv',
     purple_purity='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.purity',
@@ -87,7 +89,7 @@ render_me <- function() {
 render_me()
 ```
 
-```{r load_pkgs, message=FALSE, warning=FALSE, eval=T}
+```{r load_pkgs, message=F, warning=F, eval=T}
 library(BSgenome)
 library(devtools)
 library(DT)
@@ -107,6 +109,169 @@ library(ref_genome, character.only = TRUE)
 tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
 library(tx_ref_genome, character.only = TRUE)
 ```
+
+```{r allele_freq_prep}
+set.seed(42)
+af_global <-
+  readr::read_tsv(params$af_global, col_types = "d") %>%
+  dplyr::mutate(set = "Global")
+
+af_keygenes <-
+  readr::read_tsv(params$af_keygenes, col_types = "cicccd") %>%
+  dplyr::select(af) %>%
+  dplyr::mutate(set = 'Key genes CDS')
+
+af_both <-
+  dplyr::bind_rows(af_global, af_keygenes) %>%
+  dplyr::mutate(set = factor(set, levels = c("Global", "Key genes CDS")))
+
+mode2 <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+af_stats <- af_both %>%
+  dplyr::group_by(set) %>%
+  dplyr::summarise(n = n(),
+                   mean = round(mean(af), 2),
+                   median = round(median(af), 2),
+                   mode = round(mode2(af), 2)) %>%
+  tidyr::complete(set, fill = list(n = 0))
+```
+
+```{r mutational_sigs_prep, warning=F}
+somatic_snv <- MutationalPatterns::read_vcfs_as_granges(
+  vcf_files = params$somatic_snv,
+  sample_names = params$tumor_name,
+  genome = ref_genome,
+  group = "auto+sex")
+
+mut_mat <- MutationalPatterns::mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
+
+# Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
+sig_probs <- file.path("misc/sig/signatures_probabilities.txt")
+# better be explicit - the sig_probs file has 7 extra empty columns
+col_types <- paste0(c("ccc", paste0(rep("d", 30), collapse = ""), "ccccccc"), collapse = "")
+col_names <- c("SubstType", "Trinucleotide", "SomMutType", paste0("Sig", 1:30), paste0("foo", 1:7))
+cancer_signatures <-
+  readr::read_tsv(sig_probs, col_names = col_names, col_types = col_types, skip = 1) %>%
+  dplyr::arrange(SubstType)
+
+# sanity check - need to be in same order
+stopifnot(all(cancer_signatures$SomMutType == rownames(mut_mat)))
+
+cancer_signatures <- cancer_signatures %>%
+  dplyr::select(4:33) %>%
+  as.matrix()
+
+# Fit mutation matrix to cancer signatures
+fit_res <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures)
+
+# Select signatures with some contribution
+fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
+mut_sig_contr <-
+  dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr) %>%
+  dplyr::mutate(Contribution = round(Contribution, 0)) %>%
+  dplyr::arrange(-Contribution)
+```
+
+```{r sv_prioritize_prep, message=F}
+subset_genes <- function(genes, ind) {
+  genes %>%
+    stringr::str_split('&') %>%
+    purrr::map(~ .[ind] %>%
+          replace("", NA) %>%
+          .[!is.na(.)]) %>%
+    purrr::map_chr(~ ifelse(length(.) > 0,
+                     str_c(., collapse = '&'), ""))
+}
+
+format_val <- function(val, is_pct = FALSE) {
+  ifelse(!is.na(val),
+         format(val, digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
+         NA)
+}
+
+split_sv_field <- function(.data, field, is_pct = FALSE) {
+  # - separate field into two parts
+  # - mutate to pct accordingly
+  # - original field is mean of two parts
+  f_q <- rlang::enquo(field)
+  f_str <- rlang::quo_name(f_q)
+  f1_str <- str_c(f_str, '1')
+  f2_str <- str_c(f_str, '2')
+  f1_q <- sym(f1_str)
+  f2_q <- sym(f2_str)
+  .data %>%
+    tidyr::separate(!!f_q, c(f1_str, f2_str), sep = ",", fill = "right") %>%
+    dplyr::mutate(
+      !!f1_q := as.double(!!f1_q) * ifelse(is_pct, 100, 1),
+      !!f2_q := as.double(!!f2_q) * ifelse(is_pct, 100, 1),
+      !!f_q  := (!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2,
+      !!f_q  := format_val(!!f_q, is_pct),
+      !!f1_q := format_val(!!f1_q, is_pct),
+      !!f2_q := format_val(!!f2_q, is_pct)
+    )
+}
+
+
+sv_path <- params$somatic_sv
+sv_all <- NULL
+
+if (length(readLines(con = sv_path, n = 2)) > 1) {
+  sv_all <-
+    readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciiccccciiccccdc") %>%
+    dplyr::select(-caller, -sample) %>%
+    split_sv_field(BPI_AF, is_pct = TRUE) %>%
+    split_sv_field(AF, is_pct = TRUE) %>%
+    split_sv_field(CN) %>%
+    split_sv_field(CN_change) %>%
+    tidyr::separate(split_read_support, c("SR_alt", "SR_ref"), ",") %>%
+    tidyr::separate(paired_support_PR, c("PR_alt", "PR_ref"), ",") %>%
+    tidyr::separate(paired_support_PE, c("PE_alt", "PE_ref"), ",") %>%
+    dplyr::mutate(SR = as.integer(SR_alt),
+                  PR = as.integer(PR_alt),
+                  PE = as.integer(PE_alt)) %>%
+    dplyr::filter(svtype != 'BND' | is.na(SR) | PR > SR) %>% # remove BND with split read support higher than paired
+    tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # unpack multiple annotations per region
+    tidyr::separate(annotation, c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
+                    sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
+    dplyr::arrange(tier, effect, desc(AF), genes) %>%
+    dplyr::mutate(Gene = subset_genes(genes, c(1, 2)),
+                  Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
+                                str_c(Gene, '...', sep = ', '),
+                                Gene),
+                  `Other affected genes` = subset_genes(genes, -c(1,2)) %>% str_replace_all('&', ', '),
+                  Gene = ifelse(str_detect(effect, "gene_fusion"),
+                                Gene,
+                                Gene %>% str_replace_all('&', ', '))) %>%
+    tidyr::separate(effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
+    dplyr::mutate(start = format(start, big.mark = ',', trim = TRUE),
+                  end = format(end, big.mark = ',', trim = TRUE),
+                  location = str_c(chrom, ':', start, sep = ''),
+                  location = ifelse(is.na(end), location, str_c(location)),
+                  Ploidy = as.double(Ploidy),
+                  Ploidy = format(Ploidy, nsmall = 2)) %>%
+    dplyr::select(Tier = tier, Event = svtype, Gene,
+                  Effect = Effect, Detail = detail, Location = location,
+                  AF, `CN chg` = CN_change,
+                  SR, PR, CN, Ploidy, PURPLE_status,
+                  SR_ref, PR_ref, PE, PE_ref,
+                  SomaticScore = somaticscore, Transcript = transcript,
+                  `Other effects`, `Other affected genes`,
+                  AF_bp1 = AF1, AF_bp2 = AF2,
+                  CN_bp1 = CN1, CN_bp2 = CN2,
+                  CN_chg_bp1 = CN_change1, CN_chg_bp2 = CN_change2) %>%
+    dplyr::distinct()
+  
+} else {
+  sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
+}
+```
+
+## Summary
+
+Summarise results at the top here.
 
 
 ## Somatic Mutation Profiles
@@ -139,23 +304,9 @@ The following post-processing steps occur:
 </details>
 
 
-```{r af_plot, warning=FALSE}
-# Global AF
-af_global <-
-  readr::read_tsv(params$af_global, col_types = "d") %>%
-  dplyr::mutate(set = "Global")
-
-af_keygenes <-
-  readr::read_tsv(params$af_keygenes, col_types = "cicccd") %>%
-  dplyr::select(af) %>%
-  dplyr::mutate(set = 'Key genes CDS')
-
-af_both <-
-  dplyr::bind_rows(af_global, af_keygenes) %>%
-  dplyr::mutate(set = factor(set, levels = c("Global", "Key genes CDS")))
-
+```{r allele_freq_plot_stats, warning=F}
 ggplot(data = af_both, aes(af)) +
-  geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#0047ab") +
+  geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#006400") +
   facet_wrap(~set, scales = 'free_y', drop = FALSE) +
   scale_x_continuous(name = "Allele Frequency",
                      breaks = seq(0, 1, by = 0.1),
@@ -164,21 +315,8 @@ ggplot(data = af_both, aes(af)) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
         panel.grid.minor = element_blank()) +
   labs(title = paste("AF count distribution"))
-```
 
-```{r af_stats}
-mode2 <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-
-af_both %>%
-  dplyr::group_by(set) %>%
-  dplyr::summarise(n = n(),
-                   mean = round(mean(af), 2),
-                   median = round(median(af), 2),
-                   mode = round(mode2(af), 2)) %>%
-  tidyr::complete(set, fill = list(n = 0)) %>%
+af_stats %>%
   knitr::kable(format = "html", caption = "AF Summary Stats") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE)
@@ -191,19 +329,9 @@ The [MutationalPatterns](http://bioconductor.org/packages/release/bioc/html/Muta
 R package is used to generate a mutation signature for the sample. We use the final filtered somatic
 calls as input.
 
-```{r importVCF, warning=FALSE}
-somatic_snv <-
-  MutationalPatterns::read_vcfs_as_granges(
-    vcf_files = params$somatic_snv,
-    sample_names = params$tumor_name,
-    genome = ref_genome,
-    group = "auto+sex")
-```
-
 #### Context signature
 
-```{r somProfile2, warning=FALSE, out.width="80%"}
-mut_mat <- MutationalPatterns::mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
+```{r plot_96_prof, warning=F, out.width="80%"}
 MutationalPatterns::plot_96_profile(mut_mat, condensed = TRUE)
 ```
 
@@ -212,20 +340,20 @@ MutationalPatterns::plot_96_profile(mut_mat, condensed = TRUE)
 <details>
 <summary>Description</summary>
 
-With `mut_type_occurrences`, you can count the mutation type occurrences for the input VCF.
+We can count the mutation type occurrences for the input VCF.
 For `C>T` mutations, a distinction is made between `C>T` at CpG sites
 and other sites, as deamination of methylated cytosine at CpG sites is a common mutational
 process. This is the reason the reference genome is needed.
 
 A mutation spectrum shows the relative contribution of each mutation type in the base
-substitution catalogs. The `plot_spectrum` function plots the mean relative contribution of
+substitution catalogs. We can plot the mean relative contribution of
 each of the 6 base substitution types over all samples. Error bars indicate standard deviation
-over all samples. The total number of mutations is indicated. The `CT = TRUE` option
-distinguishes between `C>T` at CpG sites and other sites.
+over all samples. The total number of mutations is indicated. We can also distinguish
+between `C>T` at CpG sites and other sites.
 
 </details>
 
-```{r somProfile1, warning=FALSE, out.width="60%"}
+```{r plot_mut_type_occurrences, warning=F, out.width="60%"}
 type_occurrences <- mut_type_occurrences(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_spectrum(type_occurrences, CT = TRUE)
 ```
@@ -247,7 +375,7 @@ than one gene on different strands.
 
 </details>
 
-```{r tran_strand_bias, warning=FALSE, message=FALSE, out.width="60%"}
+```{r tran_strand_bias, warning=F, message=F, out.width="60%"}
 # Get known genes table from UCSC
 if (params$genome_build == 'hg19') {
   genes_list <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
@@ -257,9 +385,9 @@ if (params$genome_build == 'hg19') {
 
 # Mutation count matrix with strand info (4*6*4=96 -> 96*2=192)
 mut_mat_s <- MutationalPatterns::mut_matrix_stranded(somatic_snv,
-                                 ref_genome = ref_genome,
-                                 ranges = genes_list,
-                                 mode = "transcription")
+                                                     ref_genome = ref_genome,
+                                                     ranges = genes_list,
+                                                     mode = "transcription")
 
 # Mutation count per type and strand
 strand_counts <- MutationalPatterns::strand_occurrences(mut_mat_s, by = "all")
@@ -291,7 +419,7 @@ strand bias analysis.
 
 </details>
 
-```{r rep_strand_bias, warning=FALSE, message=FALSE, out.width="60%"}
+```{r rep_strand_bias, warning=F, message=F, out.width="60%"}
 repli_file <- system.file("extdata/ReplicationDirectionRegions.bed",
                           package = "MutationalPatterns")
 # start/stop contain scientific notation, so need to be doubles
@@ -339,39 +467,14 @@ and reference signature plots from <https://cancer.sanger.ac.uk/cosmic/signature
 
 </details>
 
-```{r somSig}
-# Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
-sig_probs <- file.path("misc/sig/signatures_probabilities.txt")
-# better be explicit - the sig_probs file has 7 extra empty columns
-col_types <- paste0(c("ccc", paste0(rep("d", 30), collapse = ""), "ccccccc"), collapse = "")
-col_names <- c("SubstType", "Trinucleotide", "SomMutType", paste0("Sig", 1:30), paste0("foo", 1:7))
-cancer_signatures <-
-  readr::read_tsv(sig_probs, col_names = col_names, col_types = col_types, skip = 1) %>%
-  dplyr::arrange(SubstType)
-
-# sanity check - need to be in same order
-stopifnot(all(cancer_signatures$SomMutType == rownames(mut_mat)))
-
-cancer_signatures <- cancer_signatures %>%
-  dplyr::select(4:33) %>%
-  as.matrix()
-
-# Fit mutation matrix to cancer signatures
-fit_res <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures)
-
-# Select signatures with some contribution
-fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
-result <- dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr)
-
+```{r mutational_signature_contribution}
 sig_table <-
   readr::read_tsv(file = "misc/sig/signatures_description.tsv", col_types = "cc") %>%
   dplyr::mutate(Plot = paste0("![](misc/sig/img/sig-", signature, ".png)"),
                 signature = paste0("Sig", signature)) %>%
   dplyr::select(Signature = signature, Description = description, Plot)
 
-result %>%
-  dplyr::mutate(Contribution = round(Contribution, 0)) %>%
-  dplyr::arrange(-Contribution) %>%
+mut_sig_contr %>%
   dplyr::left_join(sig_table, by = "Signature") %>%
   knitr::kable() %>%
   kableExtra::kable_styling(font_size = 11) %>%
@@ -432,7 +535,7 @@ Generated from PURPLE.
 
 </details>
 
-```{r circos-default1, out.width="100%"}
+```{r circos_default1, out.width="100%"}
 img_dir <- file.path('img') # created before when copying purple files to tmp dir
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
 ```
@@ -440,9 +543,9 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 ## Structural Variants
 Structural variants are inferred with [Manta](https://github.com/illumina/manta),
 adjusted using [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator#7-structural-variant-recovery-and-single-breakend-filtering),
-prioritised using [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation).
+and prioritised using [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation).
 
-AFs, CN changes and ploidy are all purity-adjusted.
+Allele frequencies, copy number changes and ploidy are purity-adjusted.
 
 <details>
 <summary>Details</summary>
@@ -497,106 +600,11 @@ Variants are ordered by tier, then by effect, then by AF.
 
 </details>
 
-```{r sv_prioritize, message=FALSE}
-ctypes <- "ccciiccccciiccccdc"
-sv_all <- NULL
-
-sv_path <- params$somatic_sv
-#sv_path = '~/rjn/extras/umccrise_2019_Mar/umccrise_test_data/results/bcbio_test_project/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A/structural/2016_249_18_WH_P017_2__CCR180159_VPT-WH017A-manta.tsv'
-#sv_path = '~/rjn/extras/vlad/tmp/umccrised_svpurpleinf/2016_249_18_NH_P008__CCR180177_NH18F002P008/structural/2016_249_18_NH_P008__CCR180177_NH18F002P008-manta.tsv'
-
-subset_genes <- function(genes, ind) {
-  genes %>%
-    stringr::str_split('&') %>%
-    purrr::map(~ .[ind] %>%
-          replace("", NA) %>%
-          .[!is.na(.)]) %>%
-    purrr::map_chr(~ ifelse(length(.) > 0,
-                     str_c(., collapse = '&'), ""))
-}
-
-format_val <- function(val, is_pct = FALSE) {
-  ifelse(!is.na(val),
-         format(val, digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
-         NA)
-}
-
-split_sv_field <- function(.data, field, is_pct = FALSE) {
-  # - separate field into two parts
-  # - mutate to pct accordingly
-  # - original field is mean of two parts
-  f_q <- rlang::enquo(field)
-  f_str <- rlang::quo_name(f_q)
-  f1_str <- str_c(f_str, '1')
-  f2_str <- str_c(f_str, '2')
-  f1_q <- sym(f1_str)
-  f2_q <- sym(f2_str)
-  .data %>%
-    tidyr::separate(!!f_q, c(f1_str, f2_str), sep = ",", fill = "right") %>%
-    dplyr::mutate(
-      !!f1_q := as.double(!!f1_q) * ifelse(is_pct, 100, 1),
-      !!f2_q := as.double(!!f2_q) * ifelse(is_pct, 100, 1),
-      !!f_q  := (!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2,
-      !!f_q  := format_val(!!f_q, is_pct),
-      !!f1_q := format_val(!!f1_q, is_pct),
-      !!f2_q := format_val(!!f2_q, is_pct)
-    )
-}
-
-
-if (length(readLines(con = sv_path, n = 2)) > 1) {
-  sv_all <-
-    readr::read_tsv(sv_path, col_names = TRUE, col_types = ctypes) %>%
-    dplyr::select(-caller, -sample) %>%
-    split_sv_field(BPI_AF, is_pct = TRUE) %>%
-    split_sv_field(AF, is_pct = TRUE) %>%
-    split_sv_field(CN) %>%
-    split_sv_field(CN_change) %>%
-    tidyr::separate(split_read_support, c("SR_alt", "SR_ref"), ",") %>%
-    tidyr::separate(paired_support_PR, c("PR_alt", "PR_ref"), ",") %>%
-    tidyr::separate(paired_support_PE, c("PE_alt", "PE_ref"), ",") %>%
-    dplyr::mutate(SR = as.integer(SR_alt),
-                  PR = as.integer(PR_alt),
-                  PE = as.integer(PE_alt)) %>%
-    dplyr::filter(svtype != 'BND' | is.na(SR) | PR > SR) %>% # remove BND with split read support higher than paired
-    tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # unpack multiple annotations per region
-    tidyr::separate(annotation, c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
-                    sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-    dplyr::arrange(tier, effect, desc(AF), genes) %>%
-    dplyr::mutate(Gene = subset_genes(genes, c(1, 2)),
-                  Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
-                                str_c(Gene, '...', sep = ', '),
-                                Gene),
-                  `Other affected genes` = subset_genes(genes, -c(1,2)) %>% str_replace_all('&', ', '),
-                  Gene = ifelse(str_detect(effect, "gene_fusion"),
-                                Gene,
-                                Gene %>% str_replace_all('&', ', '))) %>%
-    tidyr::separate(effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
-    dplyr::mutate(start = format(start, big.mark = ',', trim = TRUE),
-                  end = format(end, big.mark = ',', trim = TRUE),
-                  location = str_c(chrom, ':', start, sep = ''),
-                  location = ifelse(is.na(end), location, str_c(location)),
-                  Ploidy = as.double(Ploidy),
-                  Ploidy = format(Ploidy, nsmall = 2)) %>%
-    dplyr::select(Tier = tier, Event = svtype, Gene,
-                  Effect = Effect, Detail = detail, Location = location,
-                  AF, `CN chg` = CN_change,
-                  SR, PR, CN, Ploidy, PURPLE_status,
-                  SR_ref, PR_ref, PE, PE_ref,
-                  SomaticScore = somaticscore, Transcript = transcript,
-                  `Other effects`, `Other affected genes`,
-                  AF_bp1 = AF1, AF_bp2 = AF2,
-                  CN_bp1 = CN1, CN_bp2 = CN2,
-                  CN_chg_bp1 = CN_change1, CN_chg_bp2 = CN_change2) %>%
-    dplyr::distinct()
-
-  DT::datatable(sv_all, rownames = FALSE,
-                extensions = c('Scroller', 'Responsive', 'Buttons'),
+```{r sv_prioritize_table}
+sv_all %>%
+  DT::datatable(rownames = FALSE, extensions = c('Scroller', 'Responsive', 'Buttons'),
                 options = list(scroller = TRUE, scrollX = FALSE, scrollY = 500,
                                dom = 'Bfrtip', buttons = c('csv', 'excel')))
-} else {
-  warning('No prioritized events detected')
-}
 ```
 
 ## Copy Number Variants
@@ -636,7 +644,7 @@ There are several reasons PURPLE may classify a sample as failed:
 
 </details>
 
-```{r purply-qc}
+```{r purply_qc}
 # read both datasets
 qc_path <- params$purple_qc
 purity_path <- params$purple_purity
@@ -716,7 +724,7 @@ tab %>%
 
 </details>
 
-```{r circos-baf-plot, out.width="80%"}
+```{r circos_baf_plot, out.width="80%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
 ```
 
@@ -733,7 +741,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_ba
 </details>
 
 
-```{r circos-default2, out.width="80%"}
+```{r circos_default2, out.width="80%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
 ```
 
@@ -755,7 +763,7 @@ the below information for ~1,100 genes in the UMCCR Cancer Gene list.
 
 </details>
 
-```{r purple-gene-tab}
+```{r purple_gene_tab}
 key_genes <-
   readr::read_tsv(params$key_genes, col_types = cols(oncogene = "l", tumorsuppressor = "l")) %>%
   dplyr::select(symbol, oncogene, tumorsuppressor)
@@ -789,7 +797,7 @@ purple_gene_cnv %>%
 ### Genome-wide CNV Segments
 
 #### Summary
-```{r purple-cnv-summary}
+```{r purple_cnv_summary}
 purple_cnv <- file.path(params$purple_cnv) %>%
   readr::read_tsv(col_types = "ciididdcccdddddd")
 
@@ -841,7 +849,7 @@ of the tumor sample:
 
 
 </details>
-```{r}
+```{r purple_segs}
 purple_cnv %>%
   dplyr::mutate(Chrom = as.factor(`#chromosome`),
                 minorAllelePloidy = round(minorAllelePloidy, 1),
@@ -874,24 +882,24 @@ Under Construction
 
 #### Copy Number
 
-```{r purple-other-plots1, out.width="60%"}
+```{r purple_other_plots1, out.width="60%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.copyNumber.png')))
 ```
 
 #### Minor Allele
 
-```{r purple-other-plots2, out.width="60%"}
+```{r purple_other_plots2, out.width="60%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.minor_allele.png')))
 ```
 
 #### Ploidy
-```{r purple-other-plots3, out.width="60%"}
+```{r purple_other_plots3, out.width="60%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.variant.png')))
 ```
 
 ## Software Versions
 
-```{r um-version}
+```{r um_version}
 umv <- "unavailable"
 if (Sys.which("umccrise") != "") {
   umv <- system("umccrise --version", intern = TRUE) %>%
@@ -908,7 +916,7 @@ if (Sys.which("umccrise") != "") {
 
 * R Session Info:
 
-```{r session-info}
+```{r session_info}
 si <- devtools::session_info(include_base = TRUE)
 si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
 si_pkg <- unclass(si$packages) %>%
