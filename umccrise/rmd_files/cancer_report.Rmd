@@ -6,7 +6,8 @@ output:
     theme: simplex
     toc: true
     toc_float: false
-    code_folding: hide
+    #code_folding: hide
+    code_download: true
   rmdformats::material:
     highlight: kate
 params:
@@ -29,7 +30,7 @@ title: "`r paste(params$title, params$batch_name)`"
 ---
 
 ```{r knitr_opts, include=F}
-knitr::opts_chunk$set(collapse = TRUE, echo = TRUE,
+knitr::opts_chunk$set(collapse = TRUE, echo = FALSE,
                       warning = FALSE, message = FALSE)
 ```
 
@@ -263,15 +264,117 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   CN_bp1 = CN1, CN_bp2 = CN2,
                   CN_chg_bp1 = CN_change1, CN_chg_bp2 = CN_change2) %>%
     dplyr::distinct()
-  
+
 } else {
   sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
 }
 ```
 
+```{r purple_qc_prep}
+# read both datasets
+qc_path <- params$purple_qc
+purity_path <- params$purple_purity
+
+purple_qc <-
+  file.path(qc_path) %>%
+  readr::read_tsv(col_names = c("key", "value"), col_types = "cc") %>%
+  dplyr::mutate(value = toupper(value))
+# turn into named vector
+purple_qc <- structure(purple_qc$value, names = purple_qc$key)
+
+purple_purity <-
+  file.path(purity_path) %>%
+  readr::read_tsv(col_types = cols(.default = col_double(),
+                                   Gender = col_character(),
+                                   Status = col_character())) %>%
+  dplyr::mutate_if(is.numeric, round, 2) %>%
+  unlist()
+
+# sanity checks in case something changes between versions
+nms_purple_qc <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
+                   "SegmentScore", "UnsupportedSegments", "Ploidy",
+                   "AmberGender", "CobaltGender", "DeletedGenes")
+stopifnot(all(names(purple_qc) == nms_purple_qc))
+
+nms_purple_purity <- c("#Purity", "NormFactor", "Score", "DiploidProportion", "Ploidy",
+                       "Gender", "Status", "PolyclonalProportion", "MinPurity", "MaxPurity",
+                       "MinPloidy", "MaxPloidy", "MinDiploidProportion", "MaxDiploidProportion",
+                       "Version", "SomaticPenalty")
+stopifnot(all(names(purple_purity) == nms_purple_purity))
+
+# for shorter reference in glue
+p <- purple_purity
+q <- purple_qc
+purple_qc_summary <- dplyr::tribble(
+  ~Variable, ~value, ~details,
+  'QC_Status', glue('{q["QCStatus"]}'), "",
+  'Purity', glue('{p["#Purity"]} ({p["MinPurity"]}-{p["MaxPurity"]})'), "Purity of tumor",
+  'Ploidy', glue('{p["Ploidy"]} ({p["MinPloidy"]}-{p["MaxPloidy"]})'), "Average ploidy of tumor sample (purity-adjusted)",
+  'Gender', glue('{p["Gender"]}'), "",
+  'Polyclonal Prop', p["PolyclonalProportion"], "Proportion of CN regions that are more than 0.25 from a whole copy number",
+  'Diploidy Prop', glue('{p["DiploidProportion"]} ({p["MinDiploidProportion"]}-{p["MaxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
+  'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
+  'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
+  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
+  'Purple Version', p["Version"], "")
+```
+
+```{r purple_gene_cnv_prep}
+key_genes <-
+  readr::read_tsv(params$key_genes, col_types = cols(oncogene = "l", tumorsuppressor = "l")) %>%
+  dplyr::select(symbol, oncogene, tumorsuppressor)
+
+oncogenes <- key_genes %>% dplyr::filter(oncogene) %>% dplyr::pull(symbol)
+tsgenes <- key_genes %>% dplyr::filter(tumorsuppressor) %>% dplyr::pull(symbol)
+
+purple_gene_cnv <-
+  readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcc") %>%
+  dplyr::filter(Gene %in% key_genes$symbol) %>%
+  dplyr::mutate(Chromosome = as.factor(Chromosome),
+                oncogene = Gene %in% oncogenes,
+                tsgene = Gene %in% tsgenes,
+                role = dplyr::case_when(
+                  oncogene & tsgene ~ "onco+ts",
+                  oncogene ~ "oncogene",
+                  tsgene ~ "tsgene",
+                  TRUE ~ "")) %>%
+  dplyr::select(gene = Gene,  minCN = MinCopyNumber, maxCN = MaxCopyNumber,
+                chrom = Chromosome, start = Start, end = End,
+                chrBand = ChromosomeBand, role)
+```
+
+```{r purple_cnv_segs_summary}
+purple_cnv_segs <- file.path(params$purple_cnv) %>%
+  readr::read_tsv(col_types = "ciididdcccdddddd")
+
+nms_purple_cnv <- c("#chromosome", "start", "end", "copyNumber", "bafCount", "observedBAF",
+                    "baf", "segmentStartSupport", "segmentEndSupport", "method",
+                    "depthWindowCount", "gcContent", "minStart", "maxStart", "minorAllelePloidy",
+                    "majorAllelePloidy")
+
+# keep track of column changes through PURPLE versions
+stopifnot(all(names(purple_cnv_segs) == nms_purple_cnv))
+
+```
+
 ## Summary
 
 Summarise results at the top here.
+
+```{r}
+purple_cnv_segs %>%
+  dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
+  dplyr::select(chrom, start, end, tot_cn) %>%
+  dplyr::mutate(seg_len = end - start) %>%
+  dplyr::summarise(n = n(),
+                   mean_len = round(mean(seg_len), 0),
+                   med_len = round(median(seg_len), 0),
+                   min_cn = round(min(tot_cn), 2),
+                   max_cn = round(max(tot_cn), 2)) %>%
+  knitr::kable(format.args = list(big.mark = ",")) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
+
 
 
 ## Somatic Mutation Profiles
@@ -644,55 +747,9 @@ There are several reasons PURPLE may classify a sample as failed:
 
 </details>
 
-```{r purply_qc}
-# read both datasets
-qc_path <- params$purple_qc
-purity_path <- params$purple_purity
 
-purple_qc <-
-  file.path(qc_path) %>%
-  readr::read_tsv(col_names = c("key", "value"), col_types = "cc") %>%
-  dplyr::mutate(value = toupper(value))
-# turn into named vector
-purple_qc <- structure(purple_qc$value, names = purple_qc$key)
-
-purple_purity <-
-  file.path(purity_path) %>%
-  readr::read_tsv(col_types = cols(.default = col_double(),
-                                   Gender = col_character(),
-                                   Status = col_character())) %>%
-  dplyr::mutate_if(is.numeric, round, 2) %>%
-  unlist()
-
-# sanity checks in case something changes between versions
-nms_purple_qc <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
-                   "SegmentScore", "UnsupportedSegments", "Ploidy",
-                   "AmberGender", "CobaltGender", "DeletedGenes")
-stopifnot(all(names(purple_qc) == nms_purple_qc))
-
-nms_purple_purity <- c("#Purity", "NormFactor", "Score", "DiploidProportion", "Ploidy",
-                       "Gender", "Status", "PolyclonalProportion", "MinPurity", "MaxPurity",
-                       "MinPloidy", "MaxPloidy", "MinDiploidProportion", "MaxDiploidProportion",
-                       "Version", "SomaticPenalty")
-stopifnot(all(names(purple_purity) == nms_purple_purity))
-
-# for shorter reference in glue
-p <- purple_purity
-q <- purple_qc
-tab <- dplyr::tribble(
-  ~Variable, ~value, ~details,
-  'QC_Status', glue('{q["QCStatus"]}'), "",
-  'Purity', glue('{p["#Purity"]} ({p["MinPurity"]}-{p["MaxPurity"]})'), "Purity of tumor",
-  'Ploidy', glue('{p["Ploidy"]} ({p["MinPloidy"]}-{p["MaxPloidy"]})'), "Average ploidy of tumor sample (purity-adjusted)",
-  'Gender', glue('{p["Gender"]}'), "",
-  'Polyclonal Prop', p["PolyclonalProportion"], "Proportion of CN regions that are more than 0.25 from a whole copy number",
-  'Diploidy Prop', glue('{p["DiploidProportion"]} ({p["MinDiploidProportion"]}-{p["MaxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
-  'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
-  'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
-  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
-  'Purple Version', p["Version"], "")
-
-tab %>%
+```{r purple_qc_summary}
+purple_qc_summary %>%
   dplyr::mutate(
     Variable = kableExtra::cell_spec(Variable, bold = TRUE),
     value = kableExtra::cell_spec(value, bold = TRUE,
@@ -763,29 +820,9 @@ the below information for ~1,100 genes in the UMCCR Cancer Gene list.
 
 </details>
 
+
 ```{r purple_gene_tab}
-key_genes <-
-  readr::read_tsv(params$key_genes, col_types = cols(oncogene = "l", tumorsuppressor = "l")) %>%
-  dplyr::select(symbol, oncogene, tumorsuppressor)
-
-oncogenes <- key_genes %>% dplyr::filter(oncogene) %>% dplyr::pull(symbol)
-tsgenes <- key_genes %>% dplyr::filter(tumorsuppressor) %>% dplyr::pull(symbol)
-
-purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcc")
-
 purple_gene_cnv %>%
-  dplyr::filter(Gene %in% key_genes$symbol) %>%
-  dplyr::mutate(Chromosome = as.factor(Chromosome),
-                oncogene = Gene %in% oncogenes,
-                tsgene = Gene %in% tsgenes,
-                role = dplyr::case_when(
-                  oncogene & tsgene ~ "onco+ts",
-                  oncogene ~ "oncogene",
-                  tsgene ~ "tsgene",
-                  TRUE ~ "")) %>%
-  dplyr::select(gene = Gene,  minCN = MinCopyNumber, maxCN = MaxCopyNumber,
-                chrom = Chromosome, start = Start, end = End,
-                chrBand = ChromosomeBand, role) %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 rownames = FALSE, extensions = c("Scroller", "Buttons"),
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
@@ -795,34 +832,6 @@ purple_gene_cnv %>%
 ```
 
 ### Genome-wide CNV Segments
-
-#### Summary
-```{r purple_cnv_summary}
-purple_cnv <- file.path(params$purple_cnv) %>%
-  readr::read_tsv(col_types = "ciididdcccdddddd")
-
-nms_purple_cnv <- c("#chromosome", "start", "end", "copyNumber", "bafCount", "observedBAF",
-                    "baf", "segmentStartSupport", "segmentEndSupport", "method",
-                    "depthWindowCount", "gcContent", "minStart", "maxStart", "minorAllelePloidy",
-                    "majorAllelePloidy")
-
-# keep track of column changes through PURPLE versions
-stopifnot(all(names(purple_cnv) == nms_purple_cnv))
-
-purple_cnv %>%
-  dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
-  dplyr::select(chrom, start, end, tot_cn) %>%
-  dplyr::mutate(seg_len = end - start) %>%
-  dplyr::summarise(n = n(),
-                   mean_len = round(mean(seg_len), 0),
-                   med_len = round(median(seg_len), 0),
-                   min_cn = round(min(tot_cn), 2),
-                   max_cn = round(max(tot_cn), 2)) %>%
-  knitr::kable(format.args = list(big.mark = ",")) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
-```
-
-#### Segments
 
 <details>
 <summary>Description</summary>
@@ -849,8 +858,9 @@ of the tumor sample:
 
 
 </details>
-```{r purple_segs}
-purple_cnv %>%
+
+```{r purple_cnv_segs}
+purple_cnv_segs %>%
   dplyr::mutate(Chrom = as.factor(`#chromosome`),
                 minorAllelePloidy = round(minorAllelePloidy, 1),
                 majorAllelePloidy = round(majorAllelePloidy, 1),
@@ -869,7 +879,6 @@ purple_cnv %>%
                                buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
-
 
 ### Other PURPLE Charts {.tabset .tabset-fade}
 
