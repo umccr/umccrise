@@ -240,8 +240,7 @@ Convert to hg38
 
 ```
 # spartan
-CrossMap.py vcf /data/cephfs/punim0010/extras/hg19ToHg38.over.chain.gz ../GRCh37/gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz hg38.fa gnomad_genome.
-r2.1.common_pass_clean.norm.vcf.unsorted
+CrossMap.py vcf /data/cephfs/punim0010/extras/hg19ToHg38.over.chain.gz ../GRCh37/gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz hg38.fa gnomad_genome.r2.1.common_pass_clean.norm.vcf.unsorted
 bcftools view gnomad_genome.r2.1.common_pass_clean.norm.vcf.unsorted | bcftools sort -Oz -o gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
 tabix -p vcf gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
 ```
@@ -285,13 +284,14 @@ rm segdup.bed_tmp genomicSuperDups.txt.gz
 Generate ENCODE
 
 ```
-git clone git clone https://github.com/Boyle-Lab/Blacklist
-gunzip -c hg19-blacklist.v2.bed.gz | py -x "x[3:]" > GRCh37-blacklist.v2.bed
+git clone https://github.com/Boyle-Lab/Blacklist
+gunzip -c Blacklist/lists/hg19-blacklist.v2.bed.gz | py -x "x[3:]" > Blacklist/lists/GRCh37-blacklist.v2.bed
 
-bgzip GRCh37-blacklist.v2.bed -c > GRCh37/problem_regions/ENCODE/blacklist.v2.bed.gz
-cp hg38-blacklist.v2.bed.gz hg38/problem_regions/ENCODE/blacklist.v2.bed.gz
+bgzip Blacklist/lists/GRCh37-blacklist.v2.bed -c > GRCh37/problem_regions/ENCODE/blacklist.v2.bed.gz
+gunzip -c Blacklist/lists/hg38-blacklist.v2.bed.gz | bgzip -c > hg38/problem_regions/ENCODE/blacklist.v2.bed.gz
 tabix -p bed GRCh37/problem_regions/ENCODE/blacklist.v2.bed.gz
 tabix -p bed hg38/problem_regions/ENCODE/blacklist.v2.bed.gz
+rm -rf Blacklist
 ```
 
 Lift over to hg38:
