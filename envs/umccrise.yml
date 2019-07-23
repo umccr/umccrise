@@ -31,7 +31,6 @@ dependencies:
   # - vcf_stuff
   - bed_annotation
   - multiqc
-  - multiqc-bcbio
   - pyensembl
   - break-point-inspector
   - gatk4 >=4.1.0.0  # Conpair and panel of normals
@@ -75,6 +74,7 @@ dependencies:
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
+  - pyyaml>=4  # for multiqc
   - pip:
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
