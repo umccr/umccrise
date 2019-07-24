@@ -29,87 +29,16 @@ if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
                  '<tumor>/<batch>-sv-prioritize-manta.vcf.gz (conventional bcbio), nor in the project folder as'
                  'project/<tumor>-manta-prioritized.vcf.gz (CWL bcbio).')
 
-# TODO: ? Rerun SnpEFF as well to target canonical transcripts, so we don't miss intergenic variants touching non-canonical transripts?
-
-rule sv_subset_to_canonical:
-    input:
-        vcf = lambda wc: get_manta_path(wc.batch),
-    output:
-        vcf = 'work/{batch}/structural/canonical_ann/{batch}-manta.vcf.gz',
-        tbi = 'work/{batch}/structural/canonical_ann/{batch}-manta.vcf.gz.tbi',
-    group: "sv_vcf"
-    run:
-        assert vcf_contains_field(input.vcf, 'INFO/ANN'), f'Manta {input.vcf} must be annotated with SnpEff'
-
-        principal_by_gids = canon_transcript_per_gene(run.genome_build, use_gene_id=True, only_principal=True)
-        all_princ_transcripts = set(principal_by_gids.values())
-
-        def proc_line(rec, vcf, **kwargs):
-            ann = rec.INFO.get('ANN')
-            if ann is None:
-                return rec
-
-            if isinstance(ann, str):
-                anns = ann.split(',')
-            else:
-                anns = ann
-
-            new_anns = []
-            for ann_line in anns:
-                ann_fields = ann_line.split('|')
-                assert len(ann_fields) >= 11, f'rec: {rec}, ann_line: {ann_line}'
-                allele, effect, impact, genename, geneid, feature, featureid, biotype, rank, c_change, p_change = ann_fields[:11]
-
-                if feature == 'chromosome':
-                    new_anns.append(ann_line)
-
-                elif feature == 'transcript':
-                    feature_ids = set(featureid.split('&'))
-                    feature_ids = set([fid.split('.')[0] for fid in feature_ids])  # get rid of version suffix
-                    assert all(re.fullmatch(r'ENST[\d.]+', fid) for fid in feature_ids), ann
-                    if not feature_ids - all_princ_transcripts:
-                        new_anns.append(ann_line)
-
-                else:  # 'interaction'?
-                    # Splitting 'interaction' feature ids like the following:
-                    # "3UVN:C_107-D_1494:ENST00000358625-ENST00000262519"
-                    # -> {'3UVN', 'C_107', 'D_1494', 'ENST00000262519', 'ENST00000358625'}
-                    feature_ids = set(fid for fid in flatten(fids.split('-') for fids in featureid.split(':')) if fid.startswith('ENST'))
-                    feature_ids = set([fid.split('.')[0] for fid in feature_ids])  # get rid of version suffix
-                    assert all(re.fullmatch(r'ENST[\d.]+', fid) for fid in feature_ids), ann
-                    if not feature_ids - all_princ_transcripts:
-                        new_anns.append(ann_line)
-
-            if new_anns:
-                if isinstance(ann, str):
-                    new_ann = ','.join(new_anns)
-                else:
-                    new_ann = new_anns
-                rec.INFO['ANN'] = new_ann
-            else:
-                del rec.INFO['ANN']
-
-            # Also remove older SIMPLE_ANN as we are rerunning for canonical transcripts
-            if rec.INFO.get('SIMPLE_ANN') is not None:
-                del rec.INFO['SIMPLE_ANN']
-            if rec.INFO.get('SV_HIGHEST_TIER') is not None:
-                del rec.INFO['SV_HIGHEST_TIER']
-
-            return rec
-
-        iter_vcf(input.vcf, output.vcf, proc_line)
-        before = count_vars(input.vcf)
-        after = count_vars(output.vcf)
-        assert before == after, (before, after)
-
 rule sv_prioritize:
     input:
-        vcf = rules.sv_subset_to_canonical.output.vcf,
+        vcf = lambda wc: get_manta_path(wc.batch),
     output:
         vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz',
         tbi = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz.tbi',
     group: "sv_vcf"
     run:
+        assert vcf_contains_field(input.vcf, 'INFO/ANN'), f'Manta {input.vcf} must be annotated with SnpEff'
+
         cmd = f'cat {input.vcf}'
         # remove previous annotation
         filts_to_remove = [f'{f}' for f in ['INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER',
@@ -118,7 +47,7 @@ rule sv_prioritize:
         if filts_to_remove:
             cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
 
-        cmd += (f' | simple_sv_annotation | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        cmd += (f' | prioritize_sv | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
