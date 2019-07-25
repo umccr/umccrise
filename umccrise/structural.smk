@@ -35,6 +35,8 @@ rule sv_prioritize:
     output:
         vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz',
         tbi = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz.tbi',
+    params:
+        genome = run.genome_build
     group: "sv_vcf"
     run:
         assert vcf_contains_field(input.vcf, 'INFO/ANN'), f'Manta {input.vcf} must be annotated with SnpEff'
@@ -47,7 +49,8 @@ rule sv_prioritize:
         if filts_to_remove:
             cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
 
-        cmd += (f' | prioritize_sv | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        cmd += (f' | prioritize_sv -c -g {params.genome} | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        # keeping INFO/ANN here because later (after PURPLE we reprioritizing)
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
@@ -140,9 +143,8 @@ rule filter_sv_vcf:
         shell('''
 bcftools view -f.,PASS {input.vcf} | \
 bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" | \
-bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" \
-bcftools view -s {params.sample} | \
-> {output.vcf}
+bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" | \
+bcftools view -s {params.sample} > {output.vcf}
 ''')
 
 rule reprioritize_rescued_svs:
@@ -152,9 +154,11 @@ rule reprioritize_rescued_svs:
     output:
         vcf = '{batch}/structural/{batch}-manta.vcf.gz',
         tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
+    params:
+        genome = run.genome_build
     group: "sv_after_purple"
     run:
-        cmd = f'gunzip -c {input.vcf} | simple_sv_annotation | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
+        cmd = f'gunzip -c {input.vcf} | prioritize_sv -c -g {params.genome} | bcftools annotate -x "INFO/ANN" | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)

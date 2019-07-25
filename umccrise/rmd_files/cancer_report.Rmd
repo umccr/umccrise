@@ -569,24 +569,28 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   `Other affected genes` = subset_genes(genes, -c(1,2)) %>% str_replace_all('&', ', '),
                   Gene = ifelse(str_detect(effect, "gene_fusion"),
                                 Gene,
-                                Gene %>% str_replace_all('&', ', '))) %>%
+                                Gene %>% str_replace_all('&', ', ')),
+                  Transcript = transcript %>% str_replace_all('&', ', ')
+                  ) %>%
     tidyr::separate(effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
     dplyr::mutate(start = format(start, big.mark = ',', trim = TRUE),
                   end = format(end, big.mark = ',', trim = TRUE),
                   location = str_c(chrom, ':', start, sep = ''),
                   location = ifelse(is.na(end), location, str_c(location)),
                   Ploidy = as.double(Ploidy),
-                  Ploidy = format(Ploidy, nsmall = 2)) %>%
+                  Ploidy = format(Ploidy, nsmall = 2)
+                  ) %>%
     dplyr::select(Tier = tier, Event = svtype, Gene,
                   Effect = Effect, Detail = detail, Location = location,
                   AF, `CN chg` = CN_change,
                   SR, PR, CN, Ploidy, PURPLE_status,
                   SR_ref, PR_ref, PE, PE_ref,
-                  SomaticScore = somaticscore, Transcript = transcript,
+                  SomaticScore = somaticscore, Transcript,
                   `Other effects`, `Other affected genes`,
                   AF_bp1 = AF1, AF_bp2 = AF2,
                   CN_bp1 = CN1, CN_bp2 = CN2,
-                  CN_chg_bp1 = CN_change1, CN_chg_bp2 = CN_change2) %>%
+                  CN_chg_bp1 = CN_change1, CN_chg_bp2 = CN_change2
+                  ) %>%
     dplyr::distinct()
 
   DT::datatable(sv_all, rownames = FALSE,
