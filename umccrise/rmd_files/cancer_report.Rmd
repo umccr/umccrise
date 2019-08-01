@@ -239,9 +239,9 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     split_sv_field(AF, is_pct = TRUE) %>%
     split_sv_field(CN) %>%
     split_sv_field(CN_change) %>%
-    tidyr::separate(split_read_support, c("SR_alt", "SR_ref"), ",") %>%
-    tidyr::separate(paired_support_PR, c("PR_alt", "PR_ref"), ",") %>%
-    tidyr::separate(paired_support_PE, c("PE_alt", "PE_ref"), ",") %>%
+    tidyr::separate(split_read_support, c("SR_ref", "SR_alt"), ",") %>%
+    tidyr::separate(paired_support_PR, c("PR_ref", "PR_alt"), ",") %>%
+    tidyr::separate(paired_support_PE, c("PE_ref", "PE_alt"), ",") %>%
     dplyr::mutate(SR = as.integer(SR_alt),
                   PR = as.integer(PR_alt),
                   PE = as.integer(PE_alt),
