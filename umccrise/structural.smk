@@ -49,7 +49,7 @@ rule sv_prioritize:
         if filts_to_remove:
             cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
 
-        cmd += (f' | prioritize_sv -c -g {params.genome} | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        cmd += f' | prioritize_sv -g {params.genome} | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
         # keeping INFO/ANN here because later (after PURPLE we reprioritizing)
         shell(cmd)
         before = count_vars(input.vcf)
@@ -158,7 +158,7 @@ rule reprioritize_rescued_svs:
         genome = run.genome_build
     group: "sv_after_purple"
     run:
-        cmd = f'gunzip -c {input.vcf} | prioritize_sv -c -g {params.genome} | bcftools annotate -x "INFO/ANN" | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
+        cmd = f'gunzip -c {input.vcf} | prioritize_sv -g {params.genome} | bcftools annotate -x "INFO/ANN" | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
