@@ -271,10 +271,10 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   Ploidy = as.double(Ploidy),
                   Ploidy = format(Ploidy, nsmall = 2)
                   ) %>%
-    dplyr::select(VarNum, Tier = tier, Event = svtype, Gene,
-                  Effect = Effect, Detail = detail, Location = location,
+    dplyr::select(Location = location, Tier = tier, Event = svtype, Gene,
+                  Effect = Effect, Detail = detail,
                   AF, `CN chg` = CN_change,
-                  SR, PR, CN, Ploidy, PURPLE_status,
+                  SR, PR, CN, Ploidy, PURPLE_status, VarNum,
                   SR_ref, PR_ref, PE, PE_ref,
                   SomaticScore = somaticscore, 
                   Transcript,
