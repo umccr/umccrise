@@ -55,8 +55,11 @@ rule purple_amber:
         snp_bed = hpc.get_ref_file(run.genome_build, 'purple_het'),
         ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
-        'work/{batch}/purple/amber/{batch}.amber.baf',
-        'work/{batch}/purple/amber/{batch}.amber.baf.pcf',
+        'work/{batch}/purple/amber/{batch}.amber.baf.tsv',
+        'work/{batch}/purple/amber/{batch}.amber.baf.vcf.gz',
+        'work/{batch}/purple/amber/{batch}.amber.baf.contamination.tsv',
+        'work/{batch}/purple/amber/{batch}.amber.baf.contamination.vcf.gz',
+        'work/{batch}/purple/amber/{batch}.amber.qc',
     params:
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
         outdir = 'work/{batch}/purple/amber',
@@ -89,8 +92,9 @@ rule purple_cobalt:
         gc = hpc.get_ref_file(run.genome_build, 'purple_gc'),
         ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
-        'work/{batch}/purple/cobalt/{batch}.cobalt',
-        'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
+        'work/{batch}/purple/cobalt/{batch}.chr.len',
+        'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.tsv',
+        'work/{batch}/purple/cobalt/{batch}.cobalt.gc.median',
     params:
         outdir = 'work/{batch}/purple/cobalt',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
@@ -130,10 +134,10 @@ rule purple_somatic_vcf:
 
 rule purple_run:
     input:
-        cobalt_dummy      = 'work/{batch}/purple/cobalt/{batch}.cobalt',
-        cobalt_dummy_pcf  = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.pcf',
-        amber_dummy       = 'work/{batch}/purple/amber/{batch}.amber.baf',
-        amber_dummy_pcf   = 'work/{batch}/purple/amber/{batch}.amber.baf.pcf',
+        amber_dummy       = 'work/{batch}/purple/amber/{batch}.amber.baf.tsv',
+        amber_dummy_pcf   = 'work/{batch}/purple/amber/{batch}.amber.baf.vcf.gz',
+        cobalt_dummy      = 'work/{batch}/purple/cobalt/{batch}.chr.len',
+        cobalt_dummy_pcf  = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.tsv',
         manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
         gc                = hpc.get_ref_file(run.genome_build, 'purple_gc'),
         somatic_vcf       = rules.purple_somatic_vcf.output,
@@ -156,7 +160,6 @@ rule purple_run:
         link         = 'work/{batch}/purple/circos/{batch}.link.circos',
     group: 'purple_main'
     params:
-        rundir = 'work/{batch}/purple',
         outdir = 'work/{batch}/purple',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
@@ -175,7 +178,8 @@ rule purple_run:
         circos_macos_patch +\
         'circos -modules ; circos -v ; '
         'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
-        '-run_dir {params.rundir} '
+        '-amber {params.outdir}/amber '
+        '-cobalt {params.outdir}/cobalt '
         '-output_dir {params.outdir} '
         '-reference {params.normal_sname} '
         '-tumor {wildcards.batch} '
