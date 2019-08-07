@@ -189,9 +189,9 @@ Changes pulled in `umccrise` repository clone folder will affect immidiately due
 
 ```
 source load_umccrise.sh
-git clone https://github.com/vladsaveliev/NGS_Utils ngs_utils   ; pip intall -e ngs_utils
-git clone https://github.com/umccr/hpc_utils                    ; pip intall -e hpc_utils
-git clone https://github.com/vladsaveliev/vcf_stuff             ; pip intall -e vcf_stuff
+git clone https://github.com/vladsaveliev/NGS_Utils ngs_utils   ; pip install -e ngs_utils
+git clone https://github.com/umccr/hpc_utils                    ; pip install -e hpc_utils
+git clone https://github.com/vladsaveliev/vcf_stuff             ; pip install -e vcf_stuff
 ```
 
 

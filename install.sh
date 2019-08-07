@@ -18,7 +18,8 @@ conda env create -p $(pwd)/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccr
 conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_purple --file umccrise/envs/purple.yml
 # conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
 conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
-conda activate $(pwd)/miniconda/envs/${ENV_NAME}  # export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
+# conda activate $(pwd)/miniconda/envs/${ENV_NAME}  #
+export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$PATH
 pip install -e umccrise
 
 ### Create the loader script
@@ -29,4 +30,3 @@ unset PERL5LIB
 export PATH=$(pwd)/miniconda/envs/${ENV_NAME}/bin:$(pwd)/miniconda/bin:\$PATH
 export CONDA_PREFIX=$(pwd)/miniconda/envs/${ENV_NAME}
 EOT
-
