@@ -65,11 +65,7 @@ table_columns_visible:
     VerifyBAMID:
         Contam: False
     mosdepth:
-        1_x_pc: False
-        5_x_pc: False
-        10_x_pc: False
-        30_x_pc: False
-        50_x_pc: False
+#        30_x_pc: False
         median_coverage: False
 
 bcftools:
@@ -233,10 +229,9 @@ sp:
         fn_re: '(somatic|germline)_stats.yml'
 
 
-
-
-
-
+extra_fn_clean_trim:
+    - '-coverage.mosdepth.region.dist'
+    - '-coverage.mosdepth.global.dist'
 
 
 
