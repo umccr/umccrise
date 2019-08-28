@@ -59,3 +59,8 @@ COPY scripts umccrise/scripts
 COPY vendor umccrise/vendor
 COPY setup.py umccrise/setup.py
 RUN pip install -e umccrise
+
+RUN R -e "install.packages('stringi', dependencies = F, repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages('BiocManager', repos = 'http://cran.us.r-project.org')"
+RUN R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg19.knownGene')"
+RUN R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg38.knownGene')"
