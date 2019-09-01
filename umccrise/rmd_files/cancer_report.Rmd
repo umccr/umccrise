@@ -307,8 +307,11 @@ purple_qc <- structure(purple_qc$value, names = purple_qc$key)
 purple_purity <-
   file.path(purity_path) %>%
   readr::read_tsv(col_types = cols(.default = col_double(),
-                                   Gender = col_character(),
-                                   Status = col_character())) %>%
+                                   gender = col_character(),
+                                   status = col_character(),
+                                   wholeGenomeDuplication = col_logical(),
+                                   MSI = col_character()
+                                   )) %>%
   dplyr::mutate_if(is.numeric, round, 2) %>%
   unlist()
 
@@ -318,11 +321,12 @@ nms_purple_qc <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
                    "AmberGender", "CobaltGender", "DeletedGenes")
 stopifnot(all(names(purple_qc) == nms_purple_qc))
 
-nms_purple_purity <- c("#Purity", "NormFactor", "Score", "DiploidProportion", "Ploidy",
-                       "Gender", "Status", "PolyclonalProportion", "MinPurity", "MaxPurity",
-                       "MinPloidy", "MaxPloidy", "MinDiploidProportion", "MaxDiploidProportion",
-                       "Version", "SomaticPenalty")
+nms_purple_purity <- c("purity", "normFactor", "score", "diploidProportion", "ploidy",
+                       "gender", "status", "polyclonalProportion", "minPurity", "maxPurity",
+                       "minPloidy", "maxPloidy", "minDiploidProportion", "maxDiploidProportion",
+                       "version", "somaticPenalty", "wholeGenomeDuplication", "msIndelsPerMb", "msStatus")
 stopifnot(all(names(purple_purity) == nms_purple_purity))
+
 
 # for shorter reference in glue
 p <- purple_purity
@@ -330,15 +334,18 @@ q <- purple_qc
 purple_qc_summary <- dplyr::tribble(
   ~Variable, ~value, ~details,
   'QC_Status', glue('{q["QCStatus"]}'), "",
-  'Purity', glue('{p["#Purity"]} ({p["MinPurity"]}-{p["MaxPurity"]})'), "Purity of tumor",
-  'Ploidy', glue('{p["Ploidy"]} ({p["MinPloidy"]}-{p["MaxPloidy"]})'), "Average ploidy of tumor sample (purity-adjusted)",
-  'Gender', glue('{p["Gender"]}'), "",
-  'Polyclonal Prop', p["PolyclonalProportion"], "Proportion of CN regions that are more than 0.25 from a whole copy number",
-  'Diploidy Prop', glue('{p["DiploidProportion"]} ({p["MinDiploidProportion"]}-{p["MaxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
+  'Purity', glue('{p["purity"]} ({p["minPurity"]}-{p["maxPurity"]})'), "Purity of tumor",
+  'Ploidy', glue('{p["ploidy"]} ({p["minPloidy"]}-{p["maxPloidy"]})'), "Average ploidy of tumor sample (purity-adjusted)",
+  'Gender', glue('{p["gender"]}'), "",
+  'WGD', glue('{p["wholeGenomeDuplication"]}'), "Whole genome duplication",
+  'MSI', glue('{p["msStatus"]}'), "Microsatellite instability status",
+  'MSI indels/Mb', glue('{p["msIndelsPerMb"]}'), "Microsatellite instability indels per megabase",
+  'Polyclonal Prop', p["polyclonalProportion"], "Proportion of CN regions that are more than 0.25 from a whole copy number",
+  'Diploidy Prop', glue('{p["diploidProportion"]} ({p["minDiploidProportion"]}-{p["maxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
   'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
   'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
   'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
-  'Purple Version', p["Version"], "")
+  'Purple Version', p["version"], "")
 ```
 
 ```{r purple_gene_cnv_prep}
@@ -352,18 +359,18 @@ tsgenes <- key_genes %>% dplyr::filter(tumorsuppressor) %>% dplyr::pull(symbol)
 
 purple_gene_cnv <-
   readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcc") %>%
-  dplyr::filter(Gene %in% key_genes$symbol) %>%
-  dplyr::mutate(Chromosome = as.factor(Chromosome),
-                oncogene = Gene %in% oncogenes,
-                tsgene = Gene %in% tsgenes,
+  dplyr::filter(gene %in% key_genes$symbol) %>%
+  dplyr::mutate(chromosome = as.factor(chromosome),
+                oncogene = gene %in% oncogenes,
+                tsgene = gene %in% tsgenes,
                 role = dplyr::case_when(
                   oncogene & tsgene ~ "onco+ts",
                   oncogene ~ "oncogene",
                   tsgene ~ "tsgene",
                   TRUE ~ "")) %>%
-  dplyr::select(gene = Gene,  minCN = MinCopyNumber, maxCN = MaxCopyNumber,
-                chrom = Chromosome, start = Start, end = End,
-                chrBand = ChromosomeBand, role)
+  dplyr::select(gene, minCN = minCopyNumber, maxCN = maxCopyNumber,
+                chrom = chromosome, start, end,
+                chrBand = chromosomeBand, role)
 ```
 
 ```{r purple_global_cnv_prep}
@@ -371,7 +378,7 @@ purple_gene_cnv <-
 purple_global_cnv <- file.path(params$purple_cnv) %>%
   readr::read_tsv(col_types = "ciididdcccdddddd")
 
-nms_purple_cnv <- c("#chromosome", "start", "end", "copyNumber", "bafCount", "observedBAF",
+nms_purple_cnv <- c("chromosome", "start", "end", "copyNumber", "bafCount", "observedBAF",
                     "baf", "segmentStartSupport", "segmentEndSupport", "method",
                     "depthWindowCount", "gcContent", "minStart", "maxStart", "minorAllelePloidy",
                     "majorAllelePloidy")
@@ -595,29 +602,11 @@ mut_sig_contr %>%
   kableExtra::scroll_box(height = "500px")
 ```
 
-### Rainfall Plots {.tabset .tabset-fade}
+### Circos Plots {.tabset .tabset-fade}
 
 <a href="#top">Back to top</a>
 
-Rainfall plots are used to visualize the distribution of mutations along the genome,
-including mutation types.
-
-#### Rainfall
-
-<details>
-<summary>Description</summary>
-
-Rainfall plot. The y-axis corresponds to the distance of a mutation from the previous mutation,
-and is log10 transformed. Drop-downs from the plots indicate clusters or
-"hotspots" of mutations.
-</details>
-
-```{r rainfall, out.height="95%"}
-chromosomes <- seqnames(get(ref_genome))[1:22]
-MutationalPatterns::plot_rainfall(somatic_snv[[1]], chromosomes = chromosomes, cex = 1.2, ylim = 1e+09)
-```
-
-#### Circos
+#### Plot 1: Somatic SNVs/Indels, Total/Minor CN, SVs
 
 <details>
 <summary>Description</summary>
@@ -656,6 +645,90 @@ Generated from PURPLE.
 img_dir <- file.path('img') # created before when copying purple files to tmp dir
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
 ```
+
+#### Plot 2: Total/Minor CN, SVs, BAF
+
+<details>
+<summary>Description</summary>
+
+* __Track1__: Chromosomes
+* __Track2__: <span style="color:#8A2BE2">Beta Allele Frequency</span>
+* __Track3__: Total Copy Number Changes (see above)
+* __Track4__: Minor Copy Number Changes (see above)
+* __Track5__ (Inner circle): Observed Structural Variants (see above)
+
+</details>
+
+```{r circos_baf_plot, out.width="80%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
+```
+
+#### Plot 3: Tumor/Normal Allele Ratios, BAF
+
+<details>
+<summary>Description</summary>
+
+* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
+  (centromeres, heterochromatin & missing short arms)
+* __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
+* __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
+
+</details>
+
+
+```{r circos_default2, out.width="80%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
+```
+
+
+### Somatic Variants Plots {.tabset .tabset-fade}
+
+<details>
+<summary>Description</summary>
+Plots represent purity/ploidy/clonality of somatic variants, generated by PURPLE.
+
+Rainfall plots visualizes the distribution of mutations along the genome, with mutation types
+indicated with different colors. The y-axis corresponds to the distance of a mutation from the
+previous mutation, and is log10 transformed. Drop-downs from the plots indicate clusters or
+"hotspots" of mutations.
+
+</details>
+
+#### Clonality
+```{r purple-other-plots1, out.width="60%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.clonality.png')))
+```
+
+#### Rainfall
+```{r purple-other-plots7, out.width="90%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.rainfall.png')))
+```
+
+#### Purity/ploidy
+```{r purple-other-plots2, out.width="60%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.purity.range.png')))
+```
+
+#### Somatic ploidy
+```{r purple-other-plots3, out.width="60%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.png')))
+```
+
+#### Copy number
+```{r purple-other-plots4, out.width="60%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.copynumber.png')))
+```
+
+#### Segment scores
+```{r purple-other-plots5, out.width="60%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.segment.png')))
+```
+
+#### Minor allele ploidy
+```{r purple-other-plots6, out.width="60%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.map.png')))
+```
+
 
 
 
@@ -789,44 +862,6 @@ purple_qc_summary %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
 
-### Circos {.tabset .tabset-fade}
-
-<a href="#top">Back to top</a>
-
-#### Plot 1: Total/Minor CN, SVs, BAF
-
-<details>
-<summary>Description</summary>
-
-* __Track1__: Chromosomes
-* __Track2__: <span style="color:#8A2BE2">Beta Allele Frequency</span>
-* __Track3__: Total Copy Number Changes (see above)
-* __Track4__: Minor Copy Number Changes (see above)
-* __Track5__ (Inner circle): Observed Structural Variants (see above)
-
-</details>
-
-```{r circos_baf_plot, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
-```
-
-#### Plot 2: Tumor/Normal Allele Ratios, BAF
-
-<details>
-<summary>Description</summary>
-
-* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
-  (centromeres, heterochromatin & missing short arms)
-* __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
-* __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
-
-</details>
-
-
-```{r circos_default2, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
-```
-
 ### UMCCR Gene CNV Calls
 
 <a href="#top">Back to top</a>
@@ -890,7 +925,7 @@ Summary of the CNV segments:
 
 ```{r purple_cnv_segs_summary}
 purple_global_cnv %>%
-  dplyr::rename(chrom = `#chromosome`, tot_cn = copyNumber) %>%
+  dplyr::rename(chrom = `chromosome`, tot_cn = copyNumber) %>%
   dplyr::select(chrom, start, end, tot_cn) %>%
   dplyr::mutate(seg_len = end - start) %>%
   dplyr::summarise(n = n(),
@@ -908,7 +943,7 @@ purple_global_cnv %>%
 
 ```{r purple_global_cnv_tab}
 purple_global_cnv %>%
-  dplyr::mutate(Chrom = as.factor(`#chromosome`),
+  dplyr::mutate(Chrom = as.factor(`chromosome`),
                 minorAllelePloidy = round(minorAllelePloidy, 1),
                 majorAllelePloidy = round(majorAllelePloidy, 1),
                 `Ploidy Min+Maj` = paste0(minorAllelePloidy, "+", majorAllelePloidy),
@@ -926,6 +961,9 @@ purple_global_cnv %>%
                                buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
+
+
+
 
 ## Software Versions
 

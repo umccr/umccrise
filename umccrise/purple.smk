@@ -57,8 +57,8 @@ rule purple_amber:
     output:
         'work/{batch}/purple/amber/{batch}.amber.baf.tsv',
         'work/{batch}/purple/amber/{batch}.amber.baf.vcf.gz',
-        'work/{batch}/purple/amber/{batch}.amber.baf.contamination.tsv',
-        'work/{batch}/purple/amber/{batch}.amber.baf.contamination.vcf.gz',
+        'work/{batch}/purple/amber/{batch}.amber.contamination.tsv',
+        'work/{batch}/purple/amber/{batch}.amber.contamination.vcf.gz',
         'work/{batch}/purple/amber/{batch}.amber.qc',
     params:
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
@@ -141,23 +141,29 @@ rule purple_run:
         manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
         gc                = hpc.get_ref_file(run.genome_build, 'purple_gc'),
         somatic_vcf       = rules.purple_somatic_vcf.output,
+        ref_fa            = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
-        cnv          = 'work/{batch}/purple/{batch}.purple.cnv',
-        gene_cnv     = 'work/{batch}/purple/{batch}.purple.gene.cnv',
-        fitted_cnv   = 'work/{batch}/purple/{batch}.purple.fitted',
-        resc_sv_vcf  = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
-        resc_sv_tbi  = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz.tbi',
-        circos_png   = 'work/{batch}/purple/plot/{batch}.circos.png',
-        input_png    = 'work/{batch}/purple/plot/{batch}.input.png',
-        cn_png       = 'work/{batch}/purple/plot/{batch}.copyNumber.png',
-        ma_png       = 'work/{batch}/purple/plot/{batch}.minor_allele.png',
-        variant_png  = 'work/{batch}/purple/plot/{batch}.variant.png',
-        purity       = 'work/{batch}/purple/{batch}.purple.purity',
-        qc           = 'work/{batch}/purple/{batch}.purple.qc',
-        baf          = 'work/{batch}/purple/circos/{batch}.baf.circos',
-        cnv_circos   = 'work/{batch}/purple/circos/{batch}.cnv.circos',
-        map          = 'work/{batch}/purple/circos/{batch}.map.circos',
-        link         = 'work/{batch}/purple/circos/{batch}.link.circos',
+        cnv           = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
+        gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
+        purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
+        qc            = 'work/{batch}/purple/{batch}.purple.qc',
+        resc_sv_vcf   = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
+        resc_sv_tbi   = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz.tbi',
+
+        circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
+        input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
+        cn_png        = 'work/{batch}/purple/plot/{batch}.copynumber.png',
+        ma_png        = 'work/{batch}/purple/plot/{batch}.map.png',
+        purity_png    = 'work/{batch}/purple/plot/{batch}.purity.range.png',
+        segment_png   = 'work/{batch}/purple/plot/{batch}.segment.png',
+        clonality_png = 'work/{batch}/purple/plot/{batch}.somatic.clonality.png',
+        ploidy_png    = 'work/{batch}/purple/plot/{batch}.somatic.png',
+        rainfall_png  = 'work/{batch}/purple/plot/{batch}.somatic.rainfall.png',
+
+        baf           = 'work/{batch}/purple/circos/{batch}.baf.circos',
+        cnv_circos    = 'work/{batch}/purple/circos/{batch}.cnv.circos',
+        map           = 'work/{batch}/purple/circos/{batch}.map.circos',
+        link          = 'work/{batch}/purple/circos/{batch}.link.circos',
     group: 'purple_main'
     params:
         outdir = 'work/{batch}/purple',
@@ -186,7 +192,9 @@ rule purple_run:
         '-threads {threads} '
         '-gc_profile {input.gc} '
         '-structural_vcf {input.manta_sv_filtered} '
+        # '-sv_recovery_vcf {input.manta_sv_filtered} '
         '-somatic_vcf {input.somatic_vcf} '
+        '-ref_genome {input.ref_fa} '
         '-circos circos 2>&1 | tee {log} '
 
 rule purple_circos_baf:
@@ -196,8 +204,8 @@ rule purple_circos_baf:
         map  = 'work/{batch}/purple/circos/{batch}.map.circos',
         link = 'work/{batch}/purple/circos/{batch}.link.circos',
         circos_baf_conf = package_path() + '/rmd_files/misc/circos/circos_baf.conf',
-        gaps_txt = package_path() + '/rmd_files/misc/circos/gaps.txt',
-        ideo_conf = package_path() + '/rmd_files/misc/circos/ideogram.conf',
+        gaps_txt        = package_path() + '/rmd_files/misc/circos/gaps.txt',
+        ideo_conf       = package_path() + '/rmd_files/misc/circos/ideogram.conf',
     output:
         png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
     params:
@@ -225,9 +233,9 @@ rule purple_symlink:
         rules.purple_run.output.circos_png,
         rules.purple_circos_baf.output.png,
     output:
-        cnv = '{batch}/purple/{batch}.purple.cnv',
-        gene_cnv = '{batch}/purple/{batch}.purple.gene.cnv',
-        circos_png = '{batch}/purple/{batch}.purple.circos.png',
+        cnv            = '{batch}/purple/{batch}.purple.cnv.somatic.tsv',
+        gene_cnv       = '{batch}/purple/{batch}.purple.cnv.gene.tsv',
+        circos_png     = '{batch}/purple/{batch}.purple.circos.png',
         circos_baf_png = '{batch}/purple/{batch}.purple.circos_baf.png',
     params:
         tumor_sname = lambda wc: wc.batch,

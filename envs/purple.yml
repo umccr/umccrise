@@ -15,3 +15,7 @@ dependencies:
   - hmftools-amber
   - hmftools-cobalt
   - hmftools-purple
+  - r-ggplot2
+  - r-dplyr
+  - bioconductor-variantannotation
+  - r-cowplot

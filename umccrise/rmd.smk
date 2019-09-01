@@ -105,7 +105,7 @@ rule somatic_to_hg19:
 # select chr, start, end, gene, min/max_cn, TranscriptID and ChromosomeBand
 rule rmd_purple_cnv:
     input:
-        'work/{batch}/purple/{batch}.purple.gene.cnv',
+        purple_cnv = rules.purple_run.output.gene_cnv,
     output:
         'work/{batch}/rmd/purple.tsv'
     group: "rmd"
@@ -115,22 +115,28 @@ rule rmd_purple_cnv:
 ## Running Rmarkdown
 rule cancer_report:
     input:
-        rmd_files_dir       = join(package_path(), 'rmd_files'),
-        key_genes           = get_key_genes(),
-        af_global           = rules.afs.output[0],
-        af_keygenes         = rules.afs_keygenes.output[0],
-        somatic_snv         = rules.somatic_to_hg19.output[0],
-        somatic_sv          = rules.prep_sv_tsv.output[0],
-        purple_gene_cnv     = rules.rmd_purple_cnv.output[0],
-        purple_cnv          = rules.purple_run.output.cnv,
-        purple_purity       = rules.purple_run.output.purity,
-        purple_qc           = rules.purple_run.output.qc,
-        purple_circos_png   = rules.purple_run.output.circos_png,
-        purple_input_png    = rules.purple_run.output.input_png,
-        purple_cn_png       = rules.purple_run.output.cn_png,
-        purple_ma_png       = rules.purple_run.output.ma_png,
-        purple_variant_png  = rules.purple_run.output.variant_png,
-        purple_baf_png      = rules.purple_circos_baf.output.png,
+        rmd_files_dir        = join(package_path(), 'rmd_files'),
+        key_genes            = get_key_genes(),
+        af_global            = rules.afs.output[0],
+        af_keygenes          = rules.afs_keygenes.output[0],
+        somatic_snv          = rules.somatic_to_hg19.output[0],
+        somatic_sv           = rules.prep_sv_tsv.output[0],
+        purple_gene_cnv      = rules.rmd_purple_cnv.output[0],
+        purple_cnv           = rules.purple_run.output.cnv,
+        purple_purity        = rules.purple_run.output.purity,
+        purple_qc            = rules.purple_run.output.qc,
+
+        purple_circos_png    = rules.purple_run.output.circos_png    ,
+        purple_input_png     = rules.purple_run.output.input_png     ,
+        purple_cn_png        = rules.purple_run.output.cn_png        ,
+        purple_ma_png        = rules.purple_run.output.ma_png        ,
+        purple_purity_png    = rules.purple_run.output.purity_png    ,
+        purple_segment_png   = rules.purple_run.output.segment_png   ,
+        purple_clonality_png = rules.purple_run.output.clonality_png ,
+        purple_ploidy_png    = rules.purple_run.output.ploidy_png    ,
+        purple_rainfall_png  = rules.purple_run.output.rainfall_png  ,
+        purple_baf_png       = rules.purple_circos_baf.output.png    ,
+
     params:
         report_rmd = 'cancer_report.Rmd',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
@@ -156,12 +162,16 @@ rule cancer_report:
         shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
         shell('mkdir -p {output.rmd_tmp_dir}/img')
         for img_path in [
-            input.purple_circos_png,
-            input.purple_input_png,
-            input.purple_cn_png,
-            input.purple_ma_png,
-            input.purple_variant_png,
-            input.purple_baf_png,
+            input.purple_circos_png    ,
+            input.purple_input_png     ,
+            input.purple_cn_png        ,
+            input.purple_ma_png        ,
+            input.purple_purity_png    ,
+            input.purple_segment_png   ,
+            input.purple_clonality_png ,
+            input.purple_ploidy_png    ,
+            input.purple_rainfall_png  ,
+            input.purple_baf_png       ,
         ]:
             shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
         shell("""
