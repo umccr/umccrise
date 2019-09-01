@@ -1,0 +1,3 @@
+error,het_count,het_ratio,hom_alt_count,hom_ref_count,ped_sex,predicted_sex,sample_id
+True,7022,2.733,2569,338,unknown,female,Dakota_T
+True,7003,2.723,2572,252,unknown,female,Dakota_B

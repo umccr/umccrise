@@ -1,0 +1,8 @@
+data:
+  Chen_T:
+    filt_indels: 90.13062409288824
+    filt_others: null
+    filt_snps: 42.66851980542043
+    indels: 68
+    others: null
+    snps: 825

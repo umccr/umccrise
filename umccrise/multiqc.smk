@@ -34,6 +34,7 @@ rule prep_multiqc_data:
         normal_name     = lambda wc: batch_by_name[wc.batch].normal.name,
         prog_versions   = join(run.date_dir, 'programs.txt'),
         data_versions   = join(run.date_dir, 'data_versions.csv'),
+        genome_build    = run.genome_build
     group: 'multiqc'
     run:
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
@@ -48,6 +49,8 @@ rule prep_multiqc_data:
             new_dir_for_versions=abspath(join(f'{wildcards.batch}', 'log')),
         )
         gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised_2019.qconly.renamed')
+        if params.genome_build == 'hg38':
+            gold_standard_dir += '_hg38'
         with open(join(gold_standard_dir, 'background_multiqc_filelist.txt')) as f:
             for l in f:
                 l = l.strip()

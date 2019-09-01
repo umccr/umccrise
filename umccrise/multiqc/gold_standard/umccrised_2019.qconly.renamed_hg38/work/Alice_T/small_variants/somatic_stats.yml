@@ -1,0 +1,8 @@
+data:
+  Alice_T:
+    filt_indels: 95.20255863539445
+    filt_others: null
+    filt_snps: 65.58139534883722
+    indels: 45
+    others: null
+    snps: 370
