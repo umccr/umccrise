@@ -90,6 +90,8 @@ threads_per_sample = max(1, min(threads_on_node, total_cores // len(run.samples)
 print(f'Threads on node: {threads_on_node}, total cores allowed: {total_cores}. '
       f'Batches found: {threads_per_batch}, using {threads_per_batch} threads per batch, {threads_per_sample} per sample')
 
+is_ffpe = run.somatic_caller == 'strelka2'
+
 
 rule all:
     input: 'all.done'

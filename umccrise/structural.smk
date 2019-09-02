@@ -21,13 +21,20 @@ localrules: structural
 def get_manta_path(b):
     return join(batch_by_name[b].tumor.dirpath, f'{batch_by_name[b].name}-sv-prioritize-manta.vcf.gz')
 if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
-    # CWL?
+    # not prioritized?
     def get_manta_path(b):
-        return join(run.date_dir, batch_by_name[b].tumor.name + '-manta-prioritized.vcf.gz')
+        return join(batch_by_name[b].tumor.dirpath, f'{batch_by_name[b].name}-manta.vcf.gz')
     if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
-        critical('Could not find manta files for all batches neither under sample folders as '
-                 '<tumor>/<batch>-sv-prioritize-manta.vcf.gz (conventional bcbio), nor in the project folder as'
-                 'project/<tumor>-manta-prioritized.vcf.gz (CWL bcbio).')
+        # CWL?
+        def get_manta_path(b):
+            return join(run.date_dir, batch_by_name[b].tumor.name + '-manta-prioritized.vcf.gz')
+        if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
+            def get_manta_path(b):
+                return join(run.date_dir, batch_by_name[b].tumor.name + '-manta.vcf.gz')
+            if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
+                critical('Could not find manta files for all batches neither under sample folders as '
+                         '<tumor>/<batch>(-sv-prioritize)-manta.vcf.gz (conventional bcbio), '
+                         'nor in the project folder as project/<tumor>-manta(-prioritized).vcf.gz (CWL bcbio).')
 
 rule sv_prioritize:
     input:
@@ -138,7 +145,7 @@ rule filter_sv_vcf:
         print(f'VCF samples: {VCF(input.vcf).samples}')
         print(f'Bcbio batch tumor name: {batch_by_name[wildcards.batch].tumor.name}')
         tumor_id = VCF(input.vcf).samples.index(params.sample)
-        tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
+        # tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
         shell('''
 bcftools view -f.,PASS {input.vcf} | \
@@ -158,7 +165,14 @@ rule reprioritize_rescued_svs:
         genome = run.genome_build
     group: "sv_after_purple"
     run:
-        cmd = f'gunzip -c {input.vcf} | prioritize_sv -g {params.genome} | bcftools annotate -x "INFO/ANN" | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
+        cmd = f'gunzip -c {input.vcf}' \
+            f' | prioritize_sv -g {params.genome}' \
+            f' | bcftools annotate -x "INFO/ANN"'
+        if is_ffpe:
+            cmd += f' | bcftools filter -f.,PASS'
+        cmd += \
+            f' -Oz -o {output.vcf}' \
+            f' && tabix -p vcf {output.vcf}'
         shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
