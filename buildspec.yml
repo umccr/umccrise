@@ -8,7 +8,7 @@ phases:
         #        - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
         #        - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
         - id && cat /etc/passwd && cat /etc/group && ls /var/lib/
-        - su -c gpasswd -a $USER dialout
+        - su -c useradd -G dialout $USER
         - su -c docker build -t umccr/umccrise -f Dockerfile .
         - git clone https://github.com/umccr/umccrise_test_data umccrise_test_data
 #  build:
