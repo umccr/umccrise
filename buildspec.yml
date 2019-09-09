@@ -20,7 +20,6 @@ phases:
   post_build:
     commands:
       - echo "$UMCCR_DOCKERHUB_PASSWORD" | docker login --username "$UMCCR_DOCKERHUB_USER" --password-stdin
-      - echo -n "Current UMCCRISE commit is: "
       - echo $CODEBUILD_RESOLVED_SOURCE_VERSION
       - export SHORT_COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10
       - docker tag umccr/umccrise umccr/umccrise:$SHORT_COMMIT_HASH
