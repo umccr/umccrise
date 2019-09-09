@@ -22,5 +22,6 @@ phases:
       - echo "$UMCCR_DOCKERHUB_PASSWORD" | docker login --username "$UMCCR_DOCKERHUB_USER" --password-stdin
       - echo -n "Current UMCCRISE commit is: "
       - echo $CODEBUILD_RESOLVED_SOURCE_VERSION
-      - docker tag umccr/umccrise umccr/umccrise:`echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10`
-      - docker push umccr/umccrise:`echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10`
+      - export SHORT_COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10
+      - docker tag umccr/umccrise umccr/umccrise:$SHORT_COMMIT_HASH
+      - docker push umccr/umccrise:$SHORT_COMMIT_HASH
