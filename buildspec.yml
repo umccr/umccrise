@@ -20,5 +20,6 @@ phases:
   post_build:
     commands:
       - echo "$UMCCR_DOCKERHUB_PASSWORD" | docker login --username "$UMCCR_DOCKERHUB_USER" --password-stdin
-      - docker tag umccr/umccrise umccr/umccrise:"$CODEBUILD_SOURCE_VERSION"
-      - docker push umccr/umccrise:"$CODEBUILD_SOURCE_VERSION"
+      - echo "Current UMCCRISE commit/release is: $CODEBUILD_RESOLVED_SOURCE_VERSION"
+      - docker tag umccr/umccrise umccr/umccrise:`echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10`
+      - docker push umccr/umccrise:`echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10`
