@@ -21,7 +21,7 @@ purple_cpu = min(threads_per_batch, 15)
 purple_mem = min(30000, 5000*threads_per_batch)
 
 
-def get_purple_metric(purple_file, metric='Purity'):
+def get_purple_metric(purple_file, metric='purity'):
     """ Reading the value from somatic sample from Purple output
     """
     with open(purple_file) as f:
@@ -39,13 +39,13 @@ def get_purity(purple_file, phenotype='tumor'):
     """
     purity = 1.0
     if phenotype == 'tumor':
-        purity = get_purple_metric(purple_file, 'Purity')
+        purity = get_purple_metric(purple_file, 'purity')
     purity = min(purity, 1.0)
     return purity
 
 
 def get_ploidy(purple_file):
-    return get_purple_metric(purple_file, metric='Ploidy')
+    return get_purple_metric(purple_file, metric='ploidy')
 
 
 rule purple_amber:
