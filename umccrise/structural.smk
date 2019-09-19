@@ -154,29 +154,38 @@ bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tu
 bcftools view -s {params.sample} > {output.vcf}
 ''')
 
-rule reprioritize_rescued_svs:
-    input:
-        vcf = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
-        tbi = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz.tbi',
-    output:
-        vcf = '{batch}/structural/{batch}-manta.vcf.gz',
-        tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
-    params:
-        genome = run.genome_build
-    group: "sv_after_purple"
-    run:
-        cmd = f'gunzip -c {input.vcf}' \
-            f' | prioritize_sv -g {params.genome}' \
-            f' | bcftools annotate -x "INFO/ANN"'
-        if is_ffpe:
-            cmd += f' | bcftools filter -f.,PASS'
-        cmd += \
-            f' -Oz -o {output.vcf}' \
-            f' && tabix -p vcf {output.vcf}'
-        shell(cmd)
-        before = count_vars(input.vcf)
-        after = count_vars(output.vcf)
-        assert before == after, (before, after)
+if not is_ffpe:
+    rule reprioritize_rescued_svs:
+        input:
+            vcf = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
+            tbi = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz.tbi',
+        output:
+            vcf = '{batch}/structural/{batch}-manta.vcf.gz',
+            tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
+        params:
+            genome = run.genome_build
+        group: "sv_after_purple"
+        run:
+            cmd = f'gunzip -c {input.vcf}' \
+                f' | prioritize_sv -g {params.genome}' \
+                f' | bcftools annotate -x "INFO/ANN"' \
+                f' -Oz -o {output.vcf}' \
+                f' && tabix -p vcf {output.vcf}'
+            shell(cmd)
+            before = count_vars(input.vcf)
+            after = count_vars(output.vcf)
+            assert before == after, (before, after)
+
+else:
+    rule copy_sv_vcf_ffpe_mode:
+        input:
+            vcf = rules.filter_sv_vcf.output.vcf
+        output:
+            vcf = '{batch}/structural/{batch}-manta.vcf.gz',
+            tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
+        group: "sv_after_purple"
+        shell:
+            'bgzip -c {input.vcf} > {output.vcf} && tabix -p vcf {output.vcf}'
 
 
 def parse_info_field(rec, name):
@@ -196,7 +205,7 @@ def parse_info_field(rec, name):
 # manta   PRJ180253_E190-T01-D  11      118802640   118803304   DEL          DEL|DOWNSTREAM_GENE_VARIANT|RN7SL688P|ENST00000471754|NOT_PRIORITISED|3    61,8                                   07,2
 rule prep_sv_tsv:
     input:
-        vcf = rules.reprioritize_rescued_svs.output.vcf
+        vcf = '{batch}/structural/{batch}-manta.vcf.gz',
     output:
         '{batch}/structural/{batch}-manta.tsv'
     params:
@@ -245,7 +254,7 @@ rule prep_sv_tsv:
 # At least for the most conservative manta calls, generate a file for viewing in Ribbon
 rule ribbon_filter_manta:
     input:
-        manta_vcf = rules.reprioritize_rescued_svs.output.vcf
+        manta_vcf = '{batch}/structural/{batch}-manta.vcf.gz',
     output:
         'work/{batch}/structural/ribbon/manta.vcf'
     group: "sv_after_purple"
@@ -299,7 +308,7 @@ rule ribbon:
 #### Convert matna VCF to bedpe ####
 rule bedpe:
     input:
-        manta_vcf = rules.reprioritize_rescued_svs.output.vcf
+        manta_vcf = '{batch}/structural/{batch}-manta.vcf.gz',
     output:
         '{batch}/structural/{batch}-manta.bedpe'
     params:

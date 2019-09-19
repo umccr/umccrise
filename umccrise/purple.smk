@@ -16,7 +16,6 @@ circos_macos_patch = ('export PERL5LIB=' +
     if platform.system() == 'Darwin' \
     else ''
 
-
 purple_cpu = min(threads_per_batch, 15)
 purple_mem = min(30000, 5000*threads_per_batch)
 
@@ -147,8 +146,7 @@ rule purple_run:
         gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
         purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
         qc            = 'work/{batch}/purple/{batch}.purple.qc',
-        resc_sv_vcf   = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
-        resc_sv_tbi   = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz.tbi',
+        resc_sv_vcf   = ('work/{batch}/purple/{batch}.purple.sv.vcf.gz' if not is_ffpe else []),
 
         circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
         input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
@@ -180,8 +178,8 @@ rule purple_run:
     resources:
         mem_mb = purple_mem
     shell:
-        conda_cmd.format('purple') +\
-        circos_macos_patch +\
+       conda_cmd.format('purple') + \
+        circos_macos_patch + \
         'circos -modules ; circos -v ; '
         'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
         '-amber {params.outdir}/amber '
@@ -191,8 +189,8 @@ rule purple_run:
         '-tumor {wildcards.batch} '
         '-threads {threads} '
         '-gc_profile {input.gc} '
+         # '-sv_recovery_vcf {input.manta_sv_filtered} '
         '-structural_vcf {input.manta_sv_filtered} '
-        # '-sv_recovery_vcf {input.manta_sv_filtered} '
         '-somatic_vcf {input.somatic_vcf} '
         '-ref_genome {input.ref_fa} '
         '-circos circos 2>&1 | tee {log} '
