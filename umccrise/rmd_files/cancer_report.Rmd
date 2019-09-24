@@ -42,7 +42,7 @@ knitr::opts_chunk$set(collapse = TRUE, echo = FALSE,
                       warning = FALSE, message = FALSE)
 ```
 
-```{r render_book_inter, eval=F, echo=F}
+```{r render_report_interactively, eval=F, echo=F}
 params_tmp <- list(
   spartan = list(
     tumor_name='PRJ180471_BK221-NET1',
@@ -160,6 +160,7 @@ somatic_snv <- MutationalPatterns::read_vcfs_as_granges(
 
 mut_mat <- MutationalPatterns::mut_matrix(vcf_list = somatic_snv, ref_genome = ref_genome)
 
+###--- OLD Sigs ---###
 # Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
 sig_probs <- file.path("misc/sig/signatures_probabilities.txt")
 # better be explicit - the sig_probs file has 7 extra empty columns
@@ -172,17 +173,41 @@ cancer_signatures <-
 # sanity check - need to be in same order
 stopifnot(all(cancer_signatures$SomMutType == rownames(mut_mat)))
 
+# select only 30 sig columns, 96 mut types
 cancer_signatures <- cancer_signatures %>%
   dplyr::select(4:33) %>%
   as.matrix()
 
+###--- NEW Sigs ---###
+
+sig_probs2 <- file.path("misc/sig/sigProfiler_SBS_signatures_2019_05_22.csv")
+cancer_signatures2 <-
+  readr::read_csv(sig_probs2, col_types = cols(.default = "d", Type = "c", SubType = "c")) %>%
+  dplyr::mutate(SomMutType = paste0(substr(SubType, 1, 1),
+                             "[", Type, "]",
+                             substr(SubType, 3, 3))) %>%
+  dplyr::select(SomMutType, SBS1:SBS85)
+
+
+stopifnot(all(cancer_signatures2$SomMutType == rownames(mut_mat)))
+# select only 67 sig columns, 96 mut types
+cancer_signatures2 <- cancer_signatures2 %>%
+  dplyr::select(-1) %>%
+  as.matrix()
+
 # Fit mutation matrix to cancer signatures
 fit_res <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures)
+fit_res2 <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures2)
 
 # Select signatures with some contribution
 fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
+fit_res_contr2 <- fit_res2$contribution[fit_res2$contribution[, 1] > 0, ]
 mut_sig_contr <-
   dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr) %>%
+  dplyr::mutate(Contribution = round(Contribution, 0)) %>%
+  dplyr::arrange(-Contribution)
+mut_sig_contr2 <-
+  dplyr::tibble(Signature = names(fit_res_contr2), Contribution = fit_res_contr2) %>%
   dplyr::mutate(Contribution = round(Contribution, 0)) %>%
   dplyr::arrange(-Contribution)
 ```
