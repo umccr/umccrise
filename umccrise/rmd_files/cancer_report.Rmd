@@ -248,7 +248,6 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   VarNum = dplyr::row_number())
 
   sv_all <- sv_unmelted %>%
-    dplyr::filter(svtype != 'BND' | is.na(SR) | PR > SR) %>% # remove BND with split read support higher than paired
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # unpack multiple annotations per region
     tidyr::separate(annotation, c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
