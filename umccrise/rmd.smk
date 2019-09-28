@@ -103,14 +103,14 @@ rule somatic_to_hg19:
 
 
 # select chr, start, end, gene, min/max_cn, TranscriptID and ChromosomeBand
-rule rmd_purple_cnv:
-    input:
-        purple_cnv = rules.purple_run.output.gene_cnv,
-    output:
-        'work/{batch}/rmd/purple.tsv'
-    group: "rmd"
-    shell:
-        'cut -f1-6,11,13 {input} > {output}'
+#rule rmd_purple_cnv:
+#    input:
+#        purple_cnv = rules.purple_run.output.gene_cnv,
+#    output:
+#        'work/{batch}/rmd/purple.tsv'
+#    group: "rmd"
+#    shell:
+#        'cut -f1-6,11,13 {input} > {output}'
 
 ## Running Rmarkdown
 rule cancer_report:
@@ -121,7 +121,7 @@ rule cancer_report:
         af_keygenes          = rules.afs_keygenes.output[0],
         somatic_snv          = rules.somatic_to_hg19.output[0],
         somatic_sv           = rules.prep_sv_tsv.output[0],
-        purple_gene_cnv      = rules.rmd_purple_cnv.output[0],
+        purple_gene_cnv      = rules.purple_run.output.gene_cnv,
         purple_cnv           = rules.purple_run.output.cnv,
         purple_purity        = rules.purple_run.output.purity,
         purple_qc            = rules.purple_run.output.qc,
