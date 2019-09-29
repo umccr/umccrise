@@ -126,16 +126,20 @@ rule cancer_report:
         purple_purity        = rules.purple_run.output.purity,
         purple_qc            = rules.purple_run.output.qc,
 
-        purple_circos_png    = rules.purple_run.output.circos_png    ,
-        purple_input_png     = rules.purple_run.output.input_png     ,
-        purple_cn_png        = rules.purple_run.output.cn_png        ,
-        purple_ma_png        = rules.purple_run.output.ma_png        ,
-        purple_purity_png    = rules.purple_run.output.purity_png    ,
-        purple_segment_png   = rules.purple_run.output.segment_png   ,
-        purple_clonality_png = rules.purple_run.output.clonality_png ,
-        purple_ploidy_png    = rules.purple_run.output.ploidy_png    ,
-        purple_rainfall_png  = rules.purple_run.output.rainfall_png  ,
-        purple_baf_png       = rules.purple_circos_baf.output.png    ,
+        purple_circos_png    = rules.purple_run.output.circos_png,
+        purple_input_png     = rules.purple_run.output.input_png,
+        purple_cn_png        = rules.purple_run.output.cn_png,
+        purple_ma_png        = rules.purple_run.output.ma_png,
+        purple_purity_png    = rules.purple_run.output.purity_png,
+        purple_segment_png   = rules.purple_run.output.segment_png,
+        purple_clonality_png = rules.purple_run.output.clonality_png,
+        purple_ploidy_png    = rules.purple_run.output.ploidy_png,
+        purple_rainfall_png  = rules.purple_run.output.rainfall_png,
+        purple_baf_png       = rules.purple_circos_baf.output.png,
+
+        purple_version       = rules.purple_run.output.version_build,
+        amber_version        = rules.purple_amber.output.version_build,
+        cobalt_version       = rules.purple_cobalt.output.version_build,
 
     params:
         report_rmd = 'cancer_report.Rmd',
@@ -151,6 +155,9 @@ rule cancer_report:
         purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
         purple_qc           = lambda wc, input: abspath(input.purple_qc),
+        purple_version      = lambda wc, input: abspath(input.purple_version),
+        amber_version       = lambda wc, input: abspath(input.amber_version),
+        cobalt_version      = lambda wc, input: abspath(input.cobalt_version),
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
@@ -162,16 +169,16 @@ rule cancer_report:
         shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
         shell('mkdir -p {output.rmd_tmp_dir}/img')
         for img_path in [
-            input.purple_circos_png    ,
-            input.purple_input_png     ,
-            input.purple_cn_png        ,
-            input.purple_ma_png        ,
-            input.purple_purity_png    ,
-            input.purple_segment_png   ,
-            input.purple_clonality_png ,
-            input.purple_ploidy_png    ,
-            input.purple_rainfall_png  ,
-            input.purple_baf_png       ,
+            input.purple_circos_png,
+            input.purple_input_png,
+            input.purple_cn_png,
+            input.purple_ma_png,
+            input.purple_purity_png,
+            input.purple_segment_png,
+            input.purple_clonality_png,
+            input.purple_ploidy_png,
+            input.purple_rainfall_png,
+            input.purple_baf_png,
         ]:
             shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
         shell("""
@@ -190,7 +197,10 @@ somatic_sv='{params.somatic_sv}', \
 purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_purity='{params.purple_purity}', \
-purple_qc='{params.purple_qc}' \
+purple_qc='{params.purple_qc}', \
+purple_version='{params.purple_version}', \
+amber_version='{params.amber_version}', \
+cobalt_version='{params.cobalt_version}' \
 ))" ; \
 cd {params.work_dir} ; \
 """)

@@ -21,10 +21,12 @@ params:
   somatic_snv: 'x'
   somatic_sv: 'x'
   purple_gene_cnv: 'x'
-  purple_circos_baf: 'x'
-  purple_purity: 'x'
   purple_cnv: 'x'
+  purple_purity: 'x'
   purple_qc: 'x'
+  purple_version: 'x'
+  amber_version: 'x'
+  cobalt_version: 'x'
 description: "Analysis of tumor/normal samples at UMCCR"
 title: "`r paste(params$title, params$batch_name)`"
 ---
@@ -84,7 +86,11 @@ params_tmp <- list(
     purple_gene_cnv='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.cnv.gene.tsv',
     purple_cnv='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.cnv.somatic.tsv',
     purple_purity='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.purity.tsv',
-    purple_qc='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.qc')
+    purple_qc='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.qc',
+    purple_version='data/purple/purple.version',
+    amber_version='data/purple/amber.version',
+    cobalt_version='data/purple/cobalt.version'
+    )
 )
 
 params <- params_tmp[["local"]]
@@ -925,7 +931,8 @@ purple_qc_summary %>%
 <details>
 <summary>Description</summary>
 
-PURPLE summary of copy number alterations in the UMCCR Cancer Gene panel (~1,200 genes):
+PURPLE summary of copy number alterations in the UMCCR Cancer Gene panel (~1,200 genes) - description
+is from https://github.com/hartwigmedical/hmftools/blob/master/purity-ploidy-estimator/README.md#gene-copy-number-file
 
 | Column                  |  Description |
 |-------------------------|--------------|
@@ -1040,13 +1047,26 @@ if (Sys.which("umccrise") != "") {
 
 ```
 
+```{r purple_version_func}
+print_purple_version <- function(x) {
+  d <- readr::read_delim(x, delim = "=", col_names = c("key", "value"), col_types = "cc")
+  stopifnot(d$key == c("version", "build.date"))
+  v <- structure(d$value, names = d$key)
+  glue::glue("{v['version']} ({v['build.date']})")
+}
+```
 
 <details>
 <summary>Summary</summary>
 
-* umccrise: __`r umv`__
+| Tool         | Version |
+|--------------|---------|
+| [umccrise](https://github.com/umccr/umccrise) | `r umv` |
+| [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) | `r print_purple_version(params$purple_version)` |
+| [AMBER](https://github.com/hartwigmedical/hmftools/tree/master/amber) | `r print_purple_version(params$amber_version)`  |
+| [COBALT](https://github.com/hartwigmedical/hmftools/tree/master/count-bam-lines) | `r print_purple_version(params$cobalt_version)` |
 
-* R Session Info:
+* R Session Info
 
 ```{r session_info}
 si <- devtools::session_info(include_base = TRUE)
@@ -1055,14 +1075,16 @@ si_pkg <- unclass(si$packages) %>%
   dplyr::as_tibble() %>%
   dplyr::select(package, version = ondiskversion, path, datestamp = date)
 
-
-
 dplyr::tibble(var = row.names(si_pl),
               value = si_pl[, , drop = TRUE]) %>%
   knitr::kable(format = "html") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE)
+```
 
+* R Package Info
+
+```{r session_info_pkgs}
 knitr::kable(si_pkg, format = "html") %>%
   kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE) %>%
@@ -1070,4 +1092,6 @@ knitr::kable(si_pkg, format = "html") %>%
 ```
 
 </details>
+
+<p>&nbsp;</p>
 

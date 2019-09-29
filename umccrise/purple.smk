@@ -59,6 +59,7 @@ rule purple_amber:
         'work/{batch}/purple/amber/{batch}.amber.contamination.tsv',
         'work/{batch}/purple/amber/{batch}.amber.contamination.vcf.gz',
         'work/{batch}/purple/amber/{batch}.amber.qc',
+        version_build = 'work/{batch}/purple/amber/amber.version',
     params:
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
         outdir = 'work/{batch}/purple/amber',
@@ -94,6 +95,7 @@ rule purple_cobalt:
         'work/{batch}/purple/cobalt/{batch}.chr.len',
         'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.tsv',
         'work/{batch}/purple/cobalt/{batch}.cobalt.gc.median',
+        version_build = 'work/{batch}/purple/cobalt/cobalt.version',
     params:
         outdir = 'work/{batch}/purple/cobalt',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
@@ -147,6 +149,7 @@ rule purple_run:
         purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
         qc            = 'work/{batch}/purple/{batch}.purple.qc',
         resc_sv_vcf   = ('work/{batch}/purple/{batch}.purple.sv.vcf.gz' if not is_ffpe else []),
+        version_build = 'work/{batch}/purple/purple.version',
 
         circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
         input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
