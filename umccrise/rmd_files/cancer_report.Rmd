@@ -73,19 +73,18 @@ params_tmp <- list(
     purple_qc='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.qc'),
 
   local = list(
-    tumor_name='PRJ180598_SFRC01073-S2T',
-    batch_name='SFRC01073__PRJ180598_SFRC01073-S2T',
-    genome_build='hg19',
+    tumor_name='PRJ180664_10_DNA018097_FFPE',
+    batch_name='CUP-Pairs10__PRJ180664_10_DNA018097_FFPE',
+    genome_build='hg38',
     key_genes='~/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
     af_global='data/sig/af_tumor_notempty.txt',
     af_keygenes= 'data/sig/keygenes_notempty.txt',
-    somatic_snv='data/sig/ensemble-with_chr_prefix.vcf',
-    # somatic_sv='data/empty_manta.tsv',
-    somatic_sv='data/SFRC01073__PRJ180598_SFRC01073-S2T-manta.tsv',
-    purple_gene_cnv='data/purple/purple.tsv',
-    purple_cnv='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.cnv',
-    purple_purity='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.purity',
-    purple_qc='data/purple2/SFRC01073__PRJ180598_SFRC01073-S2T.purple.qc')
+    somatic_snv='data/sig/vcf4mutsig/B_ALL_Case_10/ensemble-with_chr_prefix.vcf',
+    somatic_sv='data/CUP-Pairs8__PRJ180660_8_DNA009529_FFPE-manta.tsv',
+    purple_gene_cnv='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.cnv.gene.tsv',
+    purple_cnv='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.cnv.somatic.tsv',
+    purple_purity='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.purity.tsv',
+    purple_qc='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.qc')
 )
 
 params <- params_tmp[["local"]]
@@ -162,7 +161,7 @@ mut_mat <- MutationalPatterns::mut_matrix(vcf_list = somatic_snv, ref_genome = r
 
 ###--- OLD Sigs ---###
 # Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
-sig_probs <- file.path("misc/sig/signatures_probabilities.txt")
+sig_probs <- file.path("misc/sig/v2_mar2015/signatures_probabilities.txt")
 # better be explicit - the sig_probs file has 7 extra empty columns
 col_types <- paste0(c("ccc", paste0(rep("d", 30), collapse = ""), "ccccccc"), collapse = "")
 col_names <- c("SubstType", "Trinucleotide", "SomMutType", paste0("Sig", 1:30), paste0("foo", 1:7))
@@ -180,7 +179,7 @@ cancer_signatures <- cancer_signatures %>%
 
 ###--- NEW Sigs ---###
 
-sig_probs2 <- file.path("misc/sig/sigProfiler_SBS_signatures_2019_05_22.csv")
+sig_probs2 <- file.path("misc/sig/v3_may2019/sigProfiler_SBS_signatures_2019_05_22.csv")
 cancer_signatures2 <-
   readr::read_csv(sig_probs2, col_types = cols(.default = "d", Type = "c", SubType = "c")) %>%
   dplyr::mutate(SomMutType = paste0(substr(SubType, 1, 1),
@@ -286,7 +285,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   Gene = ifelse(str_detect(effect, "gene_fusion"),
                                 Gene,
                                 Gene %>% str_replace_all('&', ', ')),
-                  Transcript = transcript %>% str_replace_all('&', ', ')                  
+                  Transcript = transcript %>% str_replace_all('&', ', ')
                   ) %>%
     tidyr::separate(effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
     dplyr::mutate(start = format(start, big.mark = ',', trim = TRUE),
@@ -301,7 +300,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   AF, `CN chg` = CN_change,
                   SR, PR, CN, Ploidy, PURPLE_status, VarNum,
                   SR_ref, PR_ref, PE, PE_ref,
-                  SomaticScore = somaticscore, 
+                  SomaticScore = somaticscore,
                   Transcript,
                   `Other effects`, `Other affected genes`,
                   AF_bp1 = AF1, AF_bp2 = AF2,
@@ -334,13 +333,13 @@ purple_purity <-
   readr::read_tsv(col_types = cols(.default = col_double(),
                                    gender = col_character(),
                                    status = col_character(),
-                                   wholeGenomeDuplication = col_logical(),
-                                   MSI = col_character()
+                                   wholeGenomeDuplication = col_character(),
+                                   msStatus = col_character()
                                    )) %>%
   dplyr::mutate_if(is.numeric, round, 2) %>%
   unlist()
 
-# sanity checks in case something changes between versions
+# sanity checks in case something changes between versions (PURPLE v2.34 as of 2019-09-29)
 nms_purple_qc <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
                    "SegmentScore", "UnsupportedSegments", "Ploidy",
                    "AmberGender", "CobaltGender", "DeletedGenes")
@@ -363,8 +362,7 @@ purple_qc_summary <- dplyr::tribble(
   'Ploidy', glue('{p["ploidy"]} ({p["minPloidy"]}-{p["maxPloidy"]})'), "Average ploidy of tumor sample (purity-adjusted)",
   'Gender', glue('{p["gender"]}'), "",
   'WGD', glue('{p["wholeGenomeDuplication"]}'), "Whole genome duplication",
-  'MSI', glue('{p["msStatus"]}'), "Microsatellite instability status",
-  'MSI indels/Mb', glue('{p["msIndelsPerMb"]}'), "Microsatellite instability indels per megabase",
+  'MSI (indels/Mb)', glue('{p["msStatus"]} ({p["msIndelsPerMb"]})'), "MSI status & Indels per Mb",
   'Polyclonal Prop', p["polyclonalProportion"], "Proportion of CN regions that are more than 0.25 from a whole copy number",
   'Diploidy Prop', glue('{p["diploidProportion"]} ({p["minDiploidProportion"]}-{p["maxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
   'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
@@ -382,20 +380,35 @@ key_genes <-
 oncogenes <- key_genes %>% dplyr::filter(oncogene) %>% dplyr::pull(symbol)
 tsgenes <- key_genes %>% dplyr::filter(tumorsuppressor) %>% dplyr::pull(symbol)
 
-purple_gene_cnv <-
-  readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcc") %>%
+purple_gene_cnv <- readr::read_tsv(params$purple_gene_cnv, col_types = "ciicddcdddcccdiicccd")
+
+# sanity checks in case something changes between versions (PURPLE v2.34 as of 2019-09-29)
+nms_gene_cnv <- c("chromosome", "start", "end", "gene", "minCopyNumber", "maxCopyNumber",
+                  "unused", "somaticRegions", "germlineHomDeletionRegions", "germlineHetToHomDeletionRegions",
+                  "transcriptId", "transcriptVersion", "chromosomeBand", "minRegions",
+                  "minRegionStart", "minRegionEnd", "minRegionStartSupport", "minRegionEndSupport",
+                  "minRegionMethod", "minMinorAllelePloidy")
+stopifnot(all(colnames(purple_gene_cnv) == nms_gene_cnv))
+
+purple_gene_cnv <- purple_gene_cnv %>%
   dplyr::filter(gene %in% key_genes$symbol) %>%
   dplyr::mutate(chromosome = as.factor(chromosome),
+                transcriptID = paste0(transcriptId, ".", transcriptVersion),
+                minRegStartEnd = paste0(minRegionStart, "-", minRegionEnd),
+                minRegSupportStartEndMethod = paste0(minRegionStartSupport, "-", minRegionEndSupport, " (", minRegionMethod, ")"),
+                germDelReg = paste0(germlineHomDeletionRegions, "/", germlineHetToHomDeletionRegions),
                 oncogene = gene %in% oncogenes,
                 tsgene = gene %in% tsgenes,
-                role = dplyr::case_when(
+                onco_or_ts = dplyr::case_when(
                   oncogene & tsgene ~ "onco+ts",
                   oncogene ~ "oncogene",
                   tsgene ~ "tsgene",
                   TRUE ~ "")) %>%
   dplyr::select(gene, minCN = minCopyNumber, maxCN = maxCopyNumber,
                 chrom = chromosome, start, end,
-                chrBand = chromosomeBand, role)
+                chrBand = chromosomeBand, onco_or_ts, transcriptID, minMinAllPl = minMinorAllelePloidy,
+                somReg = somaticRegions, germDelReg, minReg = minRegions,
+                minRegStartEnd, minRegSupportStartEndMethod)
 ```
 
 ```{r purple_global_cnv_prep}
@@ -408,9 +421,8 @@ nms_purple_cnv <- c("chromosome", "start", "end", "copyNumber", "bafCount", "obs
                     "depthWindowCount", "gcContent", "minStart", "maxStart", "minorAllelePloidy",
                     "majorAllelePloidy")
 
-# keep track of column changes through PURPLE versions
+# sanity checks in case something changes between versions (PURPLE v2.34 as of 2019-09-29)
 stopifnot(all(names(purple_global_cnv) == nms_purple_cnv))
-
 ```
 
 ## Somatic Mutation Profiles
@@ -593,7 +605,7 @@ MutationalPatterns::plot_strand(strand_counts_rep, mode = "relative")
 MutationalPatterns::plot_strand_bias(strand_bias_rep)
 ```
 
-### Signature Contribution
+### Signature Contribution {.tabset .tabset-fade}
 
 <a href="#top">Back to top</a>
 
@@ -613,10 +625,12 @@ and reference signature plots from <https://cancer.sanger.ac.uk/cosmic/signature
 
 </details>
 
+#### OLD
+
 ```{r mutational_signature_contribution}
 sig_table <-
-  readr::read_tsv(file = "misc/sig/signatures_description.tsv", col_types = "cc") %>%
-  dplyr::mutate(Plot = paste0("![](misc/sig/img/sig-", signature, ".png)"),
+  readr::read_tsv(file = "misc/sig/v2_mar2015/signatures_description.tsv", col_types = "cc") %>%
+  dplyr::mutate(Plot = paste0("![](misc/sig/v2_mar2015/img/sig-", signature, ".png)"),
                 signature = paste0("Sig", signature)) %>%
   dplyr::select(Signature = signature, Description = description, Plot)
 
@@ -627,9 +641,27 @@ mut_sig_contr %>%
   kableExtra::scroll_box(height = "500px")
 ```
 
-### Circos Plots {.tabset .tabset-fade}
+#### NEW
 
+```{r mutational_signature_contribution2}
+sig_table2 <-
+  readr::read_tsv(file = "misc/sig/v3_may2019/signatures_description.tsv", col_types = "cc") %>%
+  dplyr::mutate(Plot = paste0("![](misc/sig/v3_may2019/img/sbs", signature, ".png)"),
+                signature = paste0("SBS", signature)) %>%
+  dplyr::select(Signature = signature, Description = description, Plot)
+
+mut_sig_contr2 %>%
+  dplyr::left_join(sig_table2, by = "Signature") %>%
+  knitr::kable() %>%
+  kableExtra::kable_styling(font_size = 12) %>%
+  kableExtra::scroll_box(height = "500px")
+```
+
+
+### Circos Plots {.tabset .tabset-fade}
 <a href="#top">Back to top</a>
+
+Circos plots are generated by PURPLE (Plot 2 is based on PURPLE data and configuration files).
 
 #### Plot 1: Somatic SNVs/Indels, Total/Minor CN, SVs
 
@@ -707,17 +739,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 
 
 ### Somatic Variants Plots {.tabset .tabset-fade}
-
-<details>
-<summary>Description</summary>
 Plots represent purity/ploidy/clonality of somatic variants, generated by PURPLE.
-
-Rainfall plots visualizes the distribution of mutations along the genome, with mutation types
-indicated with different colors. The y-axis corresponds to the distance of a mutation from the
-previous mutation, and is log10 transformed. Drop-downs from the plots indicate clusters or
-"hotspots" of mutations.
-
-</details>
 
 #### Clonality
 ```{r purple-other-plots1, out.width="60%"}
@@ -725,6 +747,15 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.c
 ```
 
 #### Rainfall
+<details>
+<summary>Description</summary>
+Rainfall plots show the distribution of mutations along the genome, with mutation types
+indicated with different colors. The y-axis corresponds to the distance of a mutation from the
+previous mutation, and is log10 transformed. Drop-downs from the plots indicate clusters or
+"hotspots" of mutations.
+</details>
+
+
 ```{r purple-other-plots7, out.width="90%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.rainfall.png')))
 ```
@@ -894,16 +925,22 @@ purple_qc_summary %>%
 <details>
 <summary>Description</summary>
 
-PURPLE outputs a file with copy number values per gene. Here, we include only
-the below information for ~1,100 genes in the UMCCR Cancer Gene list.
+PURPLE summary of copy number alterations in the UMCCR Cancer Gene panel (~1,200 genes):
 
-* `Gene`: gene name
-* `Min/MaxCN`: minimum/maximum copy number within the entire gene
-* `Chr`, `Start`, `End`: gene coordinates
-* `ChrBand`: chromosome band
-* `Role`: oncogene ('oncogene'), tumor suppressor ('tsgene'), or both ('onco+ts'),
-   as reported by [Cancermine](https://github.com/jakelever/cancermine)
-* `TxID`: Ensembl Transcript ID
+| Column                  |  Description |
+|-------------------------|--------------|
+| gene  | Name of gene |
+| minCN/maxCN | Min/Max copy number found in gene exons |
+| chrom/start/end  | Chromosome/start/end location of gene transcript |
+| chrBand | Chromosome band of the gene |
+| onco_or_ts | oncogene ('oncogene'), tumor suppressor ('tsgene'), or both ('onco+ts'), as reported by [Cancermine](https://github.com/jakelever/cancermine) |
+| transcriptID | Ensembl transcript ID (dot version) |
+| minMinAllPl | Minimum allele ploidy found over the gene exons - useful for identifying LOH events |
+| somReg | Count of somatic copy number regions this gene spans |
+| germDelReg | Number of regions spanned by this gene that are (homozygously deleted in the germline / both heterozygously deleted in the germline and homozygously deleted in the tumor) |
+| minReg | Number of somatic regions inside the gene that share the min copy number |
+| minRegStartEnd | Start/End base of the copy number region overlapping the gene with the minimum copy number |
+| minRegSupportStartEndMethod | Start/end support of the CN region overlapping the gene with the min CN (plus determination method) |
 
 </details>
 
