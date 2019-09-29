@@ -278,7 +278,6 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   VarNum = dplyr::row_number())
 
   sv_all <- sv_unmelted %>%
-    dplyr::filter(svtype != 'BND' | is.na(SR) | PR > SR) %>% # remove BND with split read support higher than paired
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # unpack multiple annotations per region
     tidyr::separate(annotation, c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
@@ -806,6 +805,8 @@ Variants are ordered by tier, then by effect, then by AF.
 
 </details>
 
+<p>&nbsp;</p>
+
 ```{r sv_prioritize_table}
 sv_all %>%
   DT::datatable(rownames = FALSE, extensions = c('Scroller', 'Responsive', 'Buttons'),
@@ -834,10 +835,14 @@ A failed QC status can be attributed to several factors
 __QC Status__
 
 The QC Status field reflects how we have determined the purity of the sample:
-- `NORMAL` - PURPLE fit the purity using COBALT and AMBER output.
-- `HIGHLY_DIPLOID` - The fitted purity solution is highly diploid (> 95%) with a large range of potential solutions, but somatic variants are unable to help either because they were not supplied or because their implied purity was too low.
-- `SOMATIC` - Somatic variants have improved the otherwise highly diploid solution.
-- `NO_TUMOR` - PURPLE failed to find any aneuploidy and somatic variants were supplied but there were fewer than 300 with observed VAF > 0.1.
+
+* `NORMAL` - PURPLE fit the purity using COBALT and AMBER output.
+* `HIGHLY_DIPLOID` - The fitted purity solution is highly diploid (> 95%)
+  with a large range of potential solutions, but somatic variants are unable to
+  help either because they were not supplied or because their implied purity was too low.
+* `SOMATIC` - Somatic variants have improved the otherwise highly diploid solution.
+* `NO_TUMOR` - PURPLE failed to find any aneuploidy and somatic variants were
+  supplied but there were fewer than 300 with observed VAF > 0.1.
 
 __QC Failure__
 
@@ -862,6 +867,7 @@ There are several reasons PURPLE may classify a sample as failed:
 
 </details>
 
+<p>&nbsp;</p>
 
 ```{r purple_qc_summary}
 purple_qc_summary %>%
@@ -877,7 +883,7 @@ purple_qc_summary %>%
                                     value == "TRUE" ~ "green",
                                     value == "FALSE" ~ "red",
                                     TRUE ~ "black"))) %>%
-  knitr::kable(escape = FALSE, caption = "QC, Purity & Ploidy Summary") %>%
+  knitr::kable(escape = FALSE) %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
 
@@ -908,6 +914,7 @@ is from <https://github.com/hartwigmedical/hmftools/blob/master/purity-ploidy-es
 
 </details>
 
+<p>&nbsp;</p>
 
 ```{r purple_gene_cnv_tab}
 purple_gene_cnv %>%
@@ -962,9 +969,9 @@ purple_global_cnv %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
 
-
-
 </details>
+
+<p>&nbsp;</p>
 
 ```{r purple_global_cnv_tab}
 purple_global_cnv %>%
