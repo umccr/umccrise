@@ -13,8 +13,7 @@ phases:
       python: 3.7
   pre_build:
     commands:
-        - ls /var
-        - lsb_release -a
+        - ls -a /var/cache
         - apt update && apt install python3-pip -y
         - pip install --upgrade awscli
         - echo Logging in to Amazon ECR...
