@@ -14,11 +14,9 @@ phases:
   pre_build:
     commands:
         - apk add --no-cache python3
-        - python3 -m ensurepip
         - pip3 install --no-cache --upgrade pip
         - pip install --upgrade awscli
-        - echo Logging in to Amazon ECR...
-        - $(aws ecr get-login --no-include-email --region ap-southeast-2)
+
   build:
     commands:
         # Docker-in-docker bizarre AWS stuff: https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-custom-image.html
@@ -27,12 +25,10 @@ phases:
         - docker build -t umccr/umccrise -f Dockerfile .
   post_build:
     commands:
-#      - echo "$UMCCR_DOCKERHUB_PASSWORD" | docker login --username "$UMCCR_DOCKERHUB_USER" --password-stdin
-#      - echo $CODEBUILD_RESOLVED_SOURCE_VERSION
-#      - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
-#      - echo $SHORT_COMMIT_HASH
-#      - docker tag umccr/umccrise umccr/umccrise:$SHORT_COMMIT_HASH
-#      - docker push umccr/umccrise:$SHORT_COMMIT_HASH
+      - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
+      - echo $SHORT_COMMIT_HASH
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       - docker tag umccr/umccrise $ECR:$SHORT_COMMIT_HASH
       - docker push $ECR:$SHORT_COMMIT_HASH
 
