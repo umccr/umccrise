@@ -13,7 +13,9 @@ phases:
       python: 3.7
   pre_build:
     commands:
-        - sudo apt-get update && sudo apt-get install python3-pip -y
+        - cat /etc/issue.net
+        - lsb_release -a
+        - apt update && apt install python3-pip -y
         - pip install --upgrade awscli
         - echo Logging in to Amazon ECR...
         - $(aws ecr get-login --no-include-email --region ap-southeast-2)
