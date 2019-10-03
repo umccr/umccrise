@@ -11,7 +11,7 @@ phases:
     runtime-versions:
       docker: 18
       python: 3.7
-  pre-build:
+  pre_build:
     commands:
         - apt-get install python-pip
         - pip install --upgrade awscli
