@@ -13,8 +13,9 @@ phases:
       python: 3.7
   pre_build:
     commands:
-        - ls -a /var/cache
-        - apt update && apt install python3-pip -y
+        - apk add --no-cache python3
+        - python3 -m ensurepip
+        - pip3 install --no-cache --upgrade pip
         - pip install --upgrade awscli
         - echo Logging in to Amazon ECR...
         - $(aws ecr get-login --no-include-email --region ap-southeast-2)
