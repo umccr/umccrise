@@ -29,13 +29,13 @@ phases:
       - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
       - echo $SHORT_COMMIT_HASH
       - export CODEBUILD_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
-      # Run some tests
+      # Tag image and run some tests
+      - docker tag umccr/umccrise $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
       - git clone https://github.com/umccr/umccrise_test_data umccrise_test_data
       - docker run -t --cpus 1 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=$PWD/umccrise_test_data/data/genomes:/work/genomes
-        umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
+        umccrise:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
       # Login and push the container to AWS ECR
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
-      - docker tag umccr/umccrise $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
       - docker push $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
