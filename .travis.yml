@@ -13,9 +13,9 @@ script:
   - docker run -t --cpus 1 umccr/umccrise bcftools --version
   - docker run -t --cpus 1 umccr/umccrise umccrise --version
 #  - docker run -t --cpus 1
-#    -v=$HOME/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
-#    -v=$HOME/umccrise_test_data/data/bcbio_test_project:/bcbio_project
-#    -v=$HOME/umccrise_test_data/data/genomes:/work/genomes
+#    -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
+#    -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
+#    -v=$PWD/umccrise_test_data/data/genomes:/work/genomes
 #    umccr/umccrise
 #    umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
 
