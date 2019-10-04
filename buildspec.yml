@@ -38,5 +38,5 @@ phases:
         umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
       # Login and push the container to AWS ECR
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
-      - docker tag umccr/umccrise $ECR:$CODEBUILD_GIT_TAG
-      - docker push $ECR:$CODEBUILD_GIT_TAG
+      - docker tag umccr/umccrise $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+      - docker push $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
