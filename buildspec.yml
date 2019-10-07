@@ -32,9 +32,9 @@ phases:
       # Login to AWS ECR and run some tests with the generated docker image
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       - git clone https://github.com/umccr/umccrise_test_data umccrise_test_data
-      - docker run -t --cpus 1 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
+      - docker run -t --cpus 2 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=$PWD/umccrise_test_data/data/genomes:/work/genomes
-        $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
+        $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
       # Push the container to ECR if tests pass
       - docker push $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
