@@ -3,6 +3,7 @@ run-as: root
 env:
     variables:
         "ECR": "620123204273.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise"
+        "S3_REFDATA_BUCKET": "umccr-umccrise-refdata-dev"
     parameter-store:
         "UMCCR_DOCKERHUB_USER": "/CodeBuild/UMCCR_DOCKERHUB_USER"
         "UMCCR_DOCKERHUB_PASSWORD": "/CodeBuild/UMCCR_DOCKERHUB_PASSWORD"
@@ -29,9 +30,10 @@ phases:
         - docker build -t $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH -f Dockerfile .
   post_build:
     commands:
-      # Login to AWS ECR and run some tests with the generated docker image
-      - $(aws ecr get-login --no-include-email --region ap-southeast-2)
+      # Run tests
       - git clone https://github.com/umccr/umccrise_test_data umccrise_test_data
+      - mkdir -p /work/genomes && time aws s3 sync --only-show-errors s3://${S3_REFDATA_BUCKET}/genomes/ /work/genomes
+      - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       - docker run -t --cpus 2 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=$PWD/umccrise_test_data/data/genomes:/work/genomes
