@@ -53,7 +53,7 @@ Run the following to create a directory "umccrise" and install into it
 ```
 mkdir umccrise
 cd umccrise
-source <(curl -s https://github.com/umccr/umccrise/blob/master/install.sh)
+source <(curl -s https://raw.githubusercontent.com/umccr/umccrise/master/install.sh)
 ```
 
 It will generate `load_umccrise.sh` script that can be sourced to load the umccrise environment:
