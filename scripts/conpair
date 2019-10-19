@@ -16,8 +16,8 @@ from ngs_utils.utils import set_locale; set_locale()
 @click.option('-g', 'genome', help='Genome build')
 @click.option('--ref-fa', 'ref_fa', help='Reference genome fasta')
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory (will be created if does not exist)')
-@click.option('-tn', 'tumor_name', help='Normal sample name')
-@click.option('-nn', 'normal_name', help='Tumor sample name')
+@click.option('-nn', 'normal_name', help='Normal sample name')
+@click.option('-tn', 'tumor_name', help='Tumor sample name')
 @click.option('--use-het-markers', 'use_het_markers', is_flag=True, help=
     'Run concordance without -H flag: will use heterozugous SNPs, which will make it sensitive to copy number. '
     'Use only if you there is not enough markers to determine concordance and your sample has not many CN')
@@ -31,7 +31,7 @@ from ngs_utils.utils import set_locale; set_locale()
 @click.option('--target', 'target_rule', help='Target rule (concordance, contamination, or all)')
 
 def main(normal_bam, tumor_bam, genome=None, ref_fa=None, output_dir=None,
-         tumor_name=None, normal_name=None, use_het_markers=None,
+         normal_name=None, tumor_name=None, use_het_markers=None,
          jobs=None, unlock=False, dryrun=False, target_rule=None):
 
     output_dir = output_dir or 'conpairred'
