@@ -3,7 +3,7 @@ run-as: root
 env:
     variables:
         "ECR": "620123204273.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise"
-        "S3_REFDATA_BUCKET": "umccr-umccrise-refdata-dev"
+        "S3_REFDATA_BUCKET": "umccr-refdata-dev"
     parameter-store:
         "UMCCR_DOCKERHUB_USER": "/CodeBuild/UMCCR_DOCKERHUB_USER"
         "UMCCR_DOCKERHUB_PASSWORD": "/CodeBuild/UMCCR_DOCKERHUB_PASSWORD"
