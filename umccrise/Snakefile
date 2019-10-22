@@ -66,7 +66,7 @@ def prep_inputs(config_):
 
     # Reference files
     if config_.get('genomes_dir'):
-        hpc.genomes_dir = config_.get('genomes_dir')
+        hpc.set_genomes_dir(config_.get('genomes_dir'))
 
     return run, batch_by_name
 

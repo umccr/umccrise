@@ -24,6 +24,7 @@ setup(
         'scripts/umccrise',
         'scripts/pcgr',
         'scripts/conpair',
+        'scripts/gpl',
     ],
     include_package_data=True,
     zip_safe=False,
