@@ -25,9 +25,9 @@ phases:
         - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
         # Convenience CODEBUILD VARS, need more? Check https://github.com/thii/aws-codebuild-extras
         - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
-        - export CODEBUILD_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
+        - export CODEBUILD_GIT_TAG="$(git describe --tags 2>/dev/null)"
         # Build and tag (-t) image
-        - docker build -t $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH -f Dockerfile .
+        - docker build -t $ECR:$CODEBUILD_GIT_TAG -f Dockerfile .
   post_build:
     commands:
       # Run tests
@@ -37,6 +37,6 @@ phases:
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=$PWD/umccrise_test_data/data/genomes:/work/genomes
-        $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
+        $ECR:$CODEBUILD_GIT_TAG umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
       # Push the container to ECR if tests pass
-      - docker push $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+      - docker push $ECR:$CODEBUILD_GIT_TAG
