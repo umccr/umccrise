@@ -2,7 +2,7 @@ version: 0.2
 run-as: root
 env:
     variables:
-        "ECR": "620123204273.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise"
+        "ECR": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccr"
         "S3_REFDATA_BUCKET": "umccr-refdata-dev"
 phases:
   install:
