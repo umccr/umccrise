@@ -17,19 +17,14 @@ phases:
         - pip3 install --no-cache --upgrade awscli
   build:
     commands:
-        # Gather some insight on remaining/available disk space **and mountpoints** for BUILD_GENERAL1_MEDIUM CodeBuild instance
-        - df -h
-        - mount
         # Docker-in-docker bizarre AWS stuff: https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-custom-image.html
         - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
         - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-        # Do we have enough space inside docker-in-docker?
-        - docker system df
         # Convenience CODEBUILD VARS, need more? Check https://github.com/thii/aws-codebuild-extras
         - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
-        - export CODEBUILD_GIT_TAG="$(git describe --tags 2>/dev/null)"
+        - export CODEBUILD_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
         # Build and tag (-t) image
-        - docker build -t $ECR:$CODEBUILD_GIT_TAG -f Dockerfile .
+        - docker build -t $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH -f Dockerfile .
   post_build:
     commands:
       # Run tests
@@ -39,6 +34,6 @@ phases:
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
-        $ECR:$CODEBUILD_GIT_TAG umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
+        $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
       # Push the container to ECR if tests pass
-      - docker push $ECR:$CODEBUILD_GIT_TAG
+      - docker push $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
