@@ -34,11 +34,11 @@ phases:
     commands:
       # Run tests
       - git clone https://github.com/umccr/umccrise_test_data umccrise_test_data
-      - mkdir -p /work/genomes && time aws s3 sync --only-show-errors s3://$S3_REFDATA_BUCKET/genomes/ /work/genomes
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
+      - mkdir -p /codebuild/output/refdata && time aws s3 sync --exclude=*.pm --only-show-errors s3://$S3_REFDATA_BUCKET/genomes /codebuild/output/refdata/genomes
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
-        -v=$PWD/umccrise_test_data/data/genomes:/work/genomes
+        -v=/codebuild/output/refdata/genomes:/work/genomes
         $ECR:$CODEBUILD_GIT_TAG umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
       # Push the container to ECR if tests pass
       - docker push $ECR:$CODEBUILD_GIT_TAG
