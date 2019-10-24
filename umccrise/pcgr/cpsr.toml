@@ -264,5 +264,5 @@ n_vcfanno_proc = 4
 n_vep_forks = 4
 vep_skip_intergenic = false
 vcf2maf = true
-vep_pick_order = "rank,appris,biotype,tsl,ccds,canonical,length"
+vep_pick_order = "rank,appris,biotype,tsl,ccds,canonical,length,mane"
 
