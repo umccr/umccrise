@@ -73,7 +73,7 @@ rule purple_amber:
     threads:
         threads_per_batch
     shell:
-        conda_cmd.format('purple') +
+        conda_cmd.format('hmf') +
         'AMBER -Xms{params.xms}m -Xmx{params.xmx}m '
         '-tumor {wildcards.batch} '
         '-tumor_bam {input.tumor_bam} '
@@ -108,7 +108,7 @@ rule purple_cobalt:
     resources:
         mem_mb = purple_mem
     shell:
-        conda_cmd.format('purple') +
+        conda_cmd.format('hmf') +
         'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
         '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
@@ -178,7 +178,7 @@ rule purple_run:
     resources:
         mem_mb = purple_mem
     shell:
-       conda_cmd.format('purple') + \
+       conda_cmd.format('hmf') + \
         circos_macos_patch + \
         'circos -modules ; circos -v ; '
         'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
@@ -219,7 +219,7 @@ rule purple_circos_baf:
         shell('cp {input.map} {params.out_dir}')
         shell('cp {input.link} {params.out_dir}')
         out_file = basename(output.png)
-        shell(conda_cmd.format('purple') +
+        shell(conda_cmd.format('hmf') +
               'circos -modules ; circos -v ; ' +
               circos_macos_patch +
               'circos -nosvg -conf ' + out_conf + ' -outputdir {params.out_dir} -outputfile {out_file}')
