@@ -180,7 +180,7 @@ conda activate miniconda/envs/umccrise
 conda env update -f umccrise/envs/umccrise.yml -p miniconda/envs/umccrise
 conda env update -f umccrise/envs/pcgr_linux.yml -p miniconda/envs/umccrise_pcgr
 # conda env update -f umccrise/envs/pcgr_macos.yml -p miniconda/envs/umccrise_pcgr  # for macos
-conda env update -f umccrise/envs/purple.yml -p miniconda/envs/umccrise_purple
+conda env update -f umccrise/envs/hmf.yml -p miniconda/envs/umccrise_hmf
 ```
 
 ## Development

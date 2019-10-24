@@ -11,8 +11,8 @@ localrules: purple, purple_symlink
 
 
 circos_macos_patch = ('export PERL5LIB=' +
-    env_path + '_purple/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
-    env_path + '_purple/lib/perl5/site_perl/5.22.0; ') \
+    env_path + '_hmf/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
+    env_path + '_hmf/lib/perl5/site_perl/5.22.0; ') \
     if platform.system() == 'Darwin' \
     else ''
 

@@ -15,7 +15,7 @@ conda update conda
 ### Install environments
 ENV_NAME=umccrise
 conda env create -p $(pwd)/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
-conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_purple --file umccrise/envs/purple.yml
+conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
 # conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml    # macos
 conda env create -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml    # linux
 # conda activate $(pwd)/miniconda/envs/${ENV_NAME}  #
