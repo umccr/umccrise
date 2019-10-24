@@ -37,7 +37,7 @@ def main(output_dir=None, normal_bam=None, tumor_bam=None, snv_vcf=None,
          genome=None, genomes_dir=None, gridss_ref_dir=None, ref_fa=None, threads=None):
 
     gridss_linx_dir = abspath(join(package_path(), '..', 'gridss-purple-linx'))
-    gridss_scripts_dir = abspath(join(package_path(), '..', 'vendor'))
+    gridss_scripts_dir = abspath(join(package_path(), '..', 'gridss/scripts'))
 
     normal_name = normal_name or splitext_plus(basename(normal_bam))[0]\
         .replace('-ready', '').replace('-sorted', '')
