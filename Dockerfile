@@ -35,10 +35,10 @@ COPY envs envs
 RUN hash -r && \
     conda config --set always_yes yes --set changeps1 no
 RUN conda env create -n umccrise --file envs/umccrise.yml
-RUN conda env create -n umccrise_purple --file envs/purple.yml
+RUN conda env create -n umccrise_hmf --file envs/hmf.yml
 RUN conda env create -n umccrise_pcgr --file envs/pcgr_linux.yml
 # Dirty hack to fix circos https://github.com/bioconda/bioconda-recipes/issues/9830#issuecomment-441438177
-RUN cd /miniconda/envs/umccrise_purple/lib && if [ ! -e libwebp.so.7 ] ; then ln -s libwebp.so.6 libwebp.so.7; fi
+RUN cd /miniconda/envs/umccrise_hmf/lib && if [ ! -e libwebp.so.7 ] ; then ln -s libwebp.so.6 libwebp.so.7; fi
 
 # Instead of `conda activate umccrise`
 ENV PATH /miniconda/envs/umccrise/bin:$PATH
