@@ -8,6 +8,8 @@ channels:
 
 dependencies:
   - python >=3.7.3
+  - pip
+  - git
   - ngs_utils
   - tsvtools
   - cython
