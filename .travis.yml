@@ -6,7 +6,7 @@ python:
   - "3.6"
 
 install:
-  - docker build -t umccr/umccrise -f Dockerfile .
+  - docker build -t umccr/umccrise -f dockerfiles/Dockerfile .
   - git clone https://github.com/umccr/umccrise_test_data $HOME/umccrise_test_data
 
 script:
