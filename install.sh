@@ -5,11 +5,11 @@ git clone --recursive https://github.com/umccr/umccrise
 
 ### Install conda
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh && chmod +x miniconda.sh
 else
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && chmod +x miniconda.sh
 fi
-bash miniconda.sh -b -p $PWD/miniconda && rm miniconda.sh
+./miniconda.sh -b -p $PWD/miniconda && rm miniconda.sh
 export PATH=$PWD/miniconda/bin:$PATH
 conda update conda
 
