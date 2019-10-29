@@ -3,6 +3,10 @@
 ### Clone the repo
 git clone --recursive https://github.com/umccr/umccrise
 
+### Cleaning up the environment
+unset PYTHONPATH
+unset CONDA_PREFIX
+
 ### Install conda
 if [[ "$OSTYPE" == "darwin"* ]]; then
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh && chmod +x miniconda.sh
@@ -15,12 +19,12 @@ conda update conda
 
 ### Install environments
 ENV_NAME=umccrise
-conda env create --force -p $PWD/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
-conda env create --force -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
+conda env create -p $PWD/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
+conda env create -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    conda env create --force -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml
+    conda env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml
 else
-    conda env create --force -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml
+    conda env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml
 fi
 
 # Instead of `conda activate $PWD/miniconda/envs/${ENV_NAME}`:
@@ -43,3 +47,5 @@ unset PERL5LIB
 export PATH=$PWD/miniconda/envs/${ENV_NAME}/bin:$PWD/miniconda/bin:\$PATH
 export CONDA_PREFIX=$PWD/miniconda/envs/${ENV_NAME}
 EOT
+
+conda clean --yes --tarballs

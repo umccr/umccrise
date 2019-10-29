@@ -33,7 +33,6 @@ RUN bash -x install.sh
 RUN rm -rf umccrise/.git && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /var/tmp/* && \
-    conda clean --yes --tarballs && \
     cd /usr/local && \
     apt-get clean && \
     rm -rf /.cpanm
