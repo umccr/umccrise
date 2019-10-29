@@ -37,5 +37,7 @@ RUN rm -rf umccrise/.git && \
     apt-get clean && \
     rm -rf /.cpanm
 
+ENV ENV_NAME=umccrise
 ENV PATH $PWD/miniconda/envs/${ENV_NAME}/bin:$PWD/miniconda/bin:\$PATH
 ENV CONDA_PREFIX $PWD/miniconda/envs/${ENV_NAME}
+RUN echo $PATH
