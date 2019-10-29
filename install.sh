@@ -18,12 +18,12 @@ conda update conda
 
 ### Install environments
 ENV_NAME=umccrise
-conda env create -y -p $(pwd)/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
-conda env create -y -p $(pwd)/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
+conda env create --force -p $(pwd)/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
+conda env create --force -p $(pwd)/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    conda env create -y -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml
+    conda env create --force -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml
 else
-    conda env create -y -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml
+    conda env create --force -p $(pwd)/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml
 fi
 
 # Instead of `conda activate $(pwd)/miniconda/envs/${ENV_NAME}`:
