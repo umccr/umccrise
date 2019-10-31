@@ -7,6 +7,7 @@
 - SV prioritization: move filtering BNDs with SR > PR from Rmd into the prioritization script (so this filter reflects in VCF)
 - Added GRIDSS/PURPLE/LINX wrapper (`gpl`) and env (`umccrise_hmf`)
 - hpc_utils: refactoring of genomes_dir detection functions. Add set_genomes_dir
+- Fix multithreading when running in a Docker
 
 0.15.6 (28 Aug 2019)
 
