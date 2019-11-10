@@ -12,6 +12,7 @@ from ngs_utils.call_process import run, run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
 from ngs_utils import logger
 from ngs_utils.logger import info, critical, err
+from ngs_utils.snakemake_utils import run_snakemake
 from ngs_utils.utils import set_locale; set_locale()
 from umccrise import package_path
 from hpc_utils import hpc
@@ -21,35 +22,40 @@ from hpc_utils import hpc
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory (will be created if does not exist)')
 @click.option('-N', 'normal_bam', type=click.Path(exists=True), required=True, help='Normal BAM')
 @click.option('-T', 'tumor_bam', type=click.Path(exists=True), required=True, help='Tumor BAM')
-@click.option('-S', 'snv_vcf', type=click.Path(exists=True), help='Small variants VCF (e.g. strelka, ensemble)')
 @click.option('-nn', 'normal_name', help='Normal sample name')
 @click.option('-tn', 'tumor_name', help='Tumor sample name')
-@click.option('-s', 'sample')
 @click.option('-g', 'genome', default='GRCh37')
 @click.option('--genomes-dir', 'genomes_dir', help='Path to umccrise genomes dir (alternative to --gridss-ref-dir)')
 @click.option('--gridss-ref-dir', 'gridss_ref_dir', help='Path to gridss genomes dir (alternative to --genomes-dir)')
 @click.option('--ref-fa', 'ref_fa', help='Path reference fasta (useful if you need to override the default in '
                                          '--gridss-ref-dir in case if your contigs don\'t match the one there')
-@click.option('-j', '-t', '--threads', '--jobs', 'threads')
 
-def main(output_dir=None, normal_bam=None, tumor_bam=None, snv_vcf=None,
-         normal_name=None, tumor_name=None, sample=None,
-         genome=None, genomes_dir=None, gridss_ref_dir=None, ref_fa=None, threads=None):
+# Snakemake params:
+@click.option('-j', 'jobs', type=click.INT, default=2)
+@click.option('--unlock', is_flag=True, help='Propagaded to snakemake')
+@click.option('-n', '--dryrun', 'dryrun', is_flag=True,
+              help='Propagated to snakemake. Just prints the rules and the commands '
+                   'to run without actually generating any files.')
+@click.option('--target', 'target_rule', help='Target rule (concordance, contamination, or all)')
 
-    gridss_linx_dir = abspath(join(package_path(), '..', 'gridss-purple-linx'))
-    gridss_scripts_dir = abspath(join(package_path(), '..', 'gridss/scripts'))
+def main(output_dir=None, normal_bam=None, tumor_bam=None,
+         normal_name=None, tumor_name=None,
+         genome=None, genomes_dir=None, gridss_ref_dir=None, ref_fa=None,
+         jobs=None, unlock=False, dryrun=False, target_rule=None):
+
+    assert genome == 'GRCh37', 'Only GRCh37 is supported for GRIDSS yet'
+
+    output_dir = safe_mkdir(abspath(output_dir or 'gridss'))
+    logger.init(log_fpath_=join(output_dir, 'gridss.log'), save_previous=True)
+    work_dir = safe_mkdir(join(output_dir, 'work'))
 
     normal_name = normal_name or splitext_plus(basename(normal_bam))[0]\
         .replace('-ready', '').replace('-sorted', '')
     tumor_name = tumor_name or splitext_plus(basename(tumor_bam))[0]\
         .replace('-ready', '').replace('-sorted', '')
-    sample = sample or tumor_name
 
-    output_dir = safe_mkdir(abspath(output_dir or 'gridss'))
-    logger.init(log_fpath_=join(output_dir, 'gridss.log'), save_previous=True)
-    output_vcf = join(output_dir, f'{sample}-gridss-purple-linx.vcf')
-
-    assert genome == 'GRCh37', 'Only GRCh37 is supported for GRIDSS yet'
+    gpl_source = abspath(join(package_path(), '..', 'gridss-purple-linx'))
+    gridss_scripts_dir = abspath(join(package_path(), '..', 'gridss/scripts'))
 
     if genomes_dir:
         hpc.set_genomes_dir(genomes_dir)
@@ -61,39 +67,25 @@ def main(output_dir=None, normal_bam=None, tumor_bam=None, snv_vcf=None,
     hmf_env_path = hpc.secondary_conda_env('hmf')
 
     gridss_jar = glob.glob(join(hmf_env_path, 'share/gridss-*/gridss.jar'))[0]
-    amber_jar  = glob.glob(join(hmf_env_path, 'share/hmftools-amber-*/amber.jar'))[0]
-    cobalt_jar = glob.glob(join(hmf_env_path, 'share/hmftools-cobalt-*/cobalt.jar'))[0]
-    purple_jar = glob.glob(join(hmf_env_path, 'share/hmftools-purple-*/purple.jar'))[0]
-    linx_jar   = glob.glob(join(hmf_env_path, 'share/hmftools-linx-*/sv-linx.jar'))[0]
 
-    cmd = f"""
-PATH={hmf_env_path}/bin:$PATH \
-THREADS={threads} \
-GRIDSS_JAR={gridss_jar} \
-AMBER_JAR={amber_jar} \
-COBALT_JAR={cobalt_jar} \
-PURPLE_JAR={purple_jar} \
-LINX_JAR={linx_jar} \
-bash -x {join(gridss_linx_dir, 'gridss-purple-linx.sh')} \
--n {normal_bam} \
--t {tumor_bam} \
--v {output_vcf} \
--s {sample} \
---normal_sample {normal_name} \
---tumour_sample {tumor_name} \
---snvvcf {snv_vcf} \
---ref_dir {gridss_ref_dir} \
---install_dir {gridss_scripts_dir} \
---reference {ref_fa} \
---run_dir {output_dir}
-"""
+    conf = {
+        'tumor_bam': verify_file(tumor_bam, 'Tumor BAM, -T option'),
+        'normal_bam': verify_file(normal_bam, 'Normal BAM, -N option'),
+        'genome': genome,
+        'ref_fa': ref_fa,
+        'tumor_name': tumor_name,
+        'normal_name': normal_name,
+        'gridss_jar': gridss_jar,
+        'gpl_source': gpl_source,
+        'gridss_ref_dir': gridss_ref_dir,
+        'gridss_scripts_dir': gridss_scripts_dir,
+        'output_dir': output_dir,
+        'work_dir': work_dir,
+        'total_cores': jobs,
+    }
 
-    try:
-        run_simple(cmd)
-    except subprocess.SubprocessError:
-        err('--------\n')
-        err(f'Error running GRIDSS-PURPLE-LINX.\n')
-        raise
+    run_snakemake(join(package_path(), '..', 'gridss', 'Snakefile'), conf, jobs,
+                  output_dir, unlock=unlock, dryrun=dryrun, target_rules=target_rule)
 
 
 if __name__ == '__main__':

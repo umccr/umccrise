@@ -39,8 +39,10 @@ def main(normal_bam, tumor_bam, genome=None, ref_fa=None, output_dir=None,
     safe_mkdir(output_dir)
     ref_fa = ref_fa or hpc.get_ref_file(genome, 'fa')
 
-    tumor_name = tumor_name or splitext(basename(tumor_bam))[0]
-    normal_name = normal_name or splitext(basename(normal_bam))[0]
+    normal_name = normal_name or splitext_plus(basename(normal_bam))[0]\
+        .replace('-ready', '').replace('-sorted', '')
+    tumor_name = tumor_name or splitext_plus(basename(tumor_bam))[0]\
+        .replace('-ready', '').replace('-sorted', '')
     conf = {
         'tumor_bam': verify_file(tumor_bam, 'Tumor BAM, -T option'),
         'normal_bam': verify_file(normal_bam, 'Normal BAM, -N option'),
