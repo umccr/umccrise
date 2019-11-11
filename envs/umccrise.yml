@@ -83,5 +83,5 @@ dependencies:
     - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
     - "git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
-    - "git+https://bitbucket.org/vladsaveliev/snakemake#egg=snakemake"
+    - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
