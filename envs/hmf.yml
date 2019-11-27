@@ -26,3 +26,4 @@ dependencies:
   - bioconductor-bsgenome
   - bioconductor-org.hs.eg.db
   - r-magick
+  - bwa

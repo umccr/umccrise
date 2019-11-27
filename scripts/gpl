@@ -31,10 +31,12 @@ from hpc_utils import hpc
 @click.option('--ref-fa', 'ref_fa', help='Path reference fasta (useful if you need to override the default in '
                                          '--gridss-ref-dir in case if your contigs don\'t match the one there')
 @click.option('-j', '-t', '--threads', '--jobs', 'threads')
+@click.option('-m', '--jvmheap', 'jvmheap')
 
 def main(output_dir=None, normal_bam=None, tumor_bam=None, snv_vcf=None,
          normal_name=None, tumor_name=None, sample=None,
-         genome=None, genomes_dir=None, gridss_ref_dir=None, ref_fa=None, threads=None):
+         genome=None, genomes_dir=None, gridss_ref_dir=None, ref_fa=None, threads=None,
+         jvmheap=None):
 
     gridss_linx_dir = abspath(join(package_path(), '..', 'gridss-purple-linx'))
     gridss_scripts_dir = abspath(join(package_path(), '..', 'gridss/scripts'))
@@ -85,7 +87,8 @@ bash -x {join(gridss_linx_dir, 'gridss-purple-linx.sh')} \
 --ref_dir {gridss_ref_dir} \
 --install_dir {gridss_scripts_dir} \
 --reference {ref_fa} \
---run_dir {output_dir}
+--run_dir {output_dir} \
+--jvmheap {jvmheap}
 """
 
     try:
