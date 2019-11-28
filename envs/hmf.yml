@@ -1,0 +1,29 @@
+name: umccrise_hmf
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - gridss
+  - hmftools-amber
+  - hmftools-cobalt
+  - hmftools-purple
+  - hmftools-linx
+  - r-tidyverse
+  - r-testthat
+  - r-assertthat
+  - r-nmf
+  - r-stringdist
+  - r-stringr
+  - r-argparser
+  - r-r.cache
+  - r-devtools
+  - bioconductor-variantannotation
+  - bioconductor-structuralvariantannotation
+  - bioconductor-rtracklayer
+  - bioconductor-bsgenome
+  - bioconductor-org.hs.eg.db
+  - r-magick
+  - bwa

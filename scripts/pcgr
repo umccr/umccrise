@@ -34,7 +34,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
     if not pcgr_data:
         from hpc_utils import hpc
         if genomes_dir:
-            hpc.genomes_dir = genomes_dir
+            hpc.set_genomes_dir(genomes_dir)
         pcgr_data = hpc.get_ref_file(key='pcgr_data')
         if not pcgr_data:
             logger.critical(f'PCGR data is not found on the system "{hpc.hostname}".'

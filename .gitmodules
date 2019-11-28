@@ -1,0 +1,6 @@
+[submodule "gridss-purple-linx"]
+	path = gridss-purple-linx
+	url = git@github.com:vladsaveliev/gridss-purple-linx.git
+[submodule "gridss"]
+	path = gridss
+	url = git@github.com:vladsaveliev/gridss.git

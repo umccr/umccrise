@@ -85,5 +85,11 @@ rule pcgr:
     output:
         temp(touch('log/pcgr.done'))
 
+rule cpsr:
+    input:
+        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
+    output:
+        temp(touch('log/cpsr.done'))
+
 
 

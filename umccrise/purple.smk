@@ -11,8 +11,8 @@ localrules: purple, purple_symlink
 
 
 circos_macos_patch = ('export PERL5LIB=' +
-    env_path + '_purple/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
-    env_path + '_purple/lib/perl5/site_perl/5.22.0; ') \
+    env_path + '_hmf/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
+    env_path + '_hmf/lib/perl5/site_perl/5.22.0; ') \
     if platform.system() == 'Darwin' \
     else ''
 
@@ -74,7 +74,7 @@ rule purple_amber:
     threads:
         threads_per_batch
     shell:
-        conda_cmd.format('purple') +
+        conda_cmd.format('hmf') +
         'AMBER -Xms{params.xms}m -Xmx{params.xmx}m '
         '-tumor {wildcards.batch} '
         '-tumor_bam {input.tumor_bam} '
@@ -110,7 +110,7 @@ rule purple_cobalt:
     resources:
         mem_mb = purple_mem
     shell:
-        conda_cmd.format('purple') +
+        conda_cmd.format('hmf') +
         'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
         '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
@@ -181,7 +181,7 @@ rule purple_run:
     resources:
         mem_mb = purple_mem
     shell:
-       conda_cmd.format('purple') + \
+       conda_cmd.format('hmf') + \
         circos_macos_patch + \
         'circos -modules ; circos -v ; '
         'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
@@ -222,7 +222,7 @@ rule purple_circos_baf:
         shell('cp {input.map} {params.out_dir}')
         shell('cp {input.link} {params.out_dir}')
         out_file = basename(output.png)
-        shell(conda_cmd.format('purple') +
+        shell(conda_cmd.format('hmf') +
               'circos -modules ; circos -v ; ' +
               circos_macos_patch +
               'circos -nosvg -conf ' + out_conf + ' -outputdir {params.out_dir} -outputfile {out_file}')

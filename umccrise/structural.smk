@@ -148,9 +148,10 @@ rule filter_sv_vcf:
         # tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
         shell('''
-bcftools view -f.,PASS {input.vcf} | \
-bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" | \
-bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" | \
+bcftools view -f.,PASS {input.vcf} | 
+bcftools filter -e "SVTYPE == 'BND' & FORMAT/SR[{tumor_id}:1] - FORMAT/PR[{tumor_id}:1] > 0" | 
+bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" | 
+bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" | 
 bcftools view -s {params.sample} > {output.vcf}
 ''')
 
@@ -158,7 +159,6 @@ if not is_ffpe:
     rule reprioritize_rescued_svs:
         input:
             vcf = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
-            tbi = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz.tbi',
         output:
             vcf = '{batch}/structural/{batch}-manta.vcf.gz',
             tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',

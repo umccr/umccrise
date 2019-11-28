@@ -92,7 +92,7 @@ rule run_cacao:
         mode = lambda wc: 'hereditary' if wc.phenotype == 'normal' else 'somatic',
         levels = lambda wc: 'germline' if wc.phenotype == 'normal' else 'somatic',
     resources:
-        mem_mb=2000
+        mem_mb=8000
     threads: threads_per_sample
     run:
         low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)

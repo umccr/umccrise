@@ -53,7 +53,7 @@ Run the following to create a directory "umccrise" and install into it
 ```
 mkdir umccrise
 cd umccrise
-source <(curl -s https://github.com/umccr/umccrise/blob/master/install.sh)
+source <(curl -s https://raw.githubusercontent.com/umccr/umccrise/master/install.sh)
 ```
 
 It will generate `load_umccrise.sh` script that can be sourced to load the umccrise environment:
@@ -180,7 +180,7 @@ conda activate miniconda/envs/umccrise
 conda env update -f umccrise/envs/umccrise.yml -p miniconda/envs/umccrise
 conda env update -f umccrise/envs/pcgr_linux.yml -p miniconda/envs/umccrise_pcgr
 # conda env update -f umccrise/envs/pcgr_macos.yml -p miniconda/envs/umccrise_pcgr  # for macos
-conda env update -f umccrise/envs/purple.yml -p miniconda/envs/umccrise_purple
+conda env update -f umccrise/envs/hmf.yml -p miniconda/envs/umccrise_hmf
 ```
 
 ## Development

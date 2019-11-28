@@ -1,8 +1,34 @@
+0.16 (TBR)
+
+- Add CodeBuild CI support (thanks @brainstorm for the great work!)
+- Add hg38 MultiQC background samples
+- Update PURPLE, add new plots/stats into the cancer report
+- FFPE pipeline: remove purple-inferred SVs
+- SV prioritization: move filtering BNDs with SR > PR from Rmd into the prioritization script (so this filter reflects in VCF)
+- Added GRIDSS/PURPLE/LINX wrapper (`gpl`) and env (`umccrise_hmf`)
+- hpc_utils: refactoring of genomes_dir detection functions. Add set_genomes_dir
+- Fix multithreading when running in a Docker
+
+0.15.6 (28 Aug 2019)
+
+- SV prioritization: 
+    - prioritize CN=0 events in tumor suppressors genes
+    - fix transcript order in PCGR (use Rank first)
+    - report all (principal+alt) transcripts comma-separated
+    - skip interaction events
+- Cancer report SV table: 
+    - Add SV event number
+    - Fix ref/alt read support labels
+- Cancer report: reorganize blocks, increase report width
+- SV VCF: split samples, keep tumor (for Pierian)
+- Add MultiQC Docker container for bcl2fastq and interop
+
 0.15 (21 May 2019)
 
 - Update PCGR to 0.8.1 and CPSR to 0.4.1 (with a new scheme for germline filtering)
 - Pass tumor purity and ploidy into PCGR
 - VEP annotation pick order: pick APPRIS first instead of canonical (to match with SV)
+- Add the detailed [workflow description](https://github.com/umccr/umccrise/blob/master/workflow.md)
 
 0.14 (1 Apr 2019)
 

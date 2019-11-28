@@ -2,6 +2,7 @@
 """
 import os
 import sys
+import multiprocessing
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir
 from ngs_utils.bcbio import BcbioProject
@@ -66,7 +67,7 @@ def prep_inputs(config_):
 
     # Reference files
     if config_.get('genomes_dir'):
-        hpc.genomes_dir = config_.get('genomes_dir')
+        hpc.set_genomes_dir(config_.get('genomes_dir'))
 
     return run, batch_by_name
 
@@ -83,11 +84,11 @@ if is_spartan:
 upload_igv = is_hpc and config.get('no_s3', 'no') == 'no'
 
 
-threads_on_node = hpc.threads_on_node or 1
+threads_on_node = hpc.threads_on_node or multiprocessing.cpu_count() or 1
 total_cores = config.get('total_cores', 128)
 threads_per_batch  = max(1, min(threads_on_node, total_cores // len(batch_by_name)))
 threads_per_sample = max(1, min(threads_on_node, total_cores // len(run.samples)))
-print(f'Threads on node: {threads_on_node}, total cores allowed: {total_cores}. '
+print(f'Threads available on the machine: {threads_on_node}, total cores allowed: {total_cores}. '
       f'Batches found: {threads_per_batch}, using {threads_per_batch} threads per batch, {threads_per_sample} per sample')
 
 is_ffpe = run.somatic_caller == 'strelka2'

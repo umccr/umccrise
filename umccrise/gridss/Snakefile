@@ -1,0 +1,84 @@
+import multiprocessing
+import os
+from os.path import join
+shell.executable(os.environ.get('SHELL', 'bash'))
+shell.prefix("")
+
+
+tumor_bam          = config['tumor_bam         '.strip()]
+normal_bam         = config['normal_bam        '.strip()]
+genome             = config['genome            '.strip()]
+ref_fa             = config['ref_fa            '.strip()]
+tumor_name         = config['tumor_name        '.strip()]
+normal_name        = config['normal_name       '.strip()]
+gridss_jar         = config['gridss_jar        '.strip()]
+gpl_source         = config['gpl_source        '.strip()]
+gridss_ref_dir     = config['gridss_ref_dir    '.strip()]
+gridss_scripts_dir = config['gridss_scripts_dir'.strip()]
+output_dir         = config['output_dir        '.strip()]
+work_dir           = config['work_dir          '.strip()]
+total_cores        = config['total_cores       '.strip()]
+
+metricsrecords     = 10000000
+maxcoverage        = 50000
+jvmheap            = "25g"
+
+chunk_size = 1000_000
+chunk_sequence_change_penalty = 100_000
+
+gridss_properties = join(work_dir, 'gridss.properties')
+with open(gridss_properties, 'w') as f:
+    f.write(f'''
+chunkSize={chunk_size}
+chunkSequenceChangePenalty={chunk_sequence_change_penalty}
+''')
+
+gridss_cmd_common = f'''
+{gridss_scripts_dir}/gridss.sh
+-r {ref_fa}
+-o {output_dir}/{tumor_name}.sv.vcf
+-a {output_dir}/{tumor_name}.asm.bam
+-j {gridss_jar}
+-w {work_dir}
+-c {gridss_properties}
+'''
+
+threads_each = 8
+threads_on_node = multiprocessing.cpu_count() or 1
+threads_per_batch  = max(1, min(threads_on_node, total_cores // len(batch_by_name)))
+
+
+rule partition:
+    input:
+    output:
+
+
+rule preprocess:
+    input:
+    output:
+
+
+rule assembly:
+    input:
+    output:
+
+
+rule call:
+    input:
+    output:
+
+
+rule merge:
+    input:
+    output:
+
+
+
+
+
+
+
+
+
+
+
