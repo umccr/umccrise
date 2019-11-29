@@ -175,7 +175,7 @@ rule cancer_report:
             input.purple_baf_png       ,
         ]:
             shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
-        shell("""
+        shell(conda_cmd.format('cancer_report') + """
 cd {output.rmd_tmp_dir} && \
 Rscript -e "rmarkdown::render('{params.report_rmd}', \
 output_file='{params.output_file}', \
