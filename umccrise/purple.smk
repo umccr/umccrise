@@ -4,6 +4,7 @@ localrules: purple
 import glob
 import shutil
 import platform
+from umccrise import package_path
 
 
 # localrules: purple
@@ -121,7 +122,7 @@ rule purple_cobalt:
 
 rule purple_somatic_vcf:
     input:
-        rules.somatic_vcf_filter_pass.output.vcf,
+        '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
     output:
         'work/{batch}/purple/somatic.vcf',
     params:

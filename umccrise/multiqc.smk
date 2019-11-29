@@ -21,7 +21,7 @@ rule prep_multiqc_data:
         bcbio_final_dir         = run.final_dir,
         conpair_concord         = rules.run_conpair.output.concord,
         conpair_contam          = rules.run_conpair.output.contam,
-        somatic_stats           = rules.somatic_stats_report.output[0],
+        somatic_stats           = 'work/{batch}/small_variants/somatic_stats.yml',
         germline_stats          = rules.germline_stats_report.output[0],
         bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
         bcftools_germline_stats = rules.bcftools_stats_germline.output[0],

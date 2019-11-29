@@ -11,7 +11,7 @@ from ngs_utils.reference_data import get_key_genes_bed
 rule igv_bed:
     input:
         key_genes_bed = get_key_genes_bed(run.genome_build),
-        small_variant_vcf = rules.somatic_vcf_filter_pass.output[0],
+        small_variant_vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
         structural_bed = rules.ribbon.output[0]
     output:
         '{batch}/igv/{batch}-roi.bed'
