@@ -8,7 +8,8 @@ channels:
   - defaults
 
 dependencies:
-  - python >=3.7.3
+  - python ==3.7.3
+  - r-base ==3.5.1
   - r-openssl >=1.1
   - samtools
   - bcftools

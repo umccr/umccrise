@@ -6,6 +6,7 @@ channels:
   - defaults
 
 dependencies:
+  - r-base ==3.5.1
   - gridss
   - hmftools-amber
   - hmftools-cobalt
