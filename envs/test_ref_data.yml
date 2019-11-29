@@ -1,0 +1,20 @@
+name: umccrise_cancer_report
+
+channels:
+  - vladsaveliev
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python ==3.7.3
+  - snakemake-minimal
+  - pybedtools
+  - sambamba
+  - bcftools
+  - samtools
+  - bedtools
+  - ngs_utils
+  - natsort  # for bcbio.py in ngs_utils
+  - pip:
+    - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"

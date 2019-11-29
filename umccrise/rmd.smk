@@ -226,7 +226,8 @@ rule purple_bcbio_stats:
             print('Copying bcbio purple file to :', join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
         for fn in input.purple_umccrise_files:
             shell('cut -f1-5 ' + fn + ' > ' + join(params.workdir, f'umccrise_' + basename(fn)))
-        shell("""
+        shell(conda_cmd.format('cancer_report') + \
+"""
 cp {input.rmd} {params.rmd_tmp} && \
 Rscript -e "rmarkdown::render('{params.rmd_tmp}',\
 output_file='{params.output_file}', \

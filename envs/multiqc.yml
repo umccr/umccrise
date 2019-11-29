@@ -1,0 +1,11 @@
+name: umccrise_multiqc
+
+channels:
+  - vladsaveliev
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - multiqc
+  - pyyaml >=4  # for multiqc

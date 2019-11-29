@@ -34,8 +34,7 @@ rule run_pcgr:
         shell(
             conda_cmd.format('pcgr') +
             'pcgr {input.vcf} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '
-            '{params.opt} --pcgr-data {input.pcgr_data} --puriry {purity} --ploidy {ploidy}'
-        )
+            '{params.opt} --pcgr-data {input.pcgr_data} --puriry {purity} --ploidy {ploidy}')
 
 rule run_cpsr:
     input:

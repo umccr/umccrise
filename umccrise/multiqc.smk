@@ -117,7 +117,8 @@ rule batch_multiqc:
             list_files = f'<(cat {input.filelist}{greps})'
         else:
             list_files = input.filelist
-        shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . -l {list_files}'
+        shell(conda_cmd.format('multiqc') + \
+              f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . -l {list_files}'
               f' -c {input.umccrise_conf_yaml} -c {input.generated_conf_yaml} --filename {output.html_file}')
 
 
