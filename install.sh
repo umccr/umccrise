@@ -21,6 +21,8 @@ conda update conda
 ENV_NAME=umccrise
 conda env create -p $PWD/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
 conda env create -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
+conda env create -p $PWD/miniconda/envs/${ENV_NAME}_multiqc --file umccrise/envs/multiqc.yml
+conda env create -p $PWD/miniconda/envs/${ENV_NAME}_cancer_report --file umccrise/envs/cancer_report.yml
 if [[ "$OSTYPE" == "darwin"* ]]; then
     conda env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml
 else
