@@ -6,12 +6,12 @@ channels:
   - defaults
 
 dependencies:
-  - r-base ==3.5.1
-  - gridss
+  - r-base  # do not pin to avoid conflicts
   - hmftools-amber
   - hmftools-cobalt
   - hmftools-purple
   - hmftools-linx
+  - gridss
   - r-tidyverse
   - r-testthat
   - r-assertthat
