@@ -36,18 +36,21 @@ export CONDA_PREFIX=$PWD/miniconda/envs/umccrise
 # Install master on top
 pip install -e umccrise
 
-R -e "install.packages('stringi', dependencies = F, repos = 'http://cran.us.r-project.org')"
-R -e "install.packages('BiocManager', repos = 'http://cran.us.r-project.org')"
-R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg19.knownGene')"
-R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg38.knownGene')"
-
 ### Create the loader script
 ENV_NAME=umccrise
 cat <<EOT > load_umccrise.sh
 unset PYTHONPATH
 unset PERL5LIB
-export PATH=$PWD/miniconda/envs/${ENV_NAME}/bin:$PWD/miniconda/bin:\$PATH
+export PATH=$PATH
 export CONDA_PREFIX=$PWD/miniconda/envs/${ENV_NAME}
 EOT
 
+# Install some missing packages for the cancer report environment
+export PATH=$PWD/miniconda/envs/${ENV_NAME}_cancer_report/bin:$PATH
+R -e "install.packages('stringi', dependencies = F, repos = 'http://cran.us.r-project.org')"
+R -e "install.packages('BiocManager', repos = 'http://cran.us.r-project.org')"
+R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg19.knownGene')"
+R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg38.knownGene')"
+
+# Clean up
 conda clean --yes --tarballs
