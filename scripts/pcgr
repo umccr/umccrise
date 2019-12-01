@@ -87,12 +87,13 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                f' {dirname(pcgr_data)}'
                f' {output_dir}'
                f' {pcgr_genome}'
-               f' 0'
+               f' --panel_id 0'
                f' {cpsr_toml}'
                f' {sample}'
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
                f' --no_vcf_validate'
+               f' --debug'
         )
     else:
         expected_file_base = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}')
@@ -119,7 +120,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                f' --force_overwrite'
                f' --no_vcf_validate' +
               (f' --tumor_purity {puriry}' if puriry else '') +
-              (f' --tumor_ploidy {ploidy}' if ploidy else '')
+              (f' --tumor_ploidy {ploidy}' if ploidy else '') +
+               f' --debug'
         )
     try:
         run_simple(cmd)
