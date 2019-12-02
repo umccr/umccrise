@@ -12,7 +12,7 @@ from ngs_utils.file_utils import which
 
 rule run_pcgr:
     input:
-        vcf = rules.somatic_vcf_filter_pass.output.vcf,
+        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
         # cns = '{batch}/purple/{batch}.purple.cnv',
         pcgr_data = hpc.get_ref_file(key='pcgr_data'),
         purple_file = rules.purple_run.output.purity,
@@ -34,12 +34,11 @@ rule run_pcgr:
         shell(
             conda_cmd.format('pcgr') +
             'pcgr {input.vcf} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '
-            '{params.opt} --pcgr-data {input.pcgr_data} --puriry {purity} --ploidy {ploidy}'
-        )
+            '{params.opt} --pcgr-data {input.pcgr_data} --puriry {purity} --ploidy {ploidy}')
 
 rule run_cpsr:
     input:
-        vcf = rules.germline_merge_with_leakage.output.vcf,
+        vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz',
         pcgr_data = hpc.get_ref_file(key='pcgr_data')
     output:
         '{batch}/pcgr/{batch}-normal.cpsr.html'

@@ -4,6 +4,7 @@ from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
 import glob
+from umccrise import package_path
 
 
 localrules: rmd
@@ -31,7 +32,7 @@ localrules: rmd
 # Subset to GiaB confident intervals
 rule subset_to_giab:
     input:
-        vcf = rules.somatic_vcf_filter_pass.output.vcf
+        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
     params:
         regions = hpc.get_ref_file(run.genome_build, key=['hmf_giab_conf'])
     output:
@@ -88,7 +89,7 @@ rule afs_keygenes:
 # Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the somatic calls:
 rule somatic_to_hg19:
     input:
-        rules.somatic_vcf_filter_pass.output.vcf
+        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
     output:
         'work/{batch}/rmd/' + run.somatic_caller + '-with_chr_prefix.vcf'
     group: "rmd"
@@ -181,7 +182,7 @@ rule cancer_report:
             input.purple_baf_png,
         ]:
             shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
-        shell("""
+        shell(conda_cmd.format('cancer_report') + """
 cd {output.rmd_tmp_dir} && \
 Rscript -e "rmarkdown::render('{params.report_rmd}', \
 output_file='{params.output_file}', \
@@ -236,7 +237,8 @@ rule purple_bcbio_stats:
             print('Copying bcbio purple file to :', join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
         for fn in input.purple_umccrise_files:
             shell('cut -f1-5 ' + fn + ' > ' + join(params.workdir, f'umccrise_' + basename(fn)))
-        shell("""
+        shell(conda_cmd.format('cancer_report') + \
+"""
 cp {input.rmd} {params.rmd_tmp} && \
 Rscript -e "rmarkdown::render('{params.rmd_tmp}',\
 output_file='{params.output_file}', \

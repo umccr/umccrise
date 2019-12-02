@@ -163,15 +163,15 @@ rule germline_predispose_subset:
 
 # Preparations: annotate TUMOR_X and NORMAL_X fields
 # Used for PCGR, but for all other processing steps too
-rule germline_predispose_subset_vcf_prep:
-    input:
-        vcf = rules.germline_predispose_subset.output.vcf
-    output:
-        vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
-        tbi = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
-    group: "germline_snv"
-    shell:
-        'pcgr_prep {input.vcf} | bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
+# rule germline_predispose_subset_vcf_prep:
+#     input:
+#         vcf = rules.germline_predispose_subset.output.vcf
+#     output:
+#         vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
+#         tbi = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
+#     group: "germline_snv"
+#     shell:
+#         'pcgr_prep {input.vcf} | bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
 # # TODO: merge with filtered out somatic varians.
 # #  1. PoN, normal fail     - low freq (< 1/3 of purity) - remove; otherwise add to germline
@@ -215,7 +215,7 @@ rule germline_leakage_predispose_subset:
 
 rule germline_merge_with_leakage:
     input:
-        vcf_germ = rules.germline_predispose_subset_vcf_prep.output.vcf,
+        vcf_germ = rules.germline_predispose_subset.output.vcf,
         vcf_lkge = rules.germline_leakage_predispose_subset.output.vcf,
     output:
         vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz'

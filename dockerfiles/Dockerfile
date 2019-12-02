@@ -27,7 +27,7 @@ RUN apt-get update && \
 
 # Install
 RUN wget https://raw.githubusercontent.com/umccr/umccrise/master/install.sh
-RUN bash -x install.sh
+RUN bash -xe install.sh
 
 # Clean up
 RUN rm -rf umccrise/.git && \

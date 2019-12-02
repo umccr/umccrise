@@ -7,10 +7,11 @@ channels:
   - defaults
 
 dependencies:
-  - python >=3.7.3
+  - python ==3.7.3
   - pip
   - git
   - ngs_utils
+  - natsort  # for bcbio.py in ngs_utils
   - tsvtools
   - cython
   - bcftools >=1.9
@@ -26,62 +27,32 @@ dependencies:
   - cyvcf2 >=0.10.0
   - numpy >=1.15.0
   - pandas
-  - curl >=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
+  - curl >=7.59     # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake-minimal
+  - pyyaml >=4  # for multiqc
+  - multiqc
   - nose
   - versionpy
-  # - vcf_stuff
   - bed_annotation
-  - multiqc
   - pyensembl
   - break-point-inspector
   - gatk4 >=4.1.0.0  # Conpair and panel of normals
-  - scipy  # Conpair
-  - natsort  # for bcbio.py in ngs_utils
-  # - pybedtools  # for ref data generation
-  # - sambamba  # for test data generation
+  - scipy            # Conpair
   - tabix
   - goleft
   - awscli
-  - pyasn1  # for awscli - for some reason doesn't install automatically on macos
-  - parallel
-  - pygraphviz # for snakemake report
-  - gsort  # sort vcfs and beds - https://github.com/brentp/gsort
-  - toml  # to read predisposition genes from PCGR toml
-  # R libraries:
-  # - pandoc<2  # r-rmarkdown 1.6 doesn't support pandoc 2, and a more recent r-rmarkdown is not available on conda
-  - r-base >=3.5.1
-  - pandoc
-  - libgfortran-ng
-  - toml
-  - r-bookdown
-  - r-devtools
-  - r-dplyr
-  - r-dt
-  - r-ggplot2
-  - r-htmlwidgets #>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
-  - r-kableextra
-  - r-purrr
-  - r-readr
-  - r-rmarkdown #>=1.6
-  - r-stringr
-  - r-stringi #>=1.1.7  # for pcgrr
-  - r-tidyr
-  - bioconductor-delayedarray
-  - bioconductor-summarizedexperiment >=1.8
-  - bioconductor-mutationalpatterns
-  - bioconductor-bsgenome.hsapiens.ucsc.hg19
-  - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
-  - bioconductor-bsgenome.hsapiens.ucsc.hg38
-  - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
-  - bioconductor-genomeinfodb
-  - bioconductor-genomeinfodbdata
-  - pyyaml >=4  # for multiqc
+  - pyasn1      # for awscli - for some reason doesn't install automatically on macos
+  - parallel    # for general use
+  - pygraphviz  # for snakemake report
+  # - gsort     # sort vcfs and beds - https://github.com/brentp/gsort
+  - toml        # to read predisposition genes from PCGR toml
+  # - tibanna
   - pip:
+    - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "git+https://github.com/umccr/hpc_utils#egg=hpc_utils"
     - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
-    - "git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
-    - "git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
+    - "git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
+    - "git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
