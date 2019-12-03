@@ -70,7 +70,7 @@ rule purple_amber:
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        mem_mb = purple_mem,
+        mem_mb = lambda wildcards, attempt: purple_mem + (20000 * attempt),
     threads:
         threads_per_batch
     shell:

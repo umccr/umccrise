@@ -40,7 +40,7 @@ from hpc_utils import hpc
 @click.option('--forcerun', 'forcerun', help='Comma-separated rules that will be run even if the outputs exist. Propagated to snakemake, space-separated.')
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
-@click.option('--restart-times', default=0, help='Propagated to snakemake. Default is 0.')
+@click.option('--restart-times', 'restart_times', default=2, help='Propagated to snakemake. Default is 0.')
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Prints rules and commands '
                                                              'to be run without actually executing them.')
 @click.option('--report', 'report', help='Propagated to snakemake. Create an HTML report with results and statistics. '
