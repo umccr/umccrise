@@ -40,7 +40,7 @@ from hpc_utils import hpc
 @click.option('--forcerun', 'forcerun', help='Comma-separated rules that will be run even if the outputs exist. Propagated to snakemake, space-separated.')
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
-@click.option('--restart-times', default=0, help='Propagated to snakemake. Default is 0.')
+@click.option('--restart-times', 'restart_times', default=2, help='Propagated to snakemake. Default is 0.')
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Prints rules and commands '
                                                              'to be run without actually executing them.')
 @click.option('--report', 'report', help='Propagated to snakemake. Create an HTML report with results and statistics. '
@@ -48,8 +48,8 @@ from hpc_utils import hpc
 @click.option('--dag', 'dag', is_flag=True, help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
                                                  'Usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
 # Other:
-@click.option('--no-s3', is_flag=True, help='Do not attempt to upload results to s3')
-@click.option('--no-igv', is_flag=True, help='Skip generating of minibams')
+@click.option('--no-s3', is_flag=True, default=True, help='Do not attempt to upload results to s3')
+@click.option('--no-igv', is_flag=True, default=True, help='Skip generating of minibams')
 
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
@@ -118,11 +118,11 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if 'pcgr_download' in target_rule:
         conf['pcgr_download'] = 'yes'
 
-    if not no_s3:
-        if os.environ.get('AWS_PROFILE') != 'umccr':
-            warn('To upload minibams to s3://umccr-igv, please set AWS_PROFILE=umccr')
-            info()
-            no_s3 = True
+    # if not no_s3:
+    #     if os.environ.get('AWS_PROFILE') != 'umccr':
+    #         warn('To upload minibams to s3://umccr-igv, please set AWS_PROFILE=umccr')
+    #         info()
+    #         no_s3 = True
     conf['no_s3'] = 'yes' if no_s3 else 'no'
     conf['no_igv'] = 'yes' if no_igv else 'no'
 
