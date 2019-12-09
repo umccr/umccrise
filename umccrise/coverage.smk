@@ -37,6 +37,8 @@ rule mosdepth:
         '{batch}/coverage/{batch}-{phenotype}.regions.bed.gz',
     params:
         prefix = '{batch}/coverage/{batch}-{phenotype}'
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000
     run:
         low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)
         cutoffs = f'0:1:{low_cov}:{high_cov}:'
