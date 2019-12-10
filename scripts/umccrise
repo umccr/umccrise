@@ -48,8 +48,8 @@ from hpc_utils import hpc
 @click.option('--dag', 'dag', is_flag=True, help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
                                                  'Usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
 # Other:
-@click.option('--s3/--no-s3'  , 'upload_s3',  default=False, help='Upload results to s3 [deprectated]', deprecated=True)
-@click.option('--igv/--no-igv', 'upload_igv', default=False, help='Generate mini-bams and upload to a s3 bucket [deprectated]', deprecated=True)
+@click.option('--s3/--no-s3'  , 'upload_s3',  default=False, help='Upload results to s3 [deprectated]')
+@click.option('--igv/--no-igv', 'upload_igv', default=False, help='Generate mini-bams and upload to a s3 bucket [deprectated]')
 
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
