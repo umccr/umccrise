@@ -26,7 +26,7 @@ rule run_pcgr:
         sample_name = '{batch}-somatic',
         opt = '--no-docker' if not which('docker') else ''
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000
+        mem_mb = lambda wildcards, attempt: attempt * 20000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
     run:
         purity = get_purity(input.purple_file)

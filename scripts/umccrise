@@ -48,8 +48,8 @@ from hpc_utils import hpc
 @click.option('--dag', 'dag', is_flag=True, help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
                                                  'Usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
 # Other:
-@click.option('--no-s3', is_flag=True, default=True, help='Do not attempt to upload results to s3')
-@click.option('--no-igv', is_flag=True, default=True, help='Skip generating of minibams')
+@click.option('--s3/--no-s3'  , 'upload_s3',  default=False, help='Upload results to s3 [deprectated]', deprecated=True)
+@click.option('--igv/--no-igv', 'upload_igv', default=False, help='Generate mini-bams and upload to a s3 bucket [deprectated]', deprecated=True)
 
 @click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
@@ -58,7 +58,7 @@ from hpc_utils import hpc
 def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, input_genomes_dir=None,
          jobs=None, cluster=False, cluster_cmd=None, forcerun=None,
          unlock=False, rerun_incomplete=False, restart_times=None, dryrun=False,
-         no_s3=None, no_igv=False, docker_wrapper_mode=False, report=None, dag=False, debug=False):
+         upload_s3=False, upload_igv=False, docker_wrapper_mode=False, report=None, dag=False, debug=False):
     """
 Umccrise (post-process) a bcbio project.\n
 BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
@@ -118,13 +118,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if 'pcgr_download' in target_rule:
         conf['pcgr_download'] = 'yes'
 
-    # if not no_s3:
-    #     if os.environ.get('AWS_PROFILE') != 'umccr':
-    #         warn('To upload minibams to s3://umccr-igv, please set AWS_PROFILE=umccr')
-    #         info()
-    #         no_s3 = True
-    conf['no_s3'] = 'yes' if no_s3 else 'no'
-    conf['no_igv'] = 'yes' if no_igv else 'no'
+    conf['upload_igv'] = 'yes' if upload_igv else 'no'
 
     conf['total_cores'] = jobs
 

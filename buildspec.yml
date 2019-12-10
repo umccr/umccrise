@@ -35,6 +35,6 @@ phases:
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
-        $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
+        $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH umccrise /bcbio_project -o /output_dir --genomes /work/genomes
       # Push the container to ECR if tests pass
       - docker push $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
