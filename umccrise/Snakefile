@@ -81,7 +81,7 @@ upload_proxy = ''
 if is_spartan:
     upload_proxy = 'HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000 '
 
-upload_igv = is_hpc and config.get('no_s3', 'no') == 'no'
+upload_igv = is_hpc and config.get('upload_igv', 'no') == 'yes'
 
 
 threads_on_node = hpc.threads_on_node or multiprocessing.cpu_count() or 1
@@ -137,6 +137,6 @@ rule umccrise:
         rules.purple.output,
         rules.pcgr.output,
         rules.rmd.output,
-        (rules.igv.output if config.get('no_igv', 'no') == 'no' else []),
+        (rules.igv.output if config.get('upload_igv', 'no') == 'yes' else []),
     output:
         touch('all.done')

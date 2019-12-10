@@ -17,7 +17,7 @@ script:
 #    -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
 #    -v=$PWD<LOCAL_REFERENCE_DATA>genomes:/work/genomes
 #    umccr/umccrise:$TRAVIS_TAG
-#    umccrise /bcbio_project -o /output_dir --genomes /work/genomes --no-igv
+#    umccrise /bcbio_project -o /output_dir --genomes /work/genomes
 
 services:
   - docker
