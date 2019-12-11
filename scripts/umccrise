@@ -118,7 +118,7 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
     if 'pcgr_download' in target_rule:
         conf['pcgr_download'] = 'yes'
 
-    conf['upload_igv'] = 'yes' if upload_igv else 'no'
+    conf['upload_igv'] = 'yes' if upload_igv is True else 'no'
 
     conf['total_cores'] = jobs
 

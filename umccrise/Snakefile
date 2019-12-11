@@ -127,7 +127,6 @@ include: "multiqc.smk"
 localrules: umccrise
 
 
-
 rule umccrise:
     input:  # Copy here inputs of the "milestone" rules (rules without output defined in the end of each Snakemake.* file)
         rules.multiqc.output,
