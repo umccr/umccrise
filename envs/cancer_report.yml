@@ -9,7 +9,7 @@ channels:
 dependencies:
   - r-base ==3.5.1
   # R libraries:
-  - pandoc
+  - pandoc=2.7.3
   - r-bookdown
   - r-devtools
   - r-dplyr
