@@ -1059,7 +1059,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.r
 ```
 
 
-## Software Versions {#software-versions}
+## Software Versions {.tabset .tabset-fade #software-versions}
 
 <a href="#top">Back to top</a>
 
@@ -1081,8 +1081,7 @@ print_purple_version <- function(x) {
 }
 ```
 
-<details>
-<summary>Summary</summary>
+### Conda Packages
 
 | Tool         | Version |
 |--------------|---------|
@@ -1091,7 +1090,7 @@ print_purple_version <- function(x) {
 | [AMBER](https://github.com/hartwigmedical/hmftools/tree/master/amber) | `r print_purple_version(params$amber_version)`  |
 | [COBALT](https://github.com/hartwigmedical/hmftools/tree/master/count-bam-lines) | `r print_purple_version(params$cobalt_version)` |
 
-* R Session Info
+### R Packages
 
 ```{r session_info}
 si <- devtools::session_info(include_base = TRUE)
@@ -1107,16 +1106,12 @@ dplyr::tibble(var = row.names(si_pl),
   kableExtra::column_spec(1, bold = TRUE)
 ```
 
-* R Package Info
-
 ```{r session_info_pkgs}
 knitr::kable(si_pkg, format = "html") %>%
   kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE) %>%
   kableExtra::scroll_box(height = "400px")
 ```
-
-</details>
 
 <p>&nbsp;</p>
 
