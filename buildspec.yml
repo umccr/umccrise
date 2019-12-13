@@ -3,6 +3,7 @@ run-as: root
 env:
     variables:
         "ECR": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccr"
+        "CONTAINER_NAME": "$ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH"
         "S3_REFDATA_BUCKET": "umccr-refdata-dev"
 phases:
   install:
@@ -24,17 +25,23 @@ phases:
         - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
         - export CODEBUILD_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
         - if [ -z $CODEBUILD_GIT_TAG ]; then export CODEBUILD_GIT_TAG='NOTAG'; fi
+        - echo $CONTAINER_NAME
         # Build and tag (-t) image
-        - docker build -t $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH -f dockerfiles/Dockerfile dockerfiles
+        - docker build -t $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH -f dockerfiles/Dockerfile dockerfiles
   post_build:
     commands:
       # Run tests
       - git clone https://github.com/umccr/umccrise_test_data umccrise_test_data
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       - mkdir -p /codebuild/output/refdata && time aws s3 sync --exclude=*.pm --only-show-errors s3://$S3_REFDATA_BUCKET/genomes /codebuild/output/refdata/genomes
+      # docker-slim image, remove the cruft from it
+      - docker run -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim --in-container build --http-probe=false $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+      - docker rmi $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+      - docker tag $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH.slim $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+      # Run minimal test with downsized sample data
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
-        $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH umccrise /bcbio_project -o /output_dir --genomes /work/genomes
+        $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH umccrise /bcbio_project -o /output_dir --genomes /work/genomes
       # Push the container to ECR if tests pass
-      - docker push $ECR:$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+      - docker push $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
