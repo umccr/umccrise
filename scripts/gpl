@@ -87,9 +87,10 @@ bash -x {join(gridss_linx_dir, 'gridss-purple-linx.sh')} \
 --ref_dir {gridss_ref_dir} \
 --install_dir {gridss_scripts_dir} \
 --reference {ref_fa} \
---run_dir {output_dir} \
---jvmheap {jvmheap}
+--output_dir {output_dir}
 """
+    if jvmheap:
+        cmd += f' --jvmheap {jvmheap}'
 
     try:
         run_simple(cmd)
