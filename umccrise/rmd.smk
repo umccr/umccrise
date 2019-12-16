@@ -7,7 +7,7 @@ import glob
 from umccrise import package_path
 
 
-localrules: rmd
+localrules: rmd, conda_list
 
 
 ## Allelic frequencies
@@ -113,6 +113,16 @@ rule somatic_to_hg19:
 #    shell:
 #        'cut -f1-6,11,13 {input} > {output}'
 
+rule conda_list:
+  params:
+    env=['umccrise', 'umccrise_pcgr', 'umccrise_hmf', 'umccrise_cancer_report']
+  output:
+    txt='work/{batch}/rmd/conda_pkg_list.txt'
+  run:
+    for env in params.env:
+        shell('conda list --name {env} >> {output}')
+
+
 ## Running Rmarkdown
 rule cancer_report:
     input:
@@ -141,6 +151,7 @@ rule cancer_report:
         purple_version       = rules.purple_run.output.version_build,
         amber_version        = rules.purple_amber.output.version_build,
         cobalt_version       = rules.purple_cobalt.output.version_build,
+        conda_list           = rules.conda_list.txt,
 
     params:
         report_rmd = 'cancer_report.Rmd',
