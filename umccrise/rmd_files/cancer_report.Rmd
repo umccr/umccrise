@@ -23,6 +23,7 @@ params:
   purple_cnv: 'x'
   purple_purity: 'x'
   purple_qc: 'x'
+  conda_list: 'x'
   purple_version: 'x'
   amber_version: 'x'
   cobalt_version: 'x'
@@ -88,7 +89,8 @@ params_tmp <- list(
     purple_qc='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.qc',
     purple_version='data/purple/purple.version',
     amber_version='data/purple/amber.version',
-    cobalt_version='data/purple/cobalt.version'
+    cobalt_version='data/purple/cobalt.version',
+    conda_list='data/conda_pkg_list.txt'
     )
 )
 
@@ -1059,7 +1061,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.r
 ```
 
 
-## Software Versions {.tabset .tabset-fade #software-versions}
+## Addendum {.tabset .tabset-fade #addendum}
 
 <a href="#top">Back to top</a>
 
@@ -1081,6 +1083,19 @@ print_purple_version <- function(x) {
 }
 ```
 
+### Report Inputs
+
+```{r}
+dplyr::tibble(key = names(params), value = unlist(params)) %>%
+  dplyr::filter(!grepl("_version", key)) %>%
+  knitr::kable(format = "html") %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+  kableExtra::column_spec(1, bold = TRUE)
+```
+
+
+
+
 ### Conda Packages
 
 | Tool         | Version |
@@ -1089,6 +1104,16 @@ print_purple_version <- function(x) {
 | [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) | `r print_purple_version(params$purple_version)` |
 | [AMBER](https://github.com/hartwigmedical/hmftools/tree/master/amber) | `r print_purple_version(params$amber_version)`  |
 | [COBALT](https://github.com/hartwigmedical/hmftools/tree/master/count-bam-lines) | `r print_purple_version(params$cobalt_version)` |
+
+### Conda Packages All
+
+```{r conda_list}
+readr::read_table2(params$conda_list, col_names = c("name", "version", "build", "channel", "env"), col_types = "ccccc") %>%
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                rownames = FALSE, extensions = c("Scroller", "Buttons"),
+                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
+                               buttons = c('csv'), dom = 'Bfrtip'))
+```
 
 ### R Packages
 

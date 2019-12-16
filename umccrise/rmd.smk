@@ -118,9 +118,8 @@ rule conda_list:
     env=['umccrise', 'umccrise_pcgr', 'umccrise_hmf', 'umccrise_cancer_report']
   output:
     txt='work/{batch}/rmd/conda_pkg_list.txt'
-  run:
-    for env in params.env:
-        shell('conda list --name {env} >> {output}')
+  shell:
+    "for e in {params.env}; do conda list --name $e | awk -v var=$e '{{ print $0, var }}' | grep -v ^# >> {output} ; done"
 
 
 ## Running Rmarkdown
@@ -170,6 +169,7 @@ rule cancer_report:
         purple_version      = lambda wc, input: abspath(input.purple_version),
         amber_version       = lambda wc, input: abspath(input.amber_version),
         cobalt_version      = lambda wc, input: abspath(input.cobalt_version),
+        conda_list          = lambda wc, input: abspath(input.conda_list),
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
@@ -212,7 +212,8 @@ purple_purity='{params.purple_purity}', \
 purple_qc='{params.purple_qc}', \
 purple_version='{params.purple_version}', \
 amber_version='{params.amber_version}', \
-cobalt_version='{params.cobalt_version}' \
+cobalt_version='{params.cobalt_version}', \
+conda_list='{params.conda_list}' \
 ))" ; \
 cd {params.work_dir} ; \
 """)
