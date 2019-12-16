@@ -24,7 +24,6 @@ conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
 
 
 def prep_inputs(config_):
-
     ###############################
     #### Parsing bcbio project ####
     ###############################

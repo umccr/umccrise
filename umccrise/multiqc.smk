@@ -1,6 +1,9 @@
 from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
 import cyvcf2
 import yaml
+from os.path import abspath, join, dirname
+from ngs_utils.file_utils import verify_file
+from umccrise import package_path
 
 
 localrules: multiqc, copy_config
@@ -28,6 +31,8 @@ rule prep_multiqc_data:
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
+        programs            = '{batch}/log/programs.txt',
+        data_versions       = '{batch}/log/data_versions.txt',
     params:
         data_dir        = 'work/{batch}/multiqc_data',
         tumor_name      = lambda wc: batch_by_name[wc.batch].tumor.name,
@@ -46,7 +51,7 @@ rule prep_multiqc_data:
             analysis_dir=run.date_dir,
             prog_versions_fpath=verify_file(params.prog_versions, silent=True),
             data_versions_fpath=verify_file(params.data_versions, silent=True),
-            new_dir_for_versions=abspath(join(f'{wildcards.batch}', 'log')),
+            new_dir_for_versions=dirname(output.programs),
         )
         gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised_2019.qconly.renamed')
         if params.genome_build == 'hg38':
