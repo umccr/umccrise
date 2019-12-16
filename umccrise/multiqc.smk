@@ -53,7 +53,7 @@ rule prep_multiqc_data:
             data_versions_fpath=verify_file(params.data_versions, silent=True),
             new_dir_for_versions=dirname(output.programs),
         )
-        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised_2019.qconly.renamed')
+        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
         if params.genome_build == 'hg38':
             gold_standard_dir += '_hg38'
         with open(join(gold_standard_dir, 'background_multiqc_filelist.txt')) as f:
