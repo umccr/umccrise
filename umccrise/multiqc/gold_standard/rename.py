@@ -6,8 +6,9 @@ import sys
 
 inp_dir = sys.argv[1]
 out_dir = sys.argv[2]
+out_dir_hg38 = sys.argv[3]
 
-d = {
+sample_mapping = {
     "E194__PRJ180506_E194-T01-D": "Alice_T",
     "E194__PRJ180507_E194-B01-D": "Alice_B",
     "E201__PRJ180492_E201-T01-D": "Bob_T",
@@ -30,28 +31,58 @@ d = {
     "PRJ180500_E202-B01-D": "Elon_B",
 }
 
-def rn(s):
-    for k, v in d.items():
-        s = s.replace(k, v)
-    return s
+def replace_sample_names_in_file_content(cont: str):
+    for k, v in sample_mapping.items():
+        cont = cont.replace(k, v)
+    return cont
+
+def replace_chrom_names_in_file_content(cont: str):
+    new_cont = ''
+    for s in cont.splitlines():
+        # fixing chromosome names in -idxstats.txt or .mosdepth.region.dist.txt
+        if any(s.startswith(str(chrom_name)) for chrom_name in list(range(1, 23)) + ['X', 'Y']):
+            s = 'chr' + s
+        elif s.startswith('MT'):
+            s = 'chrM' + s[2:]
+        elif s.startswith('GL'):
+            s = None
+        if s is not None:
+            new_cont += s + '\n'
+    return new_cont
+
 
 safe_mkdir(out_dir)
+safe_mkdir(out_dir_hg38)
 
 for root, dirs, files in os.walk(inp_dir):
-    rn_root = rn(root.replace(inp_dir, out_dir))
+    rn_root = replace_sample_names_in_file_content(root.replace(inp_dir, out_dir))
+    rn_root_hg38 = replace_sample_names_in_file_content(root.replace(inp_dir, out_dir_hg38))
     for dname in dirs:
         dpath = os.path.join(root, dname)
-        rn_dpath = join(rn_root, rn(dname))
+        rn_dpath = join(rn_root, replace_sample_names_in_file_content(dname))
+        rn_dpath_hg38 = join(rn_root_hg38, replace_sample_names_in_file_content(dname))
         safe_mkdir(rn_dpath)
+        safe_mkdir(rn_dpath_hg38)
 
     for fname in files:
         fpath = os.path.join(root, fname)
-        rn_fpath = join(rn_root, rn(fname))
-        if not rn_fpath.endswith('.zip'):
+        rn_fpath = join(rn_root, replace_sample_names_in_file_content(fname))
+        rn_fpath_hg38 = join(rn_root_hg38, replace_sample_names_in_file_content(fname))
+
+        if not fpath.endswith('.zip'):
             cont = open(fpath).read()
-            rn_cont = rn(cont)
+            rn_cont = replace_sample_names_in_file_content(cont)
             with open(rn_fpath, 'w') as out:
                 out.write(rn_cont)
+
+            if rn_fpath.endswith('-idxstats.txt') or\
+                    rn_fpath.endswith('.mosdepth.region.dist.txt') or\
+                    rn_fpath.endswith('-indexcov.roc'):
+                rn_cont = replace_chrom_names_in_file_content(rn_cont)
+            with open(rn_fpath_hg38, 'w') as out:
+                out.write(rn_cont)
+
         else:
             shutil.copy(fpath, rn_fpath)
+            shutil.copy(fpath, rn_fpath_hg38)
 

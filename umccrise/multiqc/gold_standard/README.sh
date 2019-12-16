@@ -12,7 +12,7 @@ umccrise final -c -j30 -o ${DIR} multiqc -s E201,E199,E194,E190,E202
 cd making_background_qc
 
 # Subset filelist to QC files only:
-DIR_QCONLY=making_background_qc/${DIR}.qconly
+DIR_QCONLY=${DIR}.qconly
 mkdir ${DIR_QCONLY}
 for batch in E201 E199 E194 E190 E202 ; do
     cat ${DIR}/work/${batch}_*/multiqc_data/filelist.txt | grep -v gold_standard | grep ${batch}\
@@ -27,4 +27,5 @@ for fpath in $(cat ${DIR_QCONLY}/background_multiqc_filelist.txt) ; do
 done
 
 # Rename sample IDs in all files and filenames into target nice names (Alice, Bob, ...)
-python rename.py ${DIR_QCONLY} ${DIR_QCONLY}.renamed
+python rename.py ${DIR_QCONLY} ${DIR_QCONLY}.renamed ${DIR_QCONLY}.renamed_hg38
+
