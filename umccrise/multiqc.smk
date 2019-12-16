@@ -28,17 +28,17 @@ rule prep_multiqc_data:
         germline_stats          = rules.germline_stats_report.output[0],
         bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
         bcftools_germline_stats = rules.bcftools_stats_germline.output[0],
+        prog_versions           = join(run.date_dir, 'programs.txt'),
+        data_versions           = join(run.date_dir, 'data_versions.csv'),
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
-        programs            = '{batch}/log/programs.txt',
+        prog_versions       = '{batch}/log/programs.txt',
         data_versions       = '{batch}/log/data_versions.txt',
     params:
         data_dir        = 'work/{batch}/multiqc_data',
         tumor_name      = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_name     = lambda wc: batch_by_name[wc.batch].normal.name,
-        prog_versions   = join(run.date_dir, 'programs.txt'),
-        data_versions   = join(run.date_dir, 'data_versions.csv'),
         genome_build    = run.genome_build
     group: 'multiqc'
     run:
@@ -49,9 +49,9 @@ rule prep_multiqc_data:
             normal_sample=params.normal_name,
             base_dirpath=report_base_path,
             analysis_dir=run.date_dir,
-            prog_versions_fpath=verify_file(params.prog_versions, silent=True),
-            data_versions_fpath=verify_file(params.data_versions, silent=True),
-            new_dir_for_versions=dirname(output.programs),
+            prog_versions_fpath=verify_file(input.prog_versions, silent=True),
+            data_versions_fpath=verify_file(input.data_versions, silent=True),
+            new_dir_for_versions=dirname(output.prog_versions),
         )
         gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
         if params.genome_build == 'hg38':

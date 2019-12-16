@@ -218,6 +218,7 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
 
     # prog versions
     # if prog_versions_fpath and new_dir_for_versions and verify_file(prog_versions_fpath, silent=True):
+    info('Adding umccrise versoin into prog_versions file ' + prog_versions_fpath)
     with open(prog_versions_fpath) as f:
         program_versions = dict()
         for l in f:
@@ -233,8 +234,8 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
     with open(new_prog_versions_fpath, 'w') as f:
         for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
             f.write(p + ',' + v + '\n')
+    info('Saved prog_versions file into ' + new_prog_versions_fpath)
     assert exists(new_prog_versions_fpath)
-    print('new_prog_versions_fpath:', new_prog_versions_fpath)
 
     programs_url = relpath(new_prog_versions_fpath, base_dirpath)
     run_info_dict['program_versions'] = f'<a href="{programs_url}">program versions</a>'
@@ -243,6 +244,7 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
     # if data_versions_fpath and new_dir_for_versions and verify_file(data_versions_fpath, silent=True):
     new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath).replace(".csv", ".txt"))
     run_simple(f'cp {data_versions_fpath} {new_data_versions_fpath}')
+    info('Saved data_versions file into ' + new_data_versions_fpath)
     assert exists(new_data_versions_fpath)
     data_versions_url = relpath(new_data_versions_fpath, base_dirpath)
     run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
