@@ -1070,31 +1070,37 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.r
 
 <a href="#top">Back to top</a>
 
-### Report Inputs
-
-```{r}
-dplyr::tibble(key = names(params), value = unlist(params)) %>%
-  dplyr::filter(!grepl("_version", key)) %>%
-  knitr::kable(format = "html") %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
-  kableExtra::column_spec(1, bold = TRUE)
-```
-
 ### Conda Pkgs Main
 
 ```{r conda_list_main}
 conda_pkgs <- readr::read_table2(params$conda_list, col_names = c("name", "version", "build", "channel", "env"), col_types = "ccccc") %>%
   dplyr::arrange(name) %>%
   dplyr::group_by(name, version, build, channel) %>%
-  dplyr::summarise(envs = paste(env, collapse = ","))
+  dplyr::summarise(envs = paste(env, collapse = ", "))
+
+main_pkgs <- c(
+  "^bedtools$", "^bed_annotation$", "^bcftools$", "^break-point-inspector$", "^bwa",
+  "^cacao", "^conpair$", "^cpsr", "^gatk", "^hmftools", "^hpc", "^mosdepth$", "^multiqc", "^ngs",
+  "^pcgr", "^python$", "^r-base$", "^samtools$", "snakemake",
+  "^umccrise$", "^vcfanno$") %>%
+  paste(collapse = "|")
 
 conda_pkgs %>%
-  dplyr::filter(grepl("hmftools|bcftools|^samtools|umccrise|r-base$", name)) %>%
+  dplyr::filter(grepl(main_pkgs, name)) %>%
   dplyr::arrange(desc(name)) %>%
   knitr::kable(format = "html") %>%
   kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE) %>%
   kableExtra::scroll_box(height = "400px")
+```
+
+### Report Inputs
+
+```{r}
+dplyr::tibble(key = names(params), value = unlist(params)) %>%
+  knitr::kable(format = "html") %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+  kableExtra::column_spec(1, bold = TRUE)
 ```
 
 ### Conda Pkgs All
