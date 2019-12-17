@@ -7,7 +7,7 @@ import glob
 from umccrise import package_path
 
 
-localrules: rmd, conda_list
+localrules: rmd
 
 
 ## Allelic frequencies
@@ -113,11 +113,13 @@ rule somatic_to_hg19:
 #    shell:
 #        'cut -f1-6,11,13 {input} > {output}'
 
+# I hope this can work on a worker node with the other rmd groupies. If not, add to localrules.
 rule conda_list:
   params:
     env=['umccrise', 'umccrise_pcgr', 'umccrise_hmf', 'umccrise_cancer_report']
   output:
     txt='work/{batch}/rmd/conda_pkg_list.txt'
+  group: "rmd"
   shell:
     "for e in {params.env}; do conda list --name $e | awk -v var=$e '{{ print $0, var }}' | grep -v ^# >> {output} ; done"
 
@@ -147,10 +149,7 @@ rule cancer_report:
         purple_rainfall_png  = rules.purple_run.output.rainfall_png,
         purple_baf_png       = rules.purple_circos_baf.output.png,
 
-        purple_version       = rules.purple_run.output.version_build,
-        amber_version        = rules.purple_amber.output.version_build,
-        cobalt_version       = rules.purple_cobalt.output.version_build,
-        conda_list           = rules.conda_list.txt,
+        conda_list           = rules.conda_list.output.txt,
 
     params:
         report_rmd = 'cancer_report.Rmd',
@@ -166,9 +165,6 @@ rule cancer_report:
         purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
         purple_qc           = lambda wc, input: abspath(input.purple_qc),
-        purple_version      = lambda wc, input: abspath(input.purple_version),
-        amber_version       = lambda wc, input: abspath(input.amber_version),
-        cobalt_version      = lambda wc, input: abspath(input.cobalt_version),
         conda_list          = lambda wc, input: abspath(input.conda_list),
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
@@ -210,9 +206,6 @@ purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_purity='{params.purple_purity}', \
 purple_qc='{params.purple_qc}', \
-purple_version='{params.purple_version}', \
-amber_version='{params.amber_version}', \
-cobalt_version='{params.cobalt_version}', \
 conda_list='{params.conda_list}' \
 ))" ; \
 cd {params.work_dir} ; \

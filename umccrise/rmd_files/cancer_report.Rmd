@@ -24,9 +24,6 @@ params:
   purple_purity: 'x'
   purple_qc: 'x'
   conda_list: 'x'
-  purple_version: 'x'
-  amber_version: 'x'
-  cobalt_version: 'x'
 description: "Analysis of tumor/normal samples at UMCCR"
 title: "`r paste(params$title, params$batch_name)`"
 ---
@@ -87,9 +84,6 @@ params_tmp <- list(
     purple_cnv='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.cnv.somatic.tsv',
     purple_purity='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.purity.tsv',
     purple_qc='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.qc',
-    purple_version='data/purple/purple.version',
-    amber_version='data/purple/amber.version',
-    cobalt_version='data/purple/cobalt.version',
     conda_list='data/conda_pkg_list.txt'
     )
 )
@@ -153,7 +147,6 @@ af_stats <- af_both %>%
                    median = round(median(af), 2),
                    mode = round(mode2(af), 2)) %>%
   tidyr::complete(set, fill = list(n = 0))
-
 ```
 
 ```{r mutational_sigs_prep}
@@ -430,6 +423,18 @@ nms_purple_cnv <- c("chromosome", "start", "end", "copyNumber", "bafCount", "obs
 # sanity checks in case something changes between versions (PURPLE v2.34 as of 2019-09-29)
 stopifnot(all(names(purple_global_cnv) == nms_purple_cnv))
 ```
+
+## Summary
+
+* Sample Name
+* Genome Assembly
+* Inferred Sex
+* SV + SNV counts
+* CNV Summary
+
+* Top MutSigs:
+
+
 
 ## Somatic Mutation Profiles {#mutation-profiles}
 
@@ -1065,24 +1070,6 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.r
 
 <a href="#top">Back to top</a>
 
-```{r um_version}
-umv <- "unavailable"
-if (Sys.which("umccrise") != "") {
-  umv <- system("umccrise --version", intern = TRUE) %>%
-    sub("umccrise, version (.*)", "\\1", .)
-}
-
-```
-
-```{r purple_version_func}
-print_purple_version <- function(x) {
-  d <- readr::read_delim(x, delim = "=", col_names = c("key", "value"), col_types = "cc")
-  stopifnot(d$key == c("version", "build.date"))
-  v <- structure(d$value, names = d$key)
-  glue::glue("{v['version']} ({v['build.date']})")
-}
-```
-
 ### Report Inputs
 
 ```{r}
@@ -1093,36 +1080,39 @@ dplyr::tibble(key = names(params), value = unlist(params)) %>%
   kableExtra::column_spec(1, bold = TRUE)
 ```
 
+### Conda Pkgs Main
 
+```{r conda_list_main}
+conda_pkgs <- readr::read_table2(params$conda_list, col_names = c("name", "version", "build", "channel", "env"), col_types = "ccccc") %>%
+  dplyr::arrange(name) %>%
+  dplyr::group_by(name, version, build, channel) %>%
+  dplyr::summarise(envs = paste(env, collapse = ","))
 
+conda_pkgs %>%
+  dplyr::filter(grepl("hmftools|bcftools|^samtools|umccrise|r-base$", name)) %>%
+  dplyr::arrange(desc(name)) %>%
+  knitr::kable(format = "html") %>%
+  kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
+  kableExtra::column_spec(1, bold = TRUE) %>%
+  kableExtra::scroll_box(height = "400px")
+```
 
-### Conda Packages
+### Conda Pkgs All
 
-| Tool         | Version |
-|--------------|---------|
-| [umccrise](https://github.com/umccr/umccrise) | `r umv` |
-| [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) | `r print_purple_version(params$purple_version)` |
-| [AMBER](https://github.com/hartwigmedical/hmftools/tree/master/amber) | `r print_purple_version(params$amber_version)`  |
-| [COBALT](https://github.com/hartwigmedical/hmftools/tree/master/count-bam-lines) | `r print_purple_version(params$cobalt_version)` |
-
-### Conda Packages All
-
-```{r conda_list}
-readr::read_table2(params$conda_list, col_names = c("name", "version", "build", "channel", "env"), col_types = "ccccc") %>%
+```{r conda_list_all}
+conda_pkgs %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 rownames = FALSE, extensions = c("Scroller", "Buttons"),
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
                                buttons = c('csv'), dom = 'Bfrtip'))
 ```
 
-### R Packages
-
-```{r session_info}
+```{r session_info, eval=F}
 si <- devtools::session_info(include_base = TRUE)
 si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
-si_pkg <- unclass(si$packages) %>%
-  dplyr::as_tibble() %>%
-  dplyr::select(package, version = ondiskversion, path, datestamp = date)
+# si_pkg <- unclass(si$packages) %>%
+#   dplyr::as_tibble() %>%
+#   dplyr::select(package, version = ondiskversion, path, datestamp = date)
 
 dplyr::tibble(var = row.names(si_pl),
               value = si_pl[, , drop = TRUE]) %>%
@@ -1131,7 +1121,7 @@ dplyr::tibble(var = row.names(si_pl),
   kableExtra::column_spec(1, bold = TRUE)
 ```
 
-```{r session_info_pkgs}
+```{r session_info_pkgs, eval=F}
 knitr::kable(si_pkg, format = "html") %>%
   kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE) %>%
