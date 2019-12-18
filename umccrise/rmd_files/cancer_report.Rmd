@@ -408,7 +408,7 @@ purple_gene_cnv <- purple_gene_cnv %>%
                   TRUE ~ "")) %>%
   dplyr::select(gene, minCN = minCopyNumber, maxCN = maxCopyNumber,
                 chrom = chromosome, start, end,
-                chrBand = chromosomeBand, onco_or_ts, transcriptID, minMinAllPl = minMinorAllelePloidy,
+                chrBand = chromosomeBand, onco_or_ts, transcriptID, minMinorAllelePloidy,
                 somReg = somaticRegions, germDelReg, minReg = minRegions,
                 minRegStartEnd, minRegSupportStartEndMethod)
 ```
@@ -498,7 +498,7 @@ The following post-processing steps occur:
 
 ```{r allele_freq_plot_stats}
 ggplot(data = af_both, aes(af)) +
-  geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#006400") +
+  geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#800080") +
   facet_wrap(~set, scales = 'free_y', drop = FALSE) +
   scale_x_continuous(name = "Allele Frequency",
                      breaks = seq(0, 1, by = 0.1),
@@ -932,20 +932,27 @@ purple_qc_summary %>%
 PURPLE copy number alterations in the UMCCR Cancer Gene panel (~1,200 genes) - description
 is from <https://github.com/hartwigmedical/hmftools/blob/master/purity-ploidy-estimator/README.md#gene-copy-number-file>
 
-| Column                  |  Description |
-|-------------------------|--------------|
-| gene  | Name of gene |
-| minCN/maxCN | Min/Max copy number found in gene exons |
-| chrom/start/end  | Chromosome/start/end location of gene transcript |
-| chrBand | Chromosome band of the gene |
-| onco_or_ts | oncogene ('oncogene'), tumor suppressor ('tsgene'), or both ('onco+ts'), as reported by [Cancermine](https://github.com/jakelever/cancermine) |
-| transcriptID | Ensembl transcript ID (dot version) |
-| minMinAllPl | Minimum allele ploidy found over the gene exons - useful for identifying LOH events |
-| somReg | Count of somatic copy number regions this gene spans |
-| germDelReg | Number of regions spanned by this gene that are (homozygously deleted in the germline / both heterozygously deleted in the germline and homozygously deleted in the tumor) |
-| minReg | Number of somatic regions inside the gene that share the min copy number |
-| minRegStartEnd | Start/End base of the copy number region overlapping the gene with the minimum copy number |
-| minRegSupportStartEndMethod | Start/end support of the CN region overlapping the gene with the min CN (plus determination method) |
+```{r purple_gene_cnv_description}
+dplyr::tribble(
+  ~Column, ~Description,
+  "gene", "Name of gene",
+  "minCN/maxCN", "Min/Max copy number found in gene exons",
+  "chrom/start/end", "Chromosome/start/end location of gene transcript",
+  "chrBand", "Chromosome band of the gene",
+  "onco_or_ts", "oncogene ('oncogene'), tumor suppressor ('tsgene'), or both ('onco+ts'), as reported by [Cancermine](https://github.com/jakelever/cancermine)",
+  "transcriptID", "Ensembl transcript ID (dot version)",
+  "minMinorAllelePloidy", "Minimum allele ploidy found over the gene exons - useful for identifying LOH events",
+  "somReg (somaticRegions)", "Count of somatic copy number regions this gene spans",
+  "germDelReg (germlineHomDeletionRegions / germlineHetToHomDeletionRegions)", "Number of regions spanned by this gene that are (homozygously deleted in the germline / both heterozygously deleted in the germline and homozygously deleted in the tumor)",
+  "minReg (minRegions)", "Number of somatic regions inside the gene that share the min copy number",
+  "minRegStartEnd", "Start/End base of the copy number region overlapping the gene with the minimum copy number",
+  "minRegSupportStartEndMethod", "Start/end support of the CN region overlapping the gene with the min CN (plus determination method)"
+) %>%
+  dplyr::mutate(
+    Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
+  knitr::kable(escape = FALSE) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
 
 </details>
 
@@ -954,8 +961,9 @@ is from <https://github.com/hartwigmedical/hmftools/blob/master/purity-ploidy-es
 ```{r purple_gene_cnv_tab}
 purple_gene_cnv %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                rownames = FALSE, extensions = c("Scroller", "Buttons"),
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+                options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
                                buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
   DT::formatCurrency(~ start + end, currency = "", interval = 3, mark = ",", digits = 0) %>%
   DT::formatRound(~ minCN + maxCN, digits = 1)
@@ -975,17 +983,23 @@ PURPLE copy number profile of all (contiguous) segments of the tumor sample - de
 is from <https://github.com/hartwigmedical/hmftools/blob/master/purity-ploidy-estimator/README.md#copy-number-file>
 
 
-| Column | Description |
-|--------|-------------|
-| `Chr`/`Start`/`End` | Coordinates of copy number segment |
-| `CN` | Fitted absolute copy number of segment adjusted for purity and ploidy |
-| `Ploidy Min+Maj` | Ploidy of minor + major allele adjusted for purity |
-| `BAF` | Tumor BAF after adjusted for purity and ploidy |
-| `BafCount` | Count of AMBER baf points covered by this segment |
-| `Start/End SegSupport` | Type of SV support for the CN breakpoint at start/end of region. Allowed values: `CENTROMERE`, `TELOMERE`, `INV`, `DEL`, `DUP`, `BND` (translocation), `SGL` (single breakend SV support), `NONE` (no SV support for CN breakpoint), `MULT` (multiple SV support at exact breakpoint) |
-| `Method` | Method used to determine the CN of the region. Allowed values: `BAF_WEIGHTED` (avg of all depth windows for the region), `STRUCTURAL_VARIANT` (inferred using ploidy of flanking SVs), `LONG_ARM` (inferred from the long arm), `GERMLINE_AMPLIFICATION` (inferred using special logic to handle regions of germline amplification) |
-| `windowCount` | Count of COBALT windows covered by this segment |
-| `GC` | Proportion of segment that is G or C |
+```{r purple_seg_description}
+dplyr::tribble(
+  ~Column, ~Description,
+  "Chr/Start/End", "Coordinates of copy number segment",
+  "CN", "Fitted absolute copy number of segment adjusted for purity and ploidy",
+  "Ploidy Min+Maj", "Ploidy of minor + major allele adjusted for purity",
+  "BAF", "Tumor BAF after adjusted for purity and ploidy",
+  "BafCount", "Count of AMBER baf points covered by this segment",
+  "Start/End SegSupport", "Type of SV support for the CN breakpoint at start/end of region. Allowed values: CENTROMERE, TELOMERE, INV, DEL, DUP, BND (translocation), SGL (single breakend SV support), NONE (no SV support for CN breakpoint), MULT (multiple SV support at exact breakpoint)",
+  "Method", "Method used to determine the CN of the region. Allowed values: BAF_WEIGHTED (avg of all depth windows for the region), STRUCTURAL_VARIANT (inferred using ploidy of flanking SVs), LONG_ARM (inferred from the long arm), GERMLINE_AMPLIFICATION (inferred using special logic to handle regions of germline amplification)",
+  "windowCount", "Count of COBALT windows covered by this segment",
+  "GC", "Proportion of segment that is G or C") %>%
+  dplyr::mutate(
+    Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
+  knitr::kable(escape = FALSE) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
 
 </details>
 
@@ -1006,8 +1020,9 @@ purple_global_cnv %>%
   dplyr::select(Chr, Start = start, End = end, CN = copyNumber, `Ploidy Min+Maj`,
                 `Start/End SegSupport`, Method = method, `BAF (count)`, `GC (windowCount)`) %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                rownames = FALSE, extensions = c("Scroller", "Buttons"),
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+                options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
                                buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
@@ -1092,10 +1107,12 @@ conda_pkgs <- readr::read_table2(params$conda_list, col_names = c("name", "versi
   dplyr::summarise(envs = paste(env, collapse = ", "))
 
 main_pkgs <- c(
-  "^bedtools$", "^bed_annotation$", "^bcftools$", "^break-point-inspector$", "^bwa",
-  "^cacao", "^conpair$", "^cpsr", "^gatk", "^hmftools", "^hpc", "^mosdepth$", "^multiqc", "^ngs",
-  "^pcgr", "^python$", "^r-base$", "^samtools$", "snakemake",
-  "^umccrise$", "^vcfanno$") %>%
+  "^cacao", "^conpair$", "^cpsr",
+  "^gridss", "^hmftools", "^hpc", "^htslib$",
+  "^multiqc", "^ngs",
+  "pandoc", "^pcgr", "^python$",
+  "^r-base$", "snakemake",
+  "^umccrise$") %>%
   paste(collapse = "|")
 
 conda_pkgs %>%
