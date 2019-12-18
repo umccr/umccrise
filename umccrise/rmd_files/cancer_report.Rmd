@@ -105,14 +105,15 @@ library(DT)
 library(dplyr)
 library(glue)
 library(ggplot2)
+library(htmltools)
 library(knitr)
 library(kableExtra)
 library(MutationalPatterns)
+library(purrr)
 library(readr)
 library(rmarkdown)
 library(stringr)
 library(tidyr)
-library(purrr)
 ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
 library(ref_genome, character.only = TRUE)
 tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
@@ -366,8 +367,7 @@ purple_qc_summary <- dplyr::tribble(
   'Diploidy Prop', glue('{p["diploidProportion"]} ({p["minDiploidProportion"]}-{p["maxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
   'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
   'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
-  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
-  'Purple Version', p["version"], "")
+  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'))
 ```
 
 ```{r purple_gene_cnv_prep}
@@ -426,15 +426,40 @@ stopifnot(all(names(purple_global_cnv) == nms_purple_cnv))
 
 ## Summary
 
-* Sample Name
-* Genome Assembly
-* Inferred Sex
-* SV + SNV counts
-* CNV Summary
+```{r summary_tables}
+summarise_sigs <- function(mut_sig_contr) {
+  mut_sig_contr %>%
+    head(2) %>%
+    dplyr::mutate(string = paste0(Signature, " (", Contribution, ")")) %>%
+    pull(string) %>%
+    paste(collapse = ", ")
+}
 
-* Top MutSigs:
+cnv_summary <- purple_global_cnv %>%
+  dplyr::rename(chr = chromosome, tot_cn = copyNumber) %>%
+  dplyr::select(chr, start, end, tot_cn) %>%
+  dplyr::mutate(seg_len = end - start) %>%
+  dplyr::summarise(Min = round(min(tot_cn), 2),
+                   Max = round(max(tot_cn), 2),
+                   N = n()) %>% unlist()
 
-
+purple_qc_summary %>%
+  dplyr::filter(Variable %in% c("Gender", "Purity", "Ploidy")) %>%
+  dplyr::select(Variable, value) %>%
+  dplyr::bind_rows(
+    dplyr::tribble(
+      ~Variable, ~value,
+      "Top MutSigs", paste("Old:", summarise_sigs(mut_sig_contr),
+                           "- New:", summarise_sigs(mut_sig_contr2)),
+      "CNV Summary", paste0(names(cnv_summary), ": ", cnv_summary, collapse = "; "),
+      "Genome", params$genome_build
+    )
+  ) %>%
+  dplyr::mutate(
+    Variable = kableExtra::cell_spec(Variable, bold = TRUE)) %>%
+  knitr::kable(escape = FALSE) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
 
 ## Somatic Mutation Profiles {#mutation-profiles}
 
@@ -891,6 +916,7 @@ purple_qc_summary %>%
                                     TRUE ~ "black"))) %>%
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
+
 ```
 
 ### UMCCR Gene CNV Calls
@@ -958,23 +984,6 @@ is from <https://github.com/hartwigmedical/hmftools/blob/master/purity-ploidy-es
 | `windowCount` | Count of COBALT windows covered by this segment |
 | `GC` | Proportion of segment that is G or C |
 
-
-Summary of the CNV segments:
-
-```{r purple_cnv_segs_summary}
-purple_global_cnv %>%
-  dplyr::rename(chr = chromosome, tot_cn = copyNumber) %>%
-  dplyr::select(chr, start, end, tot_cn) %>%
-  dplyr::mutate(seg_len = end - start) %>%
-  dplyr::summarise(n = n(),
-                   mean_len = round(mean(seg_len), 0),
-                   med_len = round(median(seg_len), 0),
-                   min_cn = round(min(tot_cn), 2),
-                   max_cn = round(max(tot_cn), 2)) %>%
-  knitr::kable(format.args = list(big.mark = ",")) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
-```
-
 </details>
 
 <p>&nbsp;</p>
@@ -1003,15 +1012,34 @@ purple_global_cnv %>%
 ### PURPLE Charts {.tabset .tabset-fade}
 PURPLE generates charts for summarising tumor sample characteristics.
 
-#### 1. Purity/ploidy
+#### Rainfall
+If a somatic variant VCF has been supplied, a figure will be produced
+showing the somatic variant ploidy broken down by copy number as well
+as a rainfall plot with kataegis clusters highlighted in grey.
+
+Rainfall plots show the distribution of mutations along the genome, with mutation types
+indicated with different colors. The y-axis corresponds to the distance of a mutation from the
+previous mutation, and is log10 transformed. Drop-downs from the plots indicate clusters or
+"hotspots" of mutations.
+
+```{r purple-plot-somatic, out.width="40%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.png')))
+```
+
+```{r purple-plot-somaticrainfall, out.width="90%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.rainfall.png')))
+```
+
+
+#### Purity/ploidy
 The following 'sunrise' chart shows the range of scores of all examined solutions of
 purity and ploidy. Crosshairs identify the best purity / ploidy solution.
 
-```{r purple-other-plots1, out.width="40%"}
+```{r purple-plot-purityrange, out.width="40%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.purity.range.png')))
 ```
 
-#### 2. Clonality
+#### Clonality
 The following diagram illustrates the clonality model of a typical sample.
 
 The top figure shows the histogram of somatic ploidy for all SNVs and INDELs in blue.
@@ -1022,47 +1050,29 @@ peaks are below the 0.85 subclonal threshold.
 We can determine the likelihood of a variant being subclonal at
 any given ploidy as shown in the bottom half of the figure.
 
-```{r purple-other-plots2, out.width="50%"}
+```{r purple-plot-somaticclonality, out.width="50%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.clonality.png')))
 ```
 
-#### 3. Segment
+#### Segment
 The contribution of each fitted segment to the final score of the best fit is shown in
 the following figure. Each segment is divided into its major and minor allele ploidy.
 The area of each circle shows the weight (AMBER baf count) of each segment.
 
-```{r purple-other-plots3, out.width="40%"}
+```{r purple-plot-segment, out.width="40%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.segment.png')))
 ```
 
-#### 4. Copy number / Minor allele ploidy
+#### Copy number / Minor allele ploidy
 The following figures show the AMBER BAF count weighted distribution of
 copy number and minor allele ploidy throughout the fitted segments.
 Copy numbers are broken down by colour into their respective minor
 allele ploidy (MAP) while the minor allele ploidy figure is broken
 down by copy number.
 
-```{r purple-other-plots4, out.width="40%"}
+```{r purple-plot-copynumber, out.width="40%"}
 knitr::include_graphics(c(file.path(img_dir, paste0(params$batch_name, '.copynumber.png')),
                         file.path(img_dir, paste0(params$batch_name, '.map.png'))))
-```
-
-#### 5. Rainfall
-If a somatic variant VCF has been supplied, a figure will be produced
-showing the somatic variant ploidy broken down by copy number as well
-as a rainfall plot with kataegis clusters highlighted in grey.
-
-Rainfall plots show the distribution of mutations along the genome, with mutation types
-indicated with different colors. The y-axis corresponds to the distance of a mutation from the
-previous mutation, and is log10 transformed. Drop-downs from the plots indicate clusters or
-"hotspots" of mutations.
-
-```{r purple-other-plots6, out.width="40%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.png')))
-```
-
-```{r purple-other-plots7, out.width="90%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.rainfall.png')))
 ```
 
 
