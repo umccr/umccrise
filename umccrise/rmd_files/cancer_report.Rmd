@@ -13,8 +13,8 @@ params:
   title: "Cancer Report for Sample "
   tumor_name: 'x'
   batch_name: 'x'
-  genome_build: 'hg19' # 'hg38'
-  key_genes: '/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
+  genome_build: 'hg38' # 'hg19'
+  key_genes: 'x'
   af_global: 'x'
   af_keygenes: 'x'
   somatic_snv: 'x'
@@ -42,53 +42,56 @@ knitr::opts_chunk$set(collapse = TRUE, echo = FALSE,
 ```
 
 ```{r render_report_interactively, eval=F, echo=F}
+batch_name <- "SBJ00202__SBJ00202_MDX190201_L1900936"
+tumor_name <- strsplit(batch_name, "__")[[1]][2]
+
 params_tmp <- list(
   spartan = list(
-    tumor_name='PRJ180471_BK221-NET1',
-    batch_name='BK221-NET1__PRJ180471_BK221-NET1',
-    genome_build='hg19',
-    key_genes='/Users/vsaveliev/spa/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-    af_global=      '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor.txt',
-    af_keygenes=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/afs/af_tumor_keygenes.txt',
-    somatic_snv=    '~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/ensemble-with_chr_prefix.vcf',
-    somatic_sv='/Users/vsaveliev/spa/tmp/umccrise_test_sv_newtsv_cluster2/E180__PRJ180261_E180-T01-D/structural/E180__PRJ180261_E180-T01-D-manta.tsv',
-    purple_gene_cnv='~/spa/tmp/umccrise_test_sv_newtsv_cluster5/work/E180__PRJ180261_E180-T01-D/rmd/purple.tsv',
-    purple_cnv='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.cnv',
-    purple_purity='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.purity',
-    purple_qc='/data/cephfs/punim0010/projects/Diakumis/test_umccrise/bk221-net1/umccrised/work/BK221-NET1__PRJ180471_BK221-NET1/purple/BK221-NET1__PRJ180471_BK221-NET1.purple.qc'),
+    tumor_name='',
+    batch_name='',
+    genome_build='',
+    key_genes='',
+    af_global='',
+    af_keygenes='',
+    somatic_snv='',
+    somatic_sv='',
+    purple_gene_cnv='',
+    purple_cnv='',
+    purple_purity='',
+    purple_qc=''),
 
   raijin = list(
-    tumor_name='PRJ180598_SFRC01073-S2T',
-    batch_name='SFRC01073__PRJ180598_SFRC01073-S2T',
-    genome_build='hg19',
-    key_genes='/g/data3/gx8/projects/Diakumis/umccrise/umccrise/envs/src/ngs-utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-    af_global='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/afs/af_tumor.txt',
-    af_keygenes='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/afs/af_tumor_keygenes.txt',
-    somatic_snv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/ensemble-with_chr_prefix.vcf',
-    somatic_sv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/SFRC01073__PRJ180598_SFRC01073-S2T/structural/SFRC01073__PRJ180598_SFRC01073-S2T-manta.tsv',
-    purple_gene_cnv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/rmd/purple.tsv',
-    purple_cnv='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.cnv',
-    purple_purity='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.purity',
-    purple_qc='/g/data3/gx8/projects/Diakumis/umccrise/test_umccrise/umccrised/work/SFRC01073__PRJ180598_SFRC01073-S2T/purple/SFRC01073__PRJ180598_SFRC01073-S2T.purple.qc'),
+    tumor_name='',
+    batch_name='',
+    genome_build='',
+    key_genes='',
+    af_global='',
+    af_keygenes='',
+    somatic_snv='',
+    somatic_sv='',
+    purple_gene_cnv='',
+    purple_cnv='',
+    purple_purity='',
+    purple_qc=''),
 
   local = list(
-    tumor_name='PRJ180664_10_DNA018097_FFPE',
-    batch_name='CUP-Pairs10__PRJ180664_10_DNA018097_FFPE',
     genome_build='hg38',
-    key_genes='~/Desktop/projects/umccr/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-    af_global='data/sig/af_tumor_notempty.txt',
-    af_keygenes= 'data/sig/keygenes_notempty.txt',
-    somatic_snv='data/sig/vcf4mutsig/B_ALL_Case_10/ensemble-with_chr_prefix.vcf',
-    somatic_sv='data/CUP-Pairs8__PRJ180660_8_DNA009529_FFPE-manta.tsv',
-    purple_gene_cnv='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.cnv.gene.tsv',
-    purple_cnv='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.cnv.somatic.tsv',
-    purple_purity='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.purity.tsv',
-    purple_qc='data/purple/CUP-Pairs10__PRJ180664_10_DNA018097_FFPE.purple.qc',
-    conda_list='data/conda_pkg_list.txt'
+    key_genes='data/ref/umccr_cancer_genes.latest.tsv',
+    af_global=glue::glue('data/work/{batch_name}/rmd/afs/af_tumor.txt'),
+    af_keygenes=glue::glue('data/work/{batch_name}/rmd/afs/af_tumor_keygenes.txt'),
+    somatic_snv=glue::glue('data/work/{batch_name}/rmd/ensemble-with_chr_prefix.vcf'),
+    somatic_sv=glue::glue('data/{batch_name}/structural/{batch_name}-manta.tsv'),
+    purple_gene_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv'),
+    purple_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv'),
+    purple_purity=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.purity.tsv'),
+    purple_qc=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.qc'),
+    conda_list=glue::glue('data/work/{batch_name}/rmd/conda_pkg_list.txt')
     )
 )
 
 params <- params_tmp[["local"]]
+params$batch_name <- batch_name
+params$tumor_name <- tumor_name
 
 render_me <- function() {
   rmarkdown::render(
@@ -272,7 +275,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   PE = as.integer(PE_alt),
                   VarNum = dplyr::row_number())
 
-  sv_all <- sv_unmelted %>%
+  sv_all <- sv_unmelted %>% # TODO: unnest(annotation = c(...)) solves the warning
     tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # unpack multiple annotations per region
     tidyr::separate(annotation, c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
@@ -451,7 +454,7 @@ purple_qc_summary %>%
       ~Variable, ~value,
       "Top MutSigs", paste("Old:", summarise_sigs(mut_sig_contr),
                            "- New:", summarise_sigs(mut_sig_contr2)),
-      "CNV Summary", paste0(names(cnv_summary), ": ", cnv_summary, collapse = "; "),
+      "CNVs Somatic", paste0(names(cnv_summary), ": ", cnv_summary, collapse = "; "),
       "Genome", params$genome_build
     )
   ) %>%
