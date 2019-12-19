@@ -3,7 +3,7 @@ author: "University of Melbourne Centre for Cancer Research"
 date: "`r format(Sys.time(), '%a %Y-%b-%d')`"
 output:
   html_document:
-    theme: cosmo
+    theme: cosmo # darkly
     css: style.css
     toc: false
     code_download: true
@@ -803,40 +803,100 @@ The input file corresponds to `umccrised/<batch>/structural/<batch>-manta.tsv`.
 
 It's generated through the following steps:
 
-1. Call variants with manta SV caller
-2. Filter:
-   * require split or paired reads support at least 5x,
-   * for low frequency variants (<10% at both breakpoints), require read support 10x,
-   * require paired reads support to be higher than split read support for BND events
-3. Annotate with [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) based on Ensembl gene model
-4. Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/)
-5. Prioritize variants with [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation) 1(high)-2(moderate)-3(low)-4(no interest):
+### Processing
+* Grab Manta SV calls from bcbio
+  * remove following annotations from Manta VCF:
+    'INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER', 'FILTER/Intergenic', 'FILTER/MissingAnn', 'FILTER/REJECT'
+  * prioritise variants (adds tier info in `INFO/SV_TOP_TIER` field)
+  * output: `work/{batch}/structural/prioritize/{batch}-manta.vcf.gz`
+* Keep PASS variants
+  * if more than 100,000 variants, keep only variants where `INFO/SV_TOP_TIER <= 3`
+  * output: `work/{batch}/structural/keep_pass/{batch}-manta.vcf`
+* Run BreakPointInspector if it was disabled in bcbio
+  * output: `work/{batch}/structural/maybe_bpi/{batch}-manta.vcf`
 
-    * exon loss
-       - on prioritisation gene list (1)
-       - other (2)
-    * gene_fusion
-       - paired (hits two genes)
-          - on list of known pairs (1) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
-          - one gene is a known promiscuous fusion gene (1) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
-          - on list of FusionCatcher known pairs (2)
-          - other:
-             - one or two genes on prioritisation gene list (2)
-             - neither gene on prioritisation gene list (3)
-       - unpaired (hits one gene)
-           - on prioritisation gene list (2)
-           - others (3)
-    * upstream or downstream
-       - on prioritisation gene list genes (2)  - e.g. one gene is got into control of another gene's promoter and get overexpressed (oncogene) or underexpressed (tsgene)
-    * LoF or HIGH impact in a tumor suppressor
-       - on prioritisation gene list (2)
-       - other TS gene (3)
-    * other (4)
+### Filtering
+* For BND variants require paired reads support (PR) to be higher than split read support (SR);
+* Keep `INFO/SV_TOP_TIER <= 2` variants
+* For `INFO/SV_TOP_TIER > 2` variants require split or paired reads support at least 5x;
+* For `INFO/SV_TOP_TIER > 2` variants with low allele frequency at any breakpoint (`BPI_AF[0 or 1] < 0.1`),
+  require SR or PR support of at least 10x;
+* Output (`filtered`): `work/{batch}/structural/filt/{batch}-manta.vcf`
 
-6. Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
+### PURPLE and FFPE conditional
+* If the sample _is not_ FFPE:
+  * feed above `filtered` SVs to PURPLE, which outputs `purple.sv.vcf.gz` that contains rescued SVs
+  * prioritise variants (again)
+  * remove 'INFO/ANN' annotation
+  * output (`final`): `{batch}/structural/{batch}-manta.vcf.gz`
+* If the sample _is_ FFPE:
+  * just copy `filtered` variants and don't do anything
+    (i.e. we don't want the rescued SVs from PURPLE since they'll likely be heaps)
+    (note that PURPLE will still get fed with the `filtered` SVs)
+  * output (`final`): `{batch}/structural/{batch}-manta.vcf.gz`
+
+### TSV final output
+* Input: `final` VCF
+* Output: `{batch}/structural/{batch}-manta.tsv`
+
+```{r manta_tsv_description}
+dplyr::tribble(
+  ~Column, ~Description,
+  "caller", "Manta SV caller",
+  "sample", "Tumor sample name",
+  "chrom", "CHROM",
+  "start", "POS",
+  "end", "INFO/END: End position of the variant described in this record",
+  "svtype", "INFO/SVTYPE: Type of structural variant",
+  "split_read_support", "FORMAT/SR of tumor sample: Split reads for the ref and alt alleles in the order listed, for reads where P(allele|read)>0.999",
+  "paired_support_PE", "FORMAT/PE of tumor sample: ??",
+  "paired_support_PR", "FORMAT/PR of tumor sample: Spanning paired-read support for the ref and alt alleles in the order listed",
+  "BPI_AF", "INFO/BPI_AF: AF at each breakpoint",
+  "somaticscore", "INFO/SOMATICSCORE: Somatic variant quality score",
+  "tier", "INFO/SV_TOP_TIER (or 4 if missing): Highest priority tier for the effects of a variant entry",
+  "annotation", "INFO/SIMPLE_ANN: Simplified structural variant annotation: 'SVTYPE | EFFECT | GENE(s) | TRANSCRIPT | PRIORITY (1-4)'",
+  "AF", "INFO/PURPLE_AF: AF at each breakend (purity adjusted)",
+  "CN", "INFO/PURPLE_CN: CN at each breakend (purity adjusted)",
+  "CN_change", "INFO/PURPLE_CN_CHANGE: change in CN at each breakend (purity adjusted)",
+  "Ploidy", "INFO/PURPLE_PLOIDY: Ploidy of variant (purity adjusted)",
+  "PURPLE_status", "INFERRED if FILTER=INFERRED, or RECOVERED if has INFO/RECOVERED, else blank. INFERRED: Breakend inferred from copy number transition"
+) %>%
+  dplyr::mutate(
+    Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
+  knitr::kable(escape = FALSE) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
+
+### Prioritisation process
+1. Annotate with [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) based on Ensembl gene model
+2. Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/)
+3. Prioritize variants with [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation)
+   1(high)-2(moderate)-3(low)-4(no interest):
+  * exon loss
+     - on prioritisation gene list (1)
+     - other (2)
+  * gene_fusion
+     - paired (hits two genes)
+        - on list of known pairs (1) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
+        - one gene is a known promiscuous fusion gene (1) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
+        - on list of FusionCatcher known pairs (2)
+        - other:
+           - one or two genes on prioritisation gene list (2)
+           - neither gene on prioritisation gene list (3)
+     - unpaired (hits one gene)
+         - on prioritisation gene list (2)
+         - others (3)
+  * upstream or downstream
+     - on prioritisation gene list genes (2)  - e.g. one gene is got into
+       control of another gene's promoter and get overexpressed (oncogene) or underexpressed (tsgene)
+  * LoF or HIGH impact in a tumor suppressor
+     - on prioritisation gene list (2)
+     - other TS gene (3)
+  * other (4)
+
+1. Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
 
 Variants are ordered by tier, then by effect, then by AF.
-
 
 * __Column Description__
 
