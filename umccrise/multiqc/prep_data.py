@@ -10,7 +10,7 @@ import re
 
 from ngs_utils import logger
 from ngs_utils.bcbio import BcbioProject
-from ngs_utils.call_process import run, run_simple
+from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transaction
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
@@ -140,7 +140,7 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
 def make_multiqc_report(conf_yamls, filelist, multiqc_fpath, extra_params=''):
     postproc_multiqc_dir = safe_mkdir(dirname(multiqc_fpath))
 
-    cmdl = (f'multiqc '
+    cmdl = (f'unset https_proxy; multiqc '
             f'-f{" -v" if logger.is_debug else ""} '
             f'-o {postproc_multiqc_dir} '
             f'-l {filelist}')
@@ -157,7 +157,7 @@ def make_multiqc_report(conf_yamls, filelist, multiqc_fpath, extra_params=''):
             os.remove(multiqc_fpath)
         except OSError as e:
             err(e)
-    run(cmdl, env_vars={'https_proxy': None})
+    run_simple(cmdl)
     return multiqc_fpath
 
 
