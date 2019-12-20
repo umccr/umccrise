@@ -56,7 +56,7 @@ def cnt_vars(vcf_path, passed=False):
 
 rule somatic_vcf_pass_sort:
     input:
-        vcf = lambda wc: get_somatic_vcf_path(wc.batch, old_somatic_vcf_suffix),
+        vcf = lambda wc: get_somatic_vcf_path(wc.batch),
     output:
         vcf = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         tbi = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
@@ -149,7 +149,7 @@ rule bcftools_stats_somatic:
 #### Germline ####
 rule germline_vcf_pass:
     input:
-        vcf = lambda wc: get_germline_vcf_path(wc.batch, old_somatic_vcf_suffix),
+        vcf = lambda wc: get_germline_vcf_path(wc.batch),
     output:
         vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-PASS.vcf.gz',
     group: "germline_snv"
