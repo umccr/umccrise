@@ -86,7 +86,7 @@ params_tmp <- list(
     purple_purity=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.purity.tsv'),
     purple_qc=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.qc'),
     conda_list=glue::glue('data/work/{batch_name}/rmd/conda_pkg_list.txt')
-    )
+  )
 )
 
 params <- params_tmp[["local"]]
@@ -182,7 +182,6 @@ cancer_signatures <- cancer_signatures %>%
   as.matrix()
 
 ###--- NEW Sigs ---###
-
 sig_probs2 <- file.path("misc/sig/v3_may2019/sigProfiler_SBS_signatures_2019_05_22.csv")
 cancer_signatures2 <-
   readr::read_csv(sig_probs2, col_types = cols(.default = "d", Type = "c", SubType = "c")) %>%
@@ -664,6 +663,8 @@ and reference signature plots from <https://cancer.sanger.ac.uk/cosmic/signature
 
 </details>
 
+<p>&nbsp;</p>
+
 #### OLD
 
 ```{r mutational_signature_contribution}
@@ -689,12 +690,18 @@ sig_table2 <-
                 signature = paste0("SBS", signature)) %>%
   dplyr::select(Signature = signature, Description = description, Plot)
 
+possible_seq_artefacts <- c("SBS27", "SBS43", "SBS45", "SBS46", "SBS47", "SBS48", "SBS49", "SBS50", "SBS51", "SBS52",
+                            "SBS53", "SBS54", "SBS55", "SBS56", "SBS57", "SBS58", "SBS59", "SBS60")
+
 mut_sig_contr2 %>%
   dplyr::left_join(sig_table2, by = "Signature") %>%
+  dplyr::mutate(Signature = ifelse(Signature %in% possible_seq_artefacts, paste0(Signature, " (SA)"), Signature)) %>%
   knitr::kable() %>%
   kableExtra::kable_styling(font_size = 12) %>%
   kableExtra::scroll_box(height = "500px")
 ```
+
+<p>&nbsp;</p>
 
 ### Rainfall Plot
 Rainfall plots show the distribution of mutations along the genome, with mutation types
@@ -702,7 +709,7 @@ indicated with different colors. The y-axis corresponds to the distance of a mut
 previous mutation, and is log10 transformed. Drop-downs from the plots indicate clusters or
 "hotspots" of mutations.
 
-```{r mutationalpatterns-rainfall, out.width="100%", fig.width=14}
+```{r mutationalpatterns-rainfall, out.width="90%", fig.width=14}
 MutationalPatterns::plot_rainfall(somatic_snv[[1]], chromosomes = seqnames(get(ref_genome))[1:22], cex = 1.2, ylim = 1e+09)
 ```
 
@@ -718,13 +725,27 @@ The first BAF plot is based on PURPLE data and configuration files.
 <details>
 <summary>Description</summary>
 
-* __Track1__: Chromosomes
-* __Track2__: <span style="color:#8A2BE2">Beta Allele Frequency</span>
+* __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
+  (centromeres, heterochromatin & missing short arms)
+* __Track2__: <span style="color:#8A2BE2">Beta Allele Frequency</span>.
   Given that the BAF points correspond to allele frequencies of common heterozygous SNPs,
   there shouldn't be any in chromosome Y (and chromosome X when male).
-* __Track3__: Total Copy Number Changes
-* __Track4__: Minor Copy Number Changes
-* __Track5__ (Inner circle): Observed Structural Variants
+* __Track3__: __Total__ copy number changes adjusted for tumor purity,
+  including focal and chromosomal somatic events.
+  <span style="color:red">Red</span> = Loss; <span style="color:#32CD32">Green</span> = Gain.
+  Scaled from 0 (complete loss) to 6 (high level gains).
+  If > 6, shown as 6 with a green dot on the outermost green gridline.
+* __Track4__: __Minor__ allele copy numbers. Range from 0 to 3.
+  Expected normal minor allele copy number is 1, and anything below 1 is shown
+  as a loss (<span style="color:#EE7600">Orange</span>), representing an LOH event.
+  Minor allele copy numbers above 1 (<span style="color:#7EC0EE">Blue</span>) indicate gains
+  of both A and B alleles.
+* __Track5__ (Inner circle): Observed structural variants within or between the chromosomes.
+    * <span style="color:#7EC0EE">Blue</span> = Translocations
+    * <span style="color:red">Red</span> = Deletions
+    * <span style="color:#e6e600">Yellow</span> = Insertions
+    * <span style="color:#32CD32">Green</span> = Tandem duplications
+    * <span style="color:#000000">Black</span> = Inversions
 
 </details>
 
@@ -776,11 +797,12 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 
 * __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
   (centromeres, heterochromatin & missing short arms)
-* __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Ratios
+* __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Allele Ratios
 * __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
+  Given that the BAF points correspond to allele frequencies of common heterozygous SNPs,
+  there shouldn't be any in chromosome Y (and chromosome X when male).
 
 </details>
-
 
 ```{r circos_default2, out.width="80%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
@@ -803,7 +825,8 @@ The input file corresponds to `umccrised/<batch>/structural/<batch>-manta.tsv`.
 
 It's generated through the following steps:
 
-### Processing
+__Step 1: Processing__
+
 * Grab Manta SV calls from bcbio
   * remove following annotations from Manta VCF:
     'INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER', 'FILTER/Intergenic', 'FILTER/MissingAnn', 'FILTER/REJECT'
@@ -815,7 +838,8 @@ It's generated through the following steps:
 * Run BreakPointInspector if it was disabled in bcbio
   * output: `work/{batch}/structural/maybe_bpi/{batch}-manta.vcf`
 
-### Filtering
+__Step 2: Filtering__
+
 * For BND variants require paired reads support (PR) to be higher than split read support (SR);
 * Keep `INFO/SV_TOP_TIER <= 2` variants
 * For `INFO/SV_TOP_TIER > 2` variants require split or paired reads support at least 5x;
@@ -823,21 +847,23 @@ It's generated through the following steps:
   require SR or PR support of at least 10x;
 * Output (`filtered`): `work/{batch}/structural/filt/{batch}-manta.vcf`
 
-### PURPLE and FFPE conditional
+__Step 3: PURPLE and FFPE conditional__
+
 * If the sample _is not_ FFPE:
   * feed above `filtered` SVs to PURPLE, which outputs `purple.sv.vcf.gz` that contains rescued SVs
   * prioritise variants (again)
   * remove 'INFO/ANN' annotation
-  * output (`final`): `{batch}/structural/{batch}-manta.vcf.gz`
+  * output: `{batch}/structural/{batch}-manta.vcf.gz`
 * If the sample _is_ FFPE:
   * just copy `filtered` variants and don't do anything
     (i.e. we don't want the rescued SVs from PURPLE since they'll likely be heaps)
     (note that PURPLE will still get fed with the `filtered` SVs)
-  * output (`final`): `{batch}/structural/{batch}-manta.vcf.gz`
+  * output: `{batch}/structural/{batch}-manta.vcf.gz`
 
-### TSV final output
-* Input: `final` VCF
-* Output: `{batch}/structural/{batch}-manta.tsv`
+__Step 4: TSV final output__
+
+* Input: `{batch}/structural/{batch}-manta.vcf.gz` VCF
+* Output: `{batch}/structural/{batch}-manta.tsv` TSV
 
 ```{r manta_tsv_description}
 dplyr::tribble(
@@ -867,7 +893,8 @@ dplyr::tribble(
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
 
-### Prioritisation process
+__Prioritisation process__
+
 1. Annotate with [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) based on Ensembl gene model
 2. Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/)
 3. Prioritize variants with [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation)
@@ -894,11 +921,11 @@ dplyr::tribble(
      - other TS gene (3)
   * other (4)
 
-1. Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
+* Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
 
 Variants are ordered by tier, then by effect, then by AF.
 
-* __Column Description__
+* __Report SV Table Column Description__
 
 - `Ploidy`: variant ploidy (purity-adjusted )
 - `AF`: allele frequency at each breakend (`AF_bp1`, `AF_bp2`) and averaged (`AF`) (purity-adjusted)
