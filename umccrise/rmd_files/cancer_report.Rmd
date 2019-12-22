@@ -274,8 +274,9 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   PE = as.integer(PE_alt),
                   VarNum = dplyr::row_number())
 
-  sv_all <- sv_unmelted %>% # TODO: unnest(annotation = c(...)) solves the warning
-    tidyr::unnest(annotation = strsplit(annotation, ',')) %>% # unpack multiple annotations per region
+  sv_all <- sv_unmelted %>%
+    dplyr::mutate(annotation = strsplit(annotation, ',')) %>%
+    tidyr::unnest(annotation) %>% # unpack multiple annotations per region
     tidyr::separate(annotation, c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
     dplyr::arrange(tier, effect, desc(AF), genes) %>%
