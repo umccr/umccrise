@@ -113,11 +113,14 @@ rule sv_maybe_bpi:
         'log/structural/{batch}/{batch}-bpi_stats.txt'
     params:
         xms = 1000,
-        xmx = 2800,
+        xmx = 5000,
         tmp_dir = '{batch}/structural/maybe_bpi/tmp_dir'
     resources:
-        mem_mb = 3000
+        mem_mb = 5000
     run:
+        # Handle SnpEff capitalising ALT (see https://github.com/pcingola/SnpEff/issues/237).
+        # BPI and bedtools>=2.29.2 will crash if left as is.
+        shell('sed -i "s/CHR/chr/" {input.vcf} && sed -i "s/chrOM/CHROM/" {input.vcf}; ')
         if not vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
             safe_mkdir(params.tmp_dir)
             shell(
@@ -148,10 +151,10 @@ rule filter_sv_vcf:
         # tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
         shell('''
-bcftools view -f.,PASS {input.vcf} | 
-bcftools filter -e "SVTYPE == 'BND' & FORMAT/SR[{tumor_id}:1] - FORMAT/PR[{tumor_id}:1] > 0" | 
-bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" | 
-bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" | 
+bcftools view -f.,PASS {input.vcf} |
+bcftools filter -e "SVTYPE == 'BND' & FORMAT/SR[{tumor_id}:1] - FORMAT/PR[{tumor_id}:1] > 0" |
+bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" |
+bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" |
 bcftools view -s {params.sample} > {output.vcf}
 ''')
 
