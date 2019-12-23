@@ -203,6 +203,20 @@ You can pull the ready-to-run docker image from DockerHub:
 docker pull umccr/umccrise:latest
 ```
 
+An example command to run umccrise on docker could be (although <abbr title="Your Mileage May Vary">YMMV</abbr>):
+
+```shell
+$ docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
+	         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
+             -v=/codebuild/output/refdata/genomes:/work/genomes
+             umccr/umccrise /bcbio_project -o /output_dir --genomes /work/genomes
+```
+
+This example assumes that:
+
+	1. You are running the umccrise container against the [umccrise_test_data](https://github.com/umccr/umccrise_test_data)
+	2. You have figured out the genome data files and directory hierarchy for `/work/genomes`.
+
 ## Building reference data
 
 To build the bundle from scratch, follow instructions for each kind of data below.

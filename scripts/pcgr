@@ -8,7 +8,7 @@ from os.path import isfile, join, dirname, abspath, basename, exists
 import click
 import subprocess
 
-from ngs_utils.call_process import run, run_simple
+from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
 from ngs_utils import logger
 from ngs_utils.logger import info, critical, err

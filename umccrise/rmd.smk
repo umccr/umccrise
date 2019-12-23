@@ -51,7 +51,9 @@ rule split_multiallelic:
     group: "rmd"
     shell:
         'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
-        'bcftools norm -m \'-\' -Oz -f {input.ref_fa} -o {output} && tabix -p vcf {output}'
+        'bcftools norm -m \'-\' -f {input.ref_fa} -Ob | ' 
+        'bcftools sort -Oz -o {output} '
+        '&& tabix -p vcf {output}'
 
 rule afs:
     input:
@@ -63,7 +65,8 @@ rule afs:
     group: "rmd"
     shell:
         'bcftools view {input} -s {params.tumor_name} -Ou | '
-        '(printf "af\n"; bcftools query -f "%INFO/TUMOR_AF\\n") > {output} && test -e {output}'
+        '(printf "af\n"; bcftools query -f "%INFO/TUMOR_AF\\n") > {output} '
+        '&& test -e {output}'
 
 # Intersect with cancer key genes CDS for a table in Rmd
 rule afs_keygenes:

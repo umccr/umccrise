@@ -1,6 +1,9 @@
 from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
 import cyvcf2
 import yaml
+from os.path import abspath, join, dirname
+from ngs_utils.file_utils import verify_file
+from umccrise import package_path
 
 
 localrules: multiqc, copy_config
@@ -25,15 +28,17 @@ rule prep_multiqc_data:
         germline_stats          = rules.germline_stats_report.output[0],
         bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
         bcftools_germline_stats = rules.bcftools_stats_germline.output[0],
+        prog_versions           = join(run.date_dir, 'programs.txt'),
+        data_versions           = join(run.date_dir, 'data_versions.csv'),
     output:
         filelist            = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
+        prog_versions       = '{batch}/log/programs.txt',
+        data_versions       = '{batch}/log/data_versions.txt',
     params:
         data_dir        = 'work/{batch}/multiqc_data',
         tumor_name      = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_name     = lambda wc: batch_by_name[wc.batch].normal.name,
-        prog_versions   = join(run.date_dir, 'programs.txt'),
-        data_versions   = join(run.date_dir, 'data_versions.csv'),
         genome_build    = run.genome_build
     group: 'multiqc'
     run:
@@ -44,11 +49,11 @@ rule prep_multiqc_data:
             normal_sample=params.normal_name,
             base_dirpath=report_base_path,
             analysis_dir=run.date_dir,
-            prog_versions_fpath=verify_file(params.prog_versions, silent=True),
-            data_versions_fpath=verify_file(params.data_versions, silent=True),
-            new_dir_for_versions=abspath(join(f'{wildcards.batch}', 'log')),
+            prog_versions_fpath=verify_file(input.prog_versions, silent=True),
+            data_versions_fpath=verify_file(input.data_versions, silent=True),
+            new_dir_for_versions=dirname(output.prog_versions),
         )
-        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised_2019.qconly.renamed')
+        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
         if params.genome_build == 'hg38':
             gold_standard_dir += '_hg38'
         with open(join(gold_standard_dir, 'background_multiqc_filelist.txt')) as f:

@@ -10,7 +10,7 @@ import re
 
 from ngs_utils import logger
 from ngs_utils.bcbio import BcbioProject
-from ngs_utils.call_process import run
+from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transaction
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
@@ -31,7 +31,7 @@ def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, 
     conf['umccr']['run_section'] = get_run_info(bcbio_proj, base_dirpath, analysis_dir=analysis_dir,
                                                 prog_versions_fpath=prog_versions_fpath,
                                                 data_versions_fpath=data_versions_fpath,
-                                                new_dir_for_versions=None)
+                                                new_dir_for_versions=new_dir_for_versions)
 
     # if bcbio_proj.is_rnaseq:
     #     conf['umccr']['expression_links'] = _rna_general_links(bcbio_proj, base_dirpath)
@@ -140,7 +140,7 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
 def make_multiqc_report(conf_yamls, filelist, multiqc_fpath, extra_params=''):
     postproc_multiqc_dir = safe_mkdir(dirname(multiqc_fpath))
 
-    cmdl = (f'multiqc '
+    cmdl = (f'unset https_proxy; multiqc '
             f'-f{" -v" if logger.is_debug else ""} '
             f'-o {postproc_multiqc_dir} '
             f'-l {filelist}')
@@ -157,7 +157,7 @@ def make_multiqc_report(conf_yamls, filelist, multiqc_fpath, extra_params=''):
             os.remove(multiqc_fpath)
         except OSError as e:
             err(e)
-    run(cmdl, env_vars={'https_proxy': None})
+    run_simple(cmdl)
     return multiqc_fpath
 
 
@@ -216,32 +216,38 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
             version_text += 'last modified ' + last_modified_datestamp
         run_info_dict['umccrise_version'] = version_text
 
-    if prog_versions_fpath and new_dir_for_versions and verify_file(prog_versions_fpath, silent=True):
-        with open(prog_versions_fpath) as f:
-            program_versions = dict()
-            for l in f:
-                l = l.strip()
-                if l:
-                    if l.split(',') != 2:
-                        warn(f'Parsing line in {prog_versions_fpath} which is exptected to be in form program,version: {l}')
-                    else:
-                        program_versions[l.split(',')[0]] = l.split(',')[1]
-        new_prog_versions_fpath = join(new_dir_for_versions, basename(prog_versions_fpath))
-        if umccrsie_version:
-            program_versions['umccrise'] = umccrsie_version
-        try:
-            with open(new_prog_versions_fpath, 'w') as f:
-                for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
-                    f.write(p + ',' + v + '\n')
-        except OSError as e:
-            err(e)
-        programs_url = relpath(new_prog_versions_fpath, base_dirpath)
-        run_info_dict['program_versions'] = '<a href="{programs_url}">program versions</a>'.format(**locals())
+    # prog versions
+    # if prog_versions_fpath and new_dir_for_versions and verify_file(prog_versions_fpath, silent=True):
+    info('Adding umccrise versoin into prog_versions file ' + prog_versions_fpath)
+    with open(prog_versions_fpath) as f:
+        program_versions = dict()
+        for l in f:
+            l = l.strip()
+            if l:
+                try:
+                    program_versions[l.split(',')[0]] = l.split(',')[1]
+                except:
+                    pass
+    new_prog_versions_fpath = join(new_dir_for_versions, basename(prog_versions_fpath))
+    if umccrsie_version:
+        program_versions['umccrise'] = umccrsie_version
+    with open(new_prog_versions_fpath, 'w') as f:
+        for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
+            f.write(p + ',' + v + '\n')
+    info('Saved prog_versions file into ' + new_prog_versions_fpath)
+    assert exists(new_prog_versions_fpath)
 
-    if data_versions_fpath and new_dir_for_versions and verify_file(data_versions_fpath, silent=True):
-        new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath))
-        datas_url = relpath(new_data_versions_fpath, base_dirpath)
-        run_info_dict['data_versions'] = '<a href="{datas_url}">data versions</a>'.format(**locals())
+    programs_url = relpath(new_prog_versions_fpath, base_dirpath)
+    run_info_dict['program_versions'] = f'<a href="{programs_url}">program versions</a>'
+
+    # data version
+    # if data_versions_fpath and new_dir_for_versions and verify_file(data_versions_fpath, silent=True):
+    new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath).replace(".csv", ".txt"))
+    run_simple(f'cp {data_versions_fpath} {new_data_versions_fpath}')
+    info('Saved data_versions file into ' + new_data_versions_fpath)
+    assert exists(new_data_versions_fpath)
+    data_versions_url = relpath(new_data_versions_fpath, base_dirpath)
+    run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
 
     run_info_dict['analysis_dir'] = analysis_dir or bcbio_proj.final_dir
     return run_info_dict

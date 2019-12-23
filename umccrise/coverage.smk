@@ -47,11 +47,11 @@ rule mosdepth:
             'export MOSDEPTH_Q1=LOW_COVERAGE && '
             'export MOSDEPTH_Q2=CALLABLE && '
             'export MOSDEPTH_Q3=HIGH_COVERAGE && '
-            f'mosdepth {params.prefix} '
+            f'mosdepth {params.prefix} {input.bam} '
             f'-q {cutoffs} '
             f'--fasta {input.ref_fa} '
-            f'--no-per-base {input.bam} '
-            f'--by {input.bed}'
+            f'--by {input.bed} '
+            f'--no-per-base '
         )
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
