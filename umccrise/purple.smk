@@ -169,15 +169,15 @@ rule purple_run:
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
         xms = 2000,
-        xmx = purple_mem,
+        xmx = 32000,
     log:
         'log/purple/{batch}/{batch}.purple.log'
     benchmark:
         'benchmarks/{batch}/purple/{batch}-purple.tsv'
     threads:
-        threads_per_batch
+        4
     resources:
-        mem_mb = purple_mem
+        mem_mb = 32000
     shell:
        conda_cmd.format('hmf') + \
         circos_macos_patch + \

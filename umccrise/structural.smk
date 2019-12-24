@@ -95,10 +95,10 @@ rule sv_maybe_bpi:
         'log/structural/{batch}/{batch}-bpi_stats.txt'
     params:
         xms = 1000,
-        xmx = 5000,
+        xmx = 16000,
         tmp_dir = '{batch}/structural/maybe_bpi/tmp_dir'
     resources:
-        mem_mb = 5000
+        mem_mb = 16000
     run:
         # Handle SnpEff capitalising ALT (see https://github.com/pcingola/SnpEff/issues/237).
         # BPI and bedtools>=2.29.2 will crash if left as is.
