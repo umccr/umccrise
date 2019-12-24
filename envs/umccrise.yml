@@ -44,6 +44,7 @@ dependencies:
   - pyasn1      # for awscli - for some reason doesn't install automatically on macos
   - parallel    # for general use
   - pygraphviz  # for snakemake report
+  - pygments    # for snakemake report
   # - gsort     # sort vcfs and beds - https://github.com/brentp/gsort
   - toml        # to read predisposition genes from PCGR toml
   # - tibanna
