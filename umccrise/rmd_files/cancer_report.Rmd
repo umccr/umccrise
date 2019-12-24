@@ -1,6 +1,6 @@
 ---
 author: "University of Melbourne Centre for Cancer Research"
-date: "`r format(Sys.time(), '%a %Y-%b-%d')`"
+date: "`r Sys.time()`"
 output:
   html_document:
     theme: cosmo # darkly
@@ -59,7 +59,6 @@ params_tmp <- list(
     purple_cnv='',
     purple_purity='',
     purple_qc=''),
-
   raijin = list(
     tumor_name='',
     batch_name='',
@@ -73,14 +72,13 @@ params_tmp <- list(
     purple_cnv='',
     purple_purity='',
     purple_qc=''),
-
   local = list(
     genome_build='hg38',
     key_genes='data/ref/umccr_cancer_genes.latest.tsv',
     af_global=glue::glue('data/work/{batch_name}/rmd/afs/af_tumor.txt'),
     af_keygenes=glue::glue('data/work/{batch_name}/rmd/afs/af_tumor_keygenes.txt'),
     somatic_snv=glue::glue('data/work/{batch_name}/rmd/ensemble-with_chr_prefix.vcf'),
-    somatic_sv=glue::glue('data/{batch_name}/structural/{batch_name}-manta.tsv'),
+    somatic_sv=glue::glue('data/{batch_name}/structural/{batch_name}-manta_test.tsv'),
     purple_gene_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv'),
     purple_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv'),
     purple_purity=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.purity.tsv'),
@@ -186,8 +184,8 @@ sig_probs2 <- file.path("misc/sig/v3_may2019/sigProfiler_SBS_signatures_2019_05_
 cancer_signatures2 <-
   readr::read_csv(sig_probs2, col_types = cols(.default = "d", Type = "c", SubType = "c")) %>%
   dplyr::mutate(SomMutType = paste0(substr(SubType, 1, 1),
-                             "[", Type, "]",
-                             substr(SubType, 3, 3))) %>%
+                                    "[", Type, "]",
+                                    substr(SubType, 3, 3))) %>%
   dplyr::select(SomMutType, SBS1:SBS85)
 
 
@@ -216,20 +214,20 @@ mut_sig_contr2 <-
 
 ```{r sv_prioritize_prep}
 #---- Structural Variants ----#
-subset_genes <- function(genes, ind) {
-  genes %>%
+subset_genes <- function(g, ind) {
+  g %>%
     stringr::str_split('&') %>%
     purrr::map(~ .[ind] %>%
-          replace("", NA) %>%
-          .[!is.na(.)]) %>%
+                 replace("", NA) %>%
+                 .[!is.na(.)]) %>%
     purrr::map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
 }
 
-format_val <- function(val, is_pct = FALSE) {
-  ifelse(!is.na(val),
-         format(val, digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
-         NA)
-}
+# format_val <- function(val, is_pct = FALSE) {
+#   ifelse(!is.na(val),
+#          format(val, digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
+#          NA)
+# }
 
 split_sv_field <- function(.data, field, is_pct = FALSE) {
   # - separate field into two parts
@@ -244,12 +242,12 @@ split_sv_field <- function(.data, field, is_pct = FALSE) {
   .data %>%
     tidyr::separate(!!f_q, c(f1_str, f2_str), sep = ",", fill = "right") %>%
     dplyr::mutate(
-      !!f1_q := as.double(!!f1_q) * ifelse(is_pct, 100, 1),
-      !!f2_q := as.double(!!f2_q) * ifelse(is_pct, 100, 1),
-      !!f_q  := (!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2,
-      !!f_q  := format_val(!!f_q, is_pct),
-      !!f1_q := format_val(!!f1_q, is_pct),
-      !!f2_q := format_val(!!f2_q, is_pct)
+      !!f1_q := round(as.double(!!f1_q) * ifelse(is_pct, 100, 1), 1),
+      !!f2_q := round(as.double(!!f2_q) * ifelse(is_pct, 100, 1), 1),
+      !!f_q  := round(((!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2), 1)
+      # !!f_q  := format_val(!!f_q, is_pct),
+      # !!f1_q := format_val(!!f1_q, is_pct),
+      # !!f2_q := format_val(!!f2_q, is_pct)
     )
 }
 
@@ -260,12 +258,12 @@ sv_all <- NULL
 
 if (length(readLines(con = sv_path, n = 2)) > 1) {
   sv_unmelted <-
-    readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciiccccciiccccdc") %>%
+    readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciiccccciiccccdcic") %>%
     dplyr::select(-caller, -sample) %>%
-    split_sv_field(BPI_AF, is_pct = TRUE) %>%
-    split_sv_field(AF, is_pct = TRUE) %>%
-    split_sv_field(CN) %>%
-    split_sv_field(CN_change) %>%
+    split_sv_field(AF_BPI, is_pct = TRUE) %>%
+    split_sv_field(AF_PURPLE, is_pct = TRUE) %>%
+    split_sv_field(CN_PURPLE) %>%
+    split_sv_field(CN_change_PURPLE) %>%
     tidyr::separate(split_read_support, c("SR_ref", "SR_alt"), ",") %>%
     tidyr::separate(paired_support_PR, c("PR_ref", "PR_alt"), ",") %>%
     tidyr::separate(paired_support_PE, c("PE_ref", "PE_alt"), ",") %>%
@@ -273,45 +271,36 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   PR = as.integer(PR_alt),
                   PE = as.integer(PE_alt),
                   VarNum = dplyr::row_number())
-
   sv_all <- sv_unmelted %>%
     dplyr::mutate(annotation = strsplit(annotation, ',')) %>%
     tidyr::unnest(annotation) %>% # unpack multiple annotations per region
-    tidyr::separate(annotation, c('event', 'effect', 'genes', 'transcript', 'detail', 'tier'),
+    tidyr::separate(annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-    dplyr::arrange(tier, effect, desc(AF), genes) %>%
-    dplyr::mutate(Gene = subset_genes(genes, c(1, 2)),
-                  Gene = ifelse((str_split(genes, '&') %>% map_int(length)) > 2,
+    dplyr::mutate(Gene = subset_genes(Genes, c(1, 2)),
+                  Gene = ifelse((str_split(Genes, '&') %>% map_int(length)) > 2,
                                 str_c(Gene, '...', sep = ', '),
                                 Gene),
-                  `Other affected genes` = subset_genes(genes, -c(1,2)) %>% str_replace_all('&', ', '),
-                  Gene = ifelse(str_detect(effect, "gene_fusion"),
+                  `Other affected genes` = subset_genes(Genes, -c(1,2)) %>% str_replace_all('&', ', '),
+                  Gene = ifelse(str_detect(Effect, "gene_fusion"),
                                 Gene,
                                 Gene %>% str_replace_all('&', ', ')),
-                  Transcript = transcript %>% str_replace_all('&', ', ')
-                  ) %>%
-    tidyr::separate(effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
-    dplyr::mutate(start = format(start, big.mark = ',', trim = TRUE),
-                  end = format(end, big.mark = ',', trim = TRUE),
-                  location = str_c(chrom, ':', start, sep = ''),
-                  location = ifelse(is.na(end), location, str_c(location)),
-                  Ploidy = as.double(Ploidy),
-                  Ploidy = format(Ploidy, nsmall = 2)
-                  ) %>%
-    dplyr::select(Location = location, Tier = tier, Event = svtype, Gene,
-                  Effect = Effect, Detail = detail,
-                  AF, `CN chg` = CN_change,
-                  SR, PR, CN, Ploidy, PURPLE_status, VarNum,
-                  SR_ref, PR_ref, PE, PE_ref,
-                  SomaticScore = somaticscore,
-                  Transcript,
-                  `Other effects`, `Other affected genes`,
-                  AF_bp1 = AF1, AF_bp2 = AF2,
-                  CN_bp1 = CN1, CN_bp2 = CN2,
-                  CN_chg_bp1 = CN_change1, CN_chg_bp2 = CN_change2
-                  ) %>%
-    dplyr::distinct()
-
+                  Transcript = Transcript %>% str_replace_all('&', ', '),
+                  Ploidy = round(as.double(Ploidy_PURPLE), 2)) %>%
+    tidyr::separate(Effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
+    dplyr::select(
+      Chr = chrom, Start = start, End = end, End2 = END_BPI,
+      Tier, Type = svtype, Gene, Effect, ID, Detail,
+      AF_PURPLE_avg, AF_BPI_avg, CN_chg_avg = CN_change_PURPLE,
+      SR, PR, CN_avg = CN_PURPLE, Ploidy, PURPLE_status, VarNum,
+      SR_ref, PR_ref, PE, PE_ref,
+      SomaticScore = somaticscore,
+      Transcript, `Other effects`, `Other affected genes`,
+      AF_bp1_PURPLE = AF_PURPLE1, AF_bp2_PURPLE = AF_PURPLE2,
+      AF_bp1_BPI = AF_BPI1, AF_bp2_BPI = AF_BPI2,
+      CN_bp1 = CN_PURPLE1, CN_bp2 = CN_PURPLE2,
+      CN_chg_bp1 = CN_change_PURPLE1, CN_chg_bp2 = CN_change_PURPLE2) %>%
+    dplyr::distinct() %>%
+    dplyr::arrange(Tier, Effect, desc(AF_PURPLE), Gene)
 } else {
   sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
   sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
@@ -338,7 +327,7 @@ purple_purity <-
                                    status = col_character(),
                                    wholeGenomeDuplication = col_character(),
                                    msStatus = col_character()
-                                   )) %>%
+  )) %>%
   dplyr::mutate_if(is.numeric, round, 2) %>%
   unlist()
 
@@ -878,14 +867,14 @@ dplyr::tribble(
   "split_read_support", "FORMAT/SR of tumor sample: Split reads for the ref and alt alleles in the order listed, for reads where P(allele|read)>0.999",
   "paired_support_PE", "FORMAT/PE of tumor sample: ??",
   "paired_support_PR", "FORMAT/PR of tumor sample: Spanning paired-read support for the ref and alt alleles in the order listed",
-  "BPI_AF", "INFO/BPI_AF: AF at each breakpoint",
+  "BPI_AF", "INFO/BPI_AF: AF at each breakpoint (so BPI_AF_BP1,BPI_AF_BP2)",
   "somaticscore", "INFO/SOMATICSCORE: Somatic variant quality score",
   "tier", "INFO/SV_TOP_TIER (or 4 if missing): Highest priority tier for the effects of a variant entry",
   "annotation", "INFO/SIMPLE_ANN: Simplified structural variant annotation: 'SVTYPE | EFFECT | GENE(s) | TRANSCRIPT | PRIORITY (1-4)'",
-  "AF", "INFO/PURPLE_AF: AF at each breakend (purity adjusted)",
-  "CN", "INFO/PURPLE_CN: CN at each breakend (purity adjusted)",
-  "CN_change", "INFO/PURPLE_CN_CHANGE: change in CN at each breakend (purity adjusted)",
-  "Ploidy", "INFO/PURPLE_PLOIDY: Ploidy of variant (purity adjusted)",
+  "PURPLE_AF", "INFO/PURPLE_AF: AF at each breakend (purity adjusted) (so PURPLE_AF_BP1,PURPLE_AF_BP2)",
+  "PURPLE_CN", "INFO/PURPLE_CN: CN at each breakend (purity adjusted) (so PURPLE_CN_BP1,PURPLE_CN_BP2)",
+  "PURPLE_CN_change", "INFO/PURPLE_CN_CHANGE: change in CN at each breakend (purity adjusted) (so PURPLE_CN_CHANGE_BP1,PURPLE_CN_CHANGE_BP2)",
+  "PURPLE_Ploidy", "INFO/PURPLE_PLOIDY: Ploidy of variant (purity adjusted)",
   "PURPLE_status", "INFERRED if FILTER=INFERRED, or RECOVERED if has INFO/RECOVERED, else blank. INFERRED: Breakend inferred from copy number transition"
 ) %>%
   dplyr::mutate(
@@ -893,6 +882,47 @@ dplyr::tribble(
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 ```
+
+
+* __Report SV Table Column Description__
+
+Variants are ordered by tier, then by effect, then by AF.
+
+```{r manta_report_table_description}
+dplyr::tribble(
+  ~Column, ~Description,
+  "BPI_AF", "(BPI_AF_BP1 + BPI_AF_BP2) / 2",
+  "PURPLE_AF", "(PURPLE_AF_BP1 + PURPLE_AF_BP2) / 2",
+  "PURPLE_CN", "(PURPLE_CN_BP1 + PURPLE_CN_BP2) / 2",
+  "PURPLE_CN_change", "(PURPLE_CN_change_BP1 + PURPLE_CN_change_BP2) / 2",
+  "Ploidy", "INFO/PURPLE_PLOIDY: Ploidy of variant (purity adjusted)",
+  "SR_ref/SR_alt", "FORMAT/SR of tumor sample: Split reads for the ref and alt alleles in the order listed, for reads where P(allele|read)>0.999",
+  "PR_ref/PR_alt", "FORMAT/PR of tumor sample: Spanning paired-read support for the ref and alt alleles in the order listed",
+  "PE_ref/PE_alt", "FORMAT/PE of tumor sample: ?",
+  "SR", "SR_alt",
+  "PR", "PR_alt",
+  "PE", "PE_alt",
+  "VarNum", "Original event row number",
+  "Type", "INFO/SVTYPE: Type of structural variant",
+  "Effect", "SV effect (from 'simple_sv_annotation': fusion, exon loss, intergenic, intronic). When more than 1 effect, only the first one is shown, with the rest of them included in the 'Other effects' column.",
+  "Gene", "Gene name(s) (from 'simple_sv_annotation') (can be multiple). When there are more than 2 genes, only the first two are shown, with the rest of them included in the 'Other affected genes' column.",
+  "Transcript", "Transcript name (from 'simple_sv_annotation') (can be multiple)",
+  "Detail", "Prioritisation detail (from 'simple_sv_annotation': for exon loss variants, deleted exon numbers)",
+  "Tier", "Priority of the event (from 'simple_sv_annotation': 1 highest, 4 lowest)",
+  ) %>%
+  dplyr::mutate(
+    Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
+  knitr::kable(escape = FALSE) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+```
+
+
+- `Ploidy`: variant ploidy (purity-adjusted )
+- `AF`: allele frequency at each breakend (`AF_bp1`, `AF_bp2`) and averaged (`AF`) (purity-adjusted)
+- `CN`: copy number at each breakend (`CN_bp1`, )
+- `CN_change`: change in copy number at each breakend (`CN_chg_bp1`, `CN_chg_bp2`) and averaged (`CN chg`) (purity-adjusted)
+- `Effect`: can contain any effect predicted by [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html#input),
+  with standardised terms from [Sequence ontology](http://www.sequenceontology.org).
 
 __Prioritisation process__
 
@@ -924,16 +954,6 @@ __Prioritisation process__
 
 * Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
 
-Variants are ordered by tier, then by effect, then by AF.
-
-* __Report SV Table Column Description__
-
-- `Ploidy`: variant ploidy (purity-adjusted )
-- `AF`: allele frequency at each breakend (`AF_bp1`, `AF_bp2`) and averaged (`AF`) (purity-adjusted)
-- `CN`: copy number at each breakend (`CN_bp1`, )
-- `CN_change`: change in copy number at each breakend (`CN_chg_bp1`, `CN_chg_bp2`) and averaged (`CN chg`) (purity-adjusted)
-- `Effect`: can contain any effect predicted by [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html#input),
-  with standardised terms from [Sequence ontology](http://www.sequenceontology.org).
 
 </details>
 
