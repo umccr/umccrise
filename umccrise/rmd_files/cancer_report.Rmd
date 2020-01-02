@@ -100,7 +100,14 @@ render_me()
 ```
 
 ```{r load_pkgs}
+# Bioconductor
 library(BSgenome)
+library(MutationalPatterns)
+ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
+library(ref_genome, character.only = TRUE)
+tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
+library(tx_ref_genome, character.only = TRUE)
+# CRAN
 library(devtools)
 library(DT)
 library(dplyr)
@@ -109,16 +116,11 @@ library(ggplot2)
 library(htmltools)
 library(knitr)
 library(kableExtra)
-library(MutationalPatterns)
 library(purrr)
 library(readr)
 library(rmarkdown)
 library(stringr)
 library(tidyr)
-ref_genome <- paste0("BSgenome.Hsapiens.UCSC.", params$genome_build)
-library(ref_genome, character.only = TRUE)
-tx_ref_genome <- paste0("TxDb.Hsapiens.UCSC.", params$genome_build, ".knownGene")
-library(tx_ref_genome, character.only = TRUE)
 ```
 
 ```{r allele_freq_prep}
@@ -214,14 +216,14 @@ mut_sig_contr2 <-
 
 ```{r sv_prioritize_prep}
 #---- Structural Variants ----#
-subset_genes <- function(g, ind) {
-  g %>%
-    stringr::str_split('&') %>%
-    purrr::map(~ .[ind] %>%
-                 replace("", NA) %>%
-                 .[!is.na(.)]) %>%
-    purrr::map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
-}
+# subset_genes <- function(g, ind) {
+#   g %>%
+#     stringr::str_split('&') %>%
+#     purrr::map(~ .[ind] %>%
+#                  replace("", NA) %>%
+#                  .[!is.na(.)]) %>%
+#     purrr::map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
+# }
 
 # format_val <- function(val, is_pct = FALSE) {
 #   ifelse(!is.na(val),
@@ -270,41 +272,34 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     dplyr::mutate(SR = as.integer(SR_alt),
                   PR = as.integer(PR_alt),
                   PE = as.integer(PE_alt),
-                  VarNum = dplyr::row_number())
+                  varnum = dplyr::row_number())
   sv_all <- sv_unmelted %>%
-    dplyr::mutate(n_annot = stringr::str_count(annotation, ",") + 1,
+    dplyr::mutate(nann = stringr::str_count(annotation, ","),
                   annotation = strsplit(annotation, ',')) %>%
     tidyr::unnest(annotation) %>% # unpack multiple annotations per region
     tidyr::separate(annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-    dplyr::mutate(n_genes = stringr::str_count(Genes, "&") + 1,
-                  Gene = subset_genes(Genes, c(1, 2)),
-                  Gene = ifelse((str_split(Genes, '&') %>% map_int(length)) > 2,
-                                str_c(Gene, '...', sep = ', '),
-                                Gene),
-                  `Other affected genes` = subset_genes(Genes, -c(1,2)) %>% str_replace_all('&', ', '),
-                  Gene = ifelse(str_detect(Effect, "gene_fusion"),
-                                Gene,
-                                Gene %>% str_replace_all('&', ', ')),
-                  Transcript = Transcript %>% str_replace_all('&', ', '),
+    dplyr::mutate(ngen = Genes %>% stringr::str_count("&"),
+                  Genes = Genes %>% stringr::str_replace_all('&', ', '),
+                  Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
                   Ploidy = round(as.double(Ploidy_PURPLE), 2),
-                  chrom = ifelse(params$genome_build %in% c("hg19", "hg38"), sub("chr", "", chrom), chrom)) %>%
+                  chrom = sub("chr", "", chrom), chrom) %>%
     tidyr::separate(Effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
     dplyr::select(
-      Chr = chrom, Start = start, Start2 = START_BPI, End = end, End2 = END_BPI,
-      Tier, Type = svtype, Gene, Effect, ID, n_annot, n_genes, VarNum, Detail, SR, PR, Ploidy,
+      Chr = chrom, Start = START_BPI, End = END_BPI,
+      Tier, Type = svtype, Genes, Effect, ID, ngen, nann, varnum, Detail, SR, PR, Ploidy,
       AF_PURPLE_avg = AF_PURPLE, AF_BPI_avg = AF_BPI,
       CN_chg_avg = CN_change_PURPLE, CN_avg = CN_PURPLE,
-      PURPLE_status,
+      PURPLE_status, Start_old = start, End_old = end, 
       SR_ref, PR_ref, PE, PE_ref,
       SomaticScore = somaticscore,
-      Transcript, `Other effects`, `Other affected genes`,
+      Transcript, `Other effects`,
       AF_bp1_PURPLE = AF_PURPLE1, AF_bp2_PURPLE = AF_PURPLE2,
       AF_bp1_BPI = AF_BPI1, AF_bp2_BPI = AF_BPI2,
       CN_bp1 = CN_PURPLE1, CN_bp2 = CN_PURPLE2,
       CN_chg_bp1 = CN_change_PURPLE1, CN_chg_bp2 = CN_change_PURPLE2) %>%
     dplyr::distinct() %>%
-    dplyr::arrange(Tier, Effect, desc(AF_PURPLE_avg), Gene)
+    dplyr::arrange(Tier, Effect, desc(AF_PURPLE_avg), Genes)
 } else {
   sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
   sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
@@ -906,7 +901,7 @@ dplyr::tribble(
   "SR", "SR_alt",
   "PR", "PR_alt",
   "PE", "PE_alt",
-  "VarNum", "Original event row number",
+  "varnum", "Original event row number",
   "Type", "INFO/SVTYPE: Type of structural variant",
   "Effect", "SV effect (from 'simple_sv_annotation': fusion, exon loss, intergenic, intronic). When more than 1 effect, only the first one is shown, with the rest of them included in the 'Other effects' column.",
   "Gene", "Gene name(s) (from 'simple_sv_annotation') (can be multiple). When there are more than 2 genes, only the first two are shown, with the rest of them included in the 'Other affected genes' column.",
@@ -964,10 +959,25 @@ __Prioritisation process__
 <p>&nbsp;</p>
 
 ```{r sv_prioritize_table}
+sv_all_col_ind_js <- function(x) {
+  ntab <- setNames((1:ncol(sv_all) - 1), names(sv_all))
+  sort(unname(ntab[x]))
+  
+}
+
 sv_all %>%
-  DT::datatable(rownames = FALSE, extensions = c('Scroller', 'Responsive', 'Buttons'),
-                options = list(scroller = TRUE, scrollX = FALSE, scrollY = 500,
-                               dom = 'Bfrtip', buttons = c('csv', 'excel')))
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+                options = list(
+                  columnDefs = list(list(
+                    targets = sv_all_col_ind_js(c("Genes", "Transcript", "Other effects")),
+                    render = DT::JS("$.fn.dataTable.render.ellipsis( 10 )"))),
+                  scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
+                  buttons = c('csv', 'excel'),
+                  dom = 'Bfrtip'),
+                plugins = "ellipsis") %>%
+  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 ## Copy Number Variants {#copy-number-variants}
