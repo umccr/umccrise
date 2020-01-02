@@ -258,7 +258,7 @@ sv_all <- NULL
 
 if (length(readLines(con = sv_path, n = 2)) > 1) {
   sv_unmelted <-
-    readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciiccccciiccccdcic") %>%
+    readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciiccccciiccccdciic") %>%
     dplyr::select(-caller, -sample) %>%
     split_sv_field(AF_BPI, is_pct = TRUE) %>%
     split_sv_field(AF_PURPLE, is_pct = TRUE) %>%
@@ -272,11 +272,13 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                   PE = as.integer(PE_alt),
                   VarNum = dplyr::row_number())
   sv_all <- sv_unmelted %>%
-    dplyr::mutate(annotation = strsplit(annotation, ',')) %>%
+    dplyr::mutate(n_annot = stringr::str_count(annotation, ",") + 1,
+                  annotation = strsplit(annotation, ',')) %>%
     tidyr::unnest(annotation) %>% # unpack multiple annotations per region
     tidyr::separate(annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
                     sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-    dplyr::mutate(Gene = subset_genes(Genes, c(1, 2)),
+    dplyr::mutate(n_genes = stringr::str_count(Genes, "&") + 1,
+                  Gene = subset_genes(Genes, c(1, 2)),
                   Gene = ifelse((str_split(Genes, '&') %>% map_int(length)) > 2,
                                 str_c(Gene, '...', sep = ', '),
                                 Gene),
@@ -285,13 +287,15 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
                                 Gene,
                                 Gene %>% str_replace_all('&', ', ')),
                   Transcript = Transcript %>% str_replace_all('&', ', '),
-                  Ploidy = round(as.double(Ploidy_PURPLE), 2)) %>%
+                  Ploidy = round(as.double(Ploidy_PURPLE), 2),
+                  chrom = ifelse(params$genome_build %in% c("hg19", "hg38"), sub("chr", "", chrom), chrom)) %>%
     tidyr::separate(Effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
     dplyr::select(
-      Chr = chrom, Start = start, End = end, End2 = END_BPI,
-      Tier, Type = svtype, Gene, Effect, ID, Detail,
-      AF_PURPLE_avg, AF_BPI_avg, CN_chg_avg = CN_change_PURPLE,
-      SR, PR, CN_avg = CN_PURPLE, Ploidy, PURPLE_status, VarNum,
+      Chr = chrom, Start = start, Start2 = START_BPI, End = end, End2 = END_BPI,
+      Tier, Type = svtype, Gene, Effect, ID, n_annot, n_genes, VarNum, Detail, SR, PR, Ploidy,
+      AF_PURPLE_avg = AF_PURPLE, AF_BPI_avg = AF_BPI,
+      CN_chg_avg = CN_change_PURPLE, CN_avg = CN_PURPLE,
+      PURPLE_status,
       SR_ref, PR_ref, PE, PE_ref,
       SomaticScore = somaticscore,
       Transcript, `Other effects`, `Other affected genes`,
@@ -300,7 +304,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       CN_bp1 = CN_PURPLE1, CN_bp2 = CN_PURPLE2,
       CN_chg_bp1 = CN_change_PURPLE1, CN_chg_bp2 = CN_change_PURPLE2) %>%
     dplyr::distinct() %>%
-    dplyr::arrange(Tier, Effect, desc(AF_PURPLE), Gene)
+    dplyr::arrange(Tier, Effect, desc(AF_PURPLE_avg), Gene)
 } else {
   sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
   sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
@@ -718,7 +722,7 @@ The first BAF plot is based on PURPLE data and configuration files.
 * __Track1__: Chromosomes. Darker shaded areas: gaps in reference genome
   (centromeres, heterochromatin & missing short arms)
 * __Track2__: <span style="color:#8A2BE2">Beta Allele Frequency</span>.
-  Given that the BAF points correspond to allele frequencies of common heterozygous SNPs,
+  Given that the BAF points correspond to allele frequencies of heterozygous SNPs that are common in germline samples,
   there shouldn't be any in chromosome Y (and chromosome X when male).
 * __Track3__: __Total__ copy number changes adjusted for tumor purity,
   including focal and chromosomal somatic events.
@@ -789,7 +793,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
   (centromeres, heterochromatin & missing short arms)
 * __Track2__: <span style="color:blue">Tumor</span> and <span style="color:#32CD32">Normal</span> Allele Ratios
 * __Track3__: <span style="color:#EE7600">Beta Allele Frequency</span>
-  Given that the BAF points correspond to allele frequencies of common heterozygous SNPs,
+  Given that the BAF points correspond to allele frequencies of heterozygous SNPs that are common in germline samples,
   there shouldn't be any in chromosome Y (and chromosome X when male).
 
 </details>

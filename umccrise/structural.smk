@@ -220,7 +220,7 @@ rule prep_sv_tsv:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
                       "split_read_support", "paired_support_PE", "paired_support_PR", "AF_BPI", "somaticscore",
                       "tier", "annotation",
-                      'AF_PURPLE', 'CN_PURPLE', 'CN_change_PURPLE', 'Ploidy_PURPLE', 'PURPLE_status', 'END_BPI', 'ID']
+                      'AF_PURPLE', 'CN_PURPLE', 'CN_change_PURPLE', 'Ploidy_PURPLE', 'PURPLE_status', 'START_BPI', 'END_BPI', 'ID']
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 tier = parse_info_field(rec, 'SV_TOP_TIER')
@@ -250,6 +250,7 @@ rule prep_sv_tsv:
                         parse_info_field(rec, 'PURPLE_CN_CHANGE'),
                         parse_info_field(rec, 'PURPLE_PLOIDY'),
                         PURPLE_status,
+                        parse_info_field(rec, 'BPI_START'),
                         parse_info_field(rec, 'BPI_END'),
                         rec.ID
                         ]
