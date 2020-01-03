@@ -10,3 +10,7 @@
     /*Without this, clicking will make it sticky*/
     pointer-events: none;
 }
+
+table.dataTable tbody td {
+  vertical-align: top;
+}

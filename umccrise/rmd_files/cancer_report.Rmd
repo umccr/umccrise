@@ -258,6 +258,11 @@ sv_path <- params$somatic_sv
 sv_unmelted <- NULL
 sv_all <- NULL
 
+count_pieces <- function(x, sep) {
+  ifelse(nchar(x) == 0, 0, stringr::str_count(x, sep) + 1)
+}
+
+
 if (length(readLines(con = sv_path, n = 2)) > 1) {
   sv_unmelted <-
     readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciiccccciiccccdciic") %>%
@@ -269,37 +274,46 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     tidyr::separate(split_read_support, c("SR_ref", "SR_alt"), ",") %>%
     tidyr::separate(paired_support_PR, c("PR_ref", "PR_alt"), ",") %>%
     tidyr::separate(paired_support_PE, c("PE_ref", "PE_alt"), ",") %>%
-    dplyr::mutate(SR = as.integer(SR_alt),
-                  PR = as.integer(PR_alt),
-                  PE = as.integer(PE_alt),
-                  varnum = dplyr::row_number())
+    dplyr::mutate(
+      SR = as.integer(SR_alt),
+      PR = as.integer(PR_alt),
+      PE = as.integer(PE_alt),
+      Ploidy = round(as.double(Ploidy_PURPLE), 2),
+      chrom = sub("chr", "", chrom),
+      chrom = as.factor(chrom),
+      svtype = ifelse(is.na(PURPLE_status), svtype, "PURPLE_inf"),
+      Start = ifelse(is.na(PURPLE_status), START_BPI, start),
+      ID = sub("Manta...:", "M:", ID),
+      varnum = dplyr::row_number())
+
   sv_all <- sv_unmelted %>%
-    dplyr::mutate(nann = stringr::str_count(annotation, ","),
-                  annotation = strsplit(annotation, ',')) %>%
-    tidyr::unnest(annotation) %>% # unpack multiple annotations per region
-    tidyr::separate(annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
-                    sep = '\\|', convert = TRUE) %>%  # Unpack annotation columns
-    dplyr::mutate(ngen = Genes %>% stringr::str_count("&"),
-                  Genes = Genes %>% stringr::str_replace_all('&', ', '),
-                  Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
-                  Ploidy = round(as.double(Ploidy_PURPLE), 2),
-                  chrom = sub("chr", "", chrom), chrom) %>%
-    tidyr::separate(Effect, c("Effect", "Other effects"), sep = '&', extra = "merge", fill = "right") %>%
+    dplyr::mutate(
+      nann = count_pieces(annotation, ","),
+      annotation = strsplit(annotation, ',')) %>%
+    tidyr::unnest(annotation) %>%
+    tidyr::separate(
+      annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
+      sep = '\\|', convert = TRUE) %>%
+    dplyr::mutate(
+      ntrx = count_pieces(Transcript, "&"),
+      ngen = count_pieces(Genes, "&"),
+      neff = count_pieces(Effect, "&"),
+      Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
+      Genes = Genes %>% stringr::str_replace_all('&', ', '),
+      Effect = Effect %>% stringr::str_replace_all('&', ', ')) %>%
     dplyr::select(
-      Chr = chrom, Start = START_BPI, End = END_BPI,
-      Tier, Type = svtype, Genes, Effect, ID, ngen, nann, varnum, Detail, SR, PR, Ploidy,
-      AF_PURPLE_avg = AF_PURPLE, AF_BPI_avg = AF_BPI,
-      CN_chg_avg = CN_change_PURPLE, CN_avg = CN_PURPLE,
-      PURPLE_status, Start_old = start, End_old = end, 
+      Chr = chrom, Start, End = END_BPI,
+      Tier, Type = svtype, Genes, Effect, ID,
+      SR, PR, Ploidy, Detail, AFav_PPL = AF_PURPLE, AFav_BPI = AF_BPI,
+      CNCav = CN_change_PURPLE, CNav = CN_PURPLE,
       SR_ref, PR_ref, PE, PE_ref,
-      SomaticScore = somaticscore,
-      Transcript, `Other effects`,
-      AF_bp1_PURPLE = AF_PURPLE1, AF_bp2_PURPLE = AF_PURPLE2,
-      AF_bp1_BPI = AF_BPI1, AF_bp2_BPI = AF_BPI2,
-      CN_bp1 = CN_PURPLE1, CN_bp2 = CN_PURPLE2,
-      CN_chg_bp1 = CN_change_PURPLE1, CN_chg_bp2 = CN_change_PURPLE2) %>%
+      SScore = somaticscore,
+      AF1 = AF_PURPLE1, AF2 = AF_PURPLE2,
+      CN1 = CN_PURPLE1, CN2 = CN_PURPLE2,
+      CNC1 = CN_change_PURPLE1, CNC2 = CN_change_PURPLE2,
+      varnum, Transcript, ngen, ntrx, nann, neff) %>%
     dplyr::distinct() %>%
-    dplyr::arrange(Tier, Effect, desc(AF_PURPLE_avg), Genes)
+    dplyr::arrange(Tier, Effect, desc(AFav_PPL), Genes)
 } else {
   sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
   sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
@@ -958,27 +972,143 @@ __Prioritisation process__
 
 <p>&nbsp;</p>
 
-```{r sv_prioritize_table}
-sv_all_col_ind_js <- function(x) {
-  ntab <- setNames((1:ncol(sv_all) - 1), names(sv_all))
+### Translocations {.tabset .tabset-fade}
+
+```{r svtab_BND}
+sv_col_ind_js <- function(d, x) {
+  ntab <- setNames((1:ncol(d) - 1), names(d))
+  stopifnot(all(x %in% names(d)))
   sort(unname(ntab[x]))
-  
 }
 
-sv_all %>%
+sv_BND <- sv_all %>%
+  dplyr::filter(Type == "BND") %>%
+  dplyr::mutate(rownum = dplyr::row_number())
+
+sv_BND1 <- sv_BND %>%
+  dplyr::select(rownum, 1:10)
+sv_BND2 <- sv_BND %>%
+  dplyr::select(rownum, 11:ncol(sv_BND))
+
+sv_BND1_dt <- sv_BND1 %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 class = "cell-border display compact",
                 rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
                 options = list(
-                  columnDefs = list(list(
-                    targets = sv_all_col_ind_js(c("Genes", "Transcript", "Other effects")),
-                    render = DT::JS("$.fn.dataTable.render.ellipsis( 10 )"))),
-                  scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
-                  buttons = c('csv', 'excel'),
-                  dom = 'Bfrtip'),
-                plugins = "ellipsis") %>%
+                  scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
+                  buttons = c('csv'), dom = 'Blfrtip')) %>%
+  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+
+sv_BND2_dt <- sv_BND2 %>%
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+                options = list(
+                  scroller = TRUE, scrollY = 400, scrollX = TRUE, keys = TRUE, autoWidth = FALSE,
+                  buttons = c('csv'), dom = 'Blfrtip'))
+
+sv_BND_purpleinf_dt <- sv_all %>%
+  dplyr::filter(Type %in% c("PURPLE_inf")) %>%
+  dplyr::select(Chr, Start, Ploidy, CN1, CNC1,
+                Detail, Tier, Type, Effect, ID, varnum) %>%
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+                options = list(
+                  scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE,
+                  buttons = c('csv'),
+                  dom = 'Bfrtip')) %>%
+  DT::formatCurrency(~ Start, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+#### Main Columns
+
+```{r sv_BND1_dt}
+sv_BND1_dt
+```
+
+#### Other Columns
+
+```{r sv_BND2_dt}
+sv_BND2_dt
+```
+
+#### Inferred by PURPLE
+
+```{r sv_BND_purpleinf_dt}
+sv_BND_purpleinf_dt
+```
+
+### Del/Dup/Ins {.tabset .tabset-fade}
+
+```{r svtab_noBND}
+sv_noBND <- sv_all %>%
+  dplyr::select(-ID) %>%
+  dplyr::filter(!Type %in% c("BND", "PURPLE_inf")) %>%
+  dplyr::mutate(rownum = dplyr::row_number(),
+                Genes_original = Genes)
+
+sv_noBND1 <- sv_noBND %>%
+  dplyr::mutate(Genes = ifelse(ngen > 2,
+                               glue::glue("n_genes: {ngen}; see Many Genes Table"),
+                               Genes)) %>%
+  dplyr::select(rownum, 1:9) %>%
+  dplyr::select(-Effect, everything(), Effect)
+
+sv_noBND2 <- sv_noBND %>%
+  dplyr::select(rownum, 10:ncol(sv_noBND), -c(Genes_original))
+
+sv_noBND3 <- sv_noBND %>%
+  dplyr::filter(ngen > 2) %>%
+  dplyr::select(rownum, Chr:Type, Effect, varnum, ngen, Genes = Genes_original)
+
+sv_noBND1_dt <- sv_noBND1 %>%
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Buttons", "KeyTable"),
+                options = list(
+                  autoWidth = FALSE, keys = TRUE,
+                  buttons = c('csv'), dom = 'Blfrtip')) %>%
+  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+
+sv_noBND2_dt <- sv_noBND2 %>%
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Buttons", "KeyTable"),
+                options = list(
+                  autoWidth = FALSE, keys = TRUE,
+                  buttons = c('csv'),
+                  dom = 'Blfrtip'))
+
+sv_noBND3_dt <- sv_noBND3 %>%
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Buttons", "KeyTable"),
+                options = list(
+                  autoWidth = FALSE, keys = TRUE,
+                  buttons = c('csv'),
+                  dom = 'Blfrtip')) %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
+
+#### Main Columns
+
+```{r sv_noBND1_dt}
+sv_noBND1_dt
+```
+
+#### Other Columns
+
+```{r sv_noBND2_dt}
+sv_noBND2_dt
+```
+
+#### Many Genes
+
+```{r sv_noBND3_dt}
+sv_noBND3_dt
+```
+
 
 ## Copy Number Variants {#copy-number-variants}
 
