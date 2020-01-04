@@ -247,6 +247,38 @@ count_pieces <- function(x, sep) {
   ifelse(nchar(x) == 0, 0, stringr::str_count(x, sep) + 1)
 }
 
+effect_abbrev <- function(effects) {
+  # take string as x&y&z
+  # split by &
+  # abbreviate each piece and glue back with comma
+  abbrev <- c(
+    "3_prime_UTR_truncation" = "3UTRtrunc", "3_prime_UTR_variant" = "3UTRvar",
+    "5_prime_UTR_truncation" = "5UTRtrunc",  "5_prime_UTR_variant" = "5UTRvar",
+    "feature_fusion" = "fus", "bidirectional_gene_fusion" = "fus_gene_bid", "gene_fusion" = "fus_gene",
+    "chromosome_number_variation" = "chrom_numvar", "conservative_inframe_deletion" = "cons_inf_del",
+    "downstream_gene_variant" = "down_gene_var", "upstream_gene_variant" = "up_gene_var",
+    "duplication" = "dup", "exon_loss_variant" = "exon_loss_var",
+    "feature_ablation" = "del_gene", "transcript_ablation" = "del_tx",
+    "frameshift_variant" = "frame_var", "intergenic_region" = "inter_reg", "intragenic_variant" = "intra_var",
+    "intron_variant" = "intron_var",  "no_func_effect" = "no_func_eff", "no_prio_effect" = "no_prio_eff",
+    "non_coding_transcript_variant" = "noncod_tx_var",
+    "splice_acceptor_variant" = "splice_acc_var",
+    "splice_donor_variant" = "splice_don_var", "splice_region_variant" = "splice_reg_var",
+    "start_lost" = "start_lost", "stop_gained" = "stop_gained", "stop_lost" = "stop_lost",
+    "TF_binding_site_variant" = "TFBS_var",  "TFBS_ablation" = "TFBS_del")
+
+  abbrev_nms <- names(abbrev)
+
+  .effect_abbrev <- function(effect) {
+    ifelse(effect %in% abbrev_nms, abbrev[effect], effect)
+  }
+
+  strsplit(effects, "&")[[1]] %>%
+    purrr::map_chr(.effect_abbrev) %>%
+    paste(collapse = ", ")
+}
+effect_abbrev_v <- Vectorize(effect_abbrev)
+
 
 sv_path <- params$somatic_sv
 sv_unmelted <- NULL
@@ -294,7 +326,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       neff = count_pieces(Effect, "&"),
       Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
       Genes = Genes %>% stringr::str_replace_all('&', ', '),
-      Effect = Effect %>% stringr::str_replace_all('&', ', ')) %>%
+      Effect = effect_abbrev_v(Effect)) %>%
     dplyr::select(
       Chr = chrom, Start, End = END_BPI,
       Tier, Type = svtype, Genes, Effect, ID,
