@@ -123,6 +123,15 @@ library(stringr)
 library(tidyr)
 ```
 
+```{r funcs}
+# get js indices when using in DT options
+col_ind_js <- function(dt, col) {
+  ntab <- setNames((1:ncol(dt) - 1), names(dt))
+  stopifnot(all(col %in% names(dt)))
+  sort(unname(ntab[col]))
+}
+```
+
 ```{r allele_freq_prep}
 #---- Allele Frequencies ----#
 set.seed(42)
@@ -215,22 +224,6 @@ mut_sig_contr2 <-
 ```
 
 ```{r sv_prioritize_prep}
-#---- Structural Variants ----#
-# subset_genes <- function(g, ind) {
-#   g %>%
-#     stringr::str_split('&') %>%
-#     purrr::map(~ .[ind] %>%
-#                  replace("", NA) %>%
-#                  .[!is.na(.)]) %>%
-#     purrr::map_chr(~ ifelse(length(.) > 0, str_c(., collapse = '&'), ""))
-# }
-
-# format_val <- function(val, is_pct = FALSE) {
-#   ifelse(!is.na(val),
-#          format(val, digits = 1) %>% str_c(ifelse(is_pct, "%", "")),
-#          NA)
-# }
-
 split_sv_field <- function(.data, field, is_pct = FALSE) {
   # - separate field into two parts
   # - mutate to pct accordingly
@@ -247,20 +240,17 @@ split_sv_field <- function(.data, field, is_pct = FALSE) {
       !!f1_q := round(as.double(!!f1_q) * ifelse(is_pct, 100, 1), 1),
       !!f2_q := round(as.double(!!f2_q) * ifelse(is_pct, 100, 1), 1),
       !!f_q  := round(((!!f1_q + ifelse(is.na(!!f2_q), !!f1_q, !!f2_q)) / 2), 1)
-      # !!f_q  := format_val(!!f_q, is_pct),
-      # !!f1_q := format_val(!!f1_q, is_pct),
-      # !!f2_q := format_val(!!f2_q, is_pct)
     )
+}
+
+count_pieces <- function(x, sep) {
+  ifelse(nchar(x) == 0, 0, stringr::str_count(x, sep) + 1)
 }
 
 
 sv_path <- params$somatic_sv
 sv_unmelted <- NULL
 sv_all <- NULL
-
-count_pieces <- function(x, sep) {
-  ifelse(nchar(x) == 0, 0, stringr::str_count(x, sep) + 1)
-}
 
 
 if (length(readLines(con = sv_path, n = 2)) > 1) {
@@ -714,7 +704,7 @@ indicated with different colors. The y-axis corresponds to the distance of a mut
 previous mutation, and is log10 transformed. Drop-downs from the plots indicate clusters or
 "hotspots" of mutations.
 
-```{r mutationalpatterns-rainfall, out.width="90%", fig.width=14}
+```{r mutationalpatterns_rainfall, out.width="90%", fig.width=14}
 MutationalPatterns::plot_rainfall(somatic_snv[[1]], chromosomes = seqnames(get(ref_genome))[1:22], cex = 1.2, ylim = 1e+09)
 ```
 
@@ -977,22 +967,21 @@ __Prioritisation process__
 ### Translocations {.tabset .tabset-fade}
 
 ```{r svtab_BND}
-sv_col_ind_js <- function(d, x) {
-  ntab <- setNames((1:ncol(d) - 1), names(d))
-  stopifnot(all(x %in% names(d)))
-  sort(unname(ntab[x]))
-}
-
 sv_BND <- sv_all %>%
   dplyr::filter(Type == "BND") %>%
   dplyr::mutate(nrow = dplyr::row_number(),
                 nrow = as.character(nrow)) %>%
-  dplyr::select(nrow, dplyr::everything()) # nrow is first col
+  dplyr::select(nrow, dplyr::everything())
 
 sv_BND_main <- sv_BND %>%
-  dplyr::select(1:13)
+  dplyr::select(nrow, Tier, Chr, Start, End, ID, Genes, Effect, Detail, SR_PR_alt, Ploidy, AF_PURPLE)
+
 sv_BND_other <- sv_BND %>%
-  dplyr::select(nrow, 14:ncol(sv_BND))
+  dplyr::select(nrow, AF_BPI, CNC, CN, SR_PR_ref, SScore, ntrx, Transcript)
+
+sv_BND_purple <- sv_all %>%
+  dplyr::filter(Type %in% c("PURPLE_inf")) %>%
+  dplyr::select(Chr, Start, Tier, Effect, Detail, Ploidy, CN, CNC, ID)
 
 sv_BND_maindt <- sv_BND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1011,17 +1000,14 @@ sv_BND_otherdt <- sv_BND_other %>%
                   scroller = TRUE, scrollY = 400, scrollX = TRUE, keys = TRUE, autoWidth = FALSE,
                   buttons = c('csv'), dom = 'Blfrtip'))
 
-sv_BND_purpledt <- sv_all %>%
-  dplyr::filter(Type %in% c("PURPLE_inf")) %>%
-  dplyr::select(Chr, Start, Ploidy, CN, CNC,
-                Detail, Tier, Type, Effect, ID, varnum) %>%
+sv_BND_purpledt <- sv_BND_purple %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 class = "cell-border display compact",
                 rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
                 options = list(
                   scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE,
                   buttons = c('csv'),
-                  dom = 'Bfrtip')) %>%
+                  dom = 'Blfrtip')) %>%
   DT::formatCurrency(~ Start, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
@@ -1064,21 +1050,21 @@ sv_noBND_main <- sv_noBND %>%
                 Transcript = ifelse(ntrx > max_transcripts,
                                     glue::glue("Many Transcripts ({ntrx})"),
                                     Transcript)) %>%
-  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier,
-                Genes, Transcript, Detail, Effect, SR_PR_alt, AF_PURPLE)
+  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier, Effect,
+                Genes, Transcript, Detail, SR_PR_alt, AF_PURPLE)
 
 sv_noBND_other <- sv_noBND %>%
-  dplyr::select(varnum, Ploidy, SR_PR_alt, AF_PURPLE, AF_BPI, CNC, CN, SR_PR_ref, SScore) %>%
+  dplyr::select(varnum, Ploidy, AF_BPI, CNC, CN, SR_PR_ref, SScore) %>%
   dplyr::distinct()
 
 sv_noBND_manygenes <- sv_noBND %>%
   dplyr::filter(ngen > max_genes) %>%
-  dplyr::select(nrow, varnum, Chr, Start, End, Tier, Type,
+  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier,
                 Effect, ngen, Genes = Genes_original)
 
 sv_noBND_manytx <- sv_noBND %>%
   dplyr::filter(ntrx > max_transcripts) %>%
-  dplyr::select(nrow, varnum, Chr, Start, End, Tier, Type,
+  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier,
                 Effect, ntrx, Transcript = Transcript_original)
 
 sv_noBND_maindt <- sv_noBND_main %>%
@@ -1338,7 +1324,7 @@ Copy numbers are broken down by colour into their respective minor
 allele ploidy (MAP) while the minor allele ploidy figure is broken
 down by copy number.
 
-```{r purple-plot-copynumber, out.width="40%"}
+```{r purple_plot_copynumber, out.width="40%"}
 knitr::include_graphics(c(file.path(img_dir, paste0(params$batch_name, '.copynumber.png')),
                         file.path(img_dir, paste0(params$batch_name, '.map.png'))))
 ```
@@ -1348,11 +1334,11 @@ If a somatic variant VCF has been supplied, a figure will be produced
 showing the somatic variant ploidy broken down by copy number as well
 as a rainfall plot with kataegis clusters highlighted in grey.
 
-```{r purple-plot-somatic, out.width="40%"}
+```{r purple_plot_somatic, out.width="40%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.png')))
 ```
 
-```{r purple-plot-somaticrainfall, out.width="90%"}
+```{r purple_plot_somaticrainfall, out.width="90%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.rainfall.png')))
 ```
 
@@ -1360,7 +1346,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.r
 The following 'sunrise' chart shows the range of scores of all examined solutions of
 purity and ploidy. Crosshairs identify the best purity / ploidy solution.
 
-```{r purple-plot-purityrange, out.width="40%"}
+```{r purple_plot_purityrange, out.width="40%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.purity.range.png')))
 ```
 
@@ -1375,7 +1361,7 @@ peaks are below the 0.85 subclonal threshold.
 We can determine the likelihood of a variant being subclonal at
 any given ploidy as shown in the bottom half of the figure.
 
-```{r purple-plot-somaticclonality, out.width="50%"}
+```{r purple_plot_somaticclonality, out.width="50%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.clonality.png')))
 ```
 
@@ -1384,7 +1370,7 @@ The contribution of each fitted segment to the final score of the best fit is sh
 the following figure. Each segment is divided into its major and minor allele ploidy.
 The area of each circle shows the weight (AMBER baf count) of each segment.
 
-```{r purple-plot-segment, out.width="40%"}
+```{r purple_plot_segment, out.width="40%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.segment.png')))
 ```
 
@@ -1420,7 +1406,7 @@ conda_pkgs %>%
 
 ### Report Inputs
 
-```{r}
+```{r report_inputs}
 dplyr::tibble(key = names(params), value = unlist(params)) %>%
   knitr::kable(format = "html") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
