@@ -184,7 +184,6 @@ cancer_signatures <-
 
 # sanity check - need to be in same order
 stopifnot(all(cancer_signatures$SomMutType == rownames(mut_mat)))
-
 # select only 30 sig columns, 96 mut types
 cancer_signatures <- cancer_signatures %>%
   dplyr::select(4:33) %>%
@@ -199,7 +198,7 @@ cancer_signatures2 <-
                                     substr(SubType, 3, 3))) %>%
   dplyr::select(SomMutType, SBS1:SBS85)
 
-
+# sanity check - need to be in same order
 stopifnot(all(cancer_signatures2$SomMutType == rownames(mut_mat)))
 # select only 67 sig columns, 96 mut types
 cancer_signatures2 <- cancer_signatures2 %>%
@@ -215,12 +214,16 @@ fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
 fit_res_contr2 <- fit_res2$contribution[fit_res2$contribution[, 1] > 0, ]
 mut_sig_contr <-
   dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr) %>%
-  dplyr::mutate(Contribution = round(Contribution, 0)) %>%
-  dplyr::arrange(-Contribution)
+  dplyr::mutate(Contribution = round(Contribution, 0),
+                Rank = as.integer(base::rank(-Contribution))) %>%
+  dplyr::select(Rank, everything()) %>%
+  dplyr::arrange(Rank)
 mut_sig_contr2 <-
   dplyr::tibble(Signature = names(fit_res_contr2), Contribution = fit_res_contr2) %>%
-  dplyr::mutate(Contribution = round(Contribution, 0)) %>%
-  dplyr::arrange(-Contribution)
+  dplyr::mutate(Contribution = round(Contribution, 0),
+                Rank = as.integer(base::rank(-Contribution))) %>%
+  dplyr::select(Rank, everything()) %>%
+  dplyr::arrange(Rank)
 ```
 
 ```{r sv_prioritize_prep}
@@ -255,11 +258,11 @@ effect_abbrev <- function(effects) {
     "3_prime_UTR_truncation" = "3UTRtrunc", "3_prime_UTR_variant" = "3UTRvar",
     "5_prime_UTR_truncation" = "5UTRtrunc",  "5_prime_UTR_variant" = "5UTRvar",
     "feature_fusion" = "fus", "bidirectional_gene_fusion" = "fus_gene_bid", "gene_fusion" = "fus_gene",
-    "chromosome_number_variation" = "chrom_numvar", "conservative_inframe_deletion" = "cons_inf_del",
+    "chromosome_number_variation" = "chrom_numvar", "conservative_inframe_deletion" = "cons_infr_del",
     "downstream_gene_variant" = "down_gene_var", "upstream_gene_variant" = "up_gene_var",
     "duplication" = "dup", "exon_loss_variant" = "exon_loss_var",
     "feature_ablation" = "del_gene", "transcript_ablation" = "del_tx",
-    "frameshift_variant" = "frame_var", "intergenic_region" = "inter_reg", "intragenic_variant" = "intra_var",
+    "frameshift_variant" = "frsh_var", "intergenic_region" = "inter_reg", "intragenic_variant" = "intra_var",
     "intron_variant" = "intron_var",  "no_func_effect" = "no_func_eff", "no_prio_effect" = "no_prio_eff",
     "non_coding_transcript_variant" = "noncod_tx_var",
     "splice_acceptor_variant" = "splice_acc_var",
@@ -278,7 +281,6 @@ effect_abbrev <- function(effects) {
     paste(collapse = ", ")
 }
 effect_abbrev_v <- Vectorize(effect_abbrev)
-
 
 sv_path <- params$somatic_sv
 sv_unmelted <- NULL
@@ -326,7 +328,9 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       neff = count_pieces(Effect, "&"),
       Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
       Genes = Genes %>% stringr::str_replace_all('&', ', '),
-      Effect = effect_abbrev_v(Effect)) %>%
+      Effect = effect_abbrev_v(Effect))
+
+  sv_all <- sv_all %>%
     dplyr::select(
       Chr = chrom, Start, End = END_BPI,
       Tier, Type = svtype, Genes, Effect, ID,
@@ -337,7 +341,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       SScore = somaticscore,
       varnum, Transcript, ngen, ntrx, nann, neff) %>%
     dplyr::distinct() %>%
-    dplyr::arrange(Tier, Effect, desc(AF_PURPLE), Genes)
+    dplyr::arrange(Tier, Genes, Effect)
 } else {
   sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
   sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
@@ -522,7 +526,7 @@ The following post-processing steps occur:
 </details>
 
 
-```{r allele_freq_plot_stats}
+```{r allele_freq_plot_stats, fig.width=10, fig.height=3}
 ggplot(data = af_both, aes(af)) +
   geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#006400") +
   facet_wrap(~set, scales = 'free_y', drop = FALSE) +
@@ -552,7 +556,7 @@ calls as input.
 
 #### Context signature
 
-```{r plot_96_prof, out.height="50%"}
+```{r plot_96_prof, fig.height=3}
 MutationalPatterns::plot_96_profile(mut_mat, condensed = TRUE)
 ```
 
@@ -574,7 +578,7 @@ between `C>T` at CpG sites and other sites.
 
 </details>
 
-```{r plot_mut_type_occurrences, out.height="50%"}
+```{r plot_mut_type_occurrences, fig.height=3}
 type_occurrences <- mut_type_occurrences(vcf_list = somatic_snv, ref_genome = ref_genome)
 plot_spectrum(type_occurrences, CT = TRUE)
 ```
@@ -596,7 +600,7 @@ than one gene on different strands.
 
 </details>
 
-```{r tran_strand_bias, out.height="50%"}
+```{r tran_strand_bias, fig.height=3}
 # Get known genes table from UCSC
 if (params$genome_build == 'hg19') {
   genes_list <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene)
@@ -640,7 +644,7 @@ strand bias analysis.
 
 </details>
 
-```{r rep_strand_bias, out.height="50%"}
+```{r rep_strand_bias, fig.height=3}
 repli_file <- system.file("extdata/ReplicationDirectionRegions.bed",
                           package = "MutationalPatterns")
 # start/stop contain scientific notation, so need to be doubles
@@ -705,7 +709,7 @@ mut_sig_contr %>%
   dplyr::left_join(sig_table, by = "Signature") %>%
   knitr::kable() %>%
   kableExtra::kable_styling(font_size = 12) %>%
-  kableExtra::scroll_box(height = "500px")
+  kableExtra::scroll_box(height = "400px")
 ```
 
 #### NEW
@@ -725,7 +729,7 @@ mut_sig_contr2 %>%
   dplyr::mutate(Signature = ifelse(Signature %in% possible_seq_artefacts, paste0(Signature, " (SA)"), Signature)) %>%
   knitr::kable() %>%
   kableExtra::kable_styling(font_size = 12) %>%
-  kableExtra::scroll_box(height = "500px")
+  kableExtra::scroll_box(height = "400px")
 ```
 
 <p>&nbsp;</p>
@@ -1006,7 +1010,14 @@ sv_BND <- sv_all %>%
   dplyr::select(nrow, dplyr::everything())
 
 sv_BND_main <- sv_BND %>%
-  dplyr::select(nrow, Tier, Chr, Start, End, ID, Genes, Effect, Detail, SR_PR_alt, Ploidy, AF_PURPLE)
+  tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
+  dplyr::group_by(BND_group) %>%
+  dplyr::mutate(BND_ID = group_indices(),
+                BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(nrow, varnum, Tier, Chr, Start, End,
+                ID, BND = BND_ID, Mate = BND_mate,
+                Genes, Effect, Detail, SR_PR_alt, Ploidy, AF_PURPLE)
 
 sv_BND_other <- sv_BND %>%
   dplyr::select(nrow, AF_BPI, CNC, CN, SR_PR_ref, SScore, ntrx, Transcript)
