@@ -473,7 +473,7 @@ stopifnot(all(names(purple_global_cnv) == nms_purple_cnv))
 
 ## Summary
 
-```{r summary_tables, results='asis'}
+```{r summary_tables}
 summarise_sigs <- function(mut_sig_contr) {
   mut_sig_contr %>%
     head(2) %>%
@@ -488,22 +488,17 @@ cnv_summary <- purple_global_cnv %>%
                    Max = round(max(cn), 2),
                    N = n()) %>% unlist()
 
-sv_summary_svtype <-
-  list(before = sv_unmelted %>% dplyr::select(svtype),
-       after = sv_all %>% dplyr::select(svtype = Type)) %>%
-  purrr::map(function(x) addmargins(table(x, useNA = 'a'))) %>%
+sv_summary <-
+  list(raw = sv_unmelted %>% dplyr::select(svtype),
+       annot = sv_all %>% dplyr::select(svtype = Type)) %>%
+  purrr::map(function(x) addmargins(table(x, useNA = 'ifany'))) %>%
   do.call("rbind", .) %>%
-  knitr::kable(escape = FALSE, caption = "SV_Type before/after annotation melting", output = FALSE) %>%
-  kableExtra::kable_styling(full_width = TRUE)
-
-sv_summary_tier <-
-  list(before = sv_unmelted %>% dplyr::select(tier),
-       after = sv_all %>% dplyr::select(tier = Tier)) %>%
-  purrr::map(function(x) addmargins(table(x, useNA = 'a'))) %>%
-  do.call("rbind", .) %>%
-  knitr::kable(escape = FALSE, caption = "SV_Tier before/after annotation melting", output = FALSE) %>%
-  kableExtra::kable_styling(full_width = TRUE)
-
+  as.data.frame() %>%
+  tibble::rownames_to_column(var = "group") %>%
+  tidyr::pivot_longer(-group) %>%
+  dplyr::mutate(value = paste0(name, ": ", value)) %>%
+  tidyr::pivot_wider(names_from = group, values_from = value) %>%
+  dplyr::select(raw, annot)
 
 qc_summary_all <- purple_qc_summary %>%
   dplyr::filter(Variable %in% c("QC_Status", "Gender", "Purity", "Ploidy")) %>%
@@ -516,16 +511,16 @@ qc_summary_all <- purple_qc_summary %>%
       "CNVs Somatic", glue::glue("{htmltools::strong('Min: ')}{cnv_summary['Min']}; ",
                                  "{htmltools::strong('Max: ')}{cnv_summary['Max']}; ",
                                  "{htmltools::strong('N: ')}{cnv_summary['N']} "),
+      "SVs (raw)", paste(rev(sv_summary$raw), collapse = ", "),
+      "SVs (annotated)", paste(rev(sv_summary$annot), collapse = ", "),
       "Genome", params$genome_build
     )
   ) %>%
   dplyr::mutate(Variable = kableExtra::cell_spec(Variable, bold = TRUE)) %>%
-  knitr::kable(escape = FALSE, col.names = NULL, output = FALSE) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "float_left")
+  knitr::kable(escape = FALSE, col.names = NULL) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
 
-cat(c('<table><tr><td>', '<h2>Summary</h2>',
-      qc_summary_all, '</td>', '<td>', '<h2>SV Summary</h2>',
-      sv_summary_svtype, sv_summary_tier, '</td></tr></table>'), sep = '')
+qc_summary_all
 ```
 
 ## Somatic Mutation Profiles
@@ -1030,10 +1025,10 @@ effect_abbreviations %>%
 ### Summary
 
 ```{r results='asis'}
-sv_summary <- function() {
+sv_tier_vs_svtype <- function() {
   l <- list(before = sv_unmelted %>% dplyr::select(Tier = tier, svtype),
             after = sv_all %>% dplyr::select(Tier, svtype = Type)) %>%
-    purrr::map(function(x) addmargins(table(x)))
+    purrr::map(function(x) addmargins(table(x, useNA = 'ifany')))
 
   before <- knitr::kable(l$before, format = "html", caption = "SV type by tier before breaking down by annotation", output = FALSE) %>%
     kableExtra::kable_styling(full_width = FALSE, position = "float_right")
@@ -1043,7 +1038,7 @@ sv_summary <- function() {
   list(before = before, after = after)
 }
 
-cat(c('<table><tr valign="top"><td>', sv_summary()$before, '</td>', '<td>', sv_summary()$after, '</td></tr></table>'), sep = '')
+cat(c('<table><tr valign="top"><td>', sv_tier_vs_svtype()$before, '</td>', '<td>', sv_tier_vs_svtype()$after, '</td></tr></table>'), sep = '')
 ```
 
 ### Translocations {.tabset .tabset-fade #translocations}
