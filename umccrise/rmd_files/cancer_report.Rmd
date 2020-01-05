@@ -130,6 +130,19 @@ col_ind_js <- function(dt, col) {
   stopifnot(all(col %in% names(dt)))
   sort(unname(ntab[col]))
 }
+
+# used in SV table Details
+sv_detail_table <- function(tab) {
+  list(Column = colnames(tab)) %>%
+    tibble::as_tibble() %>%
+    dplyr::left_join(sv_col_descr, by = "Column") %>%
+    dplyr::mutate(
+      Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
+    knitr::kable(escape = FALSE) %>%
+    kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+    kableExtra::scroll_box(height = "200px")
+}
+
 ```
 
 ```{r allele_freq_prep}
@@ -251,37 +264,37 @@ count_pieces <- function(x, sep) {
   ifelse(nchar(x) == 0, 0, stringr::str_count(x, sep) + 1)
 }
 
-effect_abbrev <- function(effects) {
+effect_abbreviations <- c(
+  "3_prime_UTR_truncation" = "3UTRtrunc", "3_prime_UTR_variant" = "3UTRvar",
+  "5_prime_UTR_truncation" = "5UTRtrunc",  "5_prime_UTR_variant" = "5UTRvar",
+  "feature_fusion" = "Fus", "bidirectional_gene_fusion" = "BidFusG", "gene_fusion" = "FusG",
+  "chromosome_number_variation" = "ChromNumV", "conservative_inframe_deletion" = "ConsInframeDel",
+  "downstream_gene_variant" = "DnstreamGV", "upstream_gene_variant" = "UpstreamGV",
+  "duplication" = "Dup", "exon_loss_variant" = "ExonLossV",
+  "feature_ablation" = "DelG", "transcript_ablation" = "DelTx",
+  "frameshift_variant" = "FrameshiftV", "intergenic_region" = "IntergenReg", "intragenic_variant" = "IntragenV",
+  "intron_variant" = "IntronV",  "no_func_effect" = "NoFuncEff", "no_prio_effect" = "NoPrioEff",
+  "non_coding_transcript_variant" = "NoncodTxV",
+  "splice_acceptor_variant" = "SpliceAccV",
+  "splice_donor_variant" = "SpliceDonV", "splice_region_variant" = "SpliceRegV",
+  "start_lost" = "StartLoss", "stop_gained" = "StopGain", "stop_lost" = "StopLoss",
+  "TF_binding_site_variant" = "TFBSVar",  "TFBS_ablation" = "TFBSDel")
+effect_abbrev_nms <- names(effect_abbreviations)
+
+abbreviate_effect <- function(effects) {
   # take string as x&y&z
   # split by &
   # abbreviate each piece and glue back with comma
-  abbrev <- c(
-    "3_prime_UTR_truncation" = "3UTRtrunc", "3_prime_UTR_variant" = "3UTRvar",
-    "5_prime_UTR_truncation" = "5UTRtrunc",  "5_prime_UTR_variant" = "5UTRvar",
-    "feature_fusion" = "fus", "bidirectional_gene_fusion" = "fus_gene_bid", "gene_fusion" = "fus_gene",
-    "chromosome_number_variation" = "chrom_numvar", "conservative_inframe_deletion" = "cons_infr_del",
-    "downstream_gene_variant" = "down_gene_var", "upstream_gene_variant" = "up_gene_var",
-    "duplication" = "dup", "exon_loss_variant" = "exon_loss_var",
-    "feature_ablation" = "del_gene", "transcript_ablation" = "del_tx",
-    "frameshift_variant" = "frsh_var", "intergenic_region" = "inter_reg", "intragenic_variant" = "intra_var",
-    "intron_variant" = "intron_var",  "no_func_effect" = "no_func_eff", "no_prio_effect" = "no_prio_eff",
-    "non_coding_transcript_variant" = "noncod_tx_var",
-    "splice_acceptor_variant" = "splice_acc_var",
-    "splice_donor_variant" = "splice_don_var", "splice_region_variant" = "splice_reg_var",
-    "start_lost" = "start_lost", "stop_gained" = "stop_gained", "stop_lost" = "stop_lost",
-    "TF_binding_site_variant" = "TFBS_var",  "TFBS_ablation" = "TFBS_del")
 
-  abbrev_nms <- names(abbrev)
-
-  .effect_abbrev <- function(effect) {
-    ifelse(effect %in% abbrev_nms, abbrev[effect], effect)
+  .abbreviate_effect <- function(effect) {
+    ifelse(effect %in% effect_abbrev_nms, effect_abbreviations[effect], effect)
   }
 
   strsplit(effects, "&")[[1]] %>%
-    purrr::map_chr(.effect_abbrev) %>%
+    purrr::map_chr(.abbreviate_effect) %>%
     paste(collapse = ", ")
 }
-effect_abbrev_v <- Vectorize(effect_abbrev)
+abbreviate_effectv <- Vectorize(abbreviate_effect)
 
 sv_path <- params$somatic_sv
 sv_unmelted <- NULL
@@ -329,7 +342,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       neff = count_pieces(Effect, "&"),
       Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
       Genes = Genes %>% stringr::str_replace_all('&', ', '),
-      Effect = effect_abbrev_v(Effect))
+      Effect = abbreviate_effectv(Effect))
 
   sv_all <- sv_all %>%
     dplyr::select(
@@ -497,8 +510,6 @@ purple_qc_summary %>%
 
 ## Somatic Mutation Profiles
 
-<a href="#top">Back to top</a>
-
 ### Allelic Frequencies {#allelic-freqs}
 Summarised below are the allele frequencies (AFs) for somatic variants detected
 genome-wide (__Global__) vs. within the coding sequence of ~1,100 UMCCR
@@ -546,8 +557,6 @@ af_stats %>%
 ```
 
 ### Mutational Signatures {.tabset .tabset-fade #signatures}
-
-<a href="#top">Back to top</a>
 
 Deciphering the mutational signature of a tumor sample can provide insight into the mutational
 processes involved in carcinogenesis and help in cancer treatment and prevention.
@@ -677,8 +686,6 @@ MutationalPatterns::plot_strand_bias(strand_bias_rep)
 
 ### Signature Contribution {.tabset .tabset-fade #contributions}
 
-<a href="#top">Back to top</a>
-
 <details>
 <summary>Description</summary>
 
@@ -747,8 +754,6 @@ MutationalPatterns::plot_rainfall(somatic_snv[[1]], chromosomes = seqnames(get(r
 
 
 ## Circos Plots {.tabset .tabset-fade #circos}
-<a href="#top">Back to top</a>
-
 Circos plots are generated by PURPLE.
 The first BAF plot is based on PURPLE data and configuration files.
 
@@ -841,13 +846,9 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png
 ```
 
 ## Structural Variants {#sv-details}
-
-<a href="#top">Back to top</a>
-
 Structural variants are inferred with [Manta](https://github.com/illumina/manta),
 adjusted using [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator#7-structural-variant-recovery-and-single-breakend-filtering),
 and prioritised using [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation).
-
 Allele frequencies, copy number changes and ploidy are purity-adjusted.
 
 <details>
@@ -902,69 +903,65 @@ dplyr::tribble(
   ~Column, ~Description,
   "caller", "Manta SV caller",
   "sample", "Tumor sample name",
-  "chrom", "CHROM",
-  "start", "POS",
+  "chrom", "CHROM column in VCF",
+  "start", "POS column in VCF",
   "end", "INFO/END: End position of the variant described in this record",
   "svtype", "INFO/SVTYPE: Type of structural variant",
   "split_read_support", "FORMAT/SR of tumor sample: Split reads for the ref and alt alleles in the order listed, for reads where P(allele|read)>0.999",
   "paired_support_PE", "FORMAT/PE of tumor sample: ??",
-  "paired_support_PR", "FORMAT/PR of tumor sample: Spanning paired-read support for the ref and alt alleles in the order listed",
-  "BPI_AF", "INFO/BPI_AF: AF at each breakpoint (so BPI_AF_BP1,BPI_AF_BP2)",
+  "paired_support_PR", "FORMAT/PR of tumor sample: Spanning paired-read support for the ref and alt alleles in the order listed, for reads where P(allele|read)>0.999",
+  "AF_BPI", "INFO/BPI_AF: AF at each breakpoint (so AF_BPI1,AF_BPI2)",
   "somaticscore", "INFO/SOMATICSCORE: Somatic variant quality score",
   "tier", "INFO/SV_TOP_TIER (or 4 if missing): Highest priority tier for the effects of a variant entry",
   "annotation", "INFO/SIMPLE_ANN: Simplified structural variant annotation: 'SVTYPE | EFFECT | GENE(s) | TRANSCRIPT | PRIORITY (1-4)'",
-  "PURPLE_AF", "INFO/PURPLE_AF: AF at each breakend (purity adjusted) (so PURPLE_AF_BP1,PURPLE_AF_BP2)",
-  "PURPLE_CN", "INFO/PURPLE_CN: CN at each breakend (purity adjusted) (so PURPLE_CN_BP1,PURPLE_CN_BP2)",
-  "PURPLE_CN_change", "INFO/PURPLE_CN_CHANGE: change in CN at each breakend (purity adjusted) (so PURPLE_CN_CHANGE_BP1,PURPLE_CN_CHANGE_BP2)",
-  "PURPLE_Ploidy", "INFO/PURPLE_PLOIDY: Ploidy of variant (purity adjusted)",
-  "PURPLE_status", "INFERRED if FILTER=INFERRED, or RECOVERED if has INFO/RECOVERED, else blank. INFERRED: Breakend inferred from copy number transition"
-) %>%
-  dplyr::mutate(
-    Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
+  "AF_PURPLE", "INFO/PURPLE_AF: AF at each breakend (purity adjusted) (so AF_PURPLE1,AF_PURPLE2)",
+  "CN_PURPLE", "INFO/PURPLE_CN: CN at each breakend (purity adjusted) (so CN_PURPLE1,CN_PURPLE2)",
+  "CN_change_PURPLE", "INFO/PURPLE_CN_CHANGE: change in CN at each breakend (purity adjusted) (so CN_change_PURPLE1,CN_change_PURPLE2)",
+  "Ploidy_PURPLE", "INFO/PURPLE_PLOIDY: Ploidy of variant (purity adjusted)",
+  "PURPLE_status", "INFERRED if FILTER=INFERRED, or RECOVERED if has INFO/RECOVERED, else blank. INFERRED: Breakend inferred from copy number transition",
+  "START_BPI", "INFO/BPI_START: BPI adjusted breakend location",
+  "END_BPI", "INFO/BPI_END: BPI adjusted breakend location",
+  "ID", "ID column in VCF") %>%
+  dplyr::arrange(Column) %>%
+  dplyr::mutate(Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
   knitr::kable(escape = FALSE) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+  kableExtra::scroll_box(height = "200px")
 ```
 
-
-* __Report SV Table Column Description__
-
-Variants are ordered by tier, then by effect, then by AF.
-
-```{r manta_report_table_description}
-dplyr::tribble(
+```{r sv_table_description}
+sv_col_descr <- dplyr::tribble(
   ~Column, ~Description,
-  "BPI_AF", "(BPI_AF_BP1 + BPI_AF_BP2) / 2",
-  "PURPLE_AF", "(PURPLE_AF_BP1 + PURPLE_AF_BP2) / 2",
-  "PURPLE_CN", "(PURPLE_CN_BP1 + PURPLE_CN_BP2) / 2",
-  "PURPLE_CN_change", "(PURPLE_CN_change_BP1 + PURPLE_CN_change_BP2) / 2",
-  "Ploidy", "INFO/PURPLE_PLOIDY: Ploidy of variant (purity adjusted)",
-  "SR_ref/SR_alt", "FORMAT/SR of tumor sample: Split reads for the ref and alt alleles in the order listed, for reads where P(allele|read)>0.999",
-  "PR_ref/PR_alt", "FORMAT/PR of tumor sample: Spanning paired-read support for the ref and alt alleles in the order listed",
-  "PE_ref/PE_alt", "FORMAT/PE of tumor sample: ?",
-  "SR", "SR_alt",
-  "PR", "PR_alt",
-  "PE", "PE_alt",
-  "varnum", "Original event row number",
-  "Type", "INFO/SVTYPE: Type of structural variant",
-  "Effect", "SV effect (from 'simple_sv_annotation': fusion, exon loss, intergenic, intronic). When more than 1 effect, only the first one is shown, with the rest of them included in the 'Other effects' column.",
-  "Gene", "Gene name(s) (from 'simple_sv_annotation') (can be multiple). When there are more than 2 genes, only the first two are shown, with the rest of them included in the 'Other affected genes' column.",
-  "Transcript", "Transcript name (from 'simple_sv_annotation') (can be multiple)",
-  "Detail", "Prioritisation detail (from 'simple_sv_annotation': for exon loss variants, deleted exon numbers)",
+  "nrow", "Row number that connects variants between tables in same tab set",
+  "varnum", "Original event row number that connects variants to events",
   "Tier", "Priority of the event (from 'simple_sv_annotation': 1 highest, 4 lowest)",
-  ) %>%
-  dplyr::mutate(
-    Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
-  knitr::kable(escape = FALSE) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
+  "Chr", "Chromosome",
+  "Start", "Start inferred by BPI (for PURPLE-inferred SVs we use POS)",
+  "End", "End inferred by BPI (PURPLE-inferred SVs don't have an end)",
+  "ID", "ID of BND from Manta (or PURPLE for PURPLE-inferred SVs))",
+  "BND_ID", "ID of BND pair simplified (numbers based on Manta ID alphanumeric order)",
+  "BND_mate", "'A' or 'B' depending on if it's the first or second mate in the BND pair",
+  "Genes", "Genes involved in the event. DEL/DUP/INS events involving more than 2 genes are shown in separate table.",
+  "Transcript", "Transcripts involved in the event. DEL/DUP/INS events involving more than 2 transcripts are shown in separate table.",
+  "Effect", glue::glue(
+    "SV effect (based on {htmltools::a(href='http://snpeff.sourceforge.net/SnpEff_manual.html#input', 'SnpEff Effect Sequence Ontology')}",
+    " - abbreviations are shown in Effects table below)"),
+  "Detail", "Prioritisation detail (from 'simple_sv_annotation')",
+  "Ploidy", "Ploidy of variant from PURPLE (purity adjusted)",
+  "AF_PURPLE", "PURPLE AF at each breakend preceded by their average",
+  "AF_BPI", "BPI AF at each breakend preceded by their average",
+  "CN", "Copy Number at each breakend preceded by their average",
+  "CNC", "Copy Number Change at each breakend preceded by their average",
+  "SR_PR_alt", "Number of Split Reads and Paired Reads supporting the alt allele, for reads where P(allele|read)>0.999",
+  "SR_PR_ref", "Number of Split Reads and Paired Reads supporting the ref allele, for reads where P(allele|read)>0.999",
+  "Type", "Type of structural variant",
+  "SScore", "Somatic variant quality score",
+  "ntrx", "Number of transcripts for given event",
+  "ngen", "Number of genes for given event"
+)
 ```
 
-
-- `Ploidy`: variant ploidy (purity-adjusted )
-- `AF`: allele frequency at each breakend (`AF_bp1`, `AF_bp2`) and averaged (`AF`) (purity-adjusted)
-- `CN`: copy number at each breakend (`CN_bp1`, )
-- `CN_change`: change in copy number at each breakend (`CN_chg_bp1`, `CN_chg_bp2`) and averaged (`CN chg`) (purity-adjusted)
-- `Effect`: can contain any effect predicted by [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html#input),
-  with standardised terms from [Sequence ontology](http://www.sequenceontology.org).
+<p>&nbsp;</p>
 
 __Prioritisation process__
 
@@ -996,6 +993,15 @@ __Prioritisation process__
 
 * Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
 
+```{r effect_abbrev_tab}
+effect_abbreviations %>%
+  tibble::enframe(value = "abbreviation") %>%
+  dplyr::arrange(abbreviation) %>%
+  dplyr::mutate(name = kableExtra::cell_spec(name, bold = TRUE)) %>%
+  knitr::kable(escape = FALSE) %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+  kableExtra::scroll_box(height = "200px")
+```
 
 </details>
 
@@ -1017,7 +1023,7 @@ sv_BND_main <- sv_BND %>%
                 BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
   dplyr::ungroup() %>%
   dplyr::select(nrow, varnum, Tier, Chr, Start, End,
-                ID, BND = BND_ID, Mate = BND_mate,
+                ID, BND_ID, BND_mate,
                 Genes, Effect, Detail, SR_PR_alt, Ploidy, AF_PURPLE)
 
 sv_BND_other <- sv_BND %>%
@@ -1057,17 +1063,44 @@ sv_BND_purpledt <- sv_BND_purple %>%
 
 #### Main Columns
 
+<details>
+<summary>Description</summary>
+
+```{r}
+sv_detail_table(sv_BND_main)
+```
+
+</details>
+
 ```{r sv_BND_maindt}
 sv_BND_maindt
 ```
 
 #### Other Columns
 
+<details>
+<summary>Description</summary>
+
+```{r}
+sv_detail_table(sv_BND_other)
+```
+
+</details>
+
 ```{r sv_BND_otherdt}
 sv_BND_otherdt
 ```
 
 #### PURPLE Inferred
+
+<details>
+<summary>Description</summary>
+
+```{r}
+sv_detail_table(sv_BND_purple)
+```
+
+</details>
 
 ```{r sv_BND_purpledt}
 sv_BND_purpledt
@@ -1156,11 +1189,29 @@ sv_noBND_manytxdt <- sv_noBND_manytx %>%
 
 #### Main Columns
 
+<details>
+<summary>Description</summary>
+
+```{r}
+sv_detail_table(sv_noBND_main)
+```
+
+</details>
+
 ```{r sv_noBND_maindt}
 sv_noBND_maindt
 ```
 
 #### Other Columns
+
+<details>
+<summary>Description</summary>
+
+```{r}
+sv_detail_table(sv_noBND_other)
+```
+
+</details>
 
 ```{r sv_noBND2_dt}
 sv_noBND_otherdt
@@ -1168,20 +1219,35 @@ sv_noBND_otherdt
 
 #### Many Genes
 
+<details>
+<summary>Description</summary>
+
+```{r}
+sv_detail_table(sv_noBND_manygenes)
+```
+
+</details>
+
 ```{r sv_noBND_manygenesdt}
 sv_noBND_manygenesdt
 ```
 
 #### Many Transcripts
 
+<details>
+<summary>Description</summary>
+
+```{r}
+sv_detail_table(sv_noBND_manytx)
+```
+
+</details>
+
 ```{r sv_noBND_manytxdt}
 sv_noBND_manytxdt
 ```
 
 ## Copy Number Variants
-
-<a href="#top">Back to top</a>
-
 The purity and ploidy estimator
 [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
 is used to generate a copy number profile for the somatic sample.
@@ -1254,8 +1320,6 @@ purple_qc_summary %>%
 
 ### UMCCR Gene CNV Calls {#cnv-gene}
 
-<a href="#top">Back to top</a>
-
 <details>
 <summary>Description</summary>
 
@@ -1281,7 +1345,8 @@ dplyr::tribble(
   dplyr::mutate(
     Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
   knitr::kable(escape = FALSE) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+  kableExtra::scroll_box(height = "200px")
 ```
 
 </details>
@@ -1300,8 +1365,6 @@ purple_gene_cnv %>%
 ```
 
 ### Genome-wide CNV Segments {#cnv-segs}
-
-<a href="#top">Back to top</a>
 
 <details>
 <summary>Description</summary>
@@ -1328,7 +1391,8 @@ dplyr::tribble(
   dplyr::mutate(
     Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
   knitr::kable(escape = FALSE) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+  kableExtra::scroll_box(height = "200px")
 ```
 
 </details>
@@ -1445,7 +1509,7 @@ conda_pkgs %>%
   knitr::kable(format = "html") %>%
   kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE) %>%
-  kableExtra::scroll_box(height = "400px")
+  kableExtra::scroll_box(height = "200px")
 ```
 
 ### Report Inputs
@@ -1454,7 +1518,8 @@ conda_pkgs %>%
 dplyr::tibble(key = names(params), value = unlist(params)) %>%
   knitr::kable(format = "html") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
-  kableExtra::column_spec(1, bold = TRUE)
+  kableExtra::column_spec(1, bold = TRUE) %>%
+  kableExtra::scroll_box(height = "200px")
 ```
 
 ### Conda Pkgs All
