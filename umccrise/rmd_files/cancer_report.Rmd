@@ -300,7 +300,6 @@ sv_path <- params$somatic_sv
 sv_unmelted <- NULL
 sv_all <- NULL
 
-
 if (length(readLines(con = sv_path, n = 2)) > 1) {
   sv_unmelted <-
     readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciiccccciiccccdciic") %>%
@@ -310,28 +309,31 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     split_sv_field(CN_PURPLE) %>%
     split_sv_field(CN_change_PURPLE) %>%
     dplyr::mutate(
-      AF_BPI = ifelse(is.na(AF_BPI), NA, glue::glue("{AF_BPI} ({AF_BPI1},{AF_BPI2})")),
-      AF_PURPLE = ifelse(is.na(AF_PURPLE), NA, glue::glue("{AF_PURPLE} ({AF_PURPLE1},{AF_PURPLE2})")),
-      CN_PURPLE = ifelse(is.na(CN_PURPLE), NA, glue::glue("{CN_PURPLE} ({CN_PURPLE1},{CN_PURPLE2})")),
-      CN_change_PURPLE = ifelse(is.na(CN_change_PURPLE), NA, glue::glue("{CN_change_PURPLE} ({CN_change_PURPLE1},{CN_change_PURPLE2})"))
+      AF_BPI = ifelse(
+        is.na(AF_BPI), NA, paste0(AF_BPI, " (", AF_BPI1, ",", AF_BPI2, ")")),
+      AF_PURPLE = ifelse(
+        is.na(AF_PURPLE), NA, paste0(AF_PURPLE, " (", AF_PURPLE1, ", ", AF_PURPLE2, ")")),
+      CN_PURPLE = ifelse(
+        is.na(CN_PURPLE), NA, paste0(CN_PURPLE, " (", CN_PURPLE1, ", ", CN_PURPLE2, ")")),
+      CN_change_PURPLE = ifelse(
+        is.na(CN_change_PURPLE), NA, paste0(CN_change_PURPLE, " (", CN_change_PURPLE1, ", ", CN_change_PURPLE2, ")"))
     ) %>%
     tidyr::separate(split_read_support, c("SR_ref", "SR_alt"), ",", convert = TRUE) %>%
     tidyr::separate(paired_support_PR, c("PR_ref", "PR_alt"), ",", convert = TRUE) %>%
     dplyr::mutate(
-      SR_PR_alt = glue::glue("{SR_alt}_{PR_alt}"),
-      SR_PR_ref = glue::glue("{SR_ref}_{PR_ref}"),
+      SR_PR_alt = paste0(SR_alt, ",", PR_alt),
+      SR_PR_ref = paste0(SR_ref, ",", PR_ref),
       Ploidy = round(as.double(Ploidy_PURPLE), 2),
       chrom = sub("chr", "", chrom),
       chrom = as.factor(chrom),
       svtype = ifelse(is.na(PURPLE_status), svtype, "PURPLE_inf"),
       Start = ifelse(is.na(PURPLE_status), START_BPI, start),
       ID = sub("Manta...:", "M:", ID),
+      nann = count_pieces(annotation, ","),
       varnum = dplyr::row_number())
 
   sv_all <- sv_unmelted %>%
-    dplyr::mutate(
-      nann = count_pieces(annotation, ","),
-      annotation = strsplit(annotation, ',')) %>%
+    dplyr::mutate(annotation = strsplit(annotation, ',')) %>%
     tidyr::unnest(annotation) %>%
     tidyr::separate(
       annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
@@ -860,7 +862,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
 ```
 
-## Structural Variants {#sv-details}
+## Structural Variants {#sv-summary}
 Structural variants are inferred with [Manta](https://github.com/illumina/manta),
 adjusted using [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator#7-structural-variant-recovery-and-single-breakend-filtering),
 and prioritised using [simple_sv_annotation](https://github.com/AstraZeneca-NGS/simple_sv_annotation).
@@ -972,7 +974,8 @@ sv_col_descr <- dplyr::tribble(
   "Type", "Type of structural variant",
   "SScore", "Somatic variant quality score",
   "ntrx", "Number of transcripts for given event",
-  "ngen", "Number of genes for given event"
+  "ngen", "Number of genes for given event",
+  "nann", "Number of annotations for given event"
 )
 ```
 
@@ -1024,7 +1027,7 @@ effect_abbreviations %>%
 
 ### Summary
 
-```{r results='asis'}
+```{r sv_summary, results='asis'}
 sv_tier_vs_svtype <- function() {
   l <- list(before = sv_unmelted %>% dplyr::select(Tier = tier, svtype),
             after = sv_all %>% dplyr::select(Tier, svtype = Type)) %>%
@@ -1041,7 +1044,57 @@ sv_tier_vs_svtype <- function() {
 cat(c('<table><tr valign="top"><td>', sv_tier_vs_svtype()$before, '</td>', '<td>', sv_tier_vs_svtype()$after, '</td></tr></table>'), sep = '')
 ```
 
-### Translocations {.tabset .tabset-fade #translocations}
+### Raw Variants {#sv-raw}
+
+```{r svtab_raw}
+svtab_raw_BND <- sv_unmelted %>%
+  dplyr::filter(svtype == "BND") %>%
+  tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
+  dplyr::group_by(BND_group) %>%
+  dplyr::mutate(BND_ID = group_indices(),
+                BND_mate = ifelse(BND_mate == 0, "A", "B"),
+                BND_ID = ifelse(svtype == "BND", BND_ID, NA_integer_),
+                BND_mate = ifelse(svtype == "BND", BND_mate, NA_character_)) %>%
+  dplyr::ungroup()
+
+svtab_raw_other <- sv_unmelted %>%
+  dplyr::filter(svtype != "BND")
+
+svtab_raw <-
+  dplyr::bind_rows(svtab_raw_BND, svtab_raw_other) %>%
+  dplyr::select(
+    varnum, Chr = chrom, Start, End = END_BPI,
+    Tier = tier, Type = svtype,
+    nann, ID, BND_ID, BND_mate,
+    SR_PR_alt, Ploidy, AF_PURPLE, AF_BPI,
+    CNC = CN_change_PURPLE, CN = CN_PURPLE, SR_PR_ref,
+    SScore = somaticscore) %>%
+  dplyr::arrange(Tier, varnum)
+
+svtab_rawdt <- svtab_raw %>%
+  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+                options = list(
+                  scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
+                  buttons = c('csv'), dom = 'Blfrtip')) %>%
+  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+<details>
+<summary>Description</summary>
+
+```{r}
+sv_detail_table(svtab_raw)
+```
+
+</details>
+
+```{r svtab_rawdt}
+svtab_rawdt
+```
+
+### Translocations (BNDs) {.tabset .tabset-fade #translocations}
 
 ```{r svtab_BND}
 sv_BND <- sv_all %>%
@@ -1140,7 +1193,7 @@ sv_detail_table(sv_BND_purple)
 sv_BND_purpledt
 ```
 
-### Del/Dup/Ins {.tabset .tabset-fade #deldupins}
+### DEL/DUP/INS {.tabset .tabset-fade #deldupins}
 
 ```{r svtab_noBND}
 sv_noBND <- sv_all %>%
@@ -1281,12 +1334,12 @@ sv_detail_table(sv_noBND_manytx)
 sv_noBND_manytxdt
 ```
 
-## Copy Number Variants
+## Copy Number Variants {#cnv-qc}
 The purity and ploidy estimator
 [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
 is used to generate a copy number profile for the somatic sample.
 
-### QC, Purity and Ploidy Summary {#cnv-qc}
+### QC, Purity and Ploidy Summary
 
 PURPLE outputs a QC status along with a summary
 for the inferred purity and ploidy of the somatic sample.
