@@ -13,32 +13,6 @@ from hpc_utils import hpc
 localrules: small_variants
 
 
-def get_somatic_vcf_path(b):  # starting from bcbio 1.1.6, ~ Dec 2019
-    return join(run.final_dir, batch_by_name[b].tumor.name, f'{batch_by_name[b].tumor.name}-{run.somatic_caller}.vcf.gz')
-def get_old_somatic_vcf_path(b):    # before bcbio 1.1.6
-    return join(run.date_dir, f'{batch_by_name[b].name}-{run.somatic_caller}-annotated.vcf.gz')
-def get_old_somatic_vcf_path_cwl(b):
-    return join(run.date_dir, f'{batch_by_name[b].name}-{run.somatic_caller}.vcf.gz')
-
-def get_germline_vcf_path(b):
-    return join(run.date_dir, f'{batch_by_name[b].normal.name}-germline-{run.germline_caller}-annotated.vcf.gz')
-def get_germline_vcf_path_cwl(b):
-    return join(run.date_dir, f'{batch_by_name[b].normal.name}-germline-{run.germline_caller}.vcf.gz')
-
-if not all(isfile(get_somatic_vcf_path(b)) for b in batch_by_name.keys()):
-    # bcbio < 1.1.6 ?
-    if all(isfile(get_old_somatic_vcf_path(b)) for b in batch_by_name.keys()):
-        get_somatic_vcf_path = get_old_somatic_vcf_path
-    # CWL?
-    elif all(isfile(get_old_somatic_vcf_path_cwl(b)) for b in batch_by_name.keys()):
-        get_somatic_vcf_path = get_old_somatic_vcf_path_cwl
-        get_germline_vcf_path = get_germline_vcf_path_cwl
-    else:
-        critical(f'Could not find somatic variants files for all batches neither as '
-                 f'{run.final_dir}/<tumor-name>/<tumor-name>-{run.somatic_caller}.vcf.gz (conventional bcbio), nor as '
-                 f'{run.date_dir}/<batch>-{run.somatic_caller}-annotated.vcf.gz (bcbio < v1.1.6), nor as '
-                 f'project/<batch>-{run.somatic_caller}.vcf.gz (CWL bcbio).')
-
 def cnt_vars(vcf_path, passed=False):
     snps = 0
     indels = 0
@@ -56,7 +30,7 @@ def cnt_vars(vcf_path, passed=False):
 
 rule somatic_vcf_pass_sort:
     input:
-        vcf = lambda wc: get_somatic_vcf_path(wc.batch),
+        vcf = lambda wc: batch_by_name[wc.batch].somatic_vcf,
     output:
         vcf = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         tbi = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
@@ -149,7 +123,7 @@ rule bcftools_stats_somatic:
 #### Germline ####
 rule germline_vcf_pass:
     input:
-        vcf = lambda wc: get_germline_vcf_path(wc.batch),
+        vcf = lambda wc: batch_by_name[wc.batch].germline_vcf,
     output:
         vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-PASS.vcf.gz',
     group: "germline_snv"

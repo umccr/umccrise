@@ -21,7 +21,7 @@ from hpc_utils import hpc
 
 @click.command()
 @click.version_option(version.__version__)
-@click.argument('bcbio_project', type=click.Path(exists=True))
+@click.argument('input_project', type=click.Path(exists=True))
 @click.argument('target_rule', nargs=-1)
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory [def: umccrised]')
 
@@ -55,14 +55,14 @@ from hpc_utils import hpc
               help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 @click.option('--debug', 'debug', is_flag=True, help='Increases verbosity of messages')
 
-def main(bcbio_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, input_genomes_dir=None,
+def main(input_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, input_genomes_dir=None,
          jobs=None, cluster=False, cluster_cmd=None, forcerun=None,
          unlock=False, rerun_incomplete=False, restart_times=None, dryrun=False,
          upload_s3=False, upload_igv=False, docker_wrapper_mode=False, report=None, dag=False, debug=False):
     """
-Umccrise (post-process) a bcbio project.\n
-BCBIO_PROJECT: path to a bcbio run (final or "datestamp" directory)\n
-TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_variants rmd igv
+Umccrise (post-process) a bcbio or Dragen project.\n
+input_project: path to a bcbio run (final or "datestamp" directory) or a Dragen run\n
+target_rule: optional list of rules, e.g.: pcgr coverage structural small_variants rmd igv
 """
 
     output_dir = output_dir or 'umccrised'
@@ -85,13 +85,13 @@ TARGET_RULE: optional list of rules, e.g.: pcgr coverage structural small_varian
 
     tmp_dirs = []
 
-    if isfile(bcbio_project):
-        bcbio_project, tmp_dir = extract_tarball_input(output_dir, bcbio_project, 'Bcbio project input')
+    if isfile(input_project):
+        input_project, tmp_dir = extract_tarball_input(output_dir, input_project, 'Bcbio or Dragen project input')
         tmp_dirs.append(tmp_dir)
 
-    conf['bcbio_project'] = verify_dir(bcbio_project, is_critical=True)
+    conf['input_project'] = verify_dir(input_project, is_critical=True)
     if docker_wrapper_mode:
-        conf['bcbio_project'] = docker_mounts[bcbio_project] = '/bcbio_project'
+        conf['input_project'] = docker_mounts[input_project] = '/bcbio_project'
 
     if input_genomes_dir:
         if isfile(input_genomes_dir):
@@ -221,9 +221,9 @@ def extract_tarball_input(output_dir, path, description):
     input_dir = safe_mkdir(join(output_dir, 'input'))
     tmp_dir = tempfile.TemporaryDirectory(prefix=input_dir)
     run_simple(f'tar -xzf {path} --directory {tmp_dir.name}')
-    bcbio_project = join(tmp_dir.name, os.listdir(tmp_dir.name)[0])
-    assert isdir(bcbio_project), bcbio_project + " " + str(os.listdir(tmp_dir.name))
-    return bcbio_project, tmp_dir
+    input_project = join(tmp_dir.name, os.listdir(tmp_dir.name)[0])
+    assert isdir(input_project), input_project + " " + str(os.listdir(tmp_dir.name))
+    return input_project, tmp_dir
 
 
 if __name__ == '__main__':
