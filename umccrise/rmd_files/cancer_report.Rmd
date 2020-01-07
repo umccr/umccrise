@@ -124,6 +124,17 @@ library(tidyr)
 ```
 
 ```{r funcs}
+# for checking if the columns in the dt are all described
+check_cols_described <- function(cols, descr) {
+  stopifnot(is.character(cols), is.atomic(cols))
+  stopifnot(is.character(descr), is.atomic(descr))
+  for (col in cols) {
+    if (!col %in% descr) {
+      warning(glue::glue("{col} is not described!"))
+    }
+  }
+}
+
 # get js indices when using in DT options
 col_ind_js <- function(dt, col) {
   ntab <- setNames((1:ncol(dt) - 1), names(dt))
@@ -133,6 +144,7 @@ col_ind_js <- function(dt, col) {
 
 # used in SV table Details
 sv_detail_table <- function(tab) {
+  check_cols_described(colnames(tab), sv_col_descr$Column)
   list(Column = colnames(tab)) %>%
     tibble::as_tibble() %>%
     dplyr::left_join(sv_col_descr, by = "Column") %>%
@@ -142,7 +154,6 @@ sv_detail_table <- function(tab) {
     kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
     kableExtra::scroll_box(height = "200px")
 }
-
 ```
 
 ```{r allele_freq_prep}
@@ -301,22 +312,18 @@ sv_unmelted <- NULL
 sv_all <- NULL
 
 if (length(readLines(con = sv_path, n = 2)) > 1) {
-  sv_unmelted <-
-    readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciiccccciiccccdciic") %>%
+  somatic_sv_tsv <- readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciicccccicccccdciicc")
+  sv_unmelted <- somatic_sv_tsv %>%
     dplyr::select(-caller, -sample) %>%
     split_sv_field(AF_BPI) %>%
     split_sv_field(AF_PURPLE) %>%
     split_sv_field(CN_PURPLE) %>%
     split_sv_field(CN_change_PURPLE) %>%
     dplyr::mutate(
-      AF_BPI = ifelse(
-        is.na(AF_BPI), NA, paste0(AF_BPI, " (", AF_BPI1, ",", AF_BPI2, ")")),
-      AF_PURPLE = ifelse(
-        is.na(AF_PURPLE), NA, paste0(AF_PURPLE, " (", AF_PURPLE1, ", ", AF_PURPLE2, ")")),
-      CN_PURPLE = ifelse(
-        is.na(CN_PURPLE), NA, paste0(CN_PURPLE, " (", CN_PURPLE1, ", ", CN_PURPLE2, ")")),
-      CN_change_PURPLE = ifelse(
-        is.na(CN_change_PURPLE), NA, paste0(CN_change_PURPLE, " (", CN_change_PURPLE1, ", ", CN_change_PURPLE2, ")"))
+      AF_BPI = ifelse(is.na(AF_BPI), NA, paste0(AF_BPI, " (", AF_BPI1, ",", AF_BPI2, ")")),
+      AF_PURPLE = ifelse(is.na(AF_PURPLE), NA, paste0(AF_PURPLE, " (", AF_PURPLE1, ", ", AF_PURPLE2, ")")),
+      CN_PURPLE = ifelse(is.na(CN_PURPLE), NA, paste0(CN_PURPLE, " (", CN_PURPLE1, ", ", CN_PURPLE2, ")")),
+      CN_change_PURPLE = ifelse(is.na(CN_change_PURPLE), NA, paste0(CN_change_PURPLE, " (", CN_change_PURPLE1, ", ", CN_change_PURPLE2, ")"))
     ) %>%
     tidyr::separate(split_read_support, c("SR_ref", "SR_alt"), ",", convert = TRUE) %>%
     tidyr::separate(paired_support_PR, c("PR_ref", "PR_alt"), ",", convert = TRUE) %>%
@@ -325,18 +332,49 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       SR_PR_ref = paste0(SR_ref, ",", PR_ref),
       Ploidy = round(as.double(Ploidy_PURPLE), 2),
       chrom = sub("chr", "", chrom),
-      chrom = as.factor(chrom),
+      chrom = as.factor(chrom), # for better DT filtering
       svtype = ifelse(is.na(PURPLE_status), svtype, "PURPLE_inf"),
       Start = ifelse(is.na(PURPLE_status), START_BPI, start),
-      ID = sub("Manta...:", "M:", ID),
       nann = count_pieces(annotation, ","),
-      varnum = dplyr::row_number())
+      varnum = dplyr::row_number(),
+      varnum = sprintf(glue::glue("%0{nchar(nrow(somatic_sv_tsv))}d"), varnum))
+
+  # Fix BND IDs
+  sv_unmelted_bnd <- sv_unmelted %>%
+    dplyr::filter(svtype == "BND") %>%
+    tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
+    dplyr::group_by(BND_group) %>%
+    dplyr::mutate(
+      BND_ID = dplyr::group_indices(),
+      BND_ID = sprintf(glue::glue("%0{nchar(nrow(sv_unmelted))}d"), BND_ID),
+      BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
+    dplyr::ungroup() %>%
+    dplyr::bind_cols(., .[match(.$ID, .$MATEID), "chrom"]) %>%
+    dplyr::rename(BND_mate_chrom = chrom1)
+
+  sv_unmelted_other <- sv_unmelted %>%
+    dplyr::filter(svtype != "BND")
+
+  sv_unmelted <-
+    dplyr::bind_rows(sv_unmelted_bnd,
+                     sv_unmelted_other) %>%
+    dplyr::mutate(
+      END_BPI = base::format(END_BPI, big.mark = ",", trim = TRUE),
+      End = ifelse(svtype == "BND", paste0(BND_mate_chrom, ":", END_BPI), END_BPI)) %>%
+    dplyr::select(varnum, Tier1 = tier,
+                  Chr = chrom, Start, End,
+                  Type = svtype,
+                  ID, MATEID, BND_ID, BND_mate,
+                  SR_PR_alt, SR_PR_ref, Ploidy,
+                  AF_PURPLE, AF_BPI,
+                  CNC = CN_change_PURPLE, CN = CN_PURPLE,
+                  SScore = somaticscore, nann, annotation)
 
   sv_all <- sv_unmelted %>%
     dplyr::mutate(annotation = strsplit(annotation, ',')) %>%
     tidyr::unnest(annotation) %>%
     tidyr::separate(
-      annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
+      annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier2'),
       sep = '\\|', convert = FALSE) %>%
     dplyr::mutate(
       ntrx = count_pieces(Transcript, "&"),
@@ -344,20 +382,9 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       neff = count_pieces(Effect, "&"),
       Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
       Genes = Genes %>% stringr::str_replace_all('&', ', '),
-      Effect = abbreviate_effectv(Effect))
-
-  sv_all <- sv_all %>%
-    dplyr::select(
-      Chr = chrom, Start, End = END_BPI,
-      Tier, Type = svtype, Genes, Effect, ID,
-      SR_PR_alt, Ploidy, Detail,
-      AF_PURPLE, AF_BPI,
-      CNC = CN_change_PURPLE, CN = CN_PURPLE,
-      SR_PR_ref,
-      SScore = somaticscore,
-      varnum, Transcript, ngen, ntrx, nann, neff) %>%
+      Effect = abbreviate_effectv(Effect)) %>%
     dplyr::distinct() %>%
-    dplyr::arrange(Tier, Genes, Effect)
+    dplyr::arrange(Tier1, Genes, Effect)
 } else {
   sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
   sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
@@ -491,8 +518,8 @@ cnv_summary <- purple_global_cnv %>%
                    N = n()) %>% unlist()
 
 sv_summary <-
-  list(raw = sv_unmelted %>% dplyr::select(svtype),
-       annot = sv_all %>% dplyr::select(svtype = Type)) %>%
+  list(unmelted = sv_unmelted %>% dplyr::select(Type),
+       melted = sv_all %>% dplyr::select(Type)) %>%
   purrr::map(function(x) addmargins(table(x, useNA = 'ifany'))) %>%
   do.call("rbind", .) %>%
   as.data.frame() %>%
@@ -500,7 +527,7 @@ sv_summary <-
   tidyr::pivot_longer(-group) %>%
   dplyr::mutate(value = paste0(name, ": ", value)) %>%
   tidyr::pivot_wider(names_from = group, values_from = value) %>%
-  dplyr::select(raw, annot)
+  dplyr::select(unmelted, melted)
 
 qc_summary_all <- purple_qc_summary %>%
   dplyr::filter(Variable %in% c("QC_Status", "Gender", "Purity", "Ploidy")) %>%
@@ -513,8 +540,8 @@ qc_summary_all <- purple_qc_summary %>%
       "CNVs Somatic", glue::glue("{htmltools::strong('Min: ')}{cnv_summary['Min']}; ",
                                  "{htmltools::strong('Max: ')}{cnv_summary['Max']}; ",
                                  "{htmltools::strong('N: ')}{cnv_summary['N']} "),
-      "SVs (raw)", paste(rev(sv_summary$raw), collapse = ", "),
-      "SVs (annotated)", paste(rev(sv_summary$annot), collapse = ", "),
+      "SVs (unmelted)", paste(rev(sv_summary$unmelted), collapse = ", "),
+      "SVs (melted)", paste(rev(sv_summary$melted), collapse = ", "),
       "Genome", params$genome_build
     )
   ) %>%
@@ -916,7 +943,7 @@ __Step 4: TSV final output__
 * Output: `{batch}/structural/{batch}-manta.tsv` TSV
 
 ```{r manta_tsv_description}
-dplyr::tribble(
+manta_tsv_col_descr <- dplyr::tribble(
   ~Column, ~Description,
   "caller", "Manta SV caller",
   "sample", "Tumor sample name",
@@ -938,12 +965,17 @@ dplyr::tribble(
   "PURPLE_status", "INFERRED if FILTER=INFERRED, or RECOVERED if has INFO/RECOVERED, else blank. INFERRED: Breakend inferred from copy number transition",
   "START_BPI", "INFO/BPI_START: BPI adjusted breakend location",
   "END_BPI", "INFO/BPI_END: BPI adjusted breakend location",
-  "ID", "ID column in VCF") %>%
+  "ID", "ID column in VCF",
+  "MATEID", "INFO/MATEID: ID of mate breakend")
+
+check_cols_described(manta_tsv_col_descr$Column, colnames(somatic_sv_tsv))
+
+manta_tsv_col_descr %>%
   dplyr::arrange(Column) %>%
   dplyr::mutate(Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
-  kableExtra::scroll_box(height = "200px")
+  kableExtra::scroll_box(height = "250px")
 ```
 
 ```{r sv_table_description}
@@ -951,18 +983,21 @@ sv_col_descr <- dplyr::tribble(
   ~Column, ~Description,
   "nrow", "Row number that connects variants between tables in same tab set",
   "varnum", "Original event row number that connects variants to events",
-  "Tier", "Priority of the event (from 'simple_sv_annotation': 1 highest, 4 lowest)",
+  "Tier1", "Max priority of the event (from 'simple_sv_annotation': 1 highest, 4 lowest)",
+  "Tier2", "Priority of the specific event",
   "Chr", "Chromosome",
-  "Start", "Start inferred by BPI (for PURPLE-inferred SVs we use POS)",
-  "End", "End inferred by BPI (PURPLE-inferred SVs don't have an end)",
+  "Start", "Start position as inferred by BPI (for PURPLE-inferred SVs we use POS)",
+  "End", paste("End position. For BNDs this has been assigned to the Chr:Start of the BND's mate for convenience.",
+               "Values are inferred by BPI (PURPLE-inferred SVs don't have an End)."),
   "ID", "ID of BND from Manta (or PURPLE for PURPLE-inferred SVs))",
-  "BND_ID", "ID of BND pair simplified (numbers based on Manta ID alphanumeric order)",
+  "MATEID", "ID of BND mate from Manta",
+  "BND_ID", "ID of BND pair simplified. BNDs with the same BND_ID belong to the same translocation event",
   "BND_mate", "'A' or 'B' depending on if it's the first or second mate in the BND pair",
   "Genes", "Genes involved in the event. DEL/DUP/INS events involving more than 2 genes are shown in separate table.",
   "Transcript", "Transcripts involved in the event. DEL/DUP/INS events involving more than 2 transcripts are shown in separate table.",
-  "Effect", glue::glue(
-    "SV effect (based on {htmltools::a(href='http://snpeff.sourceforge.net/SnpEff_manual.html#input', 'SnpEff Effect Sequence Ontology')}",
-    " - abbreviations are shown in Effects table below)"),
+  "Effect", glue::glue("SV effect (based on ",
+                       "{htmltools::a(href='http://snpeff.sourceforge.net/SnpEff_manual.html#input', 'SnpEff Effect Sequence Ontology')}",
+                       " - abbreviations are shown under {htmltools::a(href='#sv-summary', 'Details')} in the Effects table"),
   "Detail", "Prioritisation detail (from 'simple_sv_annotation')",
   "Ploidy", "Ploidy of variant from PURPLE (purity adjusted)",
   "AF_PURPLE", "PURPLE AF at each breakend preceded by their average",
@@ -1018,7 +1053,7 @@ effect_abbreviations %>%
   dplyr::mutate(name = kableExtra::cell_spec(name, bold = TRUE)) %>%
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
-  kableExtra::scroll_box(height = "200px")
+  kableExtra::scroll_box(height = "250px")
 ```
 
 </details>
@@ -1029,56 +1064,37 @@ effect_abbreviations %>%
 
 ```{r sv_summary, results='asis'}
 sv_tier_vs_svtype <- function() {
-  l <- list(before = sv_unmelted %>% dplyr::select(Tier = tier, svtype),
-            after = sv_all %>% dplyr::select(Tier, svtype = Type)) %>%
+  l <- list(unmelted = sv_unmelted %>% dplyr::select(Tier1, Type),
+            melted = sv_all %>% dplyr::select(Tier1, Type)) %>%
     purrr::map(function(x) addmargins(table(x, useNA = 'ifany')))
 
-  before <- knitr::kable(l$before, format = "html", caption = "SV type by tier before breaking down by annotation", output = FALSE) %>%
+  unmelted <- knitr::kable(l$unmelted, format = "html", caption = "SV type by tier before breaking down by annotation", output = FALSE) %>%
     kableExtra::kable_styling(full_width = FALSE, position = "float_right")
-  after <- knitr::kable(l$after, format = "html", caption = "SV type by tier after breaking down by annotation", output = FALSE) %>%
+  melted <- knitr::kable(l$melted, format = "html", caption = "SV type by tier after breaking down by annotation", output = FALSE) %>%
     kableExtra::kable_styling(full_width = FALSE, position = "float_right")
 
-  list(before = before, after = after)
+  list(unmelted = unmelted, melted = melted)
 }
 
-cat(c('<table><tr valign="top"><td>', sv_tier_vs_svtype()$before, '</td>', '<td>', sv_tier_vs_svtype()$after, '</td></tr></table>'), sep = '')
+cat(c('<table><tr valign="top"><td>', sv_tier_vs_svtype()$unmelted, '</td>', '<td>', sv_tier_vs_svtype()$melted, '</td></tr></table>'), sep = '')
 ```
 
-### Raw Variants {#sv-raw}
+### Unmelted Variants {#sv-unmelted}
 
 ```{r svtab_raw}
-svtab_raw_BND <- sv_unmelted %>%
-  dplyr::filter(svtype == "BND") %>%
-  tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
-  dplyr::group_by(BND_group) %>%
-  dplyr::mutate(BND_ID = group_indices(),
-                BND_mate = ifelse(BND_mate == 0, "A", "B"),
-                BND_ID = ifelse(svtype == "BND", BND_ID, NA_integer_),
-                BND_mate = ifelse(svtype == "BND", BND_mate, NA_character_)) %>%
-  dplyr::ungroup()
-
-svtab_raw_other <- sv_unmelted %>%
-  dplyr::filter(svtype != "BND")
-
-svtab_raw <-
-  dplyr::bind_rows(svtab_raw_BND, svtab_raw_other) %>%
-  dplyr::select(
-    varnum, Chr = chrom, Start, End = END_BPI,
-    Tier = tier, Type = svtype,
-    nann, ID, BND_ID, BND_mate,
-    SR_PR_alt, Ploidy, AF_PURPLE, AF_BPI,
-    CNC = CN_change_PURPLE, CN = CN_PURPLE, SR_PR_ref,
-    SScore = somaticscore) %>%
-  dplyr::arrange(Tier, varnum)
+svtab_raw <- sv_unmelted %>%
+  dplyr::select(-annotation) %>%
+  dplyr::arrange(Tier1, varnum)
 
 svtab_rawdt <- svtab_raw %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 class = "cell-border display compact",
                 rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
                 options = list(
+                  columnDefs = list(list(className = 'dt-right', targets = col_ind_js(svtab_raw, "End"))),
                   scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
                   buttons = c('csv'), dom = 'Blfrtip')) %>%
-  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+  DT::formatCurrency(~ Start, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 <details>
@@ -1104,11 +1120,11 @@ sv_BND <- sv_all %>%
   dplyr::select(nrow, dplyr::everything())
 
 sv_BND_main <- sv_BND %>%
-  tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
-  dplyr::group_by(BND_group) %>%
-  dplyr::mutate(BND_ID = group_indices(),
-                BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
-  dplyr::ungroup() %>%
+  # tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
+  # dplyr::group_by(BND_group) %>%
+  # dplyr::mutate(BND_ID = group_indices(),
+  #               BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
+  # dplyr::ungroup() %>%
   dplyr::select(nrow, varnum, Tier, Chr, Start, End,
                 ID, BND_ID, BND_mate,
                 Genes, Effect, Detail, SR_PR_alt, Ploidy, AF_PURPLE)
