@@ -337,7 +337,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       Start = ifelse(is.na(PURPLE_status), START_BPI, start),
       nann = count_pieces(annotation, ","),
       varnum = dplyr::row_number(),
-      varnum = sprintf(glue::glue("%0{nchar(nrow(somatic_sv_tsv))}d"), varnum))
+      varnum = sprintf(glue::glue("%0{nchar(nrow(.))}d"), varnum))
 
   # Fix BND IDs
   sv_unmelted_bnd <- sv_unmelted %>%
@@ -346,7 +346,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     dplyr::group_by(BND_group) %>%
     dplyr::mutate(
       BND_ID = dplyr::group_indices(),
-      BND_ID = sprintf(glue::glue("%0{nchar(nrow(sv_unmelted))}d"), BND_ID),
+      BND_ID = sprintf(glue::glue("%0{nchar(nrow(.))}d"), BND_ID),
       BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
     dplyr::ungroup() %>%
     dplyr::bind_cols(., .[match(.$ID, .$MATEID), "chrom"]) %>%
@@ -1116,16 +1116,11 @@ svtab_rawdt
 sv_BND <- sv_all %>%
   dplyr::filter(Type == "BND") %>%
   dplyr::mutate(nrow = dplyr::row_number(),
-                nrow = as.character(nrow)) %>%
+                nrow = sprintf(glue::glue("%0{nchar(nrow(.))}d"), nrow)) %>%
   dplyr::select(nrow, dplyr::everything())
 
 sv_BND_main <- sv_BND %>%
-  # tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
-  # dplyr::group_by(BND_group) %>%
-  # dplyr::mutate(BND_ID = group_indices(),
-  #               BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
-  # dplyr::ungroup() %>%
-  dplyr::select(nrow, varnum, Tier, Chr, Start, End,
+  dplyr::select(nrow, varnum, Tier1, Tier2, Chr, Start, End,
                 ID, BND_ID, BND_mate,
                 Genes, Effect, Detail, SR_PR_alt, Ploidy, AF_PURPLE)
 
@@ -1134,16 +1129,17 @@ sv_BND_other <- sv_BND %>%
 
 sv_BND_purple <- sv_all %>%
   dplyr::filter(Type %in% c("PURPLE_inf")) %>%
-  dplyr::select(Chr, Start, Tier, Effect, Detail, Ploidy, CN, CNC, ID)
+  dplyr::select(Chr, Start, Tier1, Tier2, Effect, Detail, Ploidy, CN, CNC, ID)
 
 sv_BND_maindt <- sv_BND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 class = "cell-border display compact",
                 rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
                 options = list(
+                  columnDefs = list(list(className = 'dt-right', targets = col_ind_js(svtab_raw, "End"))),
                   scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
                   buttons = c('csv'), dom = 'Blfrtip')) %>%
-  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+  DT::formatCurrency(~ Start, currency = "", interval = 3, mark = ",", digits = 0)
 
 sv_BND_otherdt <- sv_BND_other %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1215,7 +1211,7 @@ sv_BND_purpledt
 sv_noBND <- sv_all %>%
   dplyr::filter(!Type %in% c("BND", "PURPLE_inf")) %>%
   dplyr::mutate(nrow = dplyr::row_number(),
-                nrow = as.character(nrow),
+                nrow = sprintf(glue::glue("%0{nchar(nrow(.))}d"), nrow),
                 Genes_original = Genes,
                 Transcript_original = Transcript) %>%
   dplyr::select(-ID)
@@ -1230,7 +1226,7 @@ sv_noBND_main <- sv_noBND %>%
                 Transcript = ifelse(ntrx > max_transcripts,
                                     glue::glue("Many Transcripts ({ntrx})"),
                                     Transcript)) %>%
-  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier, Effect,
+  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier1, Tier2, Effect,
                 Genes, Transcript, Detail, SR_PR_alt, AF_PURPLE)
 
 sv_noBND_other <- sv_noBND %>%
@@ -1239,12 +1235,12 @@ sv_noBND_other <- sv_noBND %>%
 
 sv_noBND_manygenes <- sv_noBND %>%
   dplyr::filter(ngen > max_genes) %>%
-  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier,
+  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier1, Tier2,
                 Effect, ngen, Genes = Genes_original)
 
 sv_noBND_manytx <- sv_noBND %>%
   dplyr::filter(ntrx > max_transcripts) %>%
-  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier,
+  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier1, Tier2,
                 Effect, ntrx, Transcript = Transcript_original)
 
 sv_noBND_maindt <- sv_noBND_main %>%
@@ -1252,10 +1248,11 @@ sv_noBND_maindt <- sv_noBND_main %>%
                 class = "cell-border display compact",
                 rownames = FALSE, extensions = c("Buttons"),
                 options = list(
+                  columnDefs = list(list(className = 'dt-right', targets = col_ind_js(svtab_raw, "End"))),
                   pageLength = 20,
                   autoWidth = FALSE,
                   buttons = c('csv'), dom = 'Blfrtip')) %>%
-  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+  DT::formatCurrency(~ Start, currency = "", interval = 3, mark = ",", digits = 0)
 
 sv_noBND_otherdt <- sv_noBND_other %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1272,22 +1269,24 @@ sv_noBND_manygenesdt <- sv_noBND_manygenes %>%
                 class = "cell-border display compact",
                 rownames = FALSE, extensions = c("Buttons", "KeyTable"),
                 options = list(
+                  columnDefs = list(list(className = 'dt-right', targets = col_ind_js(svtab_raw, "End"))),
                   pageLength = 10,
                   autoWidth = FALSE, keys = TRUE,
                   buttons = c('csv'),
                   dom = 'Blfrtip')) %>%
-  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+  DT::formatCurrency(~ Start, currency = "", interval = 3, mark = ",", digits = 0)
 
 sv_noBND_manytxdt <- sv_noBND_manytx %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                 class = "cell-border display compact",
                 rownames = FALSE, extensions = c("Buttons", "KeyTable"),
                 options = list(
+                  columnDefs = list(list(className = 'dt-right', targets = col_ind_js(svtab_raw, "End"))),
                   pageLength = 10,
                   autoWidth = FALSE, keys = TRUE,
                   buttons = c('csv'),
                   dom = 'Blfrtip')) %>%
-  DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+  DT::formatCurrency(~ Start, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
 #### Main Columns
