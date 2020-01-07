@@ -511,6 +511,11 @@ summarise_sigs <- function(mut_sig_contr) {
     paste(collapse = ", ")
 }
 
+af_summary <- af_stats %>%
+  knitr::kable(format = "html", caption = "AF Summary Stats") %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
+  kableExtra::column_spec(1, bold = TRUE)
+
 cnv_summary <- purple_global_cnv %>%
   dplyr::rename(cn = copyNumber) %>%
   dplyr::summarise(Min = round(min(cn), 2),
@@ -537,9 +542,9 @@ qc_summary_all <- purple_qc_summary %>%
       ~Variable, ~value,
       "Top MutSigs", glue::glue("{htmltools::strong('Old:')} {summarise_sigs(mut_sig_contr)} ",
                                 "- {htmltools::strong('New:')} {summarise_sigs(mut_sig_contr2)}"),
-      "CNVs Somatic", glue::glue("{htmltools::strong('Min: ')}{cnv_summary['Min']}; ",
-                                 "{htmltools::strong('Max: ')}{cnv_summary['Max']}; ",
-                                 "{htmltools::strong('N: ')}{cnv_summary['N']} "),
+      "CNVs (Somatic)", glue::glue("{htmltools::strong('Min: ')}{cnv_summary['Min']}; ",
+                                   "{htmltools::strong('Max: ')}{cnv_summary['Max']}; ",
+                                   "{htmltools::strong('N: ')}{cnv_summary['N']} "),
       "SVs (unmelted)", paste(rev(sv_summary$unmelted), collapse = ", "),
       "SVs (melted)", paste(rev(sv_summary$melted), collapse = ", "),
       "Genome", params$genome_build
@@ -550,6 +555,7 @@ qc_summary_all <- purple_qc_summary %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 
 qc_summary_all
+af_summary
 ```
 
 ## Somatic Mutation Profiles
@@ -593,11 +599,6 @@ ggplot(data = af_both, aes(af)) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
         panel.grid.minor = element_blank()) +
   labs(title = paste("AF count distribution"))
-
-af_stats %>%
-  knitr::kable(format = "html", caption = "AF Summary Stats") %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
-  kableExtra::column_spec(1, bold = TRUE)
 ```
 
 ### Mutational Signatures {.tabset .tabset-fade #signatures}
@@ -1417,7 +1418,6 @@ purple_qc_summary %>%
                                     TRUE ~ "black"))) %>%
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
-
 ```
 
 ### UMCCR Gene CNV Calls {#cnv-gene}
@@ -1611,7 +1611,7 @@ conda_pkgs %>%
   knitr::kable(format = "html") %>%
   kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE) %>%
-  kableExtra::scroll_box(height = "200px")
+  kableExtra::scroll_box(height = "300px")
 ```
 
 ### Report Inputs
