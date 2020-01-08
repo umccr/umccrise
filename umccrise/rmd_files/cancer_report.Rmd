@@ -361,7 +361,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     dplyr::mutate(
       END_BPI = base::format(END_BPI, big.mark = ",", trim = TRUE),
       End = ifelse(svtype == "BND", paste0(BND_mate_chrom, ":", END_BPI), END_BPI)) %>%
-    dplyr::select(varnum, Tier1 = tier,
+    dplyr::select(varnum, TierTop = tier,
                   Chr = chrom, Start, End,
                   Type = svtype,
                   ID, MATEID, BND_ID, BND_mate,
@@ -374,7 +374,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
     dplyr::mutate(annotation = strsplit(annotation, ',')) %>%
     tidyr::unnest(annotation) %>%
     tidyr::separate(
-      annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier2'),
+      annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
       sep = '\\|', convert = FALSE) %>%
     dplyr::mutate(
       ntrx = count_pieces(Transcript, "&"),
@@ -384,7 +384,7 @@ if (length(readLines(con = sv_path, n = 2)) > 1) {
       Genes = Genes %>% stringr::str_replace_all('&', ', '),
       Effect = abbreviate_effectv(Effect)) %>%
     dplyr::distinct() %>%
-    dplyr::arrange(Tier1, Genes, Effect)
+    dplyr::arrange(Tier, Genes, Effect)
 } else {
   sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
   sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
@@ -984,8 +984,8 @@ sv_col_descr <- dplyr::tribble(
   ~Column, ~Description,
   "nrow", "Row number that connects variants between tables in same tab set",
   "varnum", "Original event row number that connects variants to events",
-  "Tier1", "Max priority of the event (from 'simple_sv_annotation': 1 highest, 4 lowest)",
-  "Tier2", "Priority of the specific event",
+  "TierTop", "Top priority of the event (from 'simple_sv_annotation': 1 highest, 4 lowest)",
+  "Tier", "Priority of the specific event (from 'simple_sv_annotation': 1 highest, 4 lowest)",
   "Chr", "Chromosome",
   "Start", "Start position as inferred by BPI (for PURPLE-inferred SVs we use POS)",
   "End", paste("End position. For BNDs this has been assigned to the Chr:Start of the BND's mate for convenience.",
@@ -1045,7 +1045,7 @@ __Prioritisation process__
      - other TS gene (3)
   * other (4)
 
-* Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as "From_CNV")
+* Use PURPLE copy number caller to infer more SV calls from copy number transitions (marked as 'PURPLE Inferred')
 
 ```{r effect_abbrev_tab}
 effect_abbreviations %>%
@@ -1065,13 +1065,18 @@ effect_abbreviations %>%
 
 ```{r sv_summary, results='asis'}
 sv_tier_vs_svtype <- function() {
-  l <- list(unmelted = sv_unmelted %>% dplyr::select(Tier1, Type),
-            melted = sv_all %>% dplyr::select(Tier1, Type)) %>%
+  l <- list(unmelted = sv_unmelted %>% dplyr::select(TierTop, Type),
+            melted = sv_all %>% dplyr::select(Tier, Type)) %>%
     purrr::map(function(x) addmargins(table(x, useNA = 'ifany')))
 
-  unmelted <- knitr::kable(l$unmelted, format = "html", caption = "SV type by tier before breaking down by annotation", output = FALSE) %>%
+  cap_unmelt <- glue::glue("SV type by {htmltools::strong('top')} tier {htmltools::strong('before')}",
+                           "{htmltools::br()}breaking down by annotation")
+  cap_melt <- glue::glue("SV type by {htmltools::strong('individual')} tier {htmltools::strong('after')}",
+                         "{htmltools::br()}breaking down by annotation")
+  unmelted <- knitr::kable(l$unmelted, format = "html", caption = cap_unmelt, output = FALSE) %>%
     kableExtra::kable_styling(full_width = FALSE, position = "float_right")
-  melted <- knitr::kable(l$melted, format = "html", caption = "SV type by tier after breaking down by annotation", output = FALSE) %>%
+  melted <- knitr::kable(l$melted, format = "html",
+                         caption = cap_melt, output = FALSE) %>%
     kableExtra::kable_styling(full_width = FALSE, position = "float_right")
 
   list(unmelted = unmelted, melted = melted)
@@ -1085,7 +1090,7 @@ cat(c('<table><tr valign="top"><td>', sv_tier_vs_svtype()$unmelted, '</td>', '<t
 ```{r svtab_raw}
 svtab_raw <- sv_unmelted %>%
   dplyr::select(-annotation) %>%
-  dplyr::arrange(Tier1, varnum)
+  dplyr::arrange(TierTop, varnum)
 
 svtab_rawdt <- svtab_raw %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1121,7 +1126,7 @@ sv_BND <- sv_all %>%
   dplyr::select(nrow, dplyr::everything())
 
 sv_BND_main <- sv_BND %>%
-  dplyr::select(nrow, varnum, Tier1, Tier2, Chr, Start, End,
+  dplyr::select(nrow, varnum, Tier, Chr, Start, End,
                 ID, BND_ID, BND_mate,
                 Genes, Effect, Detail, SR_PR_alt, Ploidy, AF_PURPLE)
 
@@ -1130,7 +1135,7 @@ sv_BND_other <- sv_BND %>%
 
 sv_BND_purple <- sv_all %>%
   dplyr::filter(Type %in% c("PURPLE_inf")) %>%
-  dplyr::select(Chr, Start, Tier1, Tier2, Effect, Detail, Ploidy, CN, CNC, ID)
+  dplyr::select(Tier, Chr, Start, Effect, Detail, Ploidy, CN, CNC, ID)
 
 sv_BND_maindt <- sv_BND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1227,7 +1232,7 @@ sv_noBND_main <- sv_noBND %>%
                 Transcript = ifelse(ntrx > max_transcripts,
                                     glue::glue("Many Transcripts ({ntrx})"),
                                     Transcript)) %>%
-  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier1, Tier2, Effect,
+  dplyr::select(nrow, varnum, TierTop, Tier, Type, Chr, Start, End, Effect,
                 Genes, Transcript, Detail, SR_PR_alt, AF_PURPLE)
 
 sv_noBND_other <- sv_noBND %>%
@@ -1236,12 +1241,12 @@ sv_noBND_other <- sv_noBND %>%
 
 sv_noBND_manygenes <- sv_noBND %>%
   dplyr::filter(ngen > max_genes) %>%
-  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier1, Tier2,
+  dplyr::select(nrow, varnum, Tier, Type, Chr, Start, End,
                 Effect, ngen, Genes = Genes_original)
 
 sv_noBND_manytx <- sv_noBND %>%
   dplyr::filter(ntrx > max_transcripts) %>%
-  dplyr::select(nrow, varnum, Type, Chr, Start, End, Tier1, Tier2,
+  dplyr::select(nrow, varnum, Tier, Type, Chr, Start, End,
                 Effect, ntrx, Transcript = Transcript_original)
 
 sv_noBND_maindt <- sv_noBND_main %>%
