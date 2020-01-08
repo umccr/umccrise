@@ -905,43 +905,48 @@ It's generated through the following steps:
 
 __Step 1: Processing__
 
-* Grab Manta SV calls from bcbio
-  * remove following annotations from Manta VCF:
-    'INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER', 'FILTER/Intergenic', 'FILTER/MissingAnn', 'FILTER/REJECT'
-  * prioritise variants (adds tier info in `INFO/SV_TOP_TIER` field)
-  * output: `work/{batch}/structural/prioritize/{batch}-manta.vcf.gz`
+* __Input__: Manta structural variant calls from bcbio
+(`final/<tumor-name>/<batch-name>-sv-prioritize-manta.vcf.gz` (or
+`<batch-name>-manta.vcf.gz` if not prioritised))
+* Remove following annotations from Manta VCF:
+  'INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER', 'FILTER/Intergenic', 'FILTER/MissingAnn', 'FILTER/REJECT'
+* Prioritise variants with [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation)`
+* __Output__: `work/{batch}/structural/prioritize/{batch}-manta.vcf.gz`
 * Keep PASS variants
-  * if more than 100,000 variants, keep only variants where `INFO/SV_TOP_TIER <= 3`
-  * output: `work/{batch}/structural/keep_pass/{batch}-manta.vcf`
-* Run BreakPointInspector if it was disabled in bcbio
-  * output: `work/{batch}/structural/maybe_bpi/{batch}-manta.vcf`
+* If more than 100,000 variants, keep only variants where `INFO/SV_TOP_TIER <= 3`
+* __Output__: `work/{batch}/structural/keep_pass/{batch}-manta.vcf`
+* Deal with chromosome capitalisation occurring from SnpEff
+* Run BreakPointInspector (BPI) if it was disabled in bcbio
+* __Output__: `work/{batch}/structural/maybe_bpi/{batch}-manta.vcf`
 
 __Step 2: Filtering__
 
-* For BND variants require paired reads support (PR) to be higher than split read support (SR);
-* Keep `INFO/SV_TOP_TIER <= 2` variants
-* For `INFO/SV_TOP_TIER > 2` variants require split or paired reads support at least 5x;
+* Keep PASS variants (since BPI updates the FILTER column)
+* For BND variants require paired reads support (PR) to be higher than split read support (SR)
+* Keep all `INFO/SV_TOP_TIER <= 2` variants
+* For `INFO/SV_TOP_TIER > 2` variants require split _or_ paired reads support of at least 5x
 * For `INFO/SV_TOP_TIER > 2` variants with low allele frequency at any breakpoint (`BPI_AF[0 or 1] < 0.1`),
-  require SR or PR support of at least 10x;
-* Output (`filtered`): `work/{batch}/structural/filt/{batch}-manta.vcf`
+  require SR or PR support of at least 10x
+* __Output__: `work/{batch}/structural/filt/{batch}-manta.vcf`
 
 __Step 3: PURPLE and FFPE conditional__
 
 * If the sample _is not_ FFPE:
-  * feed above `filtered` SVs to PURPLE, which outputs `purple.sv.vcf.gz` that contains rescued SVs
-  * prioritise variants (again)
-  * remove 'INFO/ANN' annotation
-  * output: `{batch}/structural/{batch}-manta.vcf.gz`
+  * Feed above filtered SVs to PURPLE, which outputs `purple.sv.vcf.gz` that contains rescued SVs
+  * Prioritise variants (again)
+  * Remove 'INFO/ANN' annotation
+  * __Output__: `{batch}/structural/{batch}-manta.vcf.gz`
 * If the sample _is_ FFPE:
-  * just copy `filtered` variants and don't do anything
+  * Just copy `filtered` variants and don't do anything
     (i.e. we don't want the rescued SVs from PURPLE since they'll likely be heaps)
     (note that PURPLE will still get fed with the `filtered` SVs)
-  * output: `{batch}/structural/{batch}-manta.vcf.gz`
+  * __Output__: `{batch}/structural/{batch}-manta.vcf.gz`
 
 __Step 4: TSV final output__
 
 * Input: `{batch}/structural/{batch}-manta.vcf.gz` VCF
 * Output: `{batch}/structural/{batch}-manta.tsv` TSV
+
 
 ```{r manta_tsv_description}
 manta_tsv_col_descr <- dplyr::tribble(
@@ -974,7 +979,7 @@ check_cols_described(manta_tsv_col_descr$Column, colnames(somatic_sv_tsv))
 manta_tsv_col_descr %>%
   dplyr::arrange(Column) %>%
   dplyr::mutate(Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
-  knitr::kable(escape = FALSE) %>%
+  knitr::kable(escape = FALSE, caption = "Description of Manta TSV columns") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
   kableExtra::scroll_box(height = "250px")
 ```
