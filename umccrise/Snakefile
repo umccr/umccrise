@@ -7,7 +7,7 @@ import multiprocessing
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
 
-from ngs_utils.Sample import BaseSample, Batch
+from ngs_utils.Sample import BaseSample, BaseBatch
 from ngs_utils.bcbio import BcbioProject
 from natsort import natsort_keygen
 
@@ -35,7 +35,7 @@ class DragenSample(BaseSample):
         BaseSample.__init__(self, **kwargs)  # name, dirpath, work_dir, bam, vcf, phenotype, normal_match
 
 
-class DragenBatch(Batch):
+class DragenBatch(BaseBatch):
     def find_somatic_vcf(self, silent=False):
         vcf_fpath_gz = adjust_path(join(self.parent_project.dir, self.name + '.hard-filtered.vcf.gz'))
         if isfile(vcf_fpath_gz):
@@ -49,7 +49,11 @@ class DragenProject:
         self.input_dir = input_dir
         self.project_name = None
         self.samples = []
+        self.somatic_caller = 'dragen'
+        self.germline_caller = 'dragen'
+        self.genome_build = 'hg38'
         self.batch_by_name = dict()
+
         for fpath in glob.glob(join(self.input_dir, '*.hard-filtered.vcf.gz')):
             batch_name = fpath.split('.hard-filtered.vcf.gz')[0]
             batch = Batch(batch_name, parent_project=self)
@@ -81,7 +85,8 @@ def prep_inputs(config_):
         ngs_utils_logger.is_debug = True
 
     ngs_utils_logger.is_silent = within_sub_workflow  # to avoid redundant logging in cluster sub-executions of the Snakefile
-    input_path = config_.get('bcbio_project', abspath(os.getcwd()))
+    input_path = config_.get('input_project', abspath(os.getcwd()))
+    print(glob.glob(join(input_path, '*-replay.json')))
     if glob.glob(join(input_path, '*-replay.json')):
         run = DragenProject(input_path)
         ngs_utils_logger.is_silent = False
@@ -135,7 +140,9 @@ threads_per_sample = max(1, min(threads_on_node, total_cores // len(run.samples)
 print(f'Threads available on the machine: {threads_on_node}, total cores allowed: {total_cores}. '
       f'Batches found: {threads_per_batch}, using {threads_per_batch} threads per batch, {threads_per_sample} per sample')
 
-is_ffpe = run.somatic_caller == 'strelka2'
+is_ffpe = False
+if isinstance(run, BcbioProject):
+    is_ffpe = run.somatic_caller == 'strelka2'
 
 
 rule all:

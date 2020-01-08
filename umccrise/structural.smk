@@ -18,27 +18,9 @@ vcftobedpe = 'vcfToBedpe'
 localrules: structural
 
 
-def get_manta_path(b):
-    return join(batch_by_name[b].tumor.dirpath, f'{batch_by_name[b].name}-sv-prioritize-manta.vcf.gz')
-if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
-    # not prioritized?
-    def get_manta_path(b):
-        return join(batch_by_name[b].tumor.dirpath, f'{batch_by_name[b].name}-manta.vcf.gz')
-    if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
-        # CWL?
-        def get_manta_path(b):
-            return join(run.date_dir, batch_by_name[b].tumor.name + '-manta-prioritized.vcf.gz')
-        if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
-            def get_manta_path(b):
-                return join(run.date_dir, batch_by_name[b].tumor.name + '-manta.vcf.gz')
-            if not all(isfile(get_manta_path(b)) for b in batch_by_name.keys()):
-                critical('Could not find manta files for all batches neither under sample folders as '
-                         '<tumor>/<batch>(-sv-prioritize)-manta.vcf.gz (conventional bcbio), '
-                         'nor in the project folder as project/<tumor>-manta(-prioritized).vcf.gz (CWL bcbio).')
-
 rule sv_prioritize:
     input:
-        vcf = lambda wc: get_manta_path(wc.batch),
+        vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
     output:
         vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz',
         tbi = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz.tbi',
