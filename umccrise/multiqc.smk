@@ -13,9 +13,12 @@ rule copy_config:
     input:
         conf_dir = run.config_dir
     output:
-        conf_dir = directory(join('log/config'))
+        done_flag = 'log/config/.done',
+    params:
+        conf_dir = 'log/config',
     shell:
-        'cp -r {input.conf_dir} {output.conf_dir}'
+        'cp {input.conf_dir}/* {params.conf_dir}/ &&'
+        'touch {output.done_flag}'
 
 
 rule prep_multiqc_data:
