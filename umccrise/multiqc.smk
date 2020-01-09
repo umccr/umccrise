@@ -24,7 +24,7 @@ if isinstance(run, BcbioProject):
         params:
             conf_dir = 'log/config',
         shell:
-            'for f in {input.conf_dir}/*; do test -f $f && cp $f {params.conf_dir}/; done && '
+            'for f in {input.conf_dir}/*; do test ! -f $f || cp $f {params.conf_dir}/; done && '
             'touch {output.done_flag}'
 
 
