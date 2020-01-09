@@ -200,48 +200,6 @@ cd {params.work_dir} ; \
 """)
 
 
-rule purple_bcbio_stats:
-    input:
-        rmd = verify_file(join(package_path(), 'rmd_files', 'purple_bcbio_umccrise.Rmd'), is_critical=True),
-        purple_umccrise_files = expand('work/{batch}/purple/{batch}.purple.gene.cnv', batch=batch_by_name.keys()),
-        bcbio_workdir = run.work_dir,
-        key_genes = get_key_genes(),
-    output:
-        'purple_stats.html'
-    params:
-        rmd_tmp = 'work/purple/purple_bcbio_umccrise.Rmd',
-        work_dir = abspath('work/purple'),
-        output_file = lambda wc, output: abspath(output[0]),
-    run:
-        purple_bcbio_files = glob.glob(join(input.bcbio_workdir, 'structural/*/purple/purple/*.purple.gene.cnv'))
-        assert(purple_bcbio_files)
-
-        key_by_tumor_name = {
-            b.tumor.name: bk for bk, b in batch_by_name.items()
-        }
-        safe_mkdir(params.workdir)
-        for fn in purple_bcbio_files:
-            print(fn)
-            tumor_name = basename(fn).split('.purple.gene.cnv')[0]
-            if tumor_name not in key_by_tumor_name:
-                continue
-            key = key_by_tumor_name[tumor_name]
-            shell('cut -f1-5 ' + fn + ' > ' + join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
-            print('Copying bcbio purple file to :', join(params.workdir, f'bcbio_{key}.purple.gene.cnv'))
-        for fn in input.purple_umccrise_files:
-            shell('cut -f1-5 ' + fn + ' > ' + join(params.workdir, f'umccrise_' + basename(fn)))
-        shell(conda_cmd.format('cancer_report') + \
-"""
-cp {input.rmd} {params.rmd_tmp} && \
-Rscript -e "rmarkdown::render('{params.rmd_tmp}',\
-output_file='{params.output_file}', \
-params=list( \
-key_genes='{input.key_genes}', \
-workdir='{params.work_dir}' \
-))"
-""")
-
-
 #############
 
 rule rmd:
