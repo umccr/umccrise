@@ -12,6 +12,10 @@ localrules: multiqc
 if isinstance(run, BcbioProject):
     localrules: copy_config
 
+    # Copy all files from the config/ directory, omitting all directories
+    # Omitting directories prevents from errors on IAP when the input mount is read-only,
+    # and the directory copied with cp -r inherits the read-only flags, preventing snakemake
+    # from creating files inside of it
     rule copy_config:
         input:
             conf_dir = run.config_dir
@@ -20,7 +24,7 @@ if isinstance(run, BcbioProject):
         params:
             conf_dir = 'log/config',
         shell:
-            'cp {input.conf_dir}/* {params.conf_dir}/ &&'
+            'for f in {input.conf_dir}/*; do test -f $f && cp $f {params.conf_dir}/; done && '
             'touch {output.done_flag}'
 
 
