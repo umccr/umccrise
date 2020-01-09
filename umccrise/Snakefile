@@ -33,15 +33,23 @@ class DragenSample(BaseSample):
 
     def __init__(self, **kwargs):
         BaseSample.__init__(self, **kwargs)  # name, dirpath, work_dir, bam, vcf, phenotype, normal_match
+        self.qc_files = []
 
 
 class DragenBatch(BaseBatch):
+    def __init__(self, **kwargs):
+        BaseBatch.__init__(self, **kwargs)
+        self.qc_files = []
+
     def find_somatic_vcf(self, silent=False):
         vcf_fpath_gz = adjust_path(join(self.parent_project.dir, self.name + '.hard-filtered.vcf.gz'))
         if isfile(vcf_fpath_gz):
             verify_file(vcf_fpath_gz, is_critical=True)
             if not silent: info(f'Found somatic VCF in <dragen-dir>/<tumor-name>-hard-filtered.vcf.gz: ' + vcf_fpath_gz)
             self.somatic_vcf = vcf_fpath_gz
+
+    def all_qc_files(self):
+        return self.qc_files + self.tumor.qc_files + self.normal.qc_files
 
 
 class DragenProject:
@@ -55,8 +63,8 @@ class DragenProject:
         self.batch_by_name = dict()
 
         for fpath in glob.glob(join(self.input_dir, '*.hard-filtered.vcf.gz')):
-            batch_name = fpath.split('.hard-filtered.vcf.gz')[0]
-            batch = Batch(batch_name, parent_project=self)
+            batch_name = basename(fpath.split('.hard-filtered.vcf.gz')[0])
+            batch = DragenBatch(name=batch_name, parent_project=self)
             batch.tumor = DragenSample(name=batch_name, phenotype='tumor')
             batch.normal = DragenSample(name=batch_name + ' normal', phenotype='normal')
             self.samples.extend([batch.tumor, batch.normal])
@@ -64,6 +72,29 @@ class DragenProject:
             batch.normal.bam = join(self.input_dir, batch_name + '.bam')
             batch.tumor.vcf = join(self.input_dir, '.hard-filtered.vcf.gz')
             self.batch_by_name[batch_name] = batch
+
+            # populating qc files for multiqc:
+            for suffix in [
+                '.fragment_length_hist.csv'
+                '.mapping_metrics.csv'
+                '.ploidy_estimation_metrics.csv'
+                '.time_metrics.csv'
+                '.vc_metrics.csv'
+            ]:
+                qc_fpath = join(self.input_dir, f'{batch_name}{suffix}')
+                if isfile(qc_fpath):
+                    batch.qc_files.append(qc_fpath)
+
+            for suffix in [
+                '.wgs_contig_mean_cov_{phenotype}.csv'
+                '.wgs_coverage_metrics_{phenotype}.csv'
+                '.wgs_fine_hist_{phenotype}.csv'
+            ]:
+                qc_fpath = join(self.input_dir, f'{batch_name}{suffix}')
+                if isfile(qc_fpath.format(phenotype="normal")):
+                    batch.normal.qc_files.append(qc_fpath.format(phenotype="normal"))
+                if isfile(qc_fpath.format(phenotype="tumor")):
+                    batch.tumor.qc_files.append(qc_fpath.format(phenotype="tumor"))
 
 
 def prep_inputs(config_):
