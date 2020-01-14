@@ -103,19 +103,25 @@ rule sv_maybe_bpi:
         # Handle SnpEff capitalising ALT (see https://github.com/pcingola/SnpEff/issues/237).
         # BPI and bedtools>=2.29.2 will crash if left as is.
         shell('sed -i "s/CHR/chr/" {input.vcf} && sed -i "s/chrOM/CHROM/" {input.vcf}; ')
-        if not vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
-            safe_mkdir(params.tmp_dir)
-            shell(
-                'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
-                '-Djava.io.tmpdir={params.tmp_dir} '
-                '-vcf {input.vcf} '
-                '-ref {input.normal_bam} '
-                '-tumor {input.tumor_bam} '
-                '-output_vcf {output.vcf} '
-                '> {log}'
-            )
-        else:
+        if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):  # already BPI'ed
             shell('cp {input.vcf} {output.vcf}')
+        else:
+            if not is_ffpe:  # running BPI only for non-FFPE samples
+                safe_mkdir(params.tmp_dir)
+                shell(
+                    'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
+                    '-Djava.io.tmpdir={params.tmp_dir} '
+                    '-vcf {input.vcf} '
+                    '-ref {input.normal_bam} '
+                    '-tumor {input.tumor_bam} '
+                    '-output_vcf {output.vcf} '
+                    '> {log}'
+                )
+            else:  # fake BPI_AF from the original AF
+                def func(rec):
+                    rec.INFO['BPI_AF'] = rec.INFO['AF']
+                    return rec
+                iter_vcf(input.vcf, output.vcf, func)
 
 # Keep all with read support above 10x; or allele frequency above 10%, but only if read support is above 5x
 rule filter_sv_vcf:
