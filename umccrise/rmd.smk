@@ -107,14 +107,25 @@ rule somatic_to_hg19:
 
 
 # select chr, start, end, gene, min/max_cn, TranscriptID and ChromosomeBand
-rule rmd_purple_cnv:
-    input:
-        purple_cnv = rules.purple_run.output.gene_cnv,
-    output:
-        'work/{batch}/rmd/purple.tsv'
-    group: "rmd"
-    shell:
-        'cut -f1-6,11,13 {input} > {output}'
+#rule rmd_purple_cnv:
+#    input:
+#        purple_cnv = rules.purple_run.output.gene_cnv,
+#    output:
+#        'work/{batch}/rmd/purple.tsv'
+#    group: "rmd"
+#    shell:
+#        'cut -f1-6,11,13 {input} > {output}'
+
+# I hope this can work on a worker node with the other rmd groupies. If not, add to localrules.
+rule conda_list:
+  params:
+    env=['umccrise', 'umccrise_pcgr', 'umccrise_hmf', 'umccrise_cancer_report']
+  output:
+    txt='work/{batch}/rmd/conda_pkg_list.txt'
+  group: "rmd"
+  shell:
+    "for e in {params.env}; do conda list --name $e | awk -v var=$e '{{ print $0, var }}' | grep -v ^# >> {output} ; done"
+
 
 ## Running Rmarkdown
 rule cancer_report:
@@ -125,21 +136,23 @@ rule cancer_report:
         af_keygenes          = rules.afs_keygenes.output[0],
         somatic_snv          = rules.somatic_to_hg19.output[0],
         somatic_sv           = rules.prep_sv_tsv.output[0],
-        purple_gene_cnv      = rules.rmd_purple_cnv.output[0],
+        purple_gene_cnv      = rules.purple_run.output.gene_cnv,
         purple_cnv           = rules.purple_run.output.cnv,
         purple_purity        = rules.purple_run.output.purity,
         purple_qc            = rules.purple_run.output.qc,
 
-        purple_circos_png    = rules.purple_run.output.circos_png    ,
-        purple_input_png     = rules.purple_run.output.input_png     ,
-        purple_cn_png        = rules.purple_run.output.cn_png        ,
-        purple_ma_png        = rules.purple_run.output.ma_png        ,
-        purple_purity_png    = rules.purple_run.output.purity_png    ,
-        purple_segment_png   = rules.purple_run.output.segment_png   ,
-        purple_clonality_png = rules.purple_run.output.clonality_png ,
-        purple_ploidy_png    = rules.purple_run.output.ploidy_png    ,
-        purple_rainfall_png  = rules.purple_run.output.rainfall_png  ,
-        purple_baf_png       = rules.purple_circos_baf.output.png    ,
+        purple_circos_png    = rules.purple_run.output.circos_png,
+        purple_input_png     = rules.purple_run.output.input_png,
+        purple_cn_png        = rules.purple_run.output.cn_png,
+        purple_ma_png        = rules.purple_run.output.ma_png,
+        purple_purity_png    = rules.purple_run.output.purity_png,
+        purple_segment_png   = rules.purple_run.output.segment_png,
+        purple_clonality_png = rules.purple_run.output.clonality_png,
+        purple_ploidy_png    = rules.purple_run.output.ploidy_png,
+        purple_rainfall_png  = rules.purple_run.output.rainfall_png,
+        purple_baf_png       = rules.purple_circos_baf.output.png,
+
+        conda_list           = rules.conda_list.output.txt,
 
     params:
         report_rmd = 'cancer_report.Rmd',
@@ -155,6 +168,7 @@ rule cancer_report:
         purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
         purple_qc           = lambda wc, input: abspath(input.purple_qc),
+        conda_list          = lambda wc, input: abspath(input.conda_list),
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
@@ -166,16 +180,16 @@ rule cancer_report:
         shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
         shell('mkdir -p {output.rmd_tmp_dir}/img')
         for img_path in [
-            input.purple_circos_png    ,
-            input.purple_input_png     ,
-            input.purple_cn_png        ,
-            input.purple_ma_png        ,
-            input.purple_purity_png    ,
-            input.purple_segment_png   ,
-            input.purple_clonality_png ,
-            input.purple_ploidy_png    ,
-            input.purple_rainfall_png  ,
-            input.purple_baf_png       ,
+            input.purple_circos_png,
+            input.purple_input_png,
+            input.purple_cn_png,
+            input.purple_ma_png,
+            input.purple_purity_png,
+            input.purple_segment_png,
+            input.purple_clonality_png,
+            input.purple_ploidy_png,
+            input.purple_rainfall_png,
+            input.purple_baf_png,
         ]:
             shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
         shell(conda_cmd.format('cancer_report') + """
@@ -194,7 +208,8 @@ somatic_sv='{params.somatic_sv}', \
 purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_purity='{params.purple_purity}', \
-purple_qc='{params.purple_qc}' \
+purple_qc='{params.purple_qc}', \
+conda_list='{params.conda_list}' \
 ))" ; \
 cd {params.work_dir} ; \
 """)

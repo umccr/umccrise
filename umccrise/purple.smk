@@ -203,16 +203,15 @@ rule purple_circos_baf:
         map  = 'work/{batch}/purple/circos/{batch}.map.circos',
         link = 'work/{batch}/purple/circos/{batch}.link.circos',
         circos_baf_conf = package_path() + '/rmd_files/misc/circos/circos_baf.conf',
-        gaps_txt        = package_path() + '/rmd_files/misc/circos/gaps.txt',
-        ideo_conf       = package_path() + '/rmd_files/misc/circos/ideogram.conf',
     output:
         png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
     params:
-        out_dir = 'work/{batch}/purple/circos_baf'
+        out_dir = 'work/{batch}/purple/circos_baf',
+        gaps_txt_prefix = package_path() + '/rmd_files/misc/circos/gaps',
+        genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else 'hg38',
     run:
         shell('mkdir -p {params.out_dir}')
-        shell('cp {input.gaps_txt} {params.out_dir}')
-        shell('cp {input.ideo_conf} {params.out_dir}')
+        shell('cp {params.gaps_txt_prefix}_{params.genome_build}.txt {params.out_dir}/gaps.txt')
         out_conf = join(params.out_dir, basename(input.circos_baf_conf))
         shell('sed s/SAMPLE/{wildcards.batch}/ {input.circos_baf_conf} > ' + out_conf)
         shell('cp {input.baf} {params.out_dir}')

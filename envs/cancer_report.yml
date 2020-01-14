@@ -10,16 +10,15 @@ dependencies:
   - r-base ==3.5.1
   # R libraries:
   - pandoc
-  - r-bookdown
   - r-devtools
   - r-dplyr
   - r-dt
   - r-ggplot2
-  - r-htmlwidgets #>=1.0  # dependency requirement for DT (by default, 0.9 is getting installed)
+  - r-htmlwidgets
   - r-kableextra
   - r-purrr
   - r-readr
-  - r-rmarkdown #>=1.6
+  - r-rmarkdown
   - r-stringr
   - r-stringi #>=1.1.7  # for pcgrr
   - r-tidyr
