@@ -7,7 +7,7 @@ import multiprocessing
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
 
-from ngs_utils.Sample import BaseSample, BaseBatch
+from ngs_utils.Sample import BaseSample, BaseBatch, BaseProject
 from ngs_utils.bcbio import BcbioProject
 from natsort import natsort_keygen
 
@@ -52,15 +52,12 @@ class DragenBatch(BaseBatch):
         return self.qc_files + self.tumor.qc_files + self.normal.qc_files
 
 
-class DragenProject:
-    def __init__(self, input_dir=None):
-        self.input_dir = input_dir
-        self.project_name = None
-        self.samples = []
+class DragenProject(BaseProject):
+    def __init__(self, input_dir=None, silent=False, **kwargs):
+        BaseProject.__init__(self, input_dir=input_dir, **kwargs)
         self.somatic_caller = 'dragen'
         self.germline_caller = 'dragen'
         self.genome_build = 'hg38'
-        self.batch_by_name = dict()
 
         for fpath in glob.glob(join(self.input_dir, '*.hard-filtered.vcf.gz')):
             batch_name = basename(fpath.split('.hard-filtered.vcf.gz')[0])
@@ -70,8 +67,10 @@ class DragenProject:
             self.samples.extend([batch.tumor, batch.normal])
             batch.tumor.bam = join(self.input_dir, batch_name + '_tumor.bam')
             batch.normal.bam = join(self.input_dir, batch_name + '.bam')
-            batch.tumor.vcf = join(self.input_dir, '.hard-filtered.vcf.gz')
             self.batch_by_name[batch_name] = batch
+            
+            batch.find_somatic_vcf(silent=silent)
+            batch.find_germline_vcf(silent=silent)
 
             # populating qc files for multiqc:
             for suffix in [
