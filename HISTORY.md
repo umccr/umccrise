@@ -8,6 +8,17 @@
 - Added GRIDSS/PURPLE/LINX wrapper (`gpl`) and env (`umccrise_hmf`)
 - hpc_utils: refactoring of genomes_dir detection functions. Add set_genomes_dir
 - Fix multithreading when running in a Docker
+- Support Gadi
+- Update PCGR to 0.8.4 and CPSR to 0.5.2:
+    - VEP updated to 98.3
+    - Data bundle updates (CIViC, ClinVar, CancerMine, UniProt)
+    - Fixed multiple bugs in hg38 support for CPSR:
+        - Fixed transcript priority issue (https://github.com/sigven/pcgr/issues/79)
+        - Fixed Germline biomarker parsing bugs (https://github.com/sigven/pcgr/pull/85, https://github.com/sigven/pcgr/commit/e4e428eafa8f2a93fa7053908a447ef064d5a9c9)
+        - Fixed https://github.com/sigven/cpsr/issues/15 with VEP update
+        - LofTee plugin fixed
+    - Conda build optimizations: added LofTee and perl-bio-big-file (https://github.com/sigven/pcgr/pull/98)
+    - Fixed crosstalk and BSgenome issues https://github.com/sigven/cpsr/issues/19
 
 0.15.6 (28 Aug 2019)
 
