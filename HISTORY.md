@@ -1,4 +1,11 @@
-0.16 (TBR)
+0.17 (TBR)
+
+- Massive cancer report updates:
+    - Added new somatic signatures
+    - SV tables restrucurised and got much more readable
+- Support DRAGEN project on input instead of bcbio
+
+0.16 (31 Dec 2019)
 
 - Add CodeBuild CI support (thanks @brainstorm for the great work!)
 - Add hg38 MultiQC background samples
@@ -19,6 +26,7 @@
         - LofTee plugin fixed
     - Conda build optimizations: added LofTee and perl-bio-big-file (https://github.com/sigven/pcgr/pull/98)
     - Fixed crosstalk and BSgenome issues https://github.com/sigven/cpsr/issues/19
+- Support unprioritized SV VCFs naming (when sv-prioritize is disabled in bcbio)
 
 0.15.6 (28 Aug 2019)
 
