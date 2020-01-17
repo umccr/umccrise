@@ -1,4 +1,4 @@
-from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
+from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data, parse_bcbio_filelist
 import cyvcf2
 import yaml
 from os.path import abspath, join, dirname
@@ -7,6 +7,18 @@ from umccrise import package_path
 
 
 localrules: multiqc
+
+
+def load_gold_standard(genome_build):
+    paths = []
+    gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
+    if genome_build == 'hg38':
+        gold_standard_dir += '_hg38'
+    with open(join(gold_standard_dir, 'background_multiqc_filelist.txt')) as f:
+        for l in f:
+            l = l.strip()
+            paths.append(join(gold_standard_dir, l))
+    return paths
 
 
 if isinstance(run, BcbioProject):
@@ -27,7 +39,6 @@ if isinstance(run, BcbioProject):
             'for f in {input.conf_dir}/*; do test ! -f $f || cp $f {params.conf_dir}/; done && '
             'touch {output.done_flag}'
 
-
     rule prep_multiqc_data:
         input:
             bcbio_mq_filelist       = join(run.date_dir, 'multiqc/list_files_final.txt'),
@@ -41,19 +52,19 @@ if isinstance(run, BcbioProject):
             prog_versions           = join(run.date_dir, 'programs.txt'),
             data_versions           = join(run.date_dir, 'data_versions.csv'),
         output:
-            filelist            = 'work/{batch}/multiqc_data/filelist.txt',
-            generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
-            prog_versions       = '{batch}/log/programs.txt',
-            data_versions       = '{batch}/log/data_versions.txt',
+            filelist                = 'work/{batch}/multiqc_data/filelist.txt',
+            generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
+            prog_versions           = '{batch}/log/programs.txt',
+            data_versions           = '{batch}/log/data_versions.txt',
         params:
-            data_dir        = 'work/{batch}/multiqc_data',
-            tumor_name      = lambda wc: batch_by_name[wc.batch].tumor.name,
-            normal_name     = lambda wc: batch_by_name[wc.batch].normal.name,
-            genome_build    = run.genome_build
+            data_dir                = 'work/{batch}/multiqc_data',
+            tumor_name              = lambda wc: batch_by_name[wc.batch].tumor.name,
+            normal_name             = lambda wc: batch_by_name[wc.batch].normal.name,
+            genome_build            = run.genome_build
         group: 'multiqc'
         run:
             report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
-            generated_conf, additional_files = make_report_metadata(
+            generated_conf, qc_files = make_report_metadata(
                 run,
                 tumor_sample=params.tumor_name,
                 normal_sample=params.normal_name,
@@ -63,15 +74,12 @@ if isinstance(run, BcbioProject):
                 data_versions_fpath=verify_file(input.data_versions, silent=True),
                 new_dir_for_versions=dirname(output.prog_versions),
             )
-            gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
-            if params.genome_build == 'hg38':
-                gold_standard_dir += '_hg38'
-            with open(join(gold_standard_dir, 'background_multiqc_filelist.txt')) as f:
-                for l in f:
-                    l = l.strip()
-                    additional_files.append(join(gold_standard_dir, l))
 
-            additional_files.extend([
+            # Gold standard QC files
+            qc_files.extend(load_gold_standard(params.genome_build))
+
+            # Umccrise QC files
+            qc_files.extend([
                 join(input.conpair_contam, params.tumor_name + '.txt'),
                 join(input.conpair_contam, params.normal_name + '.txt'),
                 join(input.conpair_concord, params.tumor_name + '.txt'),
@@ -81,14 +89,11 @@ if isinstance(run, BcbioProject):
                 input.bcftools_germline_stats,
             ])
 
-            multiqc_prep_data(
+            # Bcbio QC files
+            qc_files.extend(parse_bcbio_filelist(
                 bcbio_mq_filelist=input.bcbio_mq_filelist,
                 bcbio_final_dir=input.bcbio_final_dir,
                 new_mq_data_dir=params.data_dir,
-                generated_conf=generated_conf,
-                out_filelist_file=output.filelist,
-                out_conf_yaml=output.generated_conf_yaml,
-                additional_files=additional_files,
                 # exclude and include applies only to the sample files, not to the background.
                 # first excluding, then including from the remaining.
                 exclude_files=[
@@ -112,6 +117,13 @@ if isinstance(run, BcbioProject):
                     f'.*{params.normal_name}.*',
                     f'.*{wildcards.batch}.*',
                 ],
+            ))
+
+            multiqc_prep_data(
+                generated_conf=generated_conf,
+                out_filelist_file=output.filelist,
+                out_conf_yaml=output.generated_conf_yaml,
+                qc_files=qc_files
             )
 
 
@@ -137,12 +149,64 @@ if isinstance(run, BcbioProject):
 
 
 else:
+    rule prep_multiqc_data:
+        input:
+            conpair_concord         = rules.run_conpair.output.concord,
+            conpair_contam          = rules.run_conpair.output.contam,
+            somatic_stats           = 'work/{batch}/small_variants/somatic_stats.yml',
+            germline_stats          = rules.germline_stats_report.output[0],
+            bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
+            bcftools_germline_stats = rules.bcftools_stats_germline.output[0],
+        output:
+            filelist                = 'work/{batch}/multiqc_data/filelist.txt',
+            generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
+        params:
+            data_dir                = 'work/{batch}/multiqc_data',
+            tumor_name              = lambda wc: batch_by_name[wc.batch].tumor.name,
+            normal_name             = lambda wc: batch_by_name[wc.batch].normal.name,
+            genome_build            = run.genome_build
+        group: 'multiqc'
+        run:
+            report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
+            generated_conf, qc_files = make_report_metadata(
+                run,
+                tumor_sample=params.tumor_name,
+                normal_sample=params.normal_name,
+                base_dirpath=report_base_path,
+            )
+
+            # Gold standard QC files
+            qc_files.extend(load_gold_standard(params.genome_build))
+
+            # Umccrise QC files
+            qc_files.extend([
+                join(input.conpair_contam, params.tumor_name + '.txt'),
+                join(input.conpair_contam, params.normal_name + '.txt'),
+                join(input.conpair_concord, params.tumor_name + '.txt'),
+                input.somatic_stats,
+                input.germline_stats,
+                input.bcftools_somatic_stats,
+                input.bcftools_germline_stats,
+            ])
+
+            # Dragen QC files
+            qc_files.extend(batch_by_name[wildcards.batch].all_qc_files()),
+
+            multiqc_prep_data(
+                generated_conf=generated_conf,
+                out_filelist_file=output.filelist,
+                out_conf_yaml=output.generated_conf_yaml,
+                qc_files=qc_files,
+            )
+
     rule batch_multiqc:
         input:
-            qc_files = lambda wc: batch_by_name[wc.batch].all_qc_files(),
-            umccrise_conf_yaml = join(package_path(), 'multiqc', 'multiqc_config.yaml'),
+            umccrise_conf_yaml  = join(package_path(), 'multiqc', 'multiqc_config.yaml'),
+            filelist            = 'work/{batch}/multiqc_data/filelist.txt',
+            generated_conf_yaml = 'work/{batch}/multiqc_data/generated_conf.yaml',
         output:
             html_file = '{batch}/{batch}-multiqc_report.html'
+        group: 'multiqc'
         run:
             qc_files = ' '.join(input.qc_files)
             shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . {qc_files}'

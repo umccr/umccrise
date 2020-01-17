@@ -9,13 +9,13 @@ import yaml
 import re
 
 from ngs_utils import logger
-from ngs_utils.bcbio import BcbioProject
+from ngs_utils.Sample import BaseProject
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transaction
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
 
-def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, analysis_dir=None,
+def make_report_metadata(proj: BaseProject, tumor_sample, normal_sample, base_dirpath, analysis_dir=None,
                          prog_versions_fpath=None, data_versions_fpath=None, new_dir_for_versions=None):
     conf = dict()
     conf['umccr'] = dict()
@@ -24,11 +24,11 @@ def make_report_metadata(bcbio_proj, tumor_sample, normal_sample, base_dirpath, 
     conf['umccr']['tumor_name'] = tumor_sample
     conf['umccr']['normal_name'] = normal_sample
 
-    conf['umccr']['is_rnaseq'] = bcbio_proj.is_rnaseq
+    conf['umccr']['is_rnaseq'] = proj.is_rnaseq
 
     # General links
-    conf['title'] = bcbio_proj.project_name
-    conf['umccr']['run_section'] = get_run_info(bcbio_proj, base_dirpath, analysis_dir=analysis_dir,
+    conf['title'] = proj.project_name
+    conf['umccr']['run_section'] = get_run_info(proj, base_dirpath, analysis_dir=analysis_dir,
                                                 prog_versions_fpath=prog_versions_fpath,
                                                 data_versions_fpath=data_versions_fpath,
                                                 new_dir_for_versions=new_dir_for_versions)
@@ -70,24 +70,31 @@ def _extract_qc_file(fp, new_mq_data_dir, final_dir, f_by_fp=None):
         return dst_fp
 
 
-def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
-                      generated_conf, out_filelist_file, out_conf_yaml,
-                      additional_files, exclude_files=None, include_files=None,
-                      bcbio_mq_yaml=None, new_bcbio_mq_yaml=None):
-
+def multiqc_prep_data(generated_conf, out_filelist_file, out_conf_yaml, qc_files):
     if generated_conf:
         with file_transaction(None, out_conf_yaml) as tx:
             with open(tx, 'w') as f:
                 yaml.dump(generated_conf, f, default_flow_style=False)
 
+    with file_transaction(None, out_filelist_file) as tx:
+        try:
+            with open(tx, 'w') as out:
+                for fp in qc_files:
+                    if fp:
+                        out.write(fp + '\n')
+        except OSError as e:
+            err(str(e))
+
+
+def parse_bcbio_filelist(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
+                         exclude_files=None, include_files=None,
+                         bcbio_mq_yaml=None, new_bcbio_mq_yaml=None):
     if bcbio_mq_yaml and new_bcbio_mq_yaml:
         shutil.copy(bcbio_mq_yaml, new_bcbio_mq_yaml)
 
     ########################################
     ###### Processing bcbio file list ######
-
     verify_file(bcbio_mq_filelist, is_critical=True)
-    qc_files_not_found = []
 
     # Cromwell?
     cwl_targz = join(dirname(bcbio_mq_filelist), 'multiqc-inputs.tar.gz')
@@ -102,39 +109,36 @@ def multiqc_prep_data(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
                     rel_fp = rel_fp.split('call-multiqc_summary/execution/qc/multiqc/')[1]
                 tar_f_by_fp[rel_fp] = tar.extractfile(member)
 
-    with file_transaction(None, out_filelist_file) as tx:
-        try:
-            with open(bcbio_mq_filelist) as inp, open(tx, 'w') as out:
-                for fp in [l.strip() for l in inp if l.strip()]:
-                    if fp == 'trimmed' or fp.endswith('/trimmed'):
-                        continue  # back-compatibility with bcbio
-                    if exclude_files:
-                        if isinstance(exclude_files, str):
-                            exclude_files = [exclude_files]
-                        if any(re.search(ptn, fp) for ptn in exclude_files):
-                            continue
-                    if include_files:
-                        if isinstance(include_files, str):
-                            include_files = [include_files]
-                        if not any(re.search(ptn, fp) for ptn in include_files):
-                            continue
+    qc_files_not_found = []
+    qc_files_found = []
+    with open(bcbio_mq_filelist) as inp:
+        for fp in [l.strip() for l in inp if l.strip()]:
+            if fp == 'trimmed' or fp.endswith('/trimmed'):
+                continue  # back-compatibility with bcbio
+            if exclude_files:
+                if isinstance(exclude_files, str):
+                    exclude_files = [exclude_files]
+                if any(re.search(ptn, fp) for ptn in exclude_files):
+                    continue
+            if include_files:
+                if isinstance(include_files, str):
+                    include_files = [include_files]
+                if not any(re.search(ptn, fp) for ptn in include_files):
+                    continue
 
-                    new_fp = _extract_qc_file(fp, new_mq_data_dir, bcbio_final_dir, tar_f_by_fp)
-                    if not new_fp:
-                        qc_files_not_found.append(fp)
-                        continue
-                    else:
-                        out.write(new_fp + '\n')
+            new_fp = _extract_qc_file(fp, new_mq_data_dir, bcbio_final_dir, tar_f_by_fp)
+            if not new_fp:
+                qc_files_not_found.append(fp)
+                continue
+            else:
+                qc_files_found.append(new_fp)
 
-                if qc_files_not_found:
-                    warn('-')
-                    warn(f'Some QC files from list {bcbio_mq_filelist} were not found:' +
-                        ''.join('\n  ' + fpath for fpath in qc_files_not_found))
-                for fp in additional_files:
-                    if fp:
-                        out.write(fp + '\n')
-        except OSError as e:
-            err(str(e))
+    if qc_files_not_found:
+        warn('-')
+        warn(f'Some QC files from list {bcbio_mq_filelist} were not found:' +
+            ''.join('\n  ' + fpath for fpath in qc_files_not_found))
+
+    return qc_files_found
 
 
 def make_multiqc_report(conf_yamls, filelist, multiqc_fpath, extra_params=''):
@@ -173,7 +177,7 @@ def _make_link(fpath, base_dirpath, text=None, blank=False):
         return '<span>' + (text or basename(fpath)) + '</span>'
 
 
-def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
+def get_run_info(proj: BaseProject, base_dirpath, analysis_dir=None,
                  prog_versions_fpath=None, data_versions_fpath=None,
                  new_dir_for_versions=None):
     info('Getting run and codebase information...')
@@ -249,7 +253,7 @@ def get_run_info(bcbio_proj, base_dirpath, analysis_dir=None,
     data_versions_url = relpath(new_data_versions_fpath, base_dirpath)
     run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
 
-    run_info_dict['analysis_dir'] = analysis_dir or bcbio_proj.final_dir
+    run_info_dict['analysis_dir'] = analysis_dir or proj.dir
     return run_info_dict
 
 
