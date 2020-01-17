@@ -6,11 +6,8 @@ import sys
 import multiprocessing
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
-
-from ngs_utils.Sample import BaseSample, BaseBatch, BaseProject
 from ngs_utils.bcbio import BcbioProject
-from natsort import natsort_keygen
-
+from ngs_utils.dragen import DragenProject
 from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug, warn
 from ngs_utils import logger as ngs_utils_logger
@@ -26,74 +23,6 @@ config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster s
 py_path = sys.executable  # /miniconda/envs/umccrise/bin/python
 env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
 conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
-
-
-class DragenSample(BaseSample):
-    natsort_key = natsort_keygen()
-
-    def __init__(self, **kwargs):
-        BaseSample.__init__(self, **kwargs)  # name, dirpath, work_dir, bam, vcf, phenotype, normal_match
-        self.qc_files = []
-
-
-class DragenBatch(BaseBatch):
-    def __init__(self, **kwargs):
-        BaseBatch.__init__(self, **kwargs)
-        self.qc_files = []
-
-    def find_somatic_vcf(self, silent=False):
-        vcf_fpath_gz = adjust_path(join(self.parent_project.dir, self.name + '.hard-filtered.vcf.gz'))
-        if isfile(vcf_fpath_gz):
-            verify_file(vcf_fpath_gz, is_critical=True)
-            if not silent: info(f'Found somatic VCF in <dragen-dir>/<tumor-name>-hard-filtered.vcf.gz: ' + vcf_fpath_gz)
-            self.somatic_vcf = vcf_fpath_gz
-
-    def all_qc_files(self):
-        return self.qc_files + self.tumor.qc_files + self.normal.qc_files
-
-
-class DragenProject(BaseProject):
-    def __init__(self, input_dir=None, silent=False, **kwargs):
-        BaseProject.__init__(self, input_dir=input_dir, **kwargs)
-        self.somatic_caller = 'dragen'
-        self.germline_caller = 'dragen'
-        self.genome_build = 'hg38'
-
-        for fpath in glob.glob(join(self.input_dir, '*.hard-filtered.vcf.gz')):
-            batch_name = basename(fpath.split('.hard-filtered.vcf.gz')[0])
-            batch = DragenBatch(name=batch_name, parent_project=self)
-            batch.tumor = DragenSample(name=batch_name, phenotype='tumor')
-            batch.normal = DragenSample(name=batch_name + ' normal', phenotype='normal')
-            self.samples.extend([batch.tumor, batch.normal])
-            batch.tumor.bam = join(self.input_dir, batch_name + '_tumor.bam')
-            batch.normal.bam = join(self.input_dir, batch_name + '.bam')
-            self.batch_by_name[batch_name] = batch
-            
-            batch.find_somatic_vcf(silent=silent)
-            batch.find_germline_vcf(silent=silent)
-
-            # populating qc files for multiqc:
-            for suffix in [
-                '.fragment_length_hist.csv'
-                '.mapping_metrics.csv'
-                '.ploidy_estimation_metrics.csv'
-                '.time_metrics.csv'
-                '.vc_metrics.csv'
-            ]:
-                qc_fpath = join(self.input_dir, f'{batch_name}{suffix}')
-                if isfile(qc_fpath):
-                    batch.qc_files.append(qc_fpath)
-
-            for suffix in [
-                '.wgs_contig_mean_cov_{phenotype}.csv'
-                '.wgs_coverage_metrics_{phenotype}.csv'
-                '.wgs_fine_hist_{phenotype}.csv'
-            ]:
-                qc_fpath = join(self.input_dir, f'{batch_name}{suffix}')
-                if isfile(qc_fpath.format(phenotype="normal")):
-                    batch.normal.qc_files.append(qc_fpath.format(phenotype="normal"))
-                if isfile(qc_fpath.format(phenotype="tumor")):
-                    batch.tumor.qc_files.append(qc_fpath.format(phenotype="tumor"))
 
 
 def prep_inputs(config_):

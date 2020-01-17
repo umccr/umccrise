@@ -119,34 +119,37 @@ rule bcftools_stats_somatic:
     shell:
         'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
 
-##################
-#### Germline ####
-rule germline_vcf_pass:
-    input:
-        vcf = lambda wc: batch_by_name[wc.batch].germline_vcf,
-    output:
-        vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-PASS.vcf.gz',
-    group: "germline_snv"
-    shell:
-        'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
+include_germline = all(b.germline_vcf for b in batch_by_name.values())
 
-# Subset to ~200 cancer predisposition gene set.
-rule germline_predispose_subset:
-    input:
-        vcf = rules.germline_vcf_pass.output.vcf,
-    output:
-        vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
-        tbi = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
-    params:
-        ungz = lambda wc, output: get_ungz_gz(output[0])[0]
-    group: "germline_snv"
-    run:
-        pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
-        genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
-        def func(rec, vcf):
-            if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
-                return rec
-        iter_vcf(input.vcf, output.vcf, func)
+if include_germline:
+    ##################
+    #### Germline ####
+    rule germline_vcf_pass:
+        input:
+            vcf = lambda wc: batch_by_name[wc.batch].germline_vcf,
+        output:
+            vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-PASS.vcf.gz',
+        group: "germline_snv"
+        shell:
+            'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
+
+    # Subset to ~200 cancer predisposition gene set.
+    rule germline_predispose_subset:
+        input:
+            vcf = rules.germline_vcf_pass.output.vcf,
+        output:
+            vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
+            tbi = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
+        params:
+            ungz = lambda wc, output: get_ungz_gz(output[0])[0]
+        group: "germline_snv"
+        run:
+            pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
+            genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
+            def func(rec, vcf):
+                if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
+                    return rec
+            iter_vcf(input.vcf, output.vcf, func)
 
 # Preparations: annotate TUMOR_X and NORMAL_X fields
 # Used for PCGR, but for all other processing steps too
@@ -202,13 +205,15 @@ rule germline_leakage_predispose_subset:
 
 rule germline_merge_with_leakage:
     input:
-        vcf_germ = rules.germline_predispose_subset.output.vcf,
-        vcf_lkge = rules.germline_leakage_predispose_subset.output.vcf,
+        vcfs = [
+            rules.germline_predispose_subset.output.vcf if include_germline else [],
+            rules.germline_leakage_predispose_subset.output.vcf,
+        ]
     output:
         vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz'
     group: "germline_snv"
     shell:
-        'bcftools concat -a {input.vcf_germ} {input.vcf_lkge} -Oz -o {output.vcf} '
+        'bcftools concat -a {input.vcfs} -Oz -o {output.vcf} '
         '&& tabix -p vcf {output.vcf}'
 
 rule somatic_stats_report:
@@ -260,7 +265,7 @@ rule somatic_stats_report:
 
 rule germline_stats_report:
     input:
-        vcf = rules.germline_vcf_pass.output.vcf,
+        vcf = rules.germline_leakage_predispose_subset.output.vcf,
     output:
         'work/{batch}/small_variants/germline_stats.yml',
     params:
@@ -287,7 +292,7 @@ rule germline_stats_report:
 # stats section.
 rule bcftools_stats_germline:
     input:
-        rules.germline_vcf_pass.output.vcf,
+        rules.germline_leakage_predispose_subset.output.vcf,
     output:
         '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
     group: "germline_snv"
