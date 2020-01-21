@@ -222,6 +222,25 @@ This example assumes that:
 To build the bundle from scratch, follow instructions for each kind of data below.
 
 
+#### PURPLE
+
+Download hg19 and hg38 versions of the likely heterozygous sites for AMBER from the HMF website:
+
+https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd/download?path=%2FHMFTools-Resources%2FAmber3&files=GermlineHetPon.hg19.vcf.gz
+https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd/download?path=%2FHMFTools-Resources%2FAmber3&files=GermlineHetPon.hg38.vcf.gz
+
+mv GermlineHetPon.hg19.vcf.gz genomes/GRCh37/hmf
+mv GermlineHetPon.hg38.vcf.gz genomes/hg38/hmf
+
+Download hg19 and hg38 versions of GC profile for COBALT from the HMF website:
+
+https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd/download?path=%2FHMFTools-Resources%2FCobalt&files=GC_profile.hg19.1000bp.cnp.gz
+https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd/download?path=%2FHMFTools-Resources%2FCobalt&files=GC_profile.hg38.1000bp.cnp.gz
+
+mv GC_profile.hg19.1000bp.cnp.gz genomes/GRCh37/hmf
+mv GC_profile.hg38.1000bp.cnp.gz genomes/hg38/hmf
+
+
 #### GNOMAD
 
 Version 2.1 (latest, 500G, hosted by broad):
