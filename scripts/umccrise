@@ -60,7 +60,7 @@ from hpc_utils import hpc
 
 def main(input_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, input_genomes_dir=None,
          jobs=None, cluster=False, cluster_cmd=None, forcerun=None,
-         unlock=False, rerun_incomplete=False, restart_times=None, dryrun=False,
+         unlock=False, rerun_incomplete=False, restart_times=1, dryrun=False,
          upload_s3=False, upload_igv=False, docker_wrapper_mode=False, report=None, dag=False, debug=False):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
