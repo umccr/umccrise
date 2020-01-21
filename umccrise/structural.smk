@@ -3,14 +3,13 @@ Structural variants
 ------------------
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
-import itertools
-import re
-
+import glob
+from os.path import join, dirname, basename
 from cyvcf2 import VCF
-from ngs_utils.utils import flatten
-from ngs_utils.file_utils import safe_mkdir
+from ngs_utils.file_utils import safe_mkdir, verify_dir, get_ungz_gz
+from ngs_utils.logger import critical
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
-from bed_annotation import canon_transcript_per_gene
+
 
 vcftobedpe = 'vcfToBedpe'
 
@@ -18,12 +17,92 @@ vcftobedpe = 'vcfToBedpe'
 localrules: structural
 
 
-rule sv_prioritize:
+rule sv_vep:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
     output:
-        vcf = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz',
-        tbi = 'work/{batch}/structural/prioritize/{batch}-manta.vcf.gz.tbi',
+        vcf = 'work/{batch}/structural/vep/{batch}-sv-vep.vcf.gz',
+        tbi = 'work/{batch}/structural/vep/{batch}-sv-vep.vcf.gz.tbi',
+    params:
+        genome = run.genome_build,
+        pcgr_dir = hpc.get_ref_file(key='pcgr_data'),
+    group: "sv_vcf",
+    threads:
+        threads_per_batch
+    run:
+        vep_genome = 'GRCh38' if ('38' in params.genome) else 'GRCh37'
+        pcgr_genome = vep_genome.lower()
+        vep_dir = join(params.pcgr_dir, pcgr_genome, '.vep')
+        verify_dir(vep_dir, is_critical=True)
+        ref_glob = join(vep_dir, 'homo_sapiens', f'*_{vep_genome}', f'Homo_sapiens.{vep_genome}.dna.primary_assembly.fa.gz')
+        ref_found = glob.glob(ref_glob)
+        if len(ref_found) == 0:
+            critical(f'Can\'t find VEP assembly fasta file at {ref_glob}')
+        ref_fa = ref_found[0]
+        vep_version = basename(dirname(ref_fa)).split('_')[0]  # homo_sapiens/{vep_version}_{vep_genome}/Homo_sapiens.{vep_genome}.dna.primary_assembly.fa.gz
+
+        opts = [
+            '--hgvs',               # Add HGVS nomenclature based on Ensembl stable identifiers to the output.
+                                    # Both coding and protein sequence names are added where appropriate.
+                                    # HGVS notations given on Ensembl identifiers are versioned.
+            '--af_gnomad',          # Include allele frequency from Genome Aggregation Database (gnomAD)
+                                    # exome populations. Note only data from the gnomAD exomes are included; to
+                                    # retrieve data from the additional genomes data set, see this guide.
+                                    # Must be used with --cache
+            '--variant_class',      # Output the Sequence Ontology
+                                    # [variant class](https://asia.ensembl.org/info/genome/variation/prediction/classification.html#classes)
+            '--symbol',             # Adds the gene symbol (e.g. HGNC) (where available) to the output
+            '--ccds',               # Adds the CCDS transcript identifer (where available) to the output
+            '--appris',             # Adds the [APPRIS](https://asia.ensembl.org/Help/Glossary?id=521)
+                                    # isoform annotation for this transcript to the output
+            '--biotype',            # Adds the biotype of the transcript or regulatory feature
+            '--canonical',          # Adds a flag indicating if the transcript is the canonical transcript for the gene
+            '--gencode_basic',      # Limit your analysis to transcripts belonging to the GENCODE basic set.
+                                    # This set has fragmented or problematic transcripts removed
+            '--cache',              # Enables use of the cache. Add --refseq or --merged to use the refseq or merged cache
+            '--numbers',            # Adds affected exon and intron numbering to to output. Format is Number/Total.
+            '--total_length',       # Give cDNA, CDS and protein positions as Position/Length
+            '--allele_number',      # dentify allele number from VCF input, where 1 = first ALT allele,
+                                    # 2 = second ALT allele etc. Useful when using --minimal
+            '--no_escape',          # Don't URI escape HGVS strings
+            '--xref_refseq',        # Output aligned RefSeq mRNA identifier for transcript
+            '--vcf',                # Writes output in VCF format. Consequences are added in the INFO field of
+                                    # the VCF file, using the key "CSQ". Data fields are encoded separated by "|";
+                                    # the order of fields is written in the VCF header. Output fields in the "CSQ"
+                                    # INFO field can be selected by using --fields.
+            '--check_ref',          # Force VEP to check the supplied reference allele against the sequence stored in
+                                    # the Ensembl Core database or supplied FASTA file. Lines that do not match are
+                                    # skipped
+            '--dont_skip',          # Don't skip input variants that fail validation, e.g. those that fall on
+                                    # unrecognised sequences. Combining --check_ref with --dont_skip will add a
+                                    # CHECK_REF output field when the given reference does not match the underlying
+                                    # reference sequence.
+            '--flag_pick_allele_gene',  # As per --pick_allele_gene, but adds the PICK flag to the chosen block of
+                                        # consequence data and retains others
+            '--pick_order rank,appris,biotype,tsl,ccds,canonical,length,mane',
+            '--force_overwrite',
+            '--species homo_sapiens',
+            f'--assembly {vep_genome}',
+            '--offline',
+            f'--fork {threads}',
+            f'--dir {vep_dir}',
+            f'--cache_version {vep_version}',
+            f'--fasta {ref_fa}',
+            '--format vcf'          # By default, VEP auto-detects the input file format. However it fails
+                                    # to autodetect with SVs in VCF. So specifying explicitly as VCF
+        ]
+        opts_line = ' '.join(opts)
+        out_ungz, out_gz = get_ungz_gz(output.vcf)
+        shell(conda_cmd.format('pcgr') +
+            'vep --input_file {input.vcf} --output_file {out_ungz} {opts_line}')
+        shell('bgzip {out_ungz} && tabix {out_gz}')
+
+rule sv_prioritize:
+    input:
+        vcf = 'work/{batch}/structural/vep/{batch}-sv-vep.vcf.gz',
+    output:
+        vcf = 'work/{batch}/structural/prioritize/{batch}-sv-vep-prio.vcf.gz',
+        tbi = 'work/{batch}/structural/prioritize/{batch}-sv-vep-prio.vcf.gz.tbi',
     params:
         genome = run.genome_build
     group: "sv_vcf"
