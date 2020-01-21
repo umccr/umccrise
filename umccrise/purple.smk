@@ -52,7 +52,7 @@ rule purple_amber:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        snp_bed = hpc.get_ref_file(run.genome_build, 'purple_het'),
+        het_snps = hpc.get_ref_file(run.genome_build, 'purple_het'),
         ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         'work/{batch}/purple/amber/{batch}.amber.baf.tsv',
@@ -81,7 +81,7 @@ rule purple_amber:
         '-reference {params.normal_name} '
         '-reference_bam {input.normal_bam} '
         '-ref_genome {input.ref_fa} '
-        '-bed {input.snp_bed} '
+        '-loci {input.het_snps} '
         '-threads {threads} '
         '-output_dir {params.outdir} 2>&1 | tee {log} '
 
