@@ -476,11 +476,11 @@ source /g/data/gx8/extras/umccrise_017_2020_Jan/load_umccrise.sh
 Then run the `gpl` command:
 
 ```
-gpl -N <normal-bam> \
-    -T <tumor-bam> \
-    -S <small-somatic-variants-vcf> \
-    -s <sample-name> \
-    -o <output-dir> \
+gpl -N <normal bam> \
+    -T <tumor bam> \
+    -S <small somatic variants vcf> \
+    -s <tumor sample name in the vcf above> \
+    -o <output dir> \
     -t<threads> 
 ```
 
