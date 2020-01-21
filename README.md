@@ -467,7 +467,7 @@ We use [HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUr
 - [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) a copy number, ploidy and purity caller,
 - [LINX](https://github.com/hartwigmedical/hmftools/tree/master/sv-linx) a tools for structural event classification and visualisation.
 
-We have a docker-free wrapper for this chain of tools, which can be run on NCI HPC cluster. To use the wrapper, first load umccrise with:
+We have a Docker-free wrapper for this chain of tools, which can be run on NCI HPC cluster. To use the wrapper, first load Umccrise with:
 
 ```
 source /g/data/gx8/extras/umccrise_017_2020_Jan/load_umccrise.sh
@@ -495,9 +495,16 @@ gpl -N /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174_MDX190157_
     -t10 
 ```
 
-The wrapper loads the [conda environment](blob/master/envs/hmf.yml) that has all the dependencies for the HMF tools (the environment is installed on Gadi at `/g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise_hmf`), runs the `gridss-purple-linx.sh` script from [our fork of gridss-purple-linx](https://github.com/vladsaveliev/gridss-purple-linx), pointing it to the data bundle `/g/data3/gx8/extras/umccrise_017_2020_Jan_dev/genomes/GRCh37/hmf/gridss`. 
+The wrapper loads the [conda environment](blob/master/envs/hmf.yml) that has all the dependencies for the HMF tools (the environment is installed on Gadi at `/g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise_hmf`), runs the `gridss-purple-linx.sh` script from [our fork of gridss-purple-linx](https://github.com/vladsaveliev/gridss-purple-linx), pointing it to the data bundle `/g/data3/gx8/extras/umccrise_017_2020_Jan_dev/genomes/GRCh37/hmf/gridss`.
 
-There are a few drawbacks. The pipeline is currently very unstable (GRIDSS might occasianlly crash on certain samples, plus it is quite slow and resource demanding, so your cluster node might expire before it completes). Also it [supports only GRCh37](https://github.com/hartwigmedical/gridss-purple-linx/issues/3) - even though GRIDSS itself and PURPLE are genome-agnostic, annotations needed for LINX are put up only for GRCh37 at the moment.
+Note that we are using forks of GRIDSS and gridss-purple-linx: 
+
+- GRIDSS: https://github.com/vladsaveliev/gridss
+- gridss-purple-linx: https://github.com/vladsaveliev/gridss-purple-linx
+
+Where we have some amendments of `gridss.sh` and `gridss-purple-linx.sh` scripts to make it work with an HPC installation. Eventually we want to syncronise them with the original repos.
+
+There are a few drawbacks that prevents us from integrating the pipeline in production. The pipeline is currently unstable (GRIDSS might occasianlly crash on certain samples, plus it is quite slow and resource demanding, so your cluster node might expire before it completes). Also it [supports only GRCh37](https://github.com/hartwigmedical/gridss-purple-linx/issues/3) - even though GRIDSS itself and PURPLE are genome-agnostic, annotations needed for LINX are put up only for GRCh37 at the moment.
 
 The idea is to eventually complement or even subsitute the [structural variants](https://github.com/umccr/umccrise/blob/master/workflow.md#structural-variants) workflow in Umccrise, including prioritization and the section in the cancer report. In addition, we hope to use it as the viral integration tool instead of current [semi-manual workflow](https://github.com/umccr/oncoviruses). The downsides of that are:
 
