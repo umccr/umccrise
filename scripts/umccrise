@@ -178,7 +178,7 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
         f'--directory {output_dir if not docker_wrapper_mode else "/output_dir"} '
         f'-j {jobs} '
         f'--rerun-incomplete '
-        f'({f"--restart-times {restart_times - 1}" if restart_times > 1 else ""}'
+        f'{f"--restart-times {restart_times - 1}" if restart_times > 1 else ""}'
         f'{cluster_param} '
         f'--config {" ".join(k + "=" + str(v) for k, v in conf.items())} '
     )
