@@ -1,24 +1,25 @@
 Umccrise
 --------
 
+UMCCR cancer reporting
+
 [![Build Status](https://travis-ci.org/umccr/umccrise.svg?branch=master)](https://travis-ci.org/umccr/umccrise)
 
-Umccrise is designed to post-processess outputs from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) cancer variant calling analysis pipeline.
+Umccrise is developed to post-processess outputs from cancer variant calling analysis pipelines from 2 platforms: ([bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) and Illumina Dragen, and generate reports helpful for researchers and curators at UMCCR.
 
-- Filter artefacts and germline leakage from somatic calls
-- Run [PCGR](https://github.com/sigven/pcgr) to annotate, prioritize and report somatic variants
-- Run [CPSR](https://github.com/sigven/cpsr) to annotate, prioritize and report germline variants
-- Filter, annotate, prioritize and report SV
-- Run [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) to call CNV, purity, ploidy, and recover SV
-- Generate a MutliQC report comparing QC to "reference" samples
-- Generate a cancer report with mutational signatures, strand bias analysis, PURPLE results, and prioritized SVs
-- Run [CACAO](https://github.com/sigven/cacao) to calculate coverage in common hotspots, as well as goleft to estimate coverage problems
-- Run [Conpair](https://github.com/nygenome/Conpair) to tumor/normal concordance and sample contamination
+- Filter artefacts and germline leakage from somatic variant calls;
+- Run [PCGR](https://github.com/sigven/pcgr) to annotate, prioritize and report somatic variants;
+- Run [CPSR](https://github.com/sigven/cpsr) to annotate, prioritize and report germline variants;
+- Filter, annotate, prioritize and report structural variants (SVs);
+- Run [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) to call copy number calls (CNV), purity, ploidy, and recover SVs;
+- Generate a MutliQC report that summarizes quality control statistics in context of background "gold standard" samples;
+- Generate a cancer report with mutational signatures, circos plots, prioritized copy number and structural variant calls;
+- Run [CACAO](https://github.com/sigven/cacao) to calculate coverage in common hotspots, as well as goleft to estimate coverage problems;
+- Run [Conpair](https://github.com/nygenome/Conpair) to tumor/normal concordance and sample contamination.
 
-See the [workflow.md](workflow.md) for the complete description of the workflow.
+See the [workflow.md](workflow.md) for a detailed description of the workflow.
 
 See the [HISTORY.md](HISTORY.md) for the version history.
-
 
 Contents:
 
@@ -26,7 +27,7 @@ Contents:
 - [Installation](#installation)
 - [Reference data](#reference-data)
 - [Testing](#testing)
-- [UMCCRISE on AWS](#umccrise-on-aws)
+- [Umccrise on AWS](#umccrise-on-aws)
 - [UMCCR HPC](#umccr-hpc)
 - [Usage](#usage)
     - [Run selected steps](#run-selected-steps)
@@ -73,7 +74,6 @@ cd /data/cephfs/punim0010/extras/umccrise
 rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
 ```
 
-
 ## Testing
 
 Load the umccrise environment, clone the repo with toy test data, and run nosetests: 
@@ -84,37 +84,49 @@ git clone https://github.com/umccr/umccrise_test_data
 TEST_OPTS="-c -j2" nosetests -s umccrise_test_data/test.py
 ```
 
-## UMCCRISE on AWS
+## Usage
 
-umccrise on AWS is run via AWS Batch in a defined compute environment. This is set up and maintained via the [umccrise Terraform Stack][umccrise_tf_stack]. This stack also defines the version of umccrise that is used within AWS and how umccrise jobs are triggered.
+```
+umccrise <input-folder> -o umccrised -j10
+```
 
-## UMCCR HPC
+Where <input-folder> can be either bcbio-nextgen analysis results' `final` folder, or Dragen analysis results folder.
 
-Load in Raijin
+`-j10` specifies the number of cores the pipeline will attempt to use.
+
+
+## AWS
+
+Umccrise on AWS is run via AWS Batch in a defined compute environment. This is set up and maintained via the [umccrise Terraform Stack][https://github.com/umccr/infrastructure/tree/master/terraform/stacks/umccrise]. This stack also defines the version of umccrise that is used within AWS and how umccrise jobs are triggered.
+
+## HPC (NCI Gadi)
+
+The production version can be loaded by sourcing the following:
 
 ```
 source /g/data3/gx8/extras/umccrise/load_umccrise.sh
 ```
 
-Load on Spartan
+There are also installations for each somewhat major release available in `/g/data3/gx8/extras`, for instance by sourcing the following you can load version 0.17, released on Jan 2020:
 
 ```
-source /data/cephfs/punim0010/extras/umccrise/load_umccrise.sh
+/g/data/gx8/extras/umccrise_017_2020_Jan/load_umccrise.sh
 ```
 
-## Usage
-
-Runs the patient analysis pipeline on bcbio-nextgen `final` folder.
+To parallelize the tool using the cluster scheduler, you can use `--cluster-auto` (`-c`) option:
 
 ```
-umccrise /path/to/bcbio/project/final -j 30   # run using 30 CPUs
+umccrise <input-folder> -j30 -c
 ```
 
-The output will be created in `umccrised` folder. To override, use `-o`:
+Alternatively, you can specify a custom submission template with `--cluster-cmd`, e.g.:
 
 ```
-umccrise /path/to/bcbio/project/final -o umccrised_results
+umccrise <input-folder> -j30 --cluster-cmd "sbatch -p vccc -n {threads} -t 24:00:00 --mem {resources.mem_mb} -J umccrise"
 ```
+
+Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use by the entire pipeline at a single moment.
+
 
 #### Run selected steps
 
@@ -123,13 +135,13 @@ Umccrise workflow consists of the following steps: `pcgr`, `coverage`, `structur
 To run just a particular step (or steps), use:
 
 ```
-umccrise /path/to/bcbio/project/final <step_name>
+umccrise <input-folder> <step_name>
 ```
 
 Where `<step_name>` is from the list above. E.g.:
 
 ```
-umccrise /path/to/bcbio/project/final pcgr
+umccrise <input-folder> pcgr
 ```
 
 Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-igv`) takes ~5 hours for a WGS sample compared to ~20 minutes for all other steps combined. For that reason, it is always executed in the end of the pipeline, so you can expect that when it is being executed, all other output is ready.
@@ -139,32 +151,15 @@ Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-i
 By default, Umccrise will process all batches in the run in parallel. You can submit only certain samples/batchs using `--sample` or `--batch` arguments, e.g.:
 
 ```
-umccrise /path/to/bcbio/project/final --batch cup-batch
-umccrise /path/to/bcbio/project/final --sample cup-tumor_1,cup-tumor_2
+umccrise <input-folder> --batch cup-batch
+umccrise <input-folder> --sample cup-tumor_1,cup-tumor_2
 ```
 
 Or you might want to exclude certain samples/batches with `--exclude`:
 
 ```
-umccrise /path/to/bcbio/project/final --exclude cup-tumor_1,cup-batch_2
+umccrise <input-folder> --exclude cup-tumor_1,cup-batch_2
 ```
-
-#### Use HPC cluster
-
-Set `--cluster-auto` (`-c`) option to submit jobs on HPC cluster. Supports Spartan for now.
-
-```
-umccrise /path/to/bcbio/project/final -j 30 -c
-```
-
-Alternatively, you can specify a custom submission template with `--cluster-cmd`, e.g.:
-
-```
-umccrise /path/to/bcbio/project/final -j 30 --cluster-cmd "sbatch -p vccc -n {threads} -t 24:00:00 --mem {resources.mem_mb} -J umccrise"
-```
-
-Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use at single moment.
-
 
 ## Updating
 
@@ -216,6 +211,7 @@ This example assumes that:
 
 	1. You are running the umccrise container against the [umccrise_test_data](https://github.com/umccr/umccrise_test_data)
 	2. You have figured out the genome data files and directory hierarchy for `/work/genomes`.
+
 
 ## Building reference data
 
@@ -463,6 +459,55 @@ convert ../../GRCh37/hmf/out_150_hg19.mappability.bed.gz
 We use [HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd?path=%2FHMF-Pipeline-Resources) for SV prioritization. See `NGS_Utils/ngs_utils/refernece_data/__init__.py` for details.
 
 
+## GRIDSS and LINX
 
-[umccrise_tf_stack]: https://github.com/umccr/infrastructure/tree/master/terraform/stacks/umccrise
+[GRIDSS+PURPLE+LINX](https://github.com/hartwigmedical/gridss-purple-linx) is a chain of tools developed by Hartwig Medical Foundation:
+
+- [GRIDSS](https://github.com/PapenfussLab/gridss) a structural variant caller,
+- [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) a copy number, ploidy and purity caller,
+- [LINX](https://github.com/hartwigmedical/hmftools/tree/master/sv-linx) a tools for structural event classification and visualisation.
+
+We have a docker-free wrapper for this chain of tools, which can be run on NCI HPC cluster. To use the wrapper, first load umccrise with:
+
+```
+source /g/data/gx8/extras/umccrise_017_2020_Jan/load_umccrise.sh
+ ```
+
+Then run the `gpl` command:
+
+```
+gpl -N <normal-bam> \
+    -T <tumor-bam> \
+    -S <small-somatic-variants-vcf> \
+    -s <sample-name> \
+    -o <output-dir> \
+    -t<threads> 
+```
+
+For intance, to process this sample with known HPV viral integration:
+
+```
+gpl -N /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174_MDX190157_L1900839-ready.bam \
+    -T /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174_MDX190158_L1900840-ready.bam \
+    -S /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174__SBJ00174_MDX190158_L1900840-somatic-ensemble-PASS.vcf.gz \
+    -s SFRC01189 \
+    -o /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/GRIDSS \
+    -t10 
+```
+
+The wrapper loads the [conda environment](blob/master/envs/hmf.yml) that has all the dependencies for the HMF tools (the environment is installed on Gadi at `/g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise_hmf`), runs the `gridss-purple-linx.sh` script from [our fork of gridss-purple-linx](https://github.com/vladsaveliev/gridss-purple-linx), pointing it to the data bundle `/g/data3/gx8/extras/umccrise_017_2020_Jan_dev/genomes/GRCh37/hmf/gridss`. 
+
+The pipeline is currently very unstable and [supports only GRCh37](https://github.com/hartwigmedical/gridss-purple-linx/issues/3).
+
+The idea is to eventually complement or even subsitute the [structural variants](https://github.com/umccr/umccrise/blob/master/workflow.md#structural-variants) workflow in Umccrise, including prioritization and the section in the cancer report. In addition, we hope to use it as the viral integration tool instead of current [semi-manual workflow](https://github.com/umccr/oncoviruses). The downsides of that are:
+
+- No hg38 support
+- GRIDSS is very slow
+- GRIDSS is not very stable
+- HMF tools are not adapted to FFPE data
+- LINX doesn't annotate events that don't affect particular gene sequence, but rather downstream or upstream
+ 
+
+
+
 
