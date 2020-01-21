@@ -497,11 +497,11 @@ gpl -N /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174_MDX190157_
 
 The wrapper loads the [conda environment](blob/master/envs/hmf.yml) that has all the dependencies for the HMF tools (the environment is installed on Gadi at `/g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise_hmf`), runs the `gridss-purple-linx.sh` script from [our fork of gridss-purple-linx](https://github.com/vladsaveliev/gridss-purple-linx), pointing it to the data bundle `/g/data3/gx8/extras/umccrise_017_2020_Jan_dev/genomes/GRCh37/hmf/gridss`. 
 
-The pipeline is currently very unstable and [supports only GRCh37](https://github.com/hartwigmedical/gridss-purple-linx/issues/3).
+There are a few drawbacks. The pipeline is currently very unstable (GRIDSS might occasianlly crash on certain samples, plus it is quite slow and resource demanding, so your cluster node might expire before it completes). Also it [supports only GRCh37](https://github.com/hartwigmedical/gridss-purple-linx/issues/3) - even though GRIDSS itself and PURPLE are genome-agnostic, annotations needed for LINX are put up only for GRCh37 at the moment.
 
 The idea is to eventually complement or even subsitute the [structural variants](https://github.com/umccr/umccrise/blob/master/workflow.md#structural-variants) workflow in Umccrise, including prioritization and the section in the cancer report. In addition, we hope to use it as the viral integration tool instead of current [semi-manual workflow](https://github.com/umccr/oncoviruses). The downsides of that are:
 
-- No hg38 support
+- No hg38 support for LINX
 - GRIDSS is very slow
 - GRIDSS is not very stable
 - HMF tools are not adapted to FFPE data
