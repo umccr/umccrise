@@ -484,7 +484,7 @@ gpl -N <normal bam> \
     -t<threads> 
 ```
 
-For intance, to process this sample with known HPV viral integration:
+For instance, to process this sample with known HPV viral integration:
 
 ```
 gpl -N /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174_MDX190157_L1900839-ready.bam \
