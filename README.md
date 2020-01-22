@@ -22,30 +22,31 @@ See the [workflow.md](workflow.md) for a detailed description of the workflow.
 See the [HISTORY.md](HISTORY.md) for the version history.
 
 Contents:
-
 - [Umccrise](#umccrise)
 - [Installation](#installation)
 - [Reference data](#reference-data)
 - [Testing](#testing)
-- [Umccrise on AWS](#umccrise-on-aws)
-- [UMCCR HPC](#umccr-hpc)
 - [Usage](#usage)
-    - [Run selected steps](#run-selected-steps)
-    - [Run on selected samples](#run-on-selected-samples)
-    - [Use HPC cluster](#use-hpc-cluster)
+- [AWS](#aws)
+- [HPC (NCI Gadi)](#hpc--nci-gadi-)
+    + [Run selected steps](#run-selected-steps)
+    + [Run on selected samples](#run-on-selected-samples)
 - [Updating](#updating)
 - [Development](#development)
 - [Docker](#docker)
 - [Building reference data](#building-reference-data)
-    - [GNOMAD](#gnomad)
-    - [PCGR](#pcgr)
-    - [Problem regions](#problem-regions)
-    - [Coding regions (SAGE)](#coding-regions-sage)
-    - [Ensembl annotation](#ensembl-annotation)
-    - [Hotspots](#hotspots)
-    - [Other HMF files](#other-hmf-files)
-    - [Fusions](#fusions)
+    + [PURPLE](#purple)
+    + [GNOMAD](#gnomad)
+    + [PCGR](#pcgr)
+    + [Problem regions](#problem-regions)
+    + [Coding regions (SAGE)](#coding-regions--sage-)
+    + [Ensembl annotation](#ensembl-annotation)
+    + [Hotspots](#hotspots)
+    + [Other HMF files](#other-hmf-files)
+    + [Fusions](#fusions)
+- [GRIDSS and LINX](#gridss-and-linx)
 
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Installation
 
