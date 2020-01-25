@@ -459,6 +459,23 @@ convert ../../GRCh37/hmf/out_150_hg19.mappability.bed.gz
 
 We use [HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd?path=%2FHMF-Pipeline-Resources) for SV prioritization. See `NGS_Utils/ngs_utils/refernece_data/__init__.py` for details.
 
+#### SnpEff
+
+```
+cd GRCh37
+mkdir snpeff
+cd snpeff
+wget https://sourceforge.net/projects/snpeff/files/databases/v4_3/snpEff_v4_3_GRCh37.75.zip
+unzip *.zip
+rm *.zip
+
+cd hg38
+mkdir snpeff
+cd snpeff
+wget https://sourceforge.net/projects/snpeff/files/databases/v4_3/snpEff_v4_3_GRCh38.92.zip
+unzip *.zip
+rm *.zip
+```
 
 ## GRIDSS and LINX
 

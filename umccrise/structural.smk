@@ -6,7 +6,7 @@ Re-do the CNV plots. This will need lots of love (drop gene names, make the scat
 import glob
 from os.path import join, dirname, basename
 from cyvcf2 import VCF
-from ngs_utils.file_utils import safe_mkdir, verify_dir, get_ungz_gz
+from ngs_utils.file_utils import safe_mkdir, verify_dir, get_ungz_gz, verify_file
 from ngs_utils.logger import critical
 from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
 
@@ -16,6 +16,39 @@ vcftobedpe = 'vcfToBedpe'
 
 localrules: structural
 
+
+rule sv_snpeff:
+    input:
+        vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
+    output:
+        vcf  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz',
+        tbi  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz.tbi',
+        csv  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff-stats.csv',
+        html = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff-stats.html',
+    params:
+        genome = run.genome_build,
+        tmp_dir = 'work/{batch}/structural/snpeff/tmp'
+    resources:
+        mem_mb = min(8000, max(30000, 3000*threads_per_batch + 1000))
+    group: "sv_vcf",
+    threads:
+        threads_per_batch
+    run:
+        snpeff_db = hpc.get_ref_file(genome=params.genome, key='snpeff')
+        snpeff_db_dir = dirname(snpeff_db)
+        snpeff_db_name = 'GRCh38.86'  # for some reason it doesn't matter if the subdir is named GRCh38.92
+
+        mem_jvm_gb = min(7, max(30, 3*threads))
+        jvm_opts = f'-Xms750m -Xmx{mem_jvm_gb}g'
+        java_args = f'-Djava.io.tmpdir={params.tmp_dir}'
+
+        shell('snpEff {jvm_opts} {java_args} '
+              '-dataDir {snpeff_db_dir} {snpeff_db_name} '
+              '-hgvs -cancer -i vcf -o vcf '
+              '-csvStats {output.csv} -s {output.html} '
+              '{input.vcf} '
+              '| bgzip --threads {threads} -c > {output.vcf} && tabix -p vcf {output.vcf}')
+        verify_file(output.vcf, is_critical=True)
 
 rule sv_vep:
     input:
@@ -97,12 +130,28 @@ rule sv_vep:
             'vep --input_file {input.vcf} --output_file {out_ungz} {opts_line}')
         shell('bgzip {out_ungz} && tabix {out_gz}')
 
+# Handle SnpEff capitalising ALT (see https://github.com/pcingola/SnpEff/issues/237).
+# BPI and bedtools>=2.29.2 will crash if left as is.
+rule fix_speff:
+    input:
+        vcf = rules.sv_snpeff.output.vcf
+    output:
+        vcf = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz',
+    group: "sv_vcf"
+    shell:
+        'gunzip -c {input.vcf} '
+        '| sed "s/CHR/chr/" '
+        '| sed "s/chrOM/CHROM/" '
+        '| sed "s/V1_RANDOM/v1_random/" '
+        '| bgzip -c > {output.vcf} '
+        '&& tabix -p vcf {output.vcf}'
+
 rule sv_prioritize:
     input:
-        vcf = 'work/{batch}/structural/vep/{batch}-sv-vep.vcf.gz',
+        vcf = rules.fix_speff.output.vcf
     output:
-        vcf = 'work/{batch}/structural/prioritize/{batch}-sv-vep-prio.vcf.gz',
-        tbi = 'work/{batch}/structural/prioritize/{batch}-sv-vep-prio.vcf.gz.tbi',
+        vcf = 'work/{batch}/structural/prioritize/{batch}-sv-eff-prio.vcf.gz',
+        tbi = 'work/{batch}/structural/prioritize/{batch}-sv-eff-prio.vcf.gz.tbi',
     params:
         genome = run.genome_build
     group: "sv_vcf"
@@ -179,9 +228,6 @@ rule sv_maybe_bpi:
     resources:
         mem_mb = 16000
     run:
-        # Handle SnpEff capitalising ALT (see https://github.com/pcingola/SnpEff/issues/237).
-        # BPI and bedtools>=2.29.2 will crash if left as is.
-        shell('sed -i "s/CHR/chr/" {input.vcf} && sed -i "s/chrOM/CHROM/" {input.vcf}; ')
         if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):  # already BPI'ed
             shell('cp {input.vcf} {output.vcf}')
         else:
