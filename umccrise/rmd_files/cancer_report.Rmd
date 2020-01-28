@@ -24,6 +24,19 @@ params:
   purple_purity: 'x'
   purple_qc: 'x'
   conda_list: 'x'
+  # genome_build:     'hg38'
+  # tumor_name:       'T_SRR7890902_20pc'
+  # batch_name:       'T_SRR7890902_20pc'
+  # key_genes:        '~/rjn/extras/vlad/synced/NGS_Utils/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv'
+  # af_global:        '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/rmd/afs/af_tumor.txt'
+  # af_keygenes:      '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/rmd/afs/af_tumor_keygenes.txt'
+  # somatic_snv:      '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/rmd/dragen-with_chr_prefix.vcf'
+  # somatic_sv:       '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/T_SRR7890902_20pc/structural/T_SRR7890902_20pc-manta.tsv'
+  # purple_gene_cnv:  '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/purple/T_SRR7890902_20pc.purple.cnv.gene.tsv'
+  # purple_cnv:       '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/purple/T_SRR7890902_20pc.purple.cnv.somatic.tsv'
+  # purple_purity:    '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/purple/T_SRR7890902_20pc.purple.purity.tsv'
+  # purple_qc:        '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/purple/T_SRR7890902_20pc.purple.qc'
+  # conda_list:       '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/rmd/conda_pkg_list.txt'
 description: "Analysis of tumor/normal samples at UMCCR"
 title: "`r paste(params$title, params$batch_name)`"
 ---
@@ -794,7 +807,23 @@ previous mutation, and is log10 transformed. Drop-downs from the plots indicate 
 "hotspots" of mutations.
 
 ```{r mutationalpatterns_rainfall, out.width="90%", fig.width=14}
-MutationalPatterns::plot_rainfall(somatic_snv[[1]], chromosomes = seqnames(get(ref_genome))[1:22], cex = 1.2, ylim = 1e+09)
+# When there is only 1 or lower number of variants on a chromosome, MutationalPatterns::plot_rainfall will crash with an error. So need to check if it will work beforehand.
+chromosomes = seqnames(get(ref_genome))[1:22]
+vcf = somatic_snv[[1]]
+chr_subset = vcf[seqnames(vcf) == chromosomes[1]]
+n = length(chr_subset)
+will_work = FALSE
+for (i in 1:length(chromosomes)) {
+  chr_subset = vcf[seqnames(vcf) == chromosomes[i]]
+  n = length(chr_subset)
+  if (n >= 2) {
+    print(i)
+    will_work = TRUE
+  }
+}
+if (will_work) {
+  MutationalPatterns::plot_rainfall(somatic_snv[[1]], chromosomes = seqnames(get(ref_genome))[1:22], cex = 1.2, ylim = 1e+09)
+}
 ```
 
 
