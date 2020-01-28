@@ -42,5 +42,8 @@ phases:
         -v=/codebuild/output/refdata/genomes:/work/genomes
         $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH /bcbio_project -o /output_dir --genomes /work/genomes
       # Push both fat UMCCRISE container and Slim image to ECR if tests pass
-      - docker push $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH.slim
+      #- docker push $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH.slim
       - docker push $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+
+#XXX: Not sure if rootless dind support is worth the effort here?:
+# $ docker run -d --name dind-rootless --privileged docker:19.03-dind-rootless --experimental
