@@ -64,8 +64,8 @@ was generated and the button that launches the welcome tour.
       {% if report.umccr %}
         {{ '<dt>Project:</dt><dd>' + config.title + '</dd>' }}
         {{ '<dt>Creation date:</dt><dd>' + config.umccr.run_section.run_date
-          + ('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.program_versions if report.umccr.run_section.program_versions else '')
-          + ('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.data_versions if report.umccr.run_section.data_versions else '')
+          + (('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.program_versions) if report.umccr.run_section.program_versions else '')
+          + (('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.data_versions) if report.umccr.run_section.data_versions else '')
           + '</dd>' }}
         {{ '<dt>Analysis directory:</dt><dd>' + config.umccr.run_section.analysis_dir + '</dd>' }}
       {% endif %}

@@ -221,37 +221,37 @@ def get_run_info(proj: BaseProject, base_dirpath, analysis_dir=None,
         run_info_dict['umccrise_version'] = version_text
 
     # prog versions
-    # if prog_versions_fpath and new_dir_for_versions and verify_file(prog_versions_fpath, silent=True):
-    info('Adding umccrise versoin into prog_versions file ' + prog_versions_fpath)
-    with open(prog_versions_fpath) as f:
-        program_versions = dict()
-        for l in f:
-            l = l.strip()
-            if l:
-                try:
-                    program_versions[l.split(',')[0]] = l.split(',')[1]
-                except:
-                    pass
-    new_prog_versions_fpath = join(new_dir_for_versions, basename(prog_versions_fpath))
-    if umccrsie_version:
-        program_versions['umccrise'] = umccrsie_version
-    with open(new_prog_versions_fpath, 'w') as f:
-        for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
-            f.write(p + ',' + v + '\n')
-    info('Saved prog_versions file into ' + new_prog_versions_fpath)
-    assert exists(new_prog_versions_fpath)
+    if prog_versions_fpath:
+        info('Adding umccrise versoin into prog_versions file ' + prog_versions_fpath)
+        with open(prog_versions_fpath) as f:
+            program_versions = dict()
+            for l in f:
+                l = l.strip()
+                if l:
+                    try:
+                        program_versions[l.split(',')[0]] = l.split(',')[1]
+                    except:
+                        pass
+        new_prog_versions_fpath = join(new_dir_for_versions, basename(prog_versions_fpath))
+        if umccrsie_version:
+            program_versions['umccrise'] = umccrsie_version
+        with open(new_prog_versions_fpath, 'w') as f:
+            for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
+                f.write(p + ',' + v + '\n')
+        info('Saved prog_versions file into ' + new_prog_versions_fpath)
+        assert exists(new_prog_versions_fpath)
 
-    programs_url = relpath(new_prog_versions_fpath, base_dirpath)
-    run_info_dict['program_versions'] = f'<a href="{programs_url}">program versions</a>'
+        programs_url = relpath(new_prog_versions_fpath, base_dirpath)
+        run_info_dict['program_versions'] = f'<a href="{programs_url}">program versions</a>'
 
     # data version
-    # if data_versions_fpath and new_dir_for_versions and verify_file(data_versions_fpath, silent=True):
-    new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath).replace(".csv", ".txt"))
-    run_simple(f'cp {data_versions_fpath} {new_data_versions_fpath}')
-    info('Saved data_versions file into ' + new_data_versions_fpath)
-    assert exists(new_data_versions_fpath)
-    data_versions_url = relpath(new_data_versions_fpath, base_dirpath)
-    run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
+    if data_versions_fpath:
+        new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath).replace(".csv", ".txt"))
+        run_simple(f'cp {data_versions_fpath} {new_data_versions_fpath}')
+        info('Saved data_versions file into ' + new_data_versions_fpath)
+        assert exists(new_data_versions_fpath)
+        data_versions_url = relpath(new_data_versions_fpath, base_dirpath)
+        run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
 
     run_info_dict['analysis_dir'] = analysis_dir or proj.dir
     return run_info_dict

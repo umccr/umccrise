@@ -208,9 +208,9 @@ else:
             html_file = '{batch}/{batch}-multiqc_report.html'
         group: 'multiqc'
         run:
-            qc_files = ' '.join(input.qc_files)
-            shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . {qc_files}'
-                  f' -c {input.umccrise_conf_yaml} --filename {output.html_file}')
+            list_files = input.filelist
+            shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . -l {list_files}'
+                  f' -c {input.umccrise_conf_yaml} -c {input.generated_conf_yaml} --filename {output.html_file}')
 
 
 rule multiqc:
