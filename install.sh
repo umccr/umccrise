@@ -47,8 +47,8 @@ EOT
 
 # Install some missing packages for the cancer report environment
 export PATH=$PWD/miniconda/envs/${ENV_NAME}_cancer_report/bin:$PATH
-R -e "install.packages('stringi', dependencies = F, repos = 'http://cran.us.r-project.org')"
-R -e "install.packages('BiocManager', repos = 'http://cran.us.r-project.org')"
+R -e "install.packages('stringi', dependencies = F, repos = 'http://cran.rstudio.com')"
+R -e "install.packages('BiocManager', repos = 'http://cran.rstudio.com')"
 R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg19.knownGene')"
 R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg38.knownGene')"
 
