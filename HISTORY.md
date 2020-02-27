@@ -1,11 +1,16 @@
-0.17 (TBR)
+0.17.1 (27 Feb 2020)
 
-- Massive cancer report updates:
+- Fix PCGR and CPSR transcript prioritization issues https://github.com/sigven/cpsr/issues/26
+- Output SAGE results into {batch}/small_variants/sage/{batch}-sage.vcf.gz
+
+0.17.0 (1 Feb 202)
+
+- Massive cancer report updates by Peter Diakumis:
     - Added new somatic signatures
     - SV tables restrucurised and got much more readable
 - Support DRAGEN project on input instead of bcbio
 
-0.16 (31 Dec 2019)
+0.16.0 (31 Dec 2019)
 
 - Add CodeBuild CI support (thanks @brainstorm for the great work!)
 - Add hg38 MultiQC background samples
