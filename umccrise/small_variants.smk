@@ -46,6 +46,8 @@ rule sage:
     output:
         vcf = 'work/{batch}/small_variants/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         tbi = 'work/{batch}/small_variants/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+        sage_vcf = '{batch}/small_variants/sage/{batch}-sage.vcf.gz',
+        sage_tbi = '{batch}/small_variants/sage/{batch}-sage.vcf.gz.tbi',
     params:
         genome = run.genome_build,
         genomes_dir = hpc.genomes_dir,
@@ -54,7 +56,7 @@ rule sage:
     resources:
         mem_mb = 20000
     shell:
-        'sage -t {input.tumor_bam} -n {input.normal_bam} -v {input.vcf} -o {output.vcf} '
+        'sage -t {input.tumor_bam} -n {input.normal_bam} -v {input.vcf} -o {output.vcf} -s {output.sage_vcf} '
         '-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
         '{params.unlock_opt}'
 
