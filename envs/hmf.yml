@@ -7,10 +7,10 @@ channels:
 
 dependencies:
   - r-base  # do not pin to avoid conflicts
-  - hmftools-amber
-  - hmftools-cobalt
-  - hmftools-purple
-  - hmftools-linx
+  - hmftools-amber ==3.2
+  - hmftools-cobalt ==1.8
+  - hmftools-purple ==2.39
+  - hmftools-linx ==1.0
   - gridss
   - r-tidyverse
   - r-testthat
