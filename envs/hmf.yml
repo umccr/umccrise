@@ -10,7 +10,8 @@ dependencies:
   - hmftools-amber ==3.2
   - hmftools-cobalt ==1.8
   - hmftools-purple ==2.39
-  - hmftools-linx ==1.0
+  - hmftools-linx ==1.7
+  - hmftools-sage ==1.0
   - gridss
   - r-tidyverse
   - r-testthat
