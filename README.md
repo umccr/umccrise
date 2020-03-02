@@ -210,8 +210,8 @@ $ docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_d
 
 This example assumes that:
 
-	1. You are running the umccrise container against the [umccrise_test_data](https://github.com/umccr/umccrise_test_data)
-	2. You have figured out the genome data files and directory hierarchy for `/work/genomes`.
+	1. You are running this umccrise container against the [umccrise_test_data](https://github.com/umccr/umccrise_test_data)
+	2. You have figured out the genome data files and directory hierarchy for `/work/genomes`. See [building reference data section](#building-reference-data) below.
 
 
 ## Building reference data
