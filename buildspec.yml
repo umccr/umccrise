@@ -35,7 +35,7 @@ phases:
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       - mkdir -p /codebuild/output/refdata && time aws s3 sync --exclude=*.pm --only-show-errors s3://$S3_REFDATA_BUCKET/genomes /codebuild/output/refdata/genomes
       # docker-slim image, remove the cruft from it
-      - docker run -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim --in-container build --http-probe=false $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH --tag $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH.slim
+      #- docker run -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim --in-container build --http-probe=false $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH --tag $ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH.slim
       # Run minimal test with downsized sample data
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
