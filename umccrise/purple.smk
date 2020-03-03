@@ -70,7 +70,7 @@ rule purple_amber:
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        mem_mb = lambda wildcards, attempt: purple_mem + (10000 * (attempt - 1)),
+        mem_mb = lambda wildcards, attempt: purple_mem + 1000 + (10000 * (attempt - 1)),
     threads:
         threads_per_batch
     shell:
@@ -99,7 +99,7 @@ rule purple_cobalt:
         outdir = 'work/{batch}/purple/cobalt',
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         xms = 2000,
-        xmx = purple_mem
+        xmx = purple_mem,
     log:
         'log/purple/{batch}/{batch}.cobalt.log'
     benchmark:
@@ -107,7 +107,7 @@ rule purple_cobalt:
     threads:
         threads_per_batch
     resources:
-        mem_mb = lambda wildcards, attempt: purple_mem + (10000 * (attempt - 1)),
+        mem_mb = lambda wildcards, attempt: purple_mem + 1000 + (10000 * (attempt - 1)),
     shell:
         conda_cmd.format('hmf') +
         'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
@@ -169,7 +169,7 @@ rule purple_run:
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
         xms = 2000,
-        xmx = 32000,
+        xmx = purple_mem,
     log:
         'log/purple/{batch}/{batch}.purple.log'
     benchmark:
@@ -177,7 +177,7 @@ rule purple_run:
     threads:
         4
     resources:
-        mem_mb = lambda wildcards, attempt: purple_mem + (10000 * (attempt - 1)),
+        mem_mb = lambda wildcards, attempt: purple_mem + 1000 + (10000 * (attempt - 1)),
     shell:
        conda_cmd.format('hmf') + \
         circos_macos_patch + \
