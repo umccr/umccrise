@@ -63,14 +63,14 @@ rule purple_amber:
     params:
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
         outdir = 'work/{batch}/purple/amber',
-        xms = 5000,
+        xms = 4000,
         xmx = purple_mem,
     log:
         'log/purple/{batch}/{batch}.amber.log',
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        mem_mb = lambda wildcards, attempt: purple_mem + (20000 * attempt),
+        mem_mb = lambda wildcards, attempt: purple_mem + (10000 * (attempt - 1)),
     threads:
         threads_per_batch
     shell:
@@ -107,7 +107,7 @@ rule purple_cobalt:
     threads:
         threads_per_batch
     resources:
-        mem_mb = purple_mem
+        mem_mb = lambda wildcards, attempt: purple_mem + (10000 * (attempt - 1)),
     shell:
         conda_cmd.format('hmf') +
         'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
@@ -177,7 +177,7 @@ rule purple_run:
     threads:
         4
     resources:
-        mem_mb = 32000
+        mem_mb = lambda wildcards, attempt: purple_mem + (10000 * (attempt - 1)),
     shell:
        conda_cmd.format('hmf') + \
         circos_macos_patch + \
