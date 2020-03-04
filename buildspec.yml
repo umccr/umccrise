@@ -2,7 +2,7 @@ version: 0.2
 run-as: root
 env:
     variables:
-        "ECR": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccr"
+        "ECR": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise"
         "CONTAINER_NAME": "$ECR:umccrise-$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH"
         "S3_REFDATA_BUCKET": "umccr-refdata-dev"
 phases:
