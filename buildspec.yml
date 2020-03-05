@@ -28,7 +28,7 @@ phases:
       - export CODEBUILD_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
       - if [ -z $CODEBUILD_GIT_TAG ]; then export CODEBUILD_GIT_TAG='NOTAG'; fi
       # Build and tag (-t) image
-      - docker build -t $CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
+      - docker build -t "$CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION" -f dockerfiles/Dockerfile dockerfiles
   post_build:
     commands:
       # Run tests
@@ -39,5 +39,5 @@ phases:
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
-        $CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION /bcbio_project -o /output_dir --genomes /work/genomes
-      - docker push $CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION
+        "$CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION" /bcbio_project -o /output_dir --genomes /work/genomes
+      - docker push "$CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION"
