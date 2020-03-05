@@ -24,9 +24,9 @@ phases:
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       # Convenience CODEBUILD VARS, need more? Check https://github.com/thii/aws-codebuild-extras
       - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
-      - export CODEBUILD_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
-      - if [ -z $CODEBUILD_GIT_TAG ]; then export CODEBUILD_GIT_TAG='NOTAG'; fi
-      - export CONTAINER_VERSION=$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+      - export UMCCRISE_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
+      - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
+      - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
       # Build and tag (-t) image
       - echo $ECR/$CONTAINER_NAME:$CONTAINER_VERSION
       - docker build -t $ECR/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
@@ -41,4 +41,8 @@ phases:
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
         $ECR/$CONTAINER_NAME:$CONTAINER_VERSION /bcbio_project -o /output_dir --genomes /work/genomes
+      - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
+      - export UMCCRISE_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
+      - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
+      - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
       - docker push $ECR/$CONTAINER_NAME:$CONTAINER_VERSION
