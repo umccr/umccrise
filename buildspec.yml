@@ -28,7 +28,7 @@ phases:
       - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
       - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
       # Build and tag (-t) image
-      - docker build -t $CONTAINER_REPO:$CONTAINER_NAME-$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
+      - docker build -t $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
   post_build:
     commands:
       # Run tests
@@ -38,16 +38,16 @@ phases:
       - mkdir -p /codebuild/output/refdata && time aws s3 sync --exclude=*.pm --only-show-errors s3://$S3_REFDATA_BUCKET/$S3_REFDATA_KEY /codebuild/output/refdata/genomes
       # Do the exported vars vanish between phases?
       - echo "BEFORE RE-EXPORTING CONTAINER_VERSION"
-      - echo $ECR:$CONTAINER_NAME:$CONTAINER_VERSION
+      - echo $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
       - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
       - export UMCCRISE_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
       - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
       - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
       - echo "AFTER RE-EXPORTING CONTAINER_VERSION"
-      - echo $ECR:$CONTAINER_NAME:$CONTAINER_VERSION
+      - echo $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
       # Run minimal test with downsized sample data
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
-        $ECR/$CONTAINER_NAME:$CONTAINER_VERSION /bcbio_project -o /output_dir --genomes /work/genomes
-      - docker push $ECR:$CONTAINER_NAME-$CONTAINER_VERSION
+        $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION /bcbio_project -o /output_dir --genomes /work/genomes
+      - docker push $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
