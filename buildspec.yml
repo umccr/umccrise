@@ -2,8 +2,8 @@ version: 0.2
 run-as: root
 env:
     variables:
+        "CONTAINER_REPO": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise"
         "CONTAINER_NAME": "umccrise"
-        "ECR": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise"
         "S3_REFDATA_BUCKET": "umccr-refdata-dev"
         "S3_REFDATA_KEY": "genomes"
 phases:
@@ -26,23 +26,27 @@ phases:
       - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
       - export UMCCRISE_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
       - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
-      - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
+      - export CONTAINER_VERSION=$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
       # Build and tag (-t) image
-      - echo $ECR/$CONTAINER_NAME:$CONTAINER_VERSION
-      - docker build -t $ECR/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
+      - docker build -t $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
   post_build:
     commands:
       # Run tests
       - git clone https://github.com/umccr/umccrise_test_data umccrise_test_data
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
+      # Copy refdata in
       - mkdir -p /codebuild/output/refdata && time aws s3 sync --exclude=*.pm --only-show-errors s3://$S3_REFDATA_BUCKET/$S3_REFDATA_KEY /codebuild/output/refdata/genomes
+      # Do the exported vars vanish between phases?
+      - echo "BEFORE RE-EXPORTING CONTAINER_VERSION"
+      - echo $ECR:$CONTAINER_NAME:$CONTAINER_VERSION
+      - export UMCCRISE_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
+      - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
+      - export CONTAINER_VERSION=$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH
+      - echo "AFTER RE-EXPORTING CONTAINER_VERSION"
+      - echo $ECR:$CONTAINER_NAME:$CONTAINER_VERSION
       # Run minimal test with downsized sample data
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
         $ECR/$CONTAINER_NAME:$CONTAINER_VERSION /bcbio_project -o /output_dir --genomes /work/genomes
-      - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
-      - export UMCCRISE_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
-      - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
-      - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
-      - docker push $ECR/$CONTAINER_NAME:$CONTAINER_VERSION
+      - docker push $ECR:$CONTAINER_NAME-$CONTAINER_VERSION
