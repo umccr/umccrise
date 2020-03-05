@@ -2,8 +2,9 @@ version: 0.2
 run-as: root
 env:
     variables:
-        "CONTAINER_REPO": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com"
         "CONTAINER_NAME": "umccrise"
+        "CONTAINER_REPO_NAME": "$CONTAINER_NAME"
+        "CONTAINER_REPO_URL": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/$CONTAINER_REPO_NAME"
         "CONTAINER_VERSION": "$CODEBUILD_GIT_TAG-$SHORT_COMMIT_HASH"
         "S3_REFDATA_BUCKET": "umccr-refdata-dev"
 phases:
@@ -26,9 +27,8 @@ phases:
       - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
       - export CODEBUILD_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
       - if [ -z $CODEBUILD_GIT_TAG ]; then export CODEBUILD_GIT_TAG='NOTAG'; fi
-      - echo $CONTAINER_NAME
       # Build and tag (-t) image
-      - docker build -t $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
+      - docker build -t $CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
   post_build:
     commands:
       # Run tests
@@ -39,5 +39,5 @@ phases:
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
-        $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION /bcbio_project -o /output_dir --genomes /work/genomes
-      - docker push $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
+        $CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION /bcbio_project -o /output_dir --genomes /work/genomes
+      - docker push $CONTAINER_REPO_URL/$CONTAINER_NAME:$CONTAINER_VERSION
