@@ -2,7 +2,7 @@ version: 0.2
 run-as: root
 env:
     variables:
-        "CONTAINER_REPO": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/umccrise"
+        "CONTAINER_REPO": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com"
         "CONTAINER_NAME": "umccrise"
         "S3_REFDATA_BUCKET": "umccr-refdata-dev"
         "S3_REFDATA_KEY": "genomes"
