@@ -26,7 +26,8 @@ phases:
       - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
       - export UMCCRISE_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
       - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
-      - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
+      - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG+$SHORT_COMMIT_HASH
+      - echo $CONTAINER_VERSION
       # Build and tag (-t) image
       - docker build -t $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
   post_build:
@@ -42,7 +43,7 @@ phases:
       - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
       - export UMCCRISE_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
       - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
-      - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
+      - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG+$SHORT_COMMIT_HASH
       - echo "AFTER RE-EXPORTING CONTAINER_VERSION"
       - echo $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
       # Run minimal test with downsized sample data
