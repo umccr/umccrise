@@ -26,7 +26,7 @@ phases:
       - export SHORT_COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-10)
       - export CODEBUILD_GIT_TAG="$(git describe --tags --exact-match 2>/dev/null)"
       - if [ -z $CODEBUILD_GIT_TAG ]; then export CODEBUILD_GIT_TAG='NOTAG'; fi
-      - echo "Container version: ${CONTAINER_NAME}"
+      - echo ${CONTAINER_NAME}
       # Build and tag (-t) image
       - docker build -t "${CONTAINER_REPO}/${CONTAINER_NAME}:${CONTAINER_VERSION}" -f dockerfiles/Dockerfile dockerfiles
   post_build:
@@ -35,16 +35,9 @@ phases:
       - git clone https://github.com/umccr/umccrise_test_data umccrise_test_data
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       - mkdir -p /codebuild/output/refdata && time aws s3 sync --exclude=*.pm --only-show-errors s3://$S3_REFDATA_BUCKET/genomes /codebuild/output/refdata/genomes
-      # docker-slim image, remove the cruft from it
-      #- docker run -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim --in-container build --http-probe=false "${CONTAINER_REPO}/${CONTAINER_NAME}:${CONTAINER_VERSION}" --tag "${CONTAINER_REPO}/${CONTAINER_NAME}:${CONTAINER_VERSION}".slim
       # Run minimal test with downsized sample data
       - docker run -t --cpus 4 -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=/codebuild/output/refdata/genomes:/work/genomes
         "${CONTAINER_REPO}/${CONTAINER_NAME}:${CONTAINER_VERSION}" /bcbio_project -o /output_dir --genomes /work/genomes
-      # Push both fat UMCCRISE container and Slim image to ECR if tests pass
-      #- docker push "${CONTAINER_REPO}/${CONTAINER_NAME}:${CONTAINER_VERSION}".slim
       - docker push "${CONTAINER_REPO}/${CONTAINER_NAME}:${CONTAINER_VERSION}"
-
-#XXX: Not sure if rootless dind support is worth the effort here?:
-# $ docker run -d --name dind-rootless --privileged docker:19.03-dind-rootless --experimental
