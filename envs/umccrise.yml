@@ -36,7 +36,7 @@ dependencies:
   - bed_annotation
   - pyensembl
   - break-point-inspector
-  - gatk4 >=4.1.0.0 <=4.1.4.1  # Conpair and panel of normals (pinning for Conpair)
+  - gatk4 ==4.1.4.1  # Conpair and panel of normals (pinning for Conpair)
   - scipy                      # Conpair
   - tabix
   - goleft
