@@ -54,7 +54,8 @@ def prep_inputs(config_):
     else:
         run = BcbioProject(input_path,
                            exclude_samples=exclude_names,
-                           include_samples=include_names)
+                           include_samples=include_names,
+                           silent=True)
         ngs_utils_logger.is_silent = False
         run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
 
