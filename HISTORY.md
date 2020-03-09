@@ -1,3 +1,13 @@
+0.17.3 (9 Mar 2020)
+
+- Fix https://github.com/umccr/umccrise/issues/41
+
+0.17.2 (6 Mar 2020)
+
+Fixes
+- Fix PURPLE memory requirements for single-core runs
+- Remove entrypoint from the Dockerfile
+
 0.17.1 (27 Feb 2020)
 
 - Fix PCGR and CPSR transcript prioritization issues https://github.com/sigven/cpsr/issues/26
