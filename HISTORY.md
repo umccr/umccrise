@@ -1,3 +1,12 @@
+0.18 (TBR):
+
+- DRAGEN: support tumor and normal sample name differrent from the output prefix
+
+0.17.4 (10 Mar 2020)
+
+- Pin PCGR and CPSR and show their correct versions.
+- Pin MultiQC to vladsaveliev/MultiQC rather than umccr-illumina/MultiQC
+
 0.17.3 (9 Mar 2020)
 
 - Fix https://github.com/umccr/umccrise/issues/41
