@@ -290,6 +290,30 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.YYYMMDD.tgz
 ```
 
+Updating PCGR packages:
+
+```
+conda install conda-build anaconda
+
+cd /g/data/gx8/extras/umccrise_017_2020_Jan_dev/pcgr/install_no_docker
+export VERSION=0.8.4.7
+conda build conda_pkg/pcgr
+conda build conda_pkg/pcgr_dockerized
+conda convert --platform osx-64 \
+    /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/linux-64/pcgr_dockerized-0.8.4.7-*.tar.bz2 \
+    --output-dir /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/
+anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-0.8.4.7-*.tar.bz2
+
+cd /g/data/gx8/extras/umccrise_017_2020_Jan_dev/cpsr
+export VERSION=0.5.2.3
+conda build conda_pkg/cpsr
+conda build conda_pkg/cpsr_dockerized
+conda convert --platform osx-64 \
+    /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/linux-64/cpsr_dockerized-0.5.2.3-*.tar.bz2 \
+    --output-dir /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/
+anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-0.5.2.3-*.tar.bz2
+```
+
 
 #### Problem regions
 
