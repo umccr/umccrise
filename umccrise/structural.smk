@@ -260,7 +260,7 @@ rule filter_sv_vcf:
     group: "sv_vcf"
     run:
         print(f'VCF samples: {VCF(input.vcf).samples}')
-        print(f'Bcbio batch tumor name: {batch_by_name[wildcards.batch].tumor.name}')
+        print(f'Tumor sample name: {batch_by_name[wildcards.batch].tumor.name}')
         tumor_id = VCF(input.vcf).samples.index(params.sample)
         # tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')

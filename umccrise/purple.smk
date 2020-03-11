@@ -61,6 +61,7 @@ rule purple_amber:
         'work/{batch}/purple/amber/{batch}.amber.contamination.vcf.gz',
         'work/{batch}/purple/amber/{batch}.amber.qc',
     params:
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
         outdir = 'work/{batch}/purple/amber',
         xms = 4000,
@@ -76,7 +77,7 @@ rule purple_amber:
     shell:
         conda_cmd.format('hmf') +
         'AMBER -Xms{params.xms}m -Xmx{params.xmx}m '
-        '-tumor {wildcards.batch} '
+        '-tumor {params.tumor_name} '
         '-tumor_bam {input.tumor_bam} '
         '-reference {params.normal_name} '
         '-reference_bam {input.normal_bam} '
@@ -97,6 +98,7 @@ rule purple_cobalt:
         'work/{batch}/purple/cobalt/{batch}.cobalt.gc.median',
     params:
         outdir = 'work/{batch}/purple/cobalt',
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         xms = 2000,
         xmx = purple_mem,
@@ -113,7 +115,7 @@ rule purple_cobalt:
         'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
         '-reference {params.normal_sname} '
         '-reference_bam {input.normal_bam} '
-        '-tumor {wildcards.batch} '
+        '-tumor {params.tumor_name} '
         '-tumor_bam {input.tumor_bam} '
         '-ref_genome {input.ref_fa} '
         '-threads {threads} '
@@ -187,7 +189,7 @@ rule purple_run:
         '-cobalt {params.outdir}/cobalt '
         '-output_dir {params.outdir} '
         '-reference {params.normal_sname} '
-        '-tumor {wildcards.batch} '
+        '-tumor {params.tumor_sname} '
         '-threads {threads} '
         '-gc_profile {input.gc} '
          # '-sv_recovery_vcf {input.manta_sv_filtered} '
