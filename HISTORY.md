@@ -2,10 +2,11 @@
 
 - DRAGEN: support tumor and normal sample name differrent from the output prefix
 
-0.17.4 (10 Mar 2020)
+0.17.4 (11 Mar 2020)
 
 - Pin PCGR and CPSR and show their correct versions.
 - Pin MultiQC to vladsaveliev/MultiQC rather than umccr-illumina/MultiQC
+- Fix germline variants count in MultiQC
 
 0.17.3 (9 Mar 2020)
 
