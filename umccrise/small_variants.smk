@@ -277,7 +277,7 @@ rule somatic_stats_report:
 
 rule germline_stats_report:
     input:
-        vcf = rules.germline_leakage_predispose_subset.output.vcf,
+        vcf = rules.germline_merge_with_leakage.output.vcf,
     output:
         'work/{batch}/small_variants/germline_stats.yml',
     params:
