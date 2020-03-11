@@ -38,9 +38,19 @@ rule somatic_vcf_pass_sort:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
-rule sage:
+rule somatic_vcf_select_noalt:
     input:
         vcf = rules.somatic_vcf_pass_sort.output.vcf,
+        noalts_bed = hpc.get_ref_file(run.genome_build, 'noalt_bed'),
+    output:
+        vcf = 'work/{batch}/small_variants/noalt/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        tbi = 'work/{batch}/small_variants/noalt/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+    shell:
+        'bcftools view -R {input.noalts_bed} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
+
+rule sage:
+    input:
+        vcf = rules.somatic_vcf_select_noalt.output.vcf,
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
     output:
@@ -221,7 +231,7 @@ rule germline_merge_with_leakage:
 rule somatic_stats_report:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf,
-        full_vcf = rules.somatic_vcf_pass_sort.output.vcf,
+        full_vcf = rules.somatic_vcf_select_noalt.output.vcf,
         subset_highly_mutated_stats = rules.somatic_vcf_annotate.output.subset_highly_mutated_stats,
     output:
         'work/{batch}/small_variants/somatic_stats.yml',
