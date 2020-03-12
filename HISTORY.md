@@ -2,11 +2,20 @@
 
 - DRAGEN: support tumor and normal sample name differrent from the output prefix
 
+0.17.6 (12 Mar 2020)
+
+- To make sure CodeBuild builds code from branches, modify install.sh so it
+doesn't clone the repo, and move Dockerfile to the root to enable copying
+the source.
+
+0.17.5 (12 Mar 2020)
+
+- Fix germline variants count in MultiQC
+
 0.17.4 (11 Mar 2020)
 
 - Pin PCGR and CPSR and show their correct versions.
 - Pin MultiQC to vladsaveliev/MultiQC rather than umccr-illumina/MultiQC
-- Fix germline variants count in MultiQC
 
 0.17.3 (9 Mar 2020)
 
