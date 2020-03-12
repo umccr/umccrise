@@ -26,12 +26,12 @@ RUN apt-get update && \
     dpkg-reconfigure -f noninteractive tzdata
 
 # Install
-RUN wget https://raw.githubusercontent.com/umccr/umccrise/master/install.sh
-RUN bash -xe install.sh
+ADD . umccrise
+RUN rm -rf umccrise/.git
+RUN bash -xe umccrise/install.sh
 
 # Clean up
-RUN rm -rf umccrise/.git && \
-    rm -rf /var/lib/apt/lists/* && \
+RUN rm -rf /var/lib/apt/lists/* && \
     rm -rf /var/tmp/* && \
     cd /usr/local && \
     apt-get clean && \
