@@ -29,7 +29,7 @@ phases:
       - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
       - echo $CONTAINER_VERSION
       # Build and tag (-t) image
-      - docker build -t $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION -f dockerfiles/Dockerfile dockerfiles
+      - docker build -t $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION .
   post_build:
     commands:
       # Run tests
