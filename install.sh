@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-### Clone the repo
-git clone https://github.com/umccr/umccrise
-
 ### Cleaning up the environment
 unset PYTHONPATH
 unset CONDA_PREFIX
