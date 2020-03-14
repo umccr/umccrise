@@ -294,25 +294,27 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 Updating PCGR packages:
 
 ```
-conda install conda-build anaconda
+source /g/data/gx8/extras/umccrise_017_2020_Jan_dev/load_umccrise.sh
+export PATH=/g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise_pcgr/bin:$PATH
+# conda install conda-build anaconda
 
 cd /g/data/gx8/extras/umccrise_017_2020_Jan_dev/pcgr/install_no_docker
-export VERSION=0.8.4.7
+export VERSION=0.8.4.8
 conda build conda_pkg/pcgr
 conda build conda_pkg/pcgr_dockerized
 conda convert --platform osx-64 \
-    /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/linux-64/pcgr_dockerized-0.8.4.7-*.tar.bz2 \
+    /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/linux-64/pcgr_dockerized-$VERSION-*.tar.bz2 \
     --output-dir /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/
-anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-0.8.4.7-*.tar.bz2
+anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
 
 cd /g/data/gx8/extras/umccrise_017_2020_Jan_dev/cpsr
-export VERSION=0.5.2.3
+export VERSION=0.5.2.4
 conda build conda_pkg/cpsr
 conda build conda_pkg/cpsr_dockerized
 conda convert --platform osx-64 \
-    /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/linux-64/cpsr_dockerized-0.5.2.3-*.tar.bz2 \
+    /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/linux-64/cpsr_dockerized-$VERSION-*.tar.bz2 \
     --output-dir /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/
-anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-0.5.2.3-*.tar.bz2
+anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
 ```
 
 
