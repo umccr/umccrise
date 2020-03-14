@@ -16,5 +16,5 @@ dependencies:
   - click
   - ngs_utils
   - pcgr ==0.8.4.8
-  - cpsr ==0.5.2.3
+  - cpsr ==0.5.2.4
   - cacao
