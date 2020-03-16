@@ -6,7 +6,7 @@
 
 0.17.7 (14 Mar 2020)
 
-CPSR: prioritze coding mutations
+- CPSR: when prioritizing a mutation effects, always pick the transcripts where the mutations affects the protein.
 
 0.17.6 (12 Mar 2020)
 
