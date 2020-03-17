@@ -46,9 +46,9 @@ if isinstance(run, BcbioProject):
             conpair_concord         = rules.run_conpair.output.concord,
             conpair_contam          = rules.run_conpair.output.contam,
             somatic_stats           = 'work/{batch}/small_variants/somatic_stats.yml',
-            germline_stats          = rules.germline_stats_report.output[0],
+            germline_stats          = rules.germline_stats_report.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
-            bcftools_germline_stats = rules.bcftools_stats_germline.output[0],
+            bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             prog_versions           = join(run.date_dir, 'programs.txt'),
             data_versions           = join(run.date_dir, 'data_versions.csv'),
         output:
@@ -154,9 +154,9 @@ else:
             conpair_concord         = rules.run_conpair.output.concord,
             conpair_contam          = rules.run_conpair.output.contam,
             somatic_stats           = 'work/{batch}/small_variants/somatic_stats.yml',
-            germline_stats          = rules.germline_stats_report.output[0],
+            germline_stats          = rules.germline_stats_report.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
-            bcftools_germline_stats = rules.bcftools_stats_germline.output[0],
+            bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
         output:
             filelist                = 'work/{batch}/multiqc_data/filelist.txt',
             generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',

@@ -36,24 +36,6 @@ rule run_pcgr:
             'pcgr {input.vcf} -g {params.genome} -o {params.output_dir} -s {params.sample_name} '
             '{params.opt} --pcgr-data {input.pcgr_data} --puriry {purity} --ploidy {ploidy}')
 
-rule run_cpsr:
-    input:
-        vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz',
-        pcgr_data = hpc.get_ref_file(key='pcgr_data')
-    output:
-        '{batch}/pcgr/{batch}-normal.cpsr.html'
-    params:
-        output_dir = '{batch}/pcgr',
-        genome_build = run.genome_build,
-        sample_name = '{batch}-normal',
-        opt = '--no-docker' if not which('docker') else ''
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000
-    shell:
-        conda_cmd.format('pcgr') +
-        'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
-        '{params.opt} --pcgr-data {input.pcgr_data}'
-
 rule pcgr_symlink_somatic:
     input:
         rules.run_pcgr.output[0]
@@ -64,15 +46,37 @@ rule pcgr_symlink_somatic:
     shell:
         'ln -s {params.source} {output}'
 
-rule pcgr_symlink_germline:
-    input:
-        rules.run_cpsr.output[0]
-    output:
-        '{batch}/{batch}-normal.cpsr.html'
-    params:
-        source = 'pcgr/{batch}-normal.cpsr.html'
-    shell:
-        'ln -s {params.source} {output}'
+
+include_germline = all(b.germline_vcf for b in batch_by_name.values())
+
+if include_germline:
+    rule run_cpsr:
+        input:
+            vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz',
+            pcgr_data = hpc.get_ref_file(key='pcgr_data')
+        output:
+            '{batch}/pcgr/{batch}-normal.cpsr.html'
+        params:
+            output_dir = '{batch}/pcgr',
+            genome_build = run.genome_build,
+            sample_name = '{batch}-normal',
+            opt = '--no-docker' if not which('docker') else ''
+        resources:
+            mem_mb=lambda wildcards, attempt: attempt * 20000
+        shell:
+            conda_cmd.format('pcgr') +
+            'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
+            '{params.opt} --pcgr-data {input.pcgr_data}'
+
+    rule pcgr_symlink_germline:
+        input:
+            rules.run_cpsr.output[0]
+        output:
+            '{batch}/{batch}-normal.cpsr.html'
+        params:
+            source = 'pcgr/{batch}-normal.cpsr.html'
+        shell:
+            'ln -s {params.source} {output}'
 
 ######################
 ###  Target rule
@@ -80,13 +84,13 @@ rule pcgr_symlink_germline:
 rule pcgr:
     input:
         expand(rules.pcgr_symlink_somatic.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
+        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys()) if include_germline else []
     output:
         temp(touch('log/pcgr.done'))
 
 rule cpsr:
     input:
-        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys())
+        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys()) if include_germline else []
     output:
         temp(touch('log/cpsr.done'))
 
