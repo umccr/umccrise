@@ -450,9 +450,11 @@ purple_purity <-
                                    gender = col_character(),
                                    status = col_character(),
                                    wholeGenomeDuplication = col_character(),
-                                   msStatus = col_character()
+                                   msStatus = col_character(),
+                                   tmlStatus = col_character(),
+                                   tmbStatus = col_character()
   )) %>%
-  dplyr::mutate_if(is.numeric, round, 2) %>%
+  dplyr::mutate_if(is.numeric, round, 3) %>%
   unlist()
 
 # sanity checks in case something changes between versions (PURPLE v2.34 as of 2019-09-29)
@@ -464,7 +466,8 @@ stopifnot(all(names(purple_qc) == nms_purple_qc))
 nms_purple_purity <- c("purity", "normFactor", "score", "diploidProportion", "ploidy",
                        "gender", "status", "polyclonalProportion", "minPurity", "maxPurity",
                        "minPloidy", "maxPloidy", "minDiploidProportion", "maxDiploidProportion",
-                       "version", "somaticPenalty", "wholeGenomeDuplication", "msIndelsPerMb", "msStatus")
+                       "version", "somaticPenalty", "wholeGenomeDuplication", "msIndelsPerMb", "msStatus",
+                       "tml", "tmlStatus", "tmbPerMb", "tmbStatus")
 stopifnot(all(names(purple_purity) == nms_purple_purity))
 
 
@@ -483,7 +486,9 @@ purple_qc_summary <- dplyr::tribble(
   'Diploidy Prop', glue('{p["diploidProportion"]} ({p["minDiploidProportion"]}-{p["maxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
   'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
   'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
-  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'))
+  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
+  'TMB', glue('{p["tmbPerMb"]} ({p["tmbStatus"]})'), "Tumor mutational burden per mega base (Status: 'HIGH', 'LOW' or 'UNKNOWN' if somatic variants not supplied)",
+  'TML', glue('{p["tml"]} ({p["tmlStatus"]})'), "Tumor mutational load (Status: 'HIGH', 'LOW' or 'UNKNOWN' if somatic variants not supplied)")
 ```
 
 ```{r purple_gene_cnv_prep}
