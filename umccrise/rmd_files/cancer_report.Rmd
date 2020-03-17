@@ -264,14 +264,14 @@ fit_res_contr2 <- dplyr::filter(fit_res2, contr > 0)
 # If there are no signatures, return a dummy tibble
 if (nrow(fit_res_contr) == 0) {
   fit_res_contr <- tibble::tibble(
-    sig = NOSIGS,
+    sig = "NOSIGS",
     contr = 0
   )
 }
 
 if (nrow(fit_res_contr2) == 0) {
   fit_res_contr2 <- tibble::tibble(
-    sig = NOSIGS,
+    sig = "NOSIGS",
     contr = 0
   )
 }
