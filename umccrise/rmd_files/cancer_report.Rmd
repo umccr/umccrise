@@ -55,8 +55,10 @@ knitr::opts_chunk$set(collapse = TRUE, echo = FALSE,
 ```
 
 ```{r render_report_interactively, eval=F, echo=F}
-batch_name <- "SBJ00202__SBJ00202_MDX190201_L1900936"
-tumor_name <- strsplit(batch_name, "__")[[1]][2]
+batch_name <- "Elon"
+# tumor_name <- strsplit(batch_name, "__")[[1]][2]
+tumor_name <- "Elon_T"
+snv_caller <- "dragen" # ensemble
 
 params_tmp <- list(
   spartan = list(
@@ -90,8 +92,8 @@ params_tmp <- list(
     key_genes='data/ref/umccr_cancer_genes.latest.tsv',
     af_global=glue::glue('data/work/{batch_name}/rmd/afs/af_tumor.txt'),
     af_keygenes=glue::glue('data/work/{batch_name}/rmd/afs/af_tumor_keygenes.txt'),
-    somatic_snv=glue::glue('data/work/{batch_name}/rmd/ensemble-with_chr_prefix.vcf'),
-    somatic_sv=glue::glue('data/{batch_name}/structural/{batch_name}-manta_test.tsv'),
+    somatic_snv=glue::glue('data/work/{batch_name}/rmd/{snv_caller}-with_chr_prefix.vcf'),
+    somatic_sv=glue::glue('data/{batch_name}/structural/{batch_name}-manta.tsv'),
     purple_gene_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv'),
     purple_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv'),
     purple_purity=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.purity.tsv'),
@@ -246,20 +248,45 @@ cancer_signatures2 <- cancer_signatures2 %>%
 fit_res <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures)
 fit_res2 <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures2)
 
+# Convert to tibbles for more bullet-proof subsetting
+fit_res <- tibble::tibble(
+  sig = rownames(fit_res$contribution), # matrix rownames
+  contr = unname(fit_res$contribution[, 1])) # matrix single column -> vector
+
+fit_res2 <- tibble::tibble(
+  sig = rownames(fit_res2$contribution),
+  contr = unname(fit_res2$contribution[, 1]))
+
 # Select signatures with some contribution
-fit_res_contr <- fit_res$contribution[fit_res$contribution[, 1] > 0, ]
-fit_res_contr2 <- fit_res2$contribution[fit_res2$contribution[, 1] > 0, ]
+fit_res_contr <- dplyr::filter(fit_res, contr > 0)
+fit_res_contr2 <- dplyr::filter(fit_res2, contr > 0)
+
+# If there are no signatures, return a dummy tibble
+if (nrow(fit_res_contr) == 0) {
+  fit_res_contr <- tibble::tibble(
+    sig = "NOSIGS",
+    contr = 0
+  )
+}
+
+if (nrow(fit_res_contr2) == 0) {
+  fit_res_contr2 <- tibble::tibble(
+    sig = "NOSIGS",
+    contr = 0
+  )
+}
+
 mut_sig_contr <-
-  dplyr::tibble(Signature = names(fit_res_contr), Contribution = fit_res_contr) %>%
-  dplyr::mutate(Contribution = round(Contribution, 0),
-                Rank = as.integer(base::rank(-Contribution))) %>%
-  dplyr::select(Rank, everything()) %>%
+  fit_res_contr %>%
+  dplyr::mutate(contr = round(contr, 0),
+                Rank = as.integer(base::rank(-contr))) %>%
+  dplyr::select(Rank, Signature = sig, Contribution = contr) %>%
   dplyr::arrange(Rank)
 mut_sig_contr2 <-
-  dplyr::tibble(Signature = names(fit_res_contr2), Contribution = fit_res_contr2) %>%
-  dplyr::mutate(Contribution = round(Contribution, 0),
-                Rank = as.integer(base::rank(-Contribution))) %>%
-  dplyr::select(Rank, everything()) %>%
+  fit_res_contr2 %>%
+  dplyr::mutate(contr = round(contr, 0),
+                Rank = as.integer(base::rank(-contr))) %>%
+  dplyr::select(Rank, Signature = sig, Contribution = contr) %>%
   dplyr::arrange(Rank)
 ```
 
@@ -423,9 +450,11 @@ purple_purity <-
                                    gender = col_character(),
                                    status = col_character(),
                                    wholeGenomeDuplication = col_character(),
-                                   msStatus = col_character()
+                                   msStatus = col_character(),
+                                   tmlStatus = col_character(),
+                                   tmbStatus = col_character()
   )) %>%
-  dplyr::mutate_if(is.numeric, round, 2) %>%
+  dplyr::mutate_if(is.numeric, round, 3) %>%
   unlist()
 
 # sanity checks in case something changes between versions (PURPLE v2.34 as of 2019-09-29)
@@ -437,7 +466,8 @@ stopifnot(all(names(purple_qc) == nms_purple_qc))
 nms_purple_purity <- c("purity", "normFactor", "score", "diploidProportion", "ploidy",
                        "gender", "status", "polyclonalProportion", "minPurity", "maxPurity",
                        "minPloidy", "maxPloidy", "minDiploidProportion", "maxDiploidProportion",
-                       "version", "somaticPenalty", "wholeGenomeDuplication", "msIndelsPerMb", "msStatus")
+                       "version", "somaticPenalty", "wholeGenomeDuplication", "msIndelsPerMb", "msStatus",
+                       "tml", "tmlStatus", "tmbPerMb", "tmbStatus")
 stopifnot(all(names(purple_purity) == nms_purple_purity))
 
 
@@ -456,7 +486,9 @@ purple_qc_summary <- dplyr::tribble(
   'Diploidy Prop', glue('{p["diploidProportion"]} ({p["minDiploidProportion"]}-{p["maxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
   'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
   'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
-  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'))
+  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'),
+  'TMB', glue('{p["tmbPerMb"]} ({p["tmbStatus"]})'), "Tumor mutational burden per mega base (Status: 'HIGH', 'LOW' or 'UNKNOWN' if somatic variants not supplied)",
+  'TML', glue('{p["tml"]} ({p["tmlStatus"]})'), "Tumor mutational load (Status: 'HIGH', 'LOW' or 'UNKNOWN' if somatic variants not supplied)")
 ```
 
 ```{r purple_gene_cnv_prep}
