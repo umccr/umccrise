@@ -65,26 +65,27 @@ rule purple_amber:
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
         outdir = 'work/{batch}/purple/amber',
         xms = 4000,
-        xmx = purple_mem,
     log:
         'log/purple/{batch}/{batch}.amber.log',
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        mem_mb = lambda wildcards, attempt: purple_mem + 1000 + (10000 * (attempt - 1)),
+        mem_mb = lambda wildcards, attempt: round(purple_mem * 1.2) + 2000 + (10000 * (attempt - 1)),
     threads:
         threads_per_batch
-    shell:
-        conda_cmd.format('hmf') +
-        'AMBER -Xms{params.xms}m -Xmx{params.xmx}m '
-        '-tumor {params.tumor_name} '
-        '-tumor_bam {input.tumor_bam} '
-        '-reference {params.normal_name} '
-        '-reference_bam {input.normal_bam} '
-        '-ref_genome {input.ref_fa} '
-        '-loci {input.het_snps} '
-        '-threads {threads} '
-        '-output_dir {params.outdir} 2>&1 | tee {log} '
+    run:
+        shell(
+            conda_cmd.format('hmf') +
+            f'AMBER -Xms{params.xms}m -Xmx{resources.mem_mb - 2000}m '
+            f'-tumor {wildcards.batch} '
+            f'-tumor_bam {input.tumor_bam} '
+            f'-reference {params.normal_name} '
+            f'-reference_bam {input.normal_bam} '
+            f'-ref_genome {input.ref_fa} '
+            f'-loci {input.het_snps} '
+            f'-threads {threads} '
+            f'-output_dir {params.outdir} 2>&1 | tee {log} '
+        )
 
 rule purple_cobalt:
     input:
@@ -101,7 +102,6 @@ rule purple_cobalt:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         xms = 2000,
-        xmx = purple_mem,
     log:
         'log/purple/{batch}/{batch}.cobalt.log'
     benchmark:
@@ -109,18 +109,20 @@ rule purple_cobalt:
     threads:
         threads_per_batch
     resources:
-        mem_mb = lambda wildcards, attempt: purple_mem + 1000 + (10000 * (attempt - 1)),
-    shell:
-        conda_cmd.format('hmf') +
-        'COBALT -Xms{params.xms}m -Xmx{params.xmx}m '
-        '-reference {params.normal_sname} '
-        '-reference_bam {input.normal_bam} '
-        '-tumor {params.tumor_name} '
-        '-tumor_bam {input.tumor_bam} '
-        '-ref_genome {input.ref_fa} '
-        '-threads {threads} '
-        '-gc_profile {input.gc} '
-        '-output_dir {params.outdir} 2>&1 | tee {log} '
+        mem_mb = lambda wildcards, attempt: purple_mem + 2000 + (10000 * (attempt - 1)),
+    run:
+        shell(
+            conda_cmd.format('hmf') +
+            f'COBALT -Xms{params.xms}m -Xmx{resources.mem_mb - 2000}m '
+            f'-reference {params.normal_sname} '
+            f'-reference_bam {input.normal_bam} '
+            f'-tumor {wildcards.batch} '
+            f'-tumor_bam {input.tumor_bam} '
+            f'-ref_genome {input.ref_fa} '
+            f'-threads {threads} '
+            f'-gc_profile {input.gc} '
+            f'-output_dir {params.outdir} 2>&1 | tee {log} '
+        )
 
 rule purple_somatic_vcf:
     input:
@@ -171,7 +173,6 @@ rule purple_run:
         normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
         tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
         xms = 2000,
-        xmx = purple_mem,
     log:
         'log/purple/{batch}/{batch}.purple.log'
     benchmark:
@@ -180,23 +181,24 @@ rule purple_run:
         4
     resources:
         mem_mb = lambda wildcards, attempt: purple_mem + 1000 + (10000 * (attempt - 1)),
-    shell:
-       conda_cmd.format('hmf') + \
-        circos_macos_patch + \
-        'circos -modules ; circos -v ; '
-        'PURPLE -Xms{params.xms}m -Xmx{params.xmx}m '
-        '-amber {params.outdir}/amber '
-        '-cobalt {params.outdir}/cobalt '
-        '-output_dir {params.outdir} '
-        '-reference {params.normal_sname} '
-        '-tumor {params.tumor_sname} '
-        '-threads {threads} '
-        '-gc_profile {input.gc} '
-         # '-sv_recovery_vcf {input.manta_sv_filtered} '
-        '-structural_vcf {input.manta_sv_filtered} '
-        '-somatic_vcf {input.somatic_vcf} '
-        '-ref_genome {input.ref_fa} '
-        '-circos circos 2>&1 | tee {log} '
+    run:
+        shell(
+            conda_cmd.format('hmf') + \
+            circos_macos_patch + \
+            f'circos -modules ; circos -v ; '
+            f'PURPLE -Xms{params.xms}m -Xmx{resources.mem_mb - 2000}m '
+            f'-amber {params.outdir}/amber '
+            f'-cobalt {params.outdir}/cobalt '
+            f'-output_dir {params.outdir} '
+            f'-reference {params.normal_sname} '
+            f'-tumor {wildcards.batch} '
+            f'-threads {threads} '
+            f'-gc_profile {input.gc} '
+            f'-structural_vcf {input.manta_sv_filtered} '
+            f'-somatic_vcf {input.somatic_vcf} '
+            f'-ref_genome {input.ref_fa} '
+            f'-circos circos 2>&1 | tee {log} '
+        )
 
 rule purple_circos_baf:
     input:
