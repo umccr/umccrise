@@ -7,7 +7,7 @@ import glob
 from umccrise import package_path
 
 
-localrules: rmd
+localrules: rmd, conda_list
 
 
 ## Allelic frequencies
@@ -118,13 +118,14 @@ rule somatic_to_hg19:
 
 # I hope this can work on a worker node with the other rmd groupies. If not, add to localrules.
 rule conda_list:
-  params:
-    env=['umccrise', 'umccrise_pcgr', 'umccrise_hmf', 'umccrise_cancer_report']
-  output:
-    txt='work/{batch}/rmd/conda_pkg_list.txt'
-  group: "rmd"
-  shell:
-    "for e in {params.env}; do conda list --name $e | awk -v var=$e '{{ print $0, var }}' | grep -v ^# >> {output} ; done"
+    output:
+        txt = 'work/{batch}/rmd/conda_pkg_list.txt'
+    params:
+        env = ['', '_pcgr', '_hmf', '_cancer_report'],
+    shell:
+        "for e in {params.env}; do conda list -p {env_path}$e "
+        "| awk -v var=$e '{{ print $0, var }}' "
+        "| grep -v ^# >> {output} ; done"
 
 
 ## Running Rmarkdown
