@@ -1,0 +1,10 @@
+RUN TIME,,Time loading reference,00:01:39.410,99.41
+RUN TIME,,Time aligning reads,00:34:01.228,2041.23
+RUN TIME,,Time sorting and marking duplicates,02:00:28.239,7228.24
+RUN TIME,,Time DRAGStr calibration,00:00:56.906,56.91
+RUN TIME,,Time saving map/align output,02:00:32.748,7232.75
+RUN TIME,,Time partial reconfiguration,00:00:06.763,6.76
+RUN TIME,,Time variant calling,02:00:31.009,7231.01
+RUN TIME,,Time partitioning,00:33:59.874,2039.87
+RUN TIME,,Time structural variant calling,01:53:08.194,6788.19
+RUN TIME,,Total runtime,04:31:02.484,16262.48
