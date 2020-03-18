@@ -1,3 +1,43 @@
+## Preparing MultiQC background samples for DRAGEN runs
+
+First, we are running 5 TES tasks to process the samples with Dragen
+(see below "### TES definitions and launch jsons").
+
+Then, we connect to gadi, pull the Dragen results, and extract the QC files into a new folder:
+
+```
+# ssh rjn
+cd /g/data/gx8/extras/umccrise_multiqc_background
+iap files download gds://"umccr-primary-data-dev/results/*" .
+
+DIR=umccrised
+mkdir ${DIR}
+umccrise Alice  -c -j30 -o ${DIR}/Alice  multiqc
+umccrise Bob    -c -j30 -o ${DIR}/Bob    multiqc
+umccrise Chen   -c -j30 -o ${DIR}/Chen   multiqc
+umccrise Dakota -c -j30 -o ${DIR}/Dakota multiqc
+umccrise Elon   -c -j30 -o ${DIR}/Elon   multiqc
+
+DIR_QCONLY=${DIR}.qconly
+mkdir ${DIR_QCONLY}
+echo "" > ${DIR_QCONLY}/background_multiqc_filelist.txt
+for batch in Alice Bob Chen Dakota Elon ; do
+    # copy the QC files themselves too:
+    mkdir ${DIR_QCONLY}/${batch}
+    cd ${DIR}/${batch}
+    for fpath in $(cat work/${batch}/multiqc_data/filelist.txt | grep -v gold_standard) ; do
+        cp -r ${fpath} ../../${DIR_QCONLY}/${batch}
+        echo $(readlink -e ../../${DIR_QCONLY}/${batch}/$(basename $fpath)) >> ../../${DIR_QCONLY}/background_multiqc_filelist.txt
+    done
+    cd ../../
+done
+```
+
+Then we add the umccrised.qconly folder to the repo (this directory).
+
+
+### TES definitions and launch jsons
+
 https://aps2.platform.illumina.com/v1/tasks
 ```
 {
