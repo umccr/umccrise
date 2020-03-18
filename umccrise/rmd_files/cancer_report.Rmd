@@ -461,14 +461,12 @@ purple_purity <-
 nms_purple_qc <- c("QCStatus", "SegmentPass", "GenderPass", "DeletedGenesPass",
                    "SegmentScore", "UnsupportedSegments", "Ploidy",
                    "AmberGender", "CobaltGender", "DeletedGenes")
-stopifnot(all(names(purple_qc) == nms_purple_qc))
 
 nms_purple_purity <- c("purity", "normFactor", "score", "diploidProportion", "ploidy",
                        "gender", "status", "polyclonalProportion", "minPurity", "maxPurity",
                        "minPloidy", "maxPloidy", "minDiploidProportion", "maxDiploidProportion",
                        "version", "somaticPenalty", "wholeGenomeDuplication", "msIndelsPerMb", "msStatus",
                        "tml", "tmlStatus", "tmbPerMb", "tmbStatus")
-stopifnot(all(names(purple_purity) == nms_purple_purity))
 
 
 # for shorter reference in glue
