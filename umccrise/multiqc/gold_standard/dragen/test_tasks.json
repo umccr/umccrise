@@ -1,0 +1,90 @@
+//Alice_T
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E194_PRJ180506_Missing_R1_001.fastq.gz
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E194_PRJ180507_Missing_R1_001.fastq.gz
+{
+    "name": "Alice",
+    "arguments": {
+        "prefix": "Alice",
+        "results_folder": "gds://umccr-primary-data-dev/multiqc_controls",
+        "fq_t1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E194_PRJ180506_Missing_R1_001.fastq.gz",
+        "fq_t2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E194_PRJ180506_Missing_R2_001.fastq.gz",
+        "fq_n1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E194_PRJ180507_Missing_R1_001.fastq.gz",
+        "fq_n2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E194_PRJ180507_Missing_R2_001.fastq.gz",
+        "normal_name": "Alice_N",
+        "tumor_name": "Alice_T"
+    }
+ }
+
+//Bob_T
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E201_PRJ180492_Missing_R1_001.fastq.gz
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E201_PRJ180493_Missing_R1_001.fastq.gz
+{
+    "name": "Bob",
+    "arguments": {
+        "prefix": "Bob",
+        "results_folder": "gds://umccr-primary-data-dev/multiqc_controls",
+        "fq_t1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E201_PRJ180492_Missing_R1_001.fastq.gz",
+        "fq_t2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E201_PRJ180492_Missing_R2_001.fastq.gz",
+        "fq_n1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E201_PRJ180493_Missing_R1_001.fastq.gz",
+        "fq_n2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E201_PRJ180493_Missing_R2_001.fastq.gz",
+        "normal_name": "Bob_N",
+        "tumor_name": "Bob_T"
+    }
+ }
+
+//Chen
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E199_PRJ180494_Missing_R1_001.fastq.gz
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E199_PRJ180495_Missing_R1_001.fastq.gz
+{
+    "name": "Chen",
+    "arguments": {
+        "prefix": "Chen",
+        "results_folder": "gds://umccr-primary-data-dev/multiqc_controls",
+        "fq_t1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E199_PRJ180494_Missing_R1_001.fastq.gz",
+        "fq_t2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E199_PRJ180494_Missing_R2_001.fastq.gz",
+        "fq_n1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E199_PRJ180495_Missing_R1_001.fastq.gz",
+        "fq_n2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180718_A00130_0068_BH5M73DSXX_E199_PRJ180495_Missing_R2_001.fastq.gz",
+        "normal_name": "Chen_N",
+        "tumor_name": "Chen_T"
+    }
+ }
+
+//Dakota
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180521_A00130_0060_AH5CHKDSXX_E190_PRJ180253_Missing_R1_001.fastq.gz
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180521_A00130_0060_AH5CHKDSXX_E190_PRJ180254_Missing_R1_001.fastq.gz
+{
+    "name": "Dakota",
+    "arguments": {
+        "prefix": "Dakota",
+        "results_folder": "gds://umccr-primary-data-dev/multiqc_controls",
+        "fq_t1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180521_A00130_0060_AH5CHKDSXX_E190_PRJ180253_Missing_R1_001.fastq.gz",
+        "fq_t2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180521_A00130_0060_AH5CHKDSXX_E190_PRJ180253_Missing_R2_001.fastq.gz",
+        "fq_n1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180521_A00130_0060_AH5CHKDSXX_E190_PRJ180254_Missing_R1_001.fastq.gz",
+        "fq_n2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180521_A00130_0060_AH5CHKDSXX_E190_PRJ180254_Missing_R2_001.fastq.gz",
+        "normal_name": "Dakota_N",
+        "tumor_name": "Dakota_T"
+    }
+ }
+
+//Elon
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E202_PRJ180499_Missing_R1_001.fastq.gz
+//gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E202_PRJ180500_Missing_R1_001.fastq.gz
+{
+    "name": "Elon",
+    "arguments": {
+        "prefix": "Elon",
+        "results_folder": "gds://umccr-primary-data-dev/multiqc_controls",
+        "fq_t1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E202_PRJ180499_Missing_R1_001.fastq.gz",
+        "fq_t2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E202_PRJ180499_Missing_R2_001.fastq.gz",
+        "fq_n1": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E202_PRJ180500_Missing_R1_001.fastq.gz",
+        "fq_n2": "gds://umccr-fastq-data-dev/PD/multiqc_controls/180720_A00130_0070_AH5TY5DSXX_E202_PRJ180500_Missing_R2_001.fastq.gz",
+        "normal_name": "Elon_N",
+        "tumor_name": "Elon_T"
+    }
+ }
+
+
+
+
+
+
