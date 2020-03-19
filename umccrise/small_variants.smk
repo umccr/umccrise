@@ -233,7 +233,7 @@ rule somatic_stats_report:
         full_vcf = rules.somatic_vcf_select_noalt.output.vcf,
         subset_highly_mutated_stats = rules.somatic_vcf_annotate.output.subset_highly_mutated_stats,
     output:
-        'work/{batch}/small_variants/somatic_stats.yml',
+        'work/{batch}/small_variants/{batch}_somatic_stats.yml',
     params:
         sample = lambda wc: batch_by_name[wc.batch].tumor.name,
     group: "somatic_filt"
@@ -279,7 +279,7 @@ if include_germline:
         input:
             vcf = rules.germline_merge_with_leakage.output.vcf,
         output:
-            'work/{batch}/small_variants/germline_stats.yml',
+            'work/{batch}/small_variants/{batch}_germline_stats.yml',
         params:
             sample = lambda wc: batch_by_name[wc.batch].normal.name
         group: "germline_snv"
