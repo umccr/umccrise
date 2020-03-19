@@ -255,13 +255,12 @@ rule filter_sv_vcf:
         vcf = rules.sv_maybe_bpi.output.vcf
     output:
         vcf = 'work/{batch}/structural/filt/{batch}-manta.vcf'
-    params:
-        sample = lambda wc: batch_by_name[wc.batch].tumor.name
     group: "sv_vcf"
     run:
         print(f'VCF samples: {VCF(input.vcf).samples}')
-        print(f'Tumor sample name: {batch_by_name[wildcards.batch].tumor.name}')
-        tumor_id = VCF(input.vcf).samples.index(params.sample)
+        t_name = batch_by_name[wildcards.batch].tumor.rgid
+        print(f'Tumor sample name: {t_name}')
+        tumor_id = VCF(input.vcf).samples.index(t_name)
         # tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
         shell('''
@@ -269,7 +268,7 @@ bcftools view -f.,PASS {input.vcf} |
 bcftools filter -e "SVTYPE == 'BND' & FORMAT/SR[{tumor_id}:1] - FORMAT/PR[{tumor_id}:1] > 0" |
 bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" |
 bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" |
-bcftools view -s {params.sample} > {output.vcf}
+bcftools view -s {t_name} > {output.vcf}
 ''')
 
 if not is_ffpe:

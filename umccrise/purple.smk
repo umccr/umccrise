@@ -130,7 +130,7 @@ rule purple_somatic_vcf:
     output:
         'work/{batch}/purple/somatic.vcf',
     params:
-        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
+        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.rgid,
     group: 'purple_main'
     shell:
         'bcftools view -s {params.tumor_sname} {input} | '
