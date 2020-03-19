@@ -9,9 +9,9 @@ rule run_conpair:
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
         ref_fa = hpc.get_ref_file(run.genome_build, key='fa')
     output:
-        concord = directory('{batch}/conpair/concordance'),
-        contam = directory('{batch}/conpair/contamination'),
-        tmp = directory('{batch}/conpair/.snakemake'),
+        concord = directory('work/{batch}/conpair/concordance'),
+        contam = directory('work/{batch}/conpair/contamination'),
+        tmp = directory('work/{batch}/conpair/.snakemake'),
     threads: 2
     resources:
         mem_mb=10000
@@ -19,7 +19,7 @@ rule run_conpair:
         'benchmarks/{batch}/conpair/{batch}-conpair.tsv'
     params:
         genome = run.genome_build,
-        out_dir = '{batch}/conpair',
+        out_dir = 'work/{batch}/conpair',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
         normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
     shell:

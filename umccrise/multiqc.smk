@@ -9,9 +9,12 @@ from umccrise import package_path
 localrules: multiqc
 
 
-def load_gold_standard(genome_build):
+def load_gold_standard(genome_build, project_type = 'dragen'):
     paths = []
-    gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
+    if project_type == 'bcbio':
+        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
+    else:
+        gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'dragen', 'umccrised.qconly')
     if genome_build == 'hg38':
         gold_standard_dir += '_hg38'
     with open(join(gold_standard_dir, 'background_multiqc_filelist.txt')) as f:
@@ -45,7 +48,7 @@ if isinstance(run, BcbioProject):
             bcbio_final_dir         = run.final_dir,
             conpair_concord         = rules.run_conpair.output.concord,
             conpair_contam          = rules.run_conpair.output.contam,
-            somatic_stats           = 'work/{batch}/small_variants/somatic_stats.yml',
+            somatic_stats           = rules.somatic_stats_report.output[0],
             germline_stats          = rules.germline_stats_report.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
             bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
@@ -76,13 +79,13 @@ if isinstance(run, BcbioProject):
             )
 
             # Gold standard QC files
-            qc_files.extend(load_gold_standard(params.genome_build))
+            qc_files.extend(load_gold_standard(params.genome_build, project_type = 'bcbio'))
 
             # Umccrise QC files
             qc_files.extend([
-                join(input.conpair_contam, params.tumor_name + '.txt'),
-                join(input.conpair_contam, params.normal_name + '.txt'),
-                join(input.conpair_concord, params.tumor_name + '.txt'),
+                join(input.conpair_contam, 'concordance_' + params.tumor_name + '.txt'),
+                join(input.conpair_contam, 'contamination_' + params.normal_name + '.txt'),
+                join(input.conpair_concord, 'contamination_' + params.tumor_name + '.txt'),
                 input.somatic_stats,
                 input.germline_stats,
                 input.bcftools_somatic_stats,
@@ -148,12 +151,12 @@ if isinstance(run, BcbioProject):
                   f' -c {input.umccrise_conf_yaml} -c {input.generated_conf_yaml} --filename {output.html_file}')
 
 
-else:
+else:  # dragen
     rule prep_multiqc_data:
         input:
             conpair_concord         = rules.run_conpair.output.concord,
             conpair_contam          = rules.run_conpair.output.contam,
-            somatic_stats           = 'work/{batch}/small_variants/somatic_stats.yml',
+            somatic_stats           = rules.somatic_stats_report.output[0],
             germline_stats          = rules.germline_stats_report.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
             bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
@@ -176,13 +179,13 @@ else:
             )
 
             # Gold standard QC files
-            qc_files.extend(load_gold_standard(params.genome_build))
+            qc_files.extend(load_gold_standard(params.genome_build, project_type = 'dragen'))
 
             # Umccrise QC files
             qc_files.extend([
-                join(input.conpair_contam, params.tumor_name + '.txt'),
-                join(input.conpair_contam, params.normal_name + '.txt'),
-                join(input.conpair_concord, params.tumor_name + '.txt'),
+                join(input.conpair_contam, 'concordance_' + params.tumor_name + '.txt'),
+                join(input.conpair_contam, 'contamination_' + params.normal_name + '.txt'),
+                join(input.conpair_concord, 'contamination_' + params.tumor_name + '.txt'),
                 input.somatic_stats,
                 input.germline_stats,
                 input.bcftools_somatic_stats,
