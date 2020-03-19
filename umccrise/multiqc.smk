@@ -83,9 +83,9 @@ if isinstance(run, BcbioProject):
 
             # Umccrise QC files
             qc_files.extend([
-                join(input.conpair_contam, 'concordance_' + params.tumor_name + '.txt'),
-                join(input.conpair_contam, 'contamination_' + params.normal_name + '.txt'),
-                join(input.conpair_concord, 'contamination_' + params.tumor_name + '.txt'),
+                join(input.conpair_concord, params.tumor_name + '.concordance.txt'),
+                join(input.conpair_contam, params.normal_name + '.contamination.txt'),
+                join(input.conpair_contam, params.tumor_name + '.contamination.txt'),
                 input.somatic_stats,
                 input.germline_stats,
                 input.bcftools_somatic_stats,
@@ -183,9 +183,9 @@ else:  # dragen
 
             # Umccrise QC files
             qc_files.extend([
-                join(input.conpair_contam, 'concordance_' + params.tumor_name + '.txt'),
-                join(input.conpair_contam, 'contamination_' + params.normal_name + '.txt'),
-                join(input.conpair_concord, 'contamination_' + params.tumor_name + '.txt'),
+                join(input.conpair_concord, params.tumor_name + '.concordance.txt'),
+                join(input.conpair_contam, params.normal_name + '.contamination.txt'),
+                join(input.conpair_contam, params.tumor_name + '.contamination.txt'),
                 input.somatic_stats,
                 input.germline_stats,
                 input.bcftools_somatic_stats,

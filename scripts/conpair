@@ -57,9 +57,9 @@ def main(normal_bam, tumor_bam, genome=None, ref_fa=None, output_dir=None,
     run_snakemake(join(package_path(), 'conpair', 'Snakefile'), conf, jobs,
                   output_dir, unlock=unlock, dryrun=dryrun, target_rules=target_rule)
 
-    concordance = join(output_dir, 'concordance', 'concordance_' + tumor_name + '.txt')
-    t_contamination = join(output_dir, 'contamination', 'contamination_' + tumor_name + '.txt')
-    n_contamination = join(output_dir, 'contamination', 'contamination_' + normal_name + '.txt')
+    concordance = join(output_dir, 'concordance', tumor_name + '.concordance.txt')
+    t_contamination = join(output_dir, 'contamination', 'contamination_' + tumor_name + '.contamination.txt')
+    n_contamination = join(output_dir, 'contamination', 'contamination_' + normal_name + '.contamination.txt')
     if isfile(concordance):
         print(f'Concordance: {concordance}')
         with open(concordance) as f:

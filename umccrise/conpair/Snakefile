@@ -17,9 +17,9 @@ use_het_markers = config.get('use_het_markers', 'no') == 'yes'
 
 rule all:
     input:
-        'concordance/' + samples['tumor'] + '.txt',
-        'contamination/' + samples['tumor'] + '.txt',
-        'contamination/' + samples['normal'] + '.txt',
+        'concordance/' + samples['tumor'] + '.concordance.txt',
+        'contamination/' + samples['tumor'] + '.contamination.txt',
+        'contamination/' + samples['normal'] + '.contamination.txt',
 
 
 rule concordance:
@@ -27,7 +27,7 @@ rule concordance:
         tumor_pileup = samples['tumor'] + '_tumor.pileup',
         normal_pileup = samples['normal'] + '_normal.pileup',
     output:
-        'concordance/' + samples['tumor'] + '.txt'
+        'concordance/' + samples['tumor'] + '.concordance.txt'
     params:
         het_opt = '-H' if not use_het_markers else ''
     shell: """
@@ -45,8 +45,8 @@ rule contamination:
         tumor_pileup = samples['tumor'] + '_tumor.pileup',
         normal_pileup = samples['normal'] + '_normal.pileup',
     output:
-        tumor = 'contamination/' + samples['tumor'] + '.txt',
-        normal = 'contamination/' + samples['normal'] + '.txt',
+        tumor = 'contamination/' + samples['tumor'] + '.contamination.txt',
+        normal = 'contamination/' + samples['normal'] + '.contamination.txt',
     shell: """
 estimate_tumor_normal_contamination.py\
  -T {input.tumor_pileup}\
