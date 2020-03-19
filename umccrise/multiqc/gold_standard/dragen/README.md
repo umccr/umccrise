@@ -18,7 +18,7 @@ umccrise Chen   -c -j30 -o ${DIR}/Chen   multiqc
 umccrise Dakota -c -j30 -o ${DIR}/Dakota multiqc
 umccrise Elon   -c -j30 -o ${DIR}/Elon   multiqc
 
-DIR_QCONLY=${DIR}.qconly
+DIR_QCONLY=${DIR}.qconly_hg38
 mkdir ${DIR_QCONLY}
 echo "" > ${DIR_QCONLY}/background_multiqc_filelist.txt
 for batch in Alice Bob Chen Dakota Elon ; do
