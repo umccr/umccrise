@@ -104,6 +104,8 @@ umccr:
     - Dakota_N
     - Elon_N
 
+highlight_regex: true
+
 module_order:
     - bcbio
     - samtools
