@@ -10,8 +10,20 @@ was generated and the button that launches the welcome tour.
 
 <style type="text/css">{{ include_file('assets/css/multiqc_umccr.css') }}</style>
 <script>
-    window.mqc_highlight_f_texts = ["", "{{ config.umccr.tumor_name }}", "{{ config.umccr.normal_name}}"];
-    window.mqc_highlight_f_cols = ["#cccccc", "rgb(228, 26, 28)", "rgb(55, 126, 184)"];
+    window.mqc_highlight_f_texts = [
+        "",
+        "{{ config.umccr.tumor_name  }}",
+        "{{ config.umccr.tumor_rgid  }}",
+        "{{ config.umccr.normal_name }}",
+        "{{ config.umccr.normal_rgid  }}"
+    ];
+    window.mqc_highlight_f_cols = [
+        "#cccccc",
+        "rgb(228, 26, 28)",
+        "rgb(228, 26, 28)",
+        "rgb(55, 126, 184)",
+        "rgb(55, 126, 184)"
+    ];
 
     $(function(e, regex_mode){
       var f_texts = window.mqc_highlight_f_texts;
@@ -24,7 +36,7 @@ was generated and the button that launches the welcome tour.
         var thtext = $(this).text();
         var thiscol = '#333';
         $.each(f_texts, function(idx, f_text){
-          if((regex_mode && thtext.match(f_text)) || (!regex_mode && thtext.indexOf(f_text) > -1)){
+          if(thtext === f_text){
             thiscol = f_cols[idx];
             th.addClass('highlighted').data('highlight', idx);
             $('.mqc_table_sortHighlight').show();

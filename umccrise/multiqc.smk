@@ -61,16 +61,15 @@ if isinstance(run, BcbioProject):
             data_versions           = '{batch}/log/data_versions.txt',
         params:
             data_dir                = 'work/{batch}/multiqc_data',
-            tumor_name              = lambda wc: batch_by_name[wc.batch].tumor.name,
-            normal_name             = lambda wc: batch_by_name[wc.batch].normal.name,
             genome_build            = run.genome_build
         group: 'multiqc'
         run:
+            batch = batch_by_name[wildcards.batch]
             report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
             generated_conf, qc_files = make_report_metadata(
                 run,
-                tumor_sample=params.tumor_name,
-                normal_sample=params.normal_name,
+                tumor_sample=batch.tumor,
+                normal_sample=batch.normal,
                 base_dirpath=report_base_path,
                 analysis_dir=run.date_dir,
                 prog_versions_fpath=verify_file(input.prog_versions, silent=True),
@@ -83,9 +82,9 @@ if isinstance(run, BcbioProject):
 
             # Umccrise QC files
             qc_files.extend([
-                join(input.conpair_concord, params.tumor_name + '.concordance.txt'),
-                join(input.conpair_contam, params.normal_name + '.contamination.txt'),
-                join(input.conpair_contam, params.tumor_name + '.contamination.txt'),
+                join(input.conpair_concord, batch.tumor.name + '.concordance.txt'),
+                join(input.conpair_contam, batch.normal.name + '.contamination.txt'),
+                join(input.conpair_contam, batch.tumor.name + '.contamination.txt'),
                 input.somatic_stats,
                 input.germline_stats,
                 input.bcftools_somatic_stats,
@@ -116,9 +115,9 @@ if isinstance(run, BcbioProject):
                     '.*verifybamid.*',
                 ],
                 include_files=[
-                    f'.*{params.tumor_name}.*',
-                    f'.*{params.normal_name}.*',
-                    f'.*{wildcards.batch}.*',
+                    f'.*{batch.tumor.name}.*',
+                    f'.*{batch.normal.name}.*',
+                    f'.*{batch.name}.*',
                 ],
             ))
 
@@ -165,16 +164,15 @@ else:  # dragen
             generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
         params:
             data_dir                = 'work/{batch}/multiqc_data',
-            tumor_name              = lambda wc: batch_by_name[wc.batch].tumor.name,
-            normal_name             = lambda wc: batch_by_name[wc.batch].normal.name,
             genome_build            = run.genome_build
         group: 'multiqc'
         run:
+            batch = batch_by_name[wildcards.batch]
             report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
             generated_conf, qc_files = make_report_metadata(
                 run,
-                tumor_sample=params.tumor_name,
-                normal_sample=params.normal_name,
+                tumor_sample=batch.tumor,
+                normal_sample=batch.normal,
                 base_dirpath=report_base_path,
             )
 
@@ -183,9 +181,9 @@ else:  # dragen
 
             # Umccrise QC files
             qc_files.extend([
-                join(input.conpair_concord, params.tumor_name + '.concordance.txt'),
-                join(input.conpair_contam, params.normal_name + '.contamination.txt'),
-                join(input.conpair_contam, params.tumor_name + '.contamination.txt'),
+                join(input.conpair_concord, batch.tumor.name + '.concordance.txt'),
+                join(input.conpair_contam, batch.normal.name + '.contamination.txt'),
+                join(input.conpair_contam, batch.tumor.name + '.contamination.txt'),
                 input.somatic_stats,
                 input.germline_stats,
                 input.bcftools_somatic_stats,

@@ -21,8 +21,10 @@ def make_report_metadata(proj: BaseProject, tumor_sample, normal_sample, base_di
     conf['umccr'] = dict()
     additional_files = []
 
-    conf['umccr']['tumor_name'] = tumor_sample
-    conf['umccr']['normal_name'] = normal_sample
+    conf['umccr']['tumor_name'] = tumor_sample.name
+    conf['umccr']['normal_name'] = normal_sample.name
+    conf['umccr']['tumor_rgid'] = tumor_sample.rgid
+    conf['umccr']['normal_rgid'] = normal_sample.rgid
 
     conf['umccr']['is_rnaseq'] = proj.is_rnaseq
 

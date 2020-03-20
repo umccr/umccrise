@@ -78,16 +78,31 @@ qualimap:
 
 umccr:
     reference_samples:
+    - Alice
+    - Bob
+    - Chen
+    - Dakota
+    - Elon
     - Alice_T
-    - Alice_B
     - Bob_T
-    - Bob_B
     - Chen_T
-    - Chen_B
     - Dakota_T
-    - Dakota_B
     - Elon_T
+    - Alice_B
+    - Bob_B
+    - Chen_B
+    - Dakota_B
     - Elon_B
+    - Alice_normal
+    - Bob_normal
+    - Chen_normal
+    - Dakota_normal
+    - Elon_normal
+    - Alice_N
+    - Bob_N
+    - Chen_N
+    - Dakota_N
+    - Elon_N
 
 module_order:
     - bcbio
