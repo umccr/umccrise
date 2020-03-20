@@ -15,16 +15,17 @@ from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transa
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
 
-def make_report_metadata(proj: BaseProject, tumor_sample, normal_sample, base_dirpath, analysis_dir=None,
+def make_report_metadata(proj: BaseProject, batch, base_dirpath, analysis_dir=None,
                          prog_versions_fpath=None, data_versions_fpath=None, new_dir_for_versions=None):
     conf = dict()
     conf['umccr'] = dict()
     additional_files = []
 
-    conf['umccr']['tumor_name'] = tumor_sample.name
-    conf['umccr']['normal_name'] = normal_sample.name
-    conf['umccr']['tumor_rgid'] = tumor_sample.rgid
-    conf['umccr']['normal_rgid'] = normal_sample.rgid
+    conf['umccr']['tumor_name'] = batch.tumor.name
+    conf['umccr']['normal_name'] = batch.normal.name
+    conf['umccr']['tumor_rgid'] = batch.tumor.rgid
+    conf['umccr']['normal_rgid'] = batch.normal.rgid
+    conf['umccr']['batch'] = batch.name
 
     conf['umccr']['is_rnaseq'] = proj.is_rnaseq
 

@@ -68,8 +68,7 @@ if isinstance(run, BcbioProject):
             report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
             generated_conf, qc_files = make_report_metadata(
                 run,
-                tumor_sample=batch.tumor,
-                normal_sample=batch.normal,
+                batch=batch,
                 base_dirpath=report_base_path,
                 analysis_dir=run.date_dir,
                 prog_versions_fpath=verify_file(input.prog_versions, silent=True),
@@ -171,8 +170,7 @@ else:  # dragen
             report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
             generated_conf, qc_files = make_report_metadata(
                 run,
-                tumor_sample=batch.tumor,
-                normal_sample=batch.normal,
+                batch=batch,
                 base_dirpath=report_base_path,
             )
 
