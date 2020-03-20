@@ -1,5 +1,6 @@
 #################
 #### Somatic ####
+import subprocess
 from os.path import isfile, join
 from ngs_utils.file_utils import get_ungz_gz
 from umccrise import package_path
@@ -277,23 +278,25 @@ rule somatic_stats_report:
 if include_germline:
     rule germline_stats_report:
         input:
-            vcf = rules.germline_merge_with_leakage.output.vcf,
+            pass_vcf = rules.germline_vcf_pass.output.vcf,
+            pass_predispose_vcf = rules.germline_merge_with_leakage.output.vcf,
         output:
             'work/{batch}/small_variants/{batch}_germline_stats.yml',
         params:
             sample = lambda wc: batch_by_name[wc.batch].normal.name
         group: "germline_snv"
         run:
-            pass_cnt = 0
-            vcf = cyvcf2.VCF(input.vcf)
-            for rec in vcf:
-                pass_cnt += 1
+            pass_cnt = int(subprocess.check_output(
+                f'bcftools view -H {input.pass_vcf} | wc -l', shell=True).strip())
+            predispose_pass_cnt = int(subprocess.check_output(
+                f'bcftools view -H {input.pass_predispose_vcf} | wc -l', shell=True).strip())
 
             with open(output[0], 'w') as out:
                 data = {
                     'data': {
                         params.sample: dict(
-                            germline = pass_cnt
+                            germline = pass_cnt,
+                            germline_predispose = predispose_pass_cnt
                         )
                     }
                 }

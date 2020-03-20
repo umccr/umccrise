@@ -207,9 +207,14 @@ custom_data:
 
         - germline:
             title: 'Germline'
-            description: 'Germline variants (from normal sample)'
+            description: 'Germline variants, as found by germline variant calling from the normal sample'
             min: 0
             format: '{:,.0f}'
+#        - germline_predispose:
+#            title: 'Predispose'
+#            description: 'Germline variants, as found by germline variant calling from the normal sample, subset to the list of cancer predisposition genes. The exact set is fed into CPSR for reporting.'
+#            min: 0
+#            format: '{:,.0f}'
 
 #        - pon:
 #            title: 'PoN'
