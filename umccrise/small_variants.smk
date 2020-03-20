@@ -29,6 +29,8 @@ def cnt_vars(vcf_path, passed=False):
             others += 1
     return snps, indels, others
 
+# rule somatic_vcf_reheader  # change RGIDs to tumor and normal names?
+
 rule somatic_vcf_pass_sort:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].somatic_vcf,
@@ -128,7 +130,7 @@ rule bcftools_stats_somatic:
         '{batch}/small_variants/stats/{batch}_bcftools_stats.txt'
     group: "somatic_filt"
     params:
-        sname = lambda wc: batch_by_name[wc.batch].tumor.name,
+        sname = lambda wc: batch_by_name[wc.batch].tumor.rgid,
     shell:
         'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
 
@@ -188,8 +190,8 @@ if include_germline:
         group: "germline_snv"
         params:
             toremove = 'INFO/AC,INFO/AF,INFO/TUMOR_AF,INFO/TUMOR_VD,INFO_TUMOR_MQ,INFO/TUMOR_DP,FORMAT/AD,FORMAT/ADJAF,FORMAT/AF,FORMAT/VD,FILTER',
-            tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.name,
-            normal_sample = lambda wc: batch_by_name[wc.batch].normal.name,
+            tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
+            normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
         shell:
             'bcftools filter -i "Germline=1" {input.vcf} | '
             'bcftools annotate -x "{params.toremove}" | ' \
@@ -312,7 +314,7 @@ if include_germline:
             '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
         group: "germline_snv"
         params:
-            sname = lambda wc: batch_by_name[wc.batch].normal.name,
+            sname = lambda wc: batch_by_name[wc.batch].normal.rgid,
         shell:
             'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
 

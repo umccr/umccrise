@@ -324,11 +324,11 @@ rule prep_sv_tsv:
         vcf = '{batch}/structural/{batch}-manta.vcf.gz',
     output:
         '{batch}/structural/{batch}-manta.tsv'
-    params:
-        sample = lambda wc: batch_by_name[wc.batch].tumor.name
     group: "sv_after_purple"
     run:
-        tumor_id = VCF(input.vcf).samples.index(params.sample)
+        sample_name = batch_by_name[wildcards.batch].tumor.name
+        rgid = batch_by_name[wildcards.batch].tumor.rgid
+        tumor_id = VCF(input.vcf).samples.index(rgid)
         with open(output[0], 'w') as out:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
                       "split_read_support", "paired_support_PE", "paired_support_PR", "AF_BPI", "somaticscore",
@@ -349,7 +349,7 @@ rule prep_sv_tsv:
                 elif rec.INFO.get('RECOVERED'):
                     PURPLE_status = 'RECOVERED'
 
-                data = ['manta', params.sample, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
+                data = ['manta', sample_name, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
                         rec.INFO['SVTYPE'],
                         ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
