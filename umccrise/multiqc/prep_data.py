@@ -21,11 +21,11 @@ def make_report_metadata(proj: BaseProject, batch, base_dirpath, analysis_dir=No
     conf['umccr'] = dict()
     additional_files = []
 
-    conf['umccr']['tumor_name'] = batch.tumor.name
+    conf['umccr']['tumor_name']  = batch.tumor.name
     conf['umccr']['normal_name'] = batch.normal.name
-    conf['umccr']['tumor_rgid'] = batch.tumor.rgid
+    conf['umccr']['tumor_rgid']  = batch.tumor.rgid
     conf['umccr']['normal_rgid'] = batch.normal.rgid
-    conf['umccr']['batch'] = batch.name
+    conf['umccr']['batch']       = batch.name
 
     conf['umccr']['is_rnaseq'] = proj.is_rnaseq
 

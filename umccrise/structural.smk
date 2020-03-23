@@ -257,9 +257,9 @@ rule filter_sv_vcf:
         vcf = 'work/{batch}/structural/filt/{batch}-manta.vcf'
     group: "sv_vcf"
     run:
-        print(f'VCF samples: {VCF(input.vcf).samples}')
         t_name = batch_by_name[wildcards.batch].tumor.rgid
-        print(f'Tumor sample name: {t_name}')
+        assert t_name in VCF(input.vcf).samples, 't_name: ' + str(t_name) +\
+                                                 ', VCF(input.vcf).samples: ' + str(VCF(input.vcf).samples)
         tumor_id = VCF(input.vcf).samples.index(t_name)
         # tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
