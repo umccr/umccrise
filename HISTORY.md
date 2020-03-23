@@ -4,6 +4,10 @@
 
 --------------------
 
+0.17.8 (23 Mar 2020)
+
+- Fix core usage inside of a Docker image
+
 0.17.7 (14 Mar 2020)
 
 - CPSR: when prioritizing a mutation effects, always pick the transcripts where the mutations affects the protein.
