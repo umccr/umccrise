@@ -20,7 +20,8 @@ def load_gold_standard(genome_build, project_type = 'dragen'):
     with open(join(gold_standard_dir, 'background_multiqc_filelist.txt')) as f:
         for l in f:
             l = l.strip()
-            paths.append(join(gold_standard_dir, l))
+            if l:
+                paths.append(join(gold_standard_dir, l))
     return paths
 
 
