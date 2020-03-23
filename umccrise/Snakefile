@@ -97,8 +97,10 @@ threads_on_node = hpc.threads_on_node or multiprocessing.cpu_count() or 1
 total_cores = config.get('total_cores', 128)
 threads_per_batch  = max(1, min(threads_on_node, total_cores // len(batch_by_name)))
 threads_per_sample = max(1, min(threads_on_node, total_cores // len(run.samples)))
-print(f'Threads available on the machine: {threads_on_node}, total cores allowed: {total_cores}. '
-      f'Batches found: {threads_per_batch}, using {threads_per_batch} threads per batch, {threads_per_sample} per sample')
+print(f'Cores available on the machine: {threads_on_node}, '
+      f'total jobs requested by `umccrise -j`: {total_cores}. '
+      f'Batches found: {threads_per_batch}, using {threads_per_batch} threads per batch, '
+      f'{threads_per_sample} per sample')
 
 is_ffpe = False
 if isinstance(run, BcbioProject):
