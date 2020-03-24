@@ -1,6 +1,11 @@
 0.18 (TBR):
 
 - DRAGEN: support tumor and normal sample name differrent from the output prefix
+- Re-engineered how the number of CPUs is determined, so when we have many cores
+available, they are not wasted on a single job that doesn't benefit from many threads.
+Say, PURPLE COBALT optional number is around 10-15, so if we have 28 cores, we will
+run COBALT and AMBER in parallel with 14 cores each. This should work for local/AWS
+runs as well as the HPC runs.
 
 --------------------
 

@@ -17,7 +17,6 @@ circos_macos_patch = ('export PERL5LIB=' +
     if platform.system() == 'Darwin' \
     else ''
 
-purple_cpu = min(threads_per_batch, 15)
 purple_mem = min(30000, 5000*threads_per_batch)
 
 
@@ -178,7 +177,7 @@ rule purple_run:
     benchmark:
         'benchmarks/{batch}/purple/{batch}-purple.tsv'
     threads:
-        4
+        min(4, threads_per_batch)
     resources:
         mem_mb = lambda wildcards, attempt: purple_mem + 1000 + (10000 * (attempt - 1)),
     run:

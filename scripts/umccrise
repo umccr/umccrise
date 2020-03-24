@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import multiprocessing
 import os
 import sys
 import traceback
@@ -17,6 +18,7 @@ from ngs_utils import snakemake_utils
 from umccrise import package_path
 from umccrise import _version as version
 from hpc_utils import hpc
+from umccrise import prep_inputs, prep_resources
 
 
 @click.command()
@@ -31,8 +33,8 @@ from hpc_utils import hpc
 @click.option('--genomes', '--genomes-dir', 'input_genomes_dir', help='Path to the reference data')
 
 # Cluster:
-@click.option('-j', '--jobs', 'jobs', default=1, help='Maximum number of cores to use at single time (works both for '
-              'local and cluster runs)')
+@click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', default=32,
+              help='Maximum number of cores to use at single time (works both for local and cluster runs)')
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 
@@ -54,14 +56,12 @@ from hpc_utils import hpc
 @click.option('--s3/--no-s3'  , 'upload_s3',  default=False, help='Upload results to s3 [deprectated]')
 @click.option('--igv/--no-igv', 'upload_igv', default=False, help='Generate mini-bams and upload to a s3 bucket [deprectated]')
 
-@click.option('--docker', '--docker-wrapper-mode', 'docker_wrapper_mode', is_flag=True,
-              help='Pull umccr/umccrise docker image and use it instead of the main codebase')
 @click.option('--debug', 'debug', is_flag=True, help='Increases verbosity of messages')
 
-def main(input_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None, input_genomes_dir=None,
-         jobs=None, cluster=False, cluster_cmd=None, forcerun=None,
+def main(input_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
+         input_genomes_dir=None, cores=None, cluster=False, cluster_cmd=None, forcerun=None,
          unlock=False, rerun_incomplete=False, restart_times=1, dryrun=False,
-         upload_s3=False, upload_igv=False, docker_wrapper_mode=False, report=None, dag=False, debug=False):
+         upload_s3=False, upload_igv=False, report=None, dag=False, debug=False):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
 input_project: path to a bcbio run (final or "datestamp" directory) or a Dragen run\n
@@ -77,14 +77,10 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
         run_simple('touch ' + join(output_dir, 'all.done'))
 
     conf = dict()
-    docker_mounts = dict()
 
     #######################
     #### Setting paths ####
     #######################
-
-    if docker_wrapper_mode:
-        docker_mounts[output_dir] = '/output_dir'
 
     tmp_dirs = []
 
@@ -93,8 +89,6 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
         tmp_dirs.append(tmp_dir)
 
     conf['input_project'] = verify_dir(input_project, is_critical=True)
-    if docker_wrapper_mode:
-        conf['input_project'] = docker_mounts[input_project] = '/bcbio_project'
 
     if input_genomes_dir:
         if isfile(input_genomes_dir):
@@ -105,8 +99,6 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
     hpc.set_genomes_dir(input_genomes_dir)
 
     conf['genomes_dir'] = verify_dir(hpc.genomes_dir, is_critical=True)
-    if docker_wrapper_mode:
-        conf['genomes_dir'] = docker_mounts[hpc.genomes_dir] = '/genomes'
     logger.info(f'Using genomes directory: {hpc.genomes_dir}')
 
     #####################################
@@ -122,51 +114,37 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
         conf['pcgr_download'] = 'yes'
 
     conf['upload_igv'] = 'yes' if upload_igv is True else 'no'
-
-    conf['total_cores'] = jobs
-
     if unlock: conf['unlock'] = 'yes'
-
     if debug: conf['debug'] = 'yes'
 
     #########################
     #### Setting cluster ####
     #########################
-
     cluster_param = ''
     cluster_log_dir = ''
-    if (cluster or cluster_cmd) and not docker_wrapper_mode:
+    if cluster or cluster_cmd:
         if cluster_cmd:
             cluster_param = f' --cluster "{cluster_cmd}"'
         else:
             cluster_log_dir = safe_mkdir(join(log_dir, 'cluster'))
             cluster_param = snakemake_utils.make_cluster_cmdl(cluster_log_dir, 'umccrise')
 
+    ################################
+    #### Setting CPUs resources ####
+    ################################
+    run, batch_by_name = prep_inputs(conf, silent=True)
+    ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node = \
+        prep_resources(cores,
+            num_batches=len(batch_by_name), num_samples=len(run.samples),
+            is_cluster=cluster_param != '',)
+    conf['threads_per_batch'] = ncpus_per_batch
+    conf['threads_per_sample'] = ncpus_per_sample
+
     ###############################
     #### Building command line ####
     ###############################
-
     cmd = ''
-    if docker_wrapper_mode:
-        cpus_avail = int(subprocess.check_output('docker system info | grep CPUs', shell=True).decode().split(': ')[1])
-        if jobs > cpus_avail:
-            click.echo(click.style(
-                f'Warning: the number of jobs requested {jobs} is higher than the number of available CPUs '
-                f'for the docker machine {cpus_avail}. Downgrading requested jobs to {cpus_avail}.', fg='red'))
-            jobs = cpus_avail
-
-        docker_tag = 'umccr/umccrise'
-        # if pcgr_data:
-        #     docker_tag = 'umccr/umccrise_with_pcgr'
-
-        cmd = (
-            f'docker run -t ' +
-            f'--cpus {jobs} ' +
-            ''.join(f'-v={k}:{v} ' for k, v in docker_mounts.items()) +
-            f'{docker_tag} '
-        )
-
-    snakefile = join(package_path(), 'Snakefile') if not docker_wrapper_mode else '/umccrise/umccrise/Snakefile'
+    snakefile = join(package_path(), 'Snakefile')
     cmd += (
         f'snakemake '
         f'{" ".join(target_rule)} '
@@ -175,8 +153,9 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
         f'{"--dryrun " if dryrun else ""}'
         f'{"--dag " if dag else ""}'
         f'{f"--report {report} " if report else ""}'
-        f'--directory {output_dir if not docker_wrapper_mode else "/output_dir"} '
-        f'-j {jobs} '
+        f'--directory {output_dir} '
+        f'--cores {ncpus_available} '
+        f'{f"--local-cores {ncpus_per_node} " if ncpus_per_node else ""}'
         f'--rerun-incomplete '
         f'{f"--restart-times {restart_times - 1}" if restart_times > 1 else ""}'
         f'{cluster_param} '

@@ -1,18 +1,16 @@
 """ UMCCR post-bcbio patient analysis workflow
 """
-import glob
 import os
 import sys
-import multiprocessing
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
 from ngs_utils.bcbio import BcbioProject
-from ngs_utils.dragen import DragenProject
 from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug, warn
 from ngs_utils import logger as ngs_utils_logger
 from hpc_utils import hpc
 from ngs_utils.utils import set_locale; set_locale()
+from umccrise import prep_inputs
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
@@ -24,64 +22,9 @@ py_path = sys.executable  # /miniconda/envs/umccrise/bin/python
 env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
 conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
 
-
-def prep_inputs(config_):
-    ###############################
-    #### Parsing a bcbio or Dragen project ####
-    ###############################
-
-    # Parsing a bcbio or Dragen project and including/excluding samples
-    include_names = config_.get('batch') or config_.get('sample')
-    if include_names:
-        include_names = str(include_names).split(',')
-        include_names = [v for v in flatten([sn.split('__') for sn in include_names])]  # support "batch__sample" notation
-    exclude_names = config_.get('exclude')
-    if exclude_names:
-        exclude_names = str(exclude_names).split(',')
-        exclude_names = [v for v in flatten([sn.split('__') for sn in exclude_names])]  # support "batch__sample" notation
-
-    if config_.get('debug', 'no') == 'yes':
-        ngs_utils_logger.is_debug = True
-
-    ngs_utils_logger.is_silent = within_sub_workflow  # to avoid redundant logging in cluster sub-executions of the Snakefile
-    input_path = config_.get('input_project', abspath(os.getcwd()))
-    print(glob.glob(join(input_path, '*-replay.json')))
-    if glob.glob(join(input_path, '*-replay.json')):
-        run = DragenProject(input_path)
-        ngs_utils_logger.is_silent = False
-        batch_by_name = run.batch_by_name
-
-    else:
-        run = BcbioProject(input_path,
-                           exclude_samples=exclude_names,
-                           include_samples=include_names,
-                           silent=True)
-        ngs_utils_logger.is_silent = False
-        run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
-
-        if len(run.batch_by_name) == 0:
-            if exclude_names:
-                critical(f'Error: no samples left with the exclusion of batch/sample name(s): {", ".join(exclude_names)}.'
-                         f'Check yaml file for available options: {run.bcbio_yaml_fpath}.')
-            if include_names:
-                critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
-                         f'Check yaml file for available options: {run.bcbio_yaml_fpath}')
-            critical(f'Error: could not parse any batch or samples in the bcbio project. '
-                     f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}')
-
-        # Batch objects index by tumor sample names
-        batches = [b for b in run.batch_by_name.values() if not b.is_germline() and b.tumor and b.normal]
-        assert batches
-        batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
-
-    # Reference files
-    if config_.get('genomes_dir'):
-        hpc.set_genomes_dir(config_.get('genomes_dir'))
-
-    return run, batch_by_name
-
-
-run, batch_by_name = prep_inputs(config)
+run, batch_by_name = prep_inputs(config, silent=within_sub_workflow)
+threads_per_batch = config['threads_per_batch']
+threads_per_sample = config['threads_per_sample']
 
 is_spartan = hpc.name == 'spartan'
 is_raijin = hpc.name == 'raijin'
@@ -92,15 +35,6 @@ if is_spartan:
 
 upload_igv = is_hpc and config.get('upload_igv', 'no') == 'yes'
 
-
-threads_on_node = hpc.threads_on_node or multiprocessing.cpu_count() or 1
-total_cores = config.get('total_cores', 128)
-threads_per_batch  = max(1, min(threads_on_node, total_cores // len(batch_by_name)))
-threads_per_sample = max(1, min(threads_on_node, total_cores // len(run.samples)))
-print(f'Cores available on the machine: {threads_on_node}, '
-      f'total jobs requested by `umccrise -j`: {total_cores}. '
-      f'Batches found: {threads_per_batch}, using {threads_per_batch} threads per batch, '
-      f'{threads_per_sample} per sample')
 
 is_ffpe = False
 if isinstance(run, BcbioProject):
