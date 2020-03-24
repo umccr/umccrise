@@ -37,6 +37,7 @@ rule somatic_vcf_pass_sort:
     output:
         vcf = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         tbi = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+    group: "somatic_anno"
     shell:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -48,6 +49,7 @@ rule somatic_vcf_select_noalt:
     output:
         vcf = 'work/{batch}/small_variants/noalt/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         tbi = 'work/{batch}/small_variants/noalt/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+    group: "somatic_anno"
     shell:
         'bcftools view -R {input.noalts_bed} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
@@ -68,6 +70,7 @@ rule sage:
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
     resources:
         mem_mb = 20000
+    group: "somatic_anno"
     shell:
         'sage -t {input.tumor_bam} -n {input.normal_bam} -v {input.vcf} -o {output.vcf} -s {output.sage_vcf} '
         '-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
