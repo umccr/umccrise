@@ -451,6 +451,8 @@ Merge:
 ```
 bcftools merge -m none hmf.vcf.gz pcgr.vcf.gz -Oz -o merged.vcf.gz
 tabix -p vcf merged.vcf.gz
+# Adding into the workflows repo:
+gunzip -c merged.vcf.gz | grep -v ^## > /Users/vsaveliev/git/umccr/workflows/genes/hotspots/hotspots.tsv
 ```
 
 Convert to hg38

@@ -9,13 +9,10 @@ Umccrise post-processes somatic variants in order to remove most of the artefact
 
 1. Take passing "ensemble" somatic VCF from [bcbio](https://github.com/umccr/workflows/tree/master/bcbio). "Ensemble" has variants supported by at least 2 of 3 callers (we use [strelka2](https://github.com/Illumina/strelka), [vardict](https://github.com/AstraZeneca-NGS/VarDict), and [mutect2](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)). Unless it's an FFPE sample, in which case usually only strelka2 is used. Variants are called at AF>1%.
 2. Sort VCF by coordinate, extract `PASS` calls (which applies only to strelka2, as ensemble is already `PASS`-only).
-3. Run [SAGE](https://github.com/hartwigmedical/hmftools/tree/master/sage) and add the result to the VCF. SAGE is a low-frequency variant caller with a high precision, created by Hartwig Medical Foundation. Instead of the whole genome, it targets only coding regions for inframe indels, and known hotspot sites from the following list:
+3. Run [SAGE](https://github.com/hartwigmedical/hmftools/tree/master/sage) and add the result to the VCF. SAGE is a low-frequency variant caller with a high precision, created by Hartwig Medical Foundation. Instead of the whole genome, it targets only coding regions for inframe indels, and [known hotspot sites](https://raw.githubusercontent.com/umccr/workflows/master/genes/hotspots/hotspots.tsv) from the following list:
 	*  [Cancer Genome Interpreter](https://www.cancergenomeinterpreter.org/home) 
 	*  [CIViC](http://civic.genome.wustl.edu/) - Clinical interpretations of variants in cancer
 	*  [OncoKB](https://oncokb.org/) - Precision Oncology Knowledge Base
-
-[ ] _TODO: link to hotspot list / BED file._
-
 4. Annotate the VCF against the reference sources:
 	*  SAGE hotspots (CGI, CiViC, OncoKB), 
 	*  GiaB confidence regions,
