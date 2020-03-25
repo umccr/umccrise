@@ -48,6 +48,7 @@ dependencies:
   # - gsort     # sort vcfs and beds - https://github.com/brentp/gsort
   - toml        # to read predisposition genes from PCGR toml
   # - tibanna
+  - snpeff
   - pip:
     - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
