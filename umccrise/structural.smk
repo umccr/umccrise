@@ -245,7 +245,7 @@ rule sv_maybe_bpi:
                     '> {log}'
                 )
             else:  # fake BPI_AF from the original AF
-                def func(rec):
+                def func(rec, vcf):
                     rec.INFO['BPI_AF'] = rec.INFO['AF']
                     return rec
                 iter_vcf(input.vcf, output.vcf, func)
