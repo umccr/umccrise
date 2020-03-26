@@ -145,6 +145,7 @@ rule fix_snpeff:
         '| sed "s/CHR/chr/" '
         '| sed "s/chrOM/CHROM/" '
         '| sed "s/V1_RANDOM/v1_random/" '
+        '| sed "s/V1_ALT/v1_alt/" '
         '| bgzip -c > {output.vcf} '
         '&& tabix -p vcf {output.vcf}'
 
