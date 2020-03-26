@@ -50,7 +50,7 @@ dependencies:
   # - tibanna
   - pip:
     - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
-    - "git+https://github.com/vladsaveliev/NGS_Utils.git@258e49c8b19fa6e80f82639fb3cc83f6e0f0d0b6#egg=ngs_utils"
+    - "git+https://github.com/vladsaveliev/NGS_Utils.git@67618e16b813821fbb28ff4151ae2a7e6c33f2a7#egg=ngs_utils"
     - "git+https://github.com/umccr/hpc_utils.git@073053688493a90d140125ec6c0d0caa86925cde#egg=hpc_utils"
     - "git+https://github.com/vladsaveliev/vcf_stuff.git@c52f459e87f886336ef33ad859b88130f20174aa#egg=vcf_stuff"
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
