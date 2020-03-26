@@ -7,6 +7,10 @@
 
 --------------------
 
+0.17.9, 0.17.10 (26 Mar 2020)
+
+- Fix SV processing for FFPE
+
 0.17.8 (23 Mar 2020)
 
 - Fix the core usage inside of a Docker image, so COBALT and AMBER will benefit from multiple cores and AWS runs will get much faster now (thanks Peter for spotting the issue)
