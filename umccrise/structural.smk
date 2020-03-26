@@ -199,7 +199,7 @@ rule sv_subsample_if_too_many:
     group: "sv_vcf"
     run:
         if count_vars(input.vcf) < MAX_SVS:
-            shell(f'cp {input.vcf} {output.vcf}')
+            shell(f'bcftools view {input.vcf} -o {output.vcf}')
         else:
             if count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 4"') < MAX_SVS:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 4" {input.vcf}'
