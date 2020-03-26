@@ -14,6 +14,8 @@ from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
 
 vcftobedpe = 'vcfToBedpe'
 
+MAX_SVS = 50000
+
 
 localrules: structural
 
@@ -196,12 +198,12 @@ rule sv_subsample_if_too_many:
         vcf = 'work/{batch}/structural/sv_subsample_if_too_many/{batch}-manta.vcf'
     group: "sv_vcf"
     run:
-        if count_vars(input.vcf) < 50000:
+        if count_vars(input.vcf) < MAX_SVS:
             shell(f'cp {input.vcf} {output.vcf}')
         else:
-            if count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 4"') < 50000:
+            if count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 4"') < MAX_SVS:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 4" {input.vcf}'
-            elif count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 3"') < 50000:
+            elif count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 3"') < MAX_SVS:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 3" {input.vcf}'
             else:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 2" {input.vcf}'

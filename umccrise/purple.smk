@@ -150,7 +150,7 @@ rule purple_run:
         gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
         purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
         qc            = 'work/{batch}/purple/{batch}.purple.qc',
-        resc_sv_vcf   = ('work/{batch}/purple/{batch}.purple.sv.vcf.gz' if not is_ffpe else []),
+        resc_sv_vcf   = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
 
         circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
         input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
