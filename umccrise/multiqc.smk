@@ -3,13 +3,14 @@ import cyvcf2
 import yaml
 from os.path import abspath, join, dirname
 from ngs_utils.file_utils import verify_file
+from ngs_utils.bcbio import BcbioProject
 from umccrise import package_path
 
 
 localrules: multiqc
 
 
-def load_gold_standard(genome_build, project_type = 'dragen'):
+def load_background_samples(genome_build, project_type ='dragen'):
     paths = []
     if project_type == 'bcbio':
         gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
@@ -67,6 +68,7 @@ if isinstance(run, BcbioProject):
         run:
             batch = batch_by_name[wildcards.batch]
             report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
+
             generated_conf, qc_files = make_report_metadata(
                 run,
                 batch=batch,
@@ -74,11 +76,11 @@ if isinstance(run, BcbioProject):
                 analysis_dir=run.date_dir,
                 prog_versions_fpath=verify_file(input.prog_versions, silent=True),
                 data_versions_fpath=verify_file(input.data_versions, silent=True),
-                new_dir_for_versions=dirname(output.prog_versions),
+                new_dir_for_versions=dirname(output.prog_versions)
             )
 
             # Gold standard QC files
-            qc_files.extend(load_gold_standard(params.genome_build, project_type = 'bcbio'))
+            qc_files.extend(load_background_samples(params.genome_build, project_type ='bcbio'))
 
             # Umccrise QC files
             qc_files.extend([
@@ -176,7 +178,7 @@ else:  # dragen
             )
 
             # Gold standard QC files
-            qc_files.extend(load_gold_standard(params.genome_build, project_type = 'dragen'))
+            qc_files.extend(load_background_samples(params.genome_build, project_type ='dragen'))
 
             # Umccrise QC files
             qc_files.extend([
@@ -213,10 +215,55 @@ else:  # dragen
                   f' -c {input.umccrise_conf_yaml} -c {input.generated_conf_yaml} --filename {output.html_file}')
 
 
+if len(batch_by_name) > 1:
+    rule combined_multiqc_prep_multiqc_data:
+        input:
+            filelists           = [f'work/{b}/multiqc_data/filelist.txt' for b in batch_by_name.keys()],
+        output:
+            filelist            = 'multiqc/multiqc_data/filelist.txt',
+            generated_conf_yaml = 'multiqc/multiqc_data/generated_conf.yaml',
+        group: 'combined_multiqc'
+        run:
+            report_base_path = dirname(abspath(f'multiqc/multiqc_report.html'))
+            generated_conf, _ = make_report_metadata(
+                run,
+                base_dirpath=report_base_path,
+            )
+
+            qc_files = []
+            for filelist in input.filelists:
+                with open(filelist) as f:
+                    for l in f:
+                        l = l.strip()
+                        if l and l not in qc_files:
+                            qc_files.append(l)
+
+            multiqc_prep_data(
+                generated_conf=generated_conf,
+                out_filelist_file=output.filelist,
+                out_conf_yaml=output.generated_conf_yaml,
+                qc_files=qc_files,
+            )
+
+    rule combined_multiqc:
+        input:
+            umccrise_conf_yaml  = join(package_path(), 'multiqc', 'multiqc_config.yaml'),
+            filelist            = 'multiqc/multiqc_data/filelist.txt',
+            generated_conf_yaml = 'multiqc/multiqc_data/generated_conf.yaml',
+        output:
+            html_file           = 'multiqc/multiqc_report.html'
+        group: 'combined_multiqc'
+        run:
+            list_files = input.filelist
+            shell(f'LC_ALL=$LC_ALL LANG=$LANG multiqc -f -o . -l {list_files}'
+                  f' -c {input.umccrise_conf_yaml} -c {input.generated_conf_yaml} --filename {output.html_file}')
+
+
 rule multiqc:
     input:
         expand(rules.batch_multiqc.output, batch=batch_by_name.keys()),
         rules.copy_config.output if isinstance(run, BcbioProject) else [],
+        rules.combined_multiqc.output if len(batch_by_name) > 1 else [],
     output:
         temp(touch('log/multiqc.done'))
 

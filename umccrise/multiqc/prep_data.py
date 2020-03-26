@@ -9,29 +9,33 @@ import yaml
 import re
 
 from ngs_utils import logger
-from ngs_utils.Sample import BaseProject
+from ngs_utils.Sample import BaseProject, BaseBatch
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transaction
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
 
-def make_report_metadata(proj: BaseProject, batch, base_dirpath, analysis_dir=None,
-                         prog_versions_fpath=None, data_versions_fpath=None, new_dir_for_versions=None):
+def make_report_metadata(proj: BaseProject, batch: BaseBatch=None, base_dirpath=None, analysis_dir=None,
+                         prog_versions_fpath=None, data_versions_fpath=None,
+                         new_dir_for_versions=None):
     conf = dict()
     conf['umccr'] = dict()
     additional_files = []
 
-    conf['umccr']['tumor_name']  = batch.tumor.name
-    conf['umccr']['normal_name'] = batch.normal.name
-    conf['umccr']['tumor_rgid']  = batch.tumor.rgid
-    conf['umccr']['normal_rgid'] = batch.normal.rgid
-    conf['umccr']['batch']       = batch.name
+    if batch:
+        conf['umccr']['tumor_name']         = batch.tumor.name
+        conf['umccr']['normal_name']        = batch.normal.name
+        conf['umccr']['tumor_rgid']         = batch.tumor.rgid
+        conf['umccr']['normal_rgid']        = batch.normal.rgid
+        conf['umccr']['batch']              = batch.name
 
     conf['umccr']['is_rnaseq'] = proj.is_rnaseq
 
     # General links
     conf['title'] = proj.project_name
-    conf['umccr']['run_section'] = get_run_info(proj, base_dirpath, analysis_dir=analysis_dir,
+    conf['umccr']['run_section'] = get_run_info(proj,
+                                                base_dirpath=base_dirpath,
+                                                analysis_dir=analysis_dir,
                                                 prog_versions_fpath=prog_versions_fpath,
                                                 data_versions_fpath=data_versions_fpath,
                                                 new_dir_for_versions=new_dir_for_versions)
@@ -180,7 +184,7 @@ def _make_link(fpath, base_dirpath, text=None, blank=False):
         return '<span>' + (text or basename(fpath)) + '</span>'
 
 
-def get_run_info(proj: BaseProject, base_dirpath, analysis_dir=None,
+def get_run_info(proj: BaseProject, base_dirpath=None, analysis_dir=None,
                  prog_versions_fpath=None, data_versions_fpath=None,
                  new_dir_for_versions=None):
     info('Getting run and codebase information...')
@@ -224,37 +228,38 @@ def get_run_info(proj: BaseProject, base_dirpath, analysis_dir=None,
         run_info_dict['umccrise_version'] = version_text
 
     # prog versions
-    if prog_versions_fpath:
-        info('Adding umccrise versoin into prog_versions file ' + prog_versions_fpath)
-        with open(prog_versions_fpath) as f:
-            program_versions = dict()
-            for l in f:
-                l = l.strip()
-                if l:
-                    try:
-                        program_versions[l.split(',')[0]] = l.split(',')[1]
-                    except:
-                        pass
-        new_prog_versions_fpath = join(new_dir_for_versions, basename(prog_versions_fpath))
-        if umccrsie_version:
-            program_versions['umccrise'] = umccrsie_version
-        with open(new_prog_versions_fpath, 'w') as f:
-            for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
-                f.write(p + ',' + v + '\n')
-        info('Saved prog_versions file into ' + new_prog_versions_fpath)
-        assert exists(new_prog_versions_fpath)
+    if base_dirpath:
+        if prog_versions_fpath:
+            info('Adding umccrise versoin into prog_versions file ' + prog_versions_fpath)
+            with open(prog_versions_fpath) as f:
+                program_versions = dict()
+                for l in f:
+                    l = l.strip()
+                    if l:
+                        try:
+                            program_versions[l.split(',')[0]] = l.split(',')[1]
+                        except:
+                            pass
+            new_prog_versions_fpath = join(new_dir_for_versions, basename(prog_versions_fpath))
+            if umccrsie_version:
+                program_versions['umccrise'] = umccrsie_version
+            with open(new_prog_versions_fpath, 'w') as f:
+                for p, v in sorted(program_versions.items(), key=lambda kv: kv[0]):
+                    f.write(p + ',' + v + '\n')
+            info('Saved prog_versions file into ' + new_prog_versions_fpath)
+            assert exists(new_prog_versions_fpath)
 
-        programs_url = relpath(new_prog_versions_fpath, base_dirpath)
-        run_info_dict['program_versions'] = f'<a href="{programs_url}">program versions</a>'
+            programs_url = relpath(new_prog_versions_fpath, base_dirpath)
+            run_info_dict['program_versions'] = f'<a href="{programs_url}">program versions</a>'
 
-    # data version
-    if data_versions_fpath:
-        new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath).replace(".csv", ".txt"))
-        run_simple(f'cp {data_versions_fpath} {new_data_versions_fpath}')
-        info('Saved data_versions file into ' + new_data_versions_fpath)
-        assert exists(new_data_versions_fpath)
-        data_versions_url = relpath(new_data_versions_fpath, base_dirpath)
-        run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
+        # data version
+        if data_versions_fpath:
+            new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath).replace(".csv", ".txt"))
+            run_simple(f'cp {data_versions_fpath} {new_data_versions_fpath}')
+            info('Saved data_versions file into ' + new_data_versions_fpath)
+            assert exists(new_data_versions_fpath)
+            data_versions_url = relpath(new_data_versions_fpath, base_dirpath)
+            run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
 
     run_info_dict['analysis_dir'] = analysis_dir or proj.dir
     return run_info_dict
