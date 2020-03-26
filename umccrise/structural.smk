@@ -17,10 +17,21 @@ vcftobedpe = 'vcfToBedpe'
 localrules: structural
 
 
+# Keep passed variants.
+rule sv_keep_pass:
+    input:
+        vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
+    output:
+        vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz'
+    group: "sv_vcf"
+    shell:
+        'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
+
+
 if isinstance(run, DragenProject):
     rule sv_snpeff:
         input:
-            vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
+            vcf = rules.sv_keep_pass.output.vcf,
         output:
             vcf  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz',
             tbi  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz.tbi',
@@ -135,7 +146,7 @@ if isinstance(run, DragenProject):
 # BPI and bedtools>=2.29.2 will crash if left as is.
 rule fix_snpeff:
     input:
-        vcf = (lambda wc: batch_by_name[wc.batch].sv_vcf if isinstance(run, BcbioProject) else rules.sv_snpeff.output.vcf)
+        vcf = (rules.sv_keep_pass.output.vcf if isinstance(run, BcbioProject) else rules.sv_snpeff.output.vcf)
     output:
         vcf = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz',
     group: "sv_vcf"
@@ -174,21 +185,26 @@ rule sv_prioritize:
         after = count_vars(output.vcf)
         assert before == after, (before, after)
 
-# Keep passed variants.
 # If there are too many SV calls (FFPE?), also remove unprioritized SVs
 # Also removing older very cluttered ANN field
-rule sv_keep_pass:
+rule sv_subsample_if_too_many:
     input:
         vcf = rules.sv_prioritize.output.vcf
     output:
-        vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf'
+        vcf = 'work/{batch}/structural/sv_subsample_if_too_many/{batch}-manta.vcf'
     group: "sv_vcf"
     run:
-        cmd = f'bcftools view -f.,PASS {input.vcf}'
-        if count_vars(input.vcf, filter='.,PASS') > 100000:
-            cmd += ' | bcftools filter -i "SV_TOP_TIER <= 3"'
-        cmd += f' -o {output.vcf}'
-        shell(cmd)
+        if count_vars(input.vcf) < 50000:
+            shell(f'cp {input.vcf} {output.vcf}')
+        else:
+            if count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 4"') < 50000:
+                cmd = f'bcftools filter -i "SV_TOP_TIER < 4" {input.vcf}'
+            elif count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 3"') < 50000:
+                cmd = f'bcftools filter -i "SV_TOP_TIER < 3" {input.vcf}'
+            else:
+                cmd = f'bcftools filter -i "SV_TOP_TIER < 2" {input.vcf}'
+            cmd += f' -o {output.vcf}'
+            shell(cmd)
 
 # rule sv_maybe_keep_prioritize:
 #     input:
@@ -197,7 +213,7 @@ rule sv_keep_pass:
 #         vcf = 'work/{batch}/structural/maybe_keep_prio/{batch}-manta.vcf'
 #     group: "sv_vcf"
 #     run:
-#         if count_vars(input.vcf, filter='.,PASS') > 1000:
+#         if count_vars(input.vcf, filter_col='.,PASS') > 1000:
 #             # Still too cluttered (FFPE?) - removing all tier=4 as well
 #             def func(rec):
 #                 ann = rec.INFO.get('SIMPLE_ANN')
@@ -214,7 +230,7 @@ rule sv_keep_pass:
 # if BPI was disabled in bcbio
 rule sv_maybe_bpi:
     input:
-        vcf = rules.sv_keep_pass.output.vcf,
+        vcf = rules.sv_subsample_if_too_many.output.vcf,
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
     output:
@@ -232,22 +248,22 @@ rule sv_maybe_bpi:
         if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):  # already BPI'ed
             shell('cp {input.vcf} {output.vcf}')
         else:
-            if not is_ffpe:  # running BPI only for non-FFPE samples
-                safe_mkdir(params.tmp_dir)
-                shell(
-                    'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
-                    '-Djava.io.tmpdir={params.tmp_dir} '
-                    '-vcf {input.vcf} '
-                    '-ref {input.normal_bam} '
-                    '-tumor {input.tumor_bam} '
-                    '-output_vcf {output.vcf} '
-                    '> {log}'
-                )
-            else:  # fake BPI_AF from the original AF
-                def func(rec, vcf):
-                    rec.INFO['BPI_AF'] = rec.INFO['AF']
-                    return rec
-                iter_vcf(input.vcf, output.vcf, func)
+            # if not is_ffpe:  # running BPI only for non-FFPE samples
+            safe_mkdir(params.tmp_dir)
+            shell(
+                'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
+                '-Djava.io.tmpdir={params.tmp_dir} '
+                '-vcf {input.vcf} '
+                '-ref {input.normal_bam} '
+                '-tumor {input.tumor_bam} '
+                '-output_vcf {output.vcf} '
+                '> {log}'
+            )
+            # else:  # fake BPI_AF from the original AF
+            #     def func(rec, vcf):
+            #         rec.INFO['BPI_AF'] = rec.INFO['AF']
+            #         return rec
+            #     iter_vcf(input.vcf, output.vcf, func)
 
 # Keep all with read support above 10x; or allele frequency above 10%, but only if read support is above 5x
 rule filter_sv_vcf:
