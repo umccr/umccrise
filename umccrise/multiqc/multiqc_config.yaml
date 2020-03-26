@@ -248,7 +248,7 @@ custom_data:
 
 sp:
     umccrise:
-        fn_re: '(somatic|germline)_stats.yml'
+        fn_re: '.*(somatic|germline)_stats.yml'
 
 
 extra_fn_clean_trim:
