@@ -9,11 +9,12 @@ was generated and the button that launches the welcome tour.
 #}
 
 <style type="text/css">{{ include_file('assets/css/multiqc_umccr.css') }}</style>
+
 <script>
     window.mqc_highlight_regex_mode = true;
 
+    {% if config.umccr.batch %}
     window.mqc_highlight_f_texts = [
-        "",
         "^{{ config.umccr.tumor_name }}$",
         "^{{ config.umccr.tumor_rgid }}$",
         "^{{ config.umccr.tumor_rgid }} \\({{ config.umccr.batch }}\\)$",
@@ -22,7 +23,6 @@ was generated and the button that launches the welcome tour.
         "^{{ config.umccr.normal_rgid }} \\({{ config.umccr.batch }}\\)$"
     ];
     window.mqc_highlight_f_cols = [
-        "#cccccc",
         "rgb(228, 26, 28)",
         "rgb(228, 26, 28)",
         "rgb(228, 26, 28)",
@@ -30,6 +30,12 @@ was generated and the button that launches the welcome tour.
         "rgb(55, 126, 184)",
         "rgb(55, 126, 184)"
     ];
+    {% endif %}
+
+    {% for ref_sample in config.umccr.reference_samples %}
+    window.mqc_highlight_f_texts.push("^{{ ref_sample }}$");
+    window.mqc_highlight_f_cols.push("#cccccc");
+    {% endfor %}
 
     $(function(e, regex_mode){
       var f_texts = window.mqc_highlight_f_texts;
