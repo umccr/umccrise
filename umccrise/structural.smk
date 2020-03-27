@@ -31,10 +31,21 @@ rule sv_keep_pass:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
 
+rule sv_select_noalt:
+    input:
+        vcf = rules.sv_keep_pass.output.vcf,
+        noalts_bed = hpc.get_ref_file(run.genome_build, 'noalt_bed'),
+    output:
+        vcf = 'work/{batch}/structural/noalt/{batch}-manta.vcf.gz'
+    group: "somatic_anno"
+    shell:
+        'bcftools view -R {input.noalts_bed} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
+
+
 if isinstance(run, DragenProject):
     rule sv_snpeff:
         input:
-            vcf = rules.sv_keep_pass.output.vcf,
+            vcf = rules.sv_select_noalt.output.vcf,
         output:
             vcf  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz',
             tbi  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz.tbi',
@@ -149,7 +160,7 @@ if isinstance(run, DragenProject):
 # BPI and bedtools>=2.29.2 will crash if left as is.
 rule fix_snpeff:
     input:
-        vcf = (rules.sv_keep_pass.output.vcf if isinstance(run, BcbioProject) else rules.sv_snpeff.output.vcf)
+        vcf = (rules.sv_select_noalt.output.vcf if isinstance(run, BcbioProject) else rules.sv_snpeff.output.vcf)
     output:
         vcf = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz',
     group: "sv_vcf"
@@ -212,7 +223,7 @@ rule sv_subsample_if_too_many:
 
 # rule sv_maybe_keep_prioritize:
 #     input:
-#         vcf = rules.sv_keep_pass.output.vcf
+#         vcf = rules.sv_select_noalt.output.vcf
 #     output:
 #         vcf = 'work/{batch}/structural/maybe_keep_prio/{batch}-manta.vcf'
 #     group: "sv_vcf"
