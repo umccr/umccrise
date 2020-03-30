@@ -55,6 +55,7 @@ rule purple_amber:
         ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         'work/{batch}/purple/amber/{batch}.amber.baf.tsv',
+        'work/{batch}/purple/amber/{batch}.amber.baf.pcf',
         'work/{batch}/purple/amber/{batch}.amber.baf.vcf.gz',
         'work/{batch}/purple/amber/{batch}.amber.contamination.tsv',
         'work/{batch}/purple/amber/{batch}.amber.contamination.vcf.gz',
@@ -138,7 +139,8 @@ rule purple_somatic_vcf:
 rule purple_run:
     input:
         amber_dummy       = 'work/{batch}/purple/amber/{batch}.amber.baf.tsv',
-        amber_dummy_pcf   = 'work/{batch}/purple/amber/{batch}.amber.baf.vcf.gz',
+        amber_dummy_pcf   = 'work/{batch}/purple/amber/{batch}.amber.baf.pcf',
+        amber_dummy_vcf   = 'work/{batch}/purple/amber/{batch}.amber.baf.vcf.gz',
         cobalt_dummy      = 'work/{batch}/purple/cobalt/{batch}.chr.len',
         cobalt_dummy_pcf  = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.tsv',
         manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
