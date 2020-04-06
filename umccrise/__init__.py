@@ -105,7 +105,7 @@ def prep_resources(ncpus_requested, num_batches, num_samples, is_cluster=False, 
     def adjust_ncpus_per_job(ncpus, max_ncpus_per_job=10, msg=''):
         """ Adjusting the number of cpus to a number below <max_ncpus_per_job>.
             Say, if we have more than 20 cpus on a node and only 1 batch, we should adjust
-            to use only half of that for a batch, so that 2 differrent jobs (say, AMBER and COBALT)
+            to use only half of that for a batch, so that 2 different jobs (say, AMBER and COBALT)
             can be run in parallel, because using 20 cpus per one job is a waste.
         """
         if ncpus > max_ncpus_per_job:
@@ -123,7 +123,7 @@ def prep_resources(ncpus_requested, num_batches, num_samples, is_cluster=False, 
                 info((msg if msg else 'The number of cpus per batch is ') + f'{ncpus} >{max_ncpus_per_job}. '
                      f'This is usually wasteful, so we are adjusting it '
                      f'to the number <={max_ncpus_per_job}: {new_ncpus} = {ncpus} // {factor}, so '
-                     f'{factor} of differrent rules can be run in parallel (say, AMBER and COBALT '
+                     f'{factor} different rules can be run in parallel (say, AMBER and COBALT '
                      f'at the same time).')
             ncpus = new_ncpus
         return ncpus
