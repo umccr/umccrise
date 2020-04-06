@@ -480,7 +480,7 @@ purple_qc_summary <- dplyr::tribble(
   'Gender'         , glue('{p["gender"]}')                                    , "",
   'WGD'            , glue('{p["wholeGenomeDuplication"]}')                    , "Whole genome duplication",
   'MSI (indels/Mb)', glue('{p["msStatus"]} ({p["msIndelsPerMb"]})')           , "MSI status (MSI, MSS or UNKNOWN if somatic variants not supplied) & MS Indels per Mb",
-  'Polyclonal Prop', glue('p["polyclonalProportion"]')                        , "Proportion of CN regions that are more than 0.25 from a whole copy number",
+  'Polyclonal Prop', glue('{p["polyclonalProportion"]}')                      , "Proportion of CN regions that are more than 0.25 from a whole copy number",
   'Diploidy Prop'  , glue('{p["diploidProportion"]} ({p["minDiploidProportion"]}-{p["maxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
   'Segment_Pass'   , glue('{q["SegmentPass"]}')                               , glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
   'Gender_Pass'    , glue('{q["GenderPass"]}')                                , glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
