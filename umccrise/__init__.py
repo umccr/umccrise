@@ -81,22 +81,21 @@ def prep_inputs(smconfig, silent=False):
     return run, batch_by_name
 
 
-def prep_resources(ncpus_requested, num_batches, num_samples, is_cluster=False, is_silent=False):
+def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=False, is_silent=False):
     """ Determines the number of cpus used by a job and the total number of cpus
         available to snakemake scheduler.
         :returns ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node=None
     """
-
     # Checking presets for known HPC clusters, otherwise assuming a for single-machine AWS or local run
     # and just taking the number of available CPUs:
     ncpus_on_a_machine = hpc.ncpus_on_node or multiprocessing.cpu_count() or 1
     if is_cluster:
         # we are not resticted to one machine, so can submit many jobs and let the scheduler figure out the queue
-        ncpus_available = ncpus_requested
+        ncpus_available = ncpus_requested or 32
         ncpus_per_node = ncpus_on_a_machine
     else:
         # scheduling is on Snakemake, so restricting to the number of available cpus on a machine
-        ncpus_available = min(ncpus_on_a_machine, ncpus_requested)
+        ncpus_available = min(ncpus_on_a_machine, ncpus_requested or math.inf)
         ncpus_per_node = None
 
     ncpus_per_batch = max(1, ncpus_available // num_batches)
@@ -137,7 +136,8 @@ def prep_resources(ncpus_requested, num_batches, num_samples, is_cluster=False, 
 
     if not is_silent:
         info(f'Final number of CPUs per machine: {ncpus_on_a_machine}')
-        info(f'Total CPUs requested by `umccrise -t`: {ncpus_requested}')
+        if ncpus_requested:
+            info(f'Total CPUs requested by `umccrise -t`: {ncpus_requested}')
         info(f'The pipeline can use {ncpus_available} CPUs total.')
         info(f'Batches found: {num_batches}, using {ncpus_per_batch} cpus per batch.')
         info(f'Samples found: {num_samples}, using {ncpus_per_sample} cpus per sample.')

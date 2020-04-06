@@ -33,7 +33,7 @@ from umccrise import prep_inputs, prep_resources
 @click.option('--genomes', '--genomes-dir', 'input_genomes_dir', help='Path to the reference data')
 
 # Cluster:
-@click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', default=32,
+@click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', type=click.INT,
               help='Maximum number of cores to use at single time (works both for local and cluster runs)')
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
@@ -134,9 +134,8 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
     ################################
     run, batch_by_name = prep_inputs(conf, silent=True)
     ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node = \
-        prep_resources(cores,
-            num_batches=len(batch_by_name), num_samples=len(run.samples),
-            is_cluster=cluster_param != '',)
+        prep_resources(num_batches=len(batch_by_name), num_samples=len(run.samples),
+            ncpus_requested=cores, is_cluster=cluster_param != '',)
     conf['threads_per_batch'] = ncpus_per_batch
     conf['threads_per_sample'] = ncpus_per_sample
 
