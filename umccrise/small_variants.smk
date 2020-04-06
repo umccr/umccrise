@@ -68,11 +68,14 @@ rule sage:
         genomes_dir = hpc.genomes_dir,
         work_dir = 'work/{batch}/small_variants/sage',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
+        tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
+        normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
     resources:
         mem_mb = 20000
     group: "somatic_anno"
     shell:
         'sage -t {input.tumor_bam} -n {input.normal_bam} -v {input.vcf} -o {output.vcf} -s {output.sage_vcf} '
+        '-tn {params.tumor_sample} -nn {params.normal_sample} '
         '-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
         '{params.unlock_opt}'
 
@@ -86,12 +89,15 @@ rule somatic_vcf_annotate:
         genome = run.genome_build,
         genomes_dir = hpc.genomes_dir,
         work_dir = 'work/{batch}/small_variants',
-        unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else ''
+        unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
+        tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
+        normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
     resources:
         mem_mb = 20000
     group: "somatic_anno"
     shell:
         'anno_somatic_vcf {input.vcf} -o {output.vcf} '
+        '-tn {params.tumor_sample} -nn {params.normal_sample} '
         '-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
         '{params.unlock_opt}'
 
@@ -102,8 +108,12 @@ rule somatic_vcf_filter:
         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
         # vcf = 'work/{batch}/small_variants/filter/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
     group: "somatic_filt"
+    params:
+        tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
+        normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
     shell:
         'filter_somatic_vcf {input.vcf} -o {output.vcf}'
+         ' -tn {params.tumor_sample} -nn {params.normal_sample}'
 
 # rule somatic_extract_tumor_sample:
 #     input:
