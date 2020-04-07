@@ -189,8 +189,6 @@ rule sv_prioritize:
         genome = run.genome_build
     group: "sv_vcf"
     run:
-        assert vcf_contains_field(input.vcf, 'INFO/ANN'), f'Manta {input.vcf} must be annotated with SnpEff'
-
         cmd = f'cat {input.vcf}'
         # remove previous annotation
         filts_to_remove = [f'{f}' for f in ['INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER',
@@ -227,29 +225,8 @@ rule sv_subsample_if_too_many:
             cmd += f' -o {output.vcf}'
             shell(cmd)
 
-# rule sv_maybe_keep_prioritize:
-#     input:
-#         vcf = rules.sv_select_noalt.output.vcf
-#     output:
-#         vcf = 'work/{batch}/structural/maybe_keep_prio/{batch}-manta.vcf'
-#     group: "sv_vcf"
-#     run:
-#         if count_vars(input.vcf, filter_col='.,PASS') > 1000:
-#             # Still too cluttered (FFPE?) - removing all tier=4 as well
-#             def func(rec):
-#                 ann = rec.INFO.get('SIMPLE_ANN')
-#                 if ann:
-#                     anns = [a for a in ann.split(',') if '|NOT_PRIORITISED|' not in a]
-#                     if anns:
-#                         ann = ','.join(anns)
-#                         rec.INFO['SIMPLE_ANN'] = ann
-#                         return rec
-#             iter_vcf(input.vcf, output.vcf, func)
-#         else:
-#             shell('cp {input.vcf} {output.vcf}')
-
 # if BPI was disabled in bcbio
-rule sv_maybe_bpi:
+rule sv_bpi_maybe:
     input:
         vcf = rules.sv_subsample_if_too_many.output.vcf,
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
@@ -289,7 +266,7 @@ rule sv_maybe_bpi:
 # Keep all with read support above 10x; or allele frequency above 10%, but only if read support is above 5x
 rule filter_sv_vcf:
     input:
-        vcf = rules.sv_maybe_bpi.output.vcf
+        vcf = rules.sv_bpi_maybe.output.vcf
     output:
         vcf = 'work/{batch}/structural/filt/{batch}-manta.vcf'
     group: "sv_vcf"
