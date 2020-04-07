@@ -31,22 +31,21 @@ rule sv_keep_pass:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
 
-rule sv_select_noalt:
-    input:
-        vcf = rules.sv_keep_pass.output.vcf,
-        noalts_bed = hpc.get_ref_file(run.genome_build, 'noalt_bed'),
-    output:
-        vcf = 'work/{batch}/structural/noalt/{batch}-manta.vcf.gz',
-        tbi = 'work/{batch}/structural/noalt/{batch}-manta.vcf.gz.tbi',
-    group: "somatic_anno"
-    shell:
-        'bcftools view -R {input.noalts_bed} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
+# rule sv_select_noalt:
+#     input:
+#         vcf = rules.sv_keep_pass.output.vcf,
+#         noalts_bed = hpc.get_ref_file(run.genome_build, 'noalt_bed'),
+#     output:
+#         vcf = 'work/{batch}/structural/noalt/{batch}-manta.vcf.gz',
+#         tbi = 'work/{batch}/structural/noalt/{batch}-manta.vcf.gz.tbi',
+#     group: "somatic_anno"
+#     shell:
+#         'bcftools view -R {input.noalts_bed} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
 
 rule sv_snpeff_maybe:
     input:
-        vcf = rules.sv_select_noalt.output.vcf,
-        tbi = rules.sv_select_noalt.output.tbi,
+        vcf = rules.sv_keep_pass.output.vcf,
     output:
         vcf  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz',
         tbi  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz.tbi',
@@ -164,24 +163,30 @@ rule sv_vep:
 
 # Handle SnpEff capitalising ALT (see https://github.com/pcingola/SnpEff/issues/237).
 # BPI and bedtools>=2.29.2 will crash if left as is.
-# rule fix_snpeff:
-#     input:
-#         vcf = (rules.sv_select_noalt.output.vcf if isinstance(run, BcbioProject) else rules.sv_snpeff.output.vcf)
-#     output:
-#         vcf = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz',
-#     group: "sv_vcf"
-#     shell:
-#         'gunzip -c {input.vcf} '
-#         '| sed "s/CHR/chr/" '
-#         '| sed "s/chrOM/CHROM/" '
-#         '| sed "s/V1_RANDOM/v1_random/" '
-#         '| sed "s/V1_ALT/v1_alt/" '
-#         '| bgzip -c > {output.vcf} '
-#         '&& tabix -p vcf {output.vcf}'
+rule fix_snpeff:
+    input:
+        vcf = rules.sv_snpeff_maybe.output.vcf,
+    output:
+        vcf = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz',
+    group: "sv_vcf"
+    shell:
+        'gunzip -c {input.vcf} '
+        '| sed "s/CHR/chr/" '
+        '| sed "s/chrOM/CHROM/" '
+        '| sed "s/V1_RANDOM/v1_random/" '
+        '| sed "s/V2_RANDOM/v2_random/" '
+        '| sed "s/V1_ALT/v1_alt/" '
+        '| sed "s/V2_ALT/v2_alt/" '
+        '| sed "s/V2_DECOY/v1_decoy/" '
+        '| sed "s/V2_DECOY/v2_decoy/" '
+        '| sed "s/V1/v1/" '
+        '| sed "s/V2/v2/" '
+        '| bgzip -c > {output.vcf} '
+        '&& tabix -p vcf {output.vcf}'
 
 rule sv_prioritize:
     input:
-        vcf = rules.sv_snpeff_maybe.output.vcf
+        vcf = rules.fix_snpeff.output.vcf
     output:
         vcf = 'work/{batch}/structural/prioritize/{batch}-sv-eff-prio.vcf.gz',
         tbi = 'work/{batch}/structural/prioritize/{batch}-sv-eff-prio.vcf.gz.tbi',
