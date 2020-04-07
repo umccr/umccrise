@@ -1,4 +1,3 @@
-
 Alice/Alice.concordance.txt
 Alice/Alice_normal.contamination.txt
 Alice/Alice.contamination.txt
