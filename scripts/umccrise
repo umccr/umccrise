@@ -42,7 +42,7 @@ from umccrise import prep_inputs, prep_resources
 @click.option('--forcerun', 'forcerun', help='Comma-separated rules that will be run even if the outputs exist. Propagated to snakemake, space-separated.')
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
-@click.option('--restart-times', 'restart_times', default=3,
+@click.option('-r', '--restarts', '--restart-times', 'restart_times', default=3,
               help='How many times to try out rerunning rules if they fail. "--restart-times 3" means that the rule '
                    'will be attempted maximum 3 times. Default is 3. Propagated to snakemake (decremented, because '
                    'snakemake interprets it as "how many times to restart after the rule is failed").')
