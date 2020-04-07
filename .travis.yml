@@ -6,18 +6,11 @@ python:
   - "3.6"
 
 install:
-  - docker build -t umccr/umccrise -f dockerfiles/Dockerfile .
-  - git clone https://github.com/umccr/umccrise_test_data $HOME/umccrise_test_data
+  - docker build -t umccr/umccrise .
 
 script:
   - docker run -t --cpus 1 umccr/umccrise bcftools --version
   - docker run -t --cpus 1 umccr/umccrise umccrise --version
-#  - docker run -t --cpus 1
-#    -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
-#    -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
-#    -v=$PWD<LOCAL_REFERENCE_DATA>genomes:/work/genomes
-#    umccr/umccrise:$TRAVIS_TAG
-#    umccrise /bcbio_project -o /output_dir --genomes /work/genomes
 
 services:
   - docker
