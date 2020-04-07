@@ -1,30 +1,36 @@
-# umccrise workflow
+# Umccrise workflow
+
+Umccrise post-processess outputs of cancer variant calling analysis pipelines from either of 2 platforms: ([bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) and Illumina Dragen, and generates reports helpful for researchers and curators at UMCCR. The minimal input for it is a tumor/normal variant calling workflow  containing at least a BAM files for a tumor sample and a BAM file for a normal sample, T/N somatic variant calls, and optionally germline variant calls from the normal sample, and structural somatic variant calls performed by Manta.
 
 ## SNPs and small indels
 
 ### Somatic
 
-Umccrise post-processes somatic variants in order to remove most of the artefacts and germline leakage, but at the same time be conservative enough in known hotspot loci to make sure to preserve actionable variants. The following post-processing scheme is designed for that purpose:
+This part of the workflow filters and prioritizes somatic variant calls. The idea of filtering is to remove most of the artefacts and germline leakage, but at the same time to be permissive towards known clinically important sites even if the variants are low quality.
 
-1. Take passing "ensemble" somatic VCF from [bcbio](https://github.com/umccr/workflows/tree/master/bcbio). "Ensemble" has variants supported by at least 2 of 3 callers (we use [strelka2](https://github.com/Illumina/strelka), [vardict](https://github.com/AstraZeneca-NGS/VarDict), and [mutect2](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)). Unless it's an FFPE sample, in which case usually only strelka2 is used. Variants are called at AF>1%.
-2. Sort VCF by coordinate, extract `PASS` calls (which applies only to strelka2, as ensemble is already `PASS`-only).
+*Input*: for [bcbio](https://github.com/umccr/workflows/tree/master/bcbio), it's a somatic variant call output from a `variant2` tumor/normal (T/N) variant calling workflow. It can be either an "ensemble" somatic VCF `<batch>-ensemble-annotated.vcf.gz` (e.g. build from variants supported by at least 2 of 3 callers - in UMCCR, we use [Strelka](https://github.com/Illumina/strelka), [VarDict](https://github.com/AstraZeneca-NGS/VarDict), and [Mutect](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)), or Strelka somatic VCF `<batch>-strelka2-annotated.vcf.gz` (in UMCCR, we process WGS FFPE samples with Strelka-only workflow to avoid performance issues with other callers). We also call variants at AF>1% (`min_allele_fraction: 1` setting in bcbio config), however that's not essential.
+
+1. Extract passing calls (with `PASS` in FILTER)
+2. Extract calls on main chromosomes (chr1-chr22, chrX, chrY)
 3. Run [SAGE](https://github.com/hartwigmedical/hmftools/tree/master/sage) and add the result to the VCF. SAGE is a low-frequency variant caller with a high precision, created by Hartwig Medical Foundation. Instead of the whole genome, it targets only coding regions for inframe indels, and [known hotspot sites](https://raw.githubusercontent.com/umccr/workflows/master/genes/hotspots/hotspots.tsv) from the following list:
 	*  [Cancer Genome Interpreter](https://www.cancergenomeinterpreter.org/home) 
 	*  [CIViC](http://civic.genome.wustl.edu/) - Clinical interpretations of variants in cancer
 	*  [OncoKB](https://oncokb.org/) - Precision Oncology Knowledge Base
 4. Annotate the VCF against the reference sources:
-	*  SAGE hotspots (CGI, CiViC, OncoKB), 
-	*  GiaB confidence regions,
-	*  [GnomAD](https://gnomad.broadinstitute.org) whole genome common variants (max population frequency > 1%),
-	*  Low complexity regions (Heng Li's)
-	*  LCR, low and high GC regions, self-chain and bad promoter regions (GA4GH),
-	*  [ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist),
-	*  Segmental duplication regions (UCSC),
+	*  High-confidence regions from the Genome in a Bottle benchmark;
+	*  [GnomAD](https://gnomad.broadinstitute.org) whole genome "common" variants (max population frequency > 1%);
+	*  Low complexity regions (LCR):
+    	*  Homopolymers, STRs, VNTRs and other repetitive sequences, [compiled from TRDB](https://github.com/ga4gh/benchmarking-tools/blob/master/resources/stratification-bed-files/LowComplexity/TRDB_processing.sh),
+	    *  Regions compiled by Heng Li from 3 separate masks: low-complexity regions by mDUST and from UCSC repeatMasker plus flanking regions, structural mask (HWE+depth mask from 1000g plus flanking regions), and 75bp mappability mask.
+	*  Low and high-GC regions (regions < 30% or > 65% GC content), [compiled by GA4GH](https://github.com/ga4gh/benchmarking-tools/tree/master/resources/stratification-bed-files/GCcontent)
+	*  Bad promoter regions ([compiled by GA4GH](https://github.com/ga4gh/benchmarking-tools/tree/master/resources/stratification-bed-files/FunctionalTechnicallyDifficultRegions): "Anecdotal results suggested that many transcription start sites or first exons in the human genome tend to have poor coverage. By a systematic analysis of these regions we defined the 1,000 with the lowest relative coverage based on low coverage by an Illumina data set, which we term the 'bad promoters' list. The bad promoters are, like many exons, GC-rich, averaging 79% GC composition");
+	*  [ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist);
+	*  Segmental duplication regions (UCSC);
 	*  UMCCR [panel of normals](https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/panel_of_normals/story/panel_of_normals.md), build from tumor-only mutect2 calls from ~200 normal samples.
-5. If after removing non-hotspot GnomAD variants there are still > 500k somatic variants left flag the sample as highly mutated (or FFPE) and limit all calls to to cancer genes only (to avoid downstream PCGR and UMCCR cancer reports choking).
+5. If after removing non-hotspot GnomAD variants there are still > 500k somatic variants left flag the sample as highly mutated (or FFPE) and limit all calls to to cancer genes only (to avoid downstream R performance problems).
 6. Standardize the VCF fields: add new `INFO` fields `TUMOR_AF`, `NORMAL_AF`, `TUMOR_DP`, `NORMAL_DP`, `TUMOR_VD`, `NORMAL_VD` (for use with PCGR), and `AD FORMAT` field (for use with PURPLE).
-7. Run [PCGR](https://github.com/sigven/pcgr) to annotate VCF with more external sources:
-	* [VEP](http://www.ensembl.org/info/docs/tools/vep/index.html)  to infer the functional impact
+7. Run [PCGR](https://github.com/sigven/pcgr) to annotate VCF against the external sources, and classify by tiers based on annotations and functional impact. At the end, this step adds `INFO` fields into the VCF: `TIER`, `SYMBOL`, `CONSEQUENCE`, `MUTATION_HOTSPOT`, `INTOGEN_DRIVER_MUT`, `TCGA_PANCANCER_COUNT`, `CLINVAR_CLNSIG`, `ICGC_PCAWG_HITS`, `COSMIC_CNT`. The list of external sources used at this step is:
+	* [VEP](http://www.ensembl.org/info/docs/tools/vep/index.html) to infer the functional impact
 	* TCGA and ICGC recurrent variants
 	* [Open Targets Platform](https://targetvalidation.org/)
     * [ClinVar](http://www.ncbi.nlm.nih.gov/clinvar/) - Database of variants with clinical significance
@@ -38,25 +44,19 @@ Umccrise post-processes somatic variants in order to remove most of the artefact
     * [Pfam](http://pfam.xfam.org) - Database of protein families and domains
     * [DGIdb](http://dgidb.genome.wustl.edu) - Database of targeted cancer drugs
     * [ChEMBL](https://www.ebi.ac.uk/chembl/) - Manually curated database of bioactive molecules
-   
-    PCGR also classifies by tiers based on annotations and functional impact.  At the end, this step adds `INFO` fields into the VCF: `TIER`, `SYMBOL`, `CONSEQUENCE`, `MUTATION_HOTSPOT`, `INTOGEN_DRIVER_MUT`, `TCGA_PANCANCER_COUNT`, `CLINVAR_CLNSIG`, `ICGC_PCAWG_HITS`, `COSMIC_CNT`.
-
-9. 8. [Filter variants](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf) to remove germline variants and artefacts, but rescue known hotspots/actionable variants:
-	*  Rescue SAGE hotspots (CGI, CiViC, OncoKB),
-	*  Rescue PCGR TIER 1 and 2 (strong and potential clinical significance, according to [ACMG](https://www.ncbi.nlm.nih.gov/pubmed/27993330) standard guidelines,
-	*  Additionally rescue all driver mutations ([Intogen](https://www.intogen.org/)); [mutation hotspots](http://cancerhotspots.org/]); [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) likely pathogenic or uncertain; COSMIC hits >=10; TCGA pancancer hits>=5; ICGC PCAWG hits >= 3 (all annotated by PCGR).
-	*  For all non-rescued variants, apply LCR, PoN, depth and AF filters. Remove variants for which one or more of the following conditions apply:
+8. [Filter variants](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf) to remove putative germline variants and artefacts, but make sure to keep known hotspots/actionable variants:
+	*  Keep variants called by SAGE in known hotspots (CGI, CiViC, OncoKB) regardless of other evidence;
+	*  Keep variants PCGR TIER 1 and 2 (strong and potential clinical significance, according to [ACMG](https://www.ncbi.nlm.nih.gov/pubmed/27993330) standard guidelines) regardless of other evidence;
+	*  Keep all driver mutations ([Intogen](https://www.intogen.org/)); [mutation hotspots](http://cancerhotspots.org/]); [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) likely pathogenic or uncertain; COSMIC count >=10; TCGA pancancer count >=5; ICGC PCAWG count >= 3 (all annotated by PCGR), regardless of other evidence;
+	*  For all other variants, apply the following LCR, PoN, depth and AF filters. Remove variants for which one or more of the following conditions apply:
 		* `AF`<10%,
-		* Common variant in GnomAD (max `population AF`>=1%), add into the germline set (see below),
-		* Present in >=5 samples of the Panel of Normal set,,
-		* InDel in a "bad promoter" regions,
-		* Remove variants overlapping the ENCODE blacklist,
-		* `VD`<4 (or <6 in tricky regions: GC<15, GC>70, LCR (GA4GA and Heng's Li), GiaB non-confident, segmental duplications), 
-		* VarDict strand biased variants (single strand support for ALT, while REF has both; or REF and ALT have opposite supporting strands), unless supported by all other callers,
-		* Dynamic AF threshold for indels in MSI for VarDict (unless supported by all other callers).
-
-[ ] _TODO: Define what "rescue" means in this context (set to non-filtered?). Should the order be different? First filter, then rescue anything that was filtered but is present in a hotspot or is PCGR Tier1/2? Can we define what a 'hit' in COSMIC, TCGA, etc., means? Define "bad promoter" (again, if needed). The "dynamic AF" threshold might need additional information. The "tricky" region file needs to be linked (BED), it differs slightly from the list defined above which does not include GC extremes._
-
+		* Common variant in GnomAD (max `population AF`>=1%), add into the germline set (see below);
+		* Present in >=5 samples of the Panel of Normal set;
+		* InDel in a "bad promoter" regions (GA4GH: "Anecdotal results suggested that many transcription start sites or first exons in the human genome tend to have poor coverage. By a systematic analysis of these regions we defined the 1,000 with the lowest relative coverage based on low coverage by an Illumina data set, which we term the 'bad promoters' list. The bad promoters are, like many exons, GC-rich, averaging 79% GC composition);
+		* Overlapping the [ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist),
+		* Variant depth `VD`<4;
+		* Variant depth `VD`<6, and the variant overlaps a low complexity region (see step 4 above);
+		* VarDict strand-biased variants (single strand support for ALT, while REF has both; or REF and ALT have opposite supporting strands), unless supported by all other callers.
 9. Report passing variants using [PCGR](https://github.com/sigven/pcgr), classified by the ACMG tier system.
 
 
@@ -65,26 +65,20 @@ Umccrise post-processes somatic variants in order to remove most of the artefact
 The idea is to simply bring germline variants in cancer predisposition genes:
 
 1. Take passing "ensemble" germline VCF from [bcbio](https://github.com/umccr/workflows/tree/master/bcbio). "Ensemble" has variants supported by at least 2 of 3 callers (we use strelka2, vardict, and GATK Haplotype Caller).
-2. Sort VCF by coordinate, extract `PASS` calls.
-3. Add back variants from somatic calling filtered as common GnomAD.
-4. Subset variants to a list of ~200 cancer predisposition genes, which is build by [CPSR](https://github.com/sigven/cpsr) from 3 curated sources: [TCGA](https://www.ncbi.nlm.nih.gov/pubmed/29625052) pan-cancer study, [COSMIC CGC](https://cancer.sanger.ac.uk/census), and [Norwegian Cancer Genomics Consortium](http://cancergenomics.no/).
-5. Report variants using CPSR, which classifies variants in the context of cancer predisposition by overlapping with [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) pathogenic and VUS variants and GnomAD rare variants. It also ranks variants according pathogenicity score by ACMG and cancer-specific criteria.
-
-[ ] _TODO: Does this still match the updates to preferred transcript choice? Do we want to mention the logic within CPSR on how it picks the right transcript?_
-
-[ ] _TODO: Old text from Google Docs below. Is this still valid? If so, merge in:_
-
-> * ClinVar variants: pre-classified variants according to a five-level tier scheme (Pathogenic to Benign):
-> * Non-ClinVar variants: classified by CPSR according to a five-level tier scheme (Pathogenic to Benign)
-> * Secondary findings (optional) - pathogenic ClinVar variants in the ACMG recommended list for reporting of incidental findings,
-> * GWAS hits (optional) - variants overlapping with previously identified hits in genome-wide association studies (GWAS) of cancer phenotypes (i.e. low to moderate risk conferring alleles), using NHGRI-EBI Catalog of published genome-wide association studies as the underlying source. The unclassified non-ClinVar variants are assigned a pathogenicity level based on the aggregation of scores according to previously established ACMG criteria. The ACMG criteria includes cancer-specific criteria, as outlined and specified in several previous studies.
+2. Add back variants from somatic calling filtered as common GnomAD.
+3. Subset variants to a list of ~200 cancer predisposition genes, which is build by [CPSR](https://github.com/sigven/cpsr) from 3 curated sources: [TCGA](https://www.ncbi.nlm.nih.gov/pubmed/29625052) pan-cancer study, [COSMIC CGC](https://cancer.sanger.ac.uk/census), and [Norwegian Cancer Genomics Consortium](http://cancergenomics.no/).
+4. Report variants using [CPSR](https://github.com/sigven/cpsr), which classifies variants in the context of cancer predisposition by overlapping with [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) pathogenic and VUS variants and GnomAD rare variants. It also ranks variants according pathogenicity score by ACMG and cancer-specific criteria. When a variant is annotated as having multiple functional depending on a context of a gene and a trascript, a higher impact events are prioritized, and if all things equal, [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/) are preferred. In any case, one event per variant is reported. Events are reported in 4 tiers according to their significance:
+    * ClinVar variants: pre-classified variants according to a five-level tier scheme (Pathogenic to Benign):
+    * Non-ClinVar variants: classified by CPSR according to a five-level tier scheme (Pathogenic to Benign)
+    * Secondary findings (optional) - pathogenic ClinVar variants in the ACMG recommended list for reporting of incidental findings,
+    * GWAS hits (optional) - variants overlapping with previously identified hits in genome-wide association studies (GWAS) of cancer phenotypes (i.e. low to moderate risk conferring alleles), using NHGRI-EBI Catalog of published genome-wide association studies as the underlying source. The unclassified non-ClinVar variants are assigned a pathogenicity level based on the aggregation of scores according to previously established ACMG criteria. The ACMG criteria includes cancer-specific criteria, as outlined and specified in several previous studies.
 
 ## Structural variants
 
 The idea is to report gene fusions, exon deletions, high impact and LoF events in tumor suppressors, and prioritize events in cancer genes.
 
 1. Start with the somatic SV VCF from [bcbio](https://github.com/umccr/workflows/tree/master/bcbio) called by [Manta](https://github.com/illumina/manta) SV caller. 
-2. Refine SVs using Hartwig break-point-inspector, which locally re-assembles SV loci to get more accurate breakpoint positions and AF estimates.
+2. Refine SVs using Hartwig [break-point-inspector](https://bioconda.github.io/recipes/break-point-inspector/README.html), which locally re-assembles SV loci to get more accurate breakpoint positions and AF estimates.
 3. Filter low-quality calls:
    * require split or paired reads support at least 5x,
    * for low frequency variants (<10% at both breakpoints), require read support 10x,
@@ -113,31 +107,6 @@ The idea is to report gene fusions, exon deletions, high impact and LoF events i
        * on cancer gene list (2)
        * other TS gene (3)
     * other (4)    
-
-[ ] _TODO: Compare against this version: which one is correct / clearer?_
-
-> a. If the feature type is "interaction" (protein-protein interactions), or a generic "sequence_feature", discard the event
-> b. If there is an associated transcript ID and it's not in list of principal or alternative APPRIS transcripts, discard the event
-> c. exon loss:
->   i. of a umccr gene (tier 2)
->   ii. other (3)
-> d. gene fusion:
->   i. paired (hits exactly two genes)
->      * on list of known pairs (tier 1) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
->      * one gene is a known promiscuous fusion gene (1) (curated by [HMF](https://resources.hartwigmedicalfoundation.nl))
->      * on list of FusionCatcher known pairs (2)
->      * one or two genes are on umccr gene list (2)
->   ii. unpaired (hits one gene)
->      * on umccr gene list (2)
-> e. upstream or downstream: same logic as with fusions, but 1 tier down (i.e. tier 2->3, 1->2)
-> f. HIGH impact, and hits a tumor suppressor or an entire chromosome
->   i. chromosome (2)
->   ii. key tumor suppressor (2)
->   iii. other tumor suppressors (3)
->   iv. if the copy number is zero, upgrade 1 tier up (i.e. 2->1)
-> g. any other event on umccr gene list (3)
-> h. all other events (4)
-
 8. If the number of events is over 10k (e.g. FFPE), keep only tiers 1-2-3
 9. For tiers 3-4:
     a. require split or paired reads support of at least 5x,
@@ -145,8 +114,6 @@ The idea is to report gene fusions, exon deletions, high impact and LoF events i
     c. require paired reads support to be higher than split read support for BND events
 10. Unless FFPE, feed the variants into PURPLE to recover SVs from copy number transitions
 11. Report tiered variants in the UMCCR cancer report.
-
-[ ] _TODO: BPI is the problematic bit here. Have to rely on us shipping it / can't link to a source. Maybe just cite the Hartwig paper. Peter, can you go over this section and compare against your detailed notes? -> Link to Conda & Hartwig paper_
 
 
 ## Somatic CNV
