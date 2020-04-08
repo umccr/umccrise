@@ -25,7 +25,8 @@ rule sv_keep_pass:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
     output:
-        vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz'
+        vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz',
+        tbi = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz.tbi',
     group: "sv_vcf"
     shell:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
@@ -46,6 +47,7 @@ rule sv_keep_pass:
 rule sv_snpeff_maybe:
     input:
         vcf = rules.sv_keep_pass.output.vcf,
+        tbi = rules.sv_keep_pass.output.tbi,
     output:
         vcf  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz',
         tbi  = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz.tbi',
