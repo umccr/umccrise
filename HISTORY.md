@@ -1,10 +1,13 @@
 0.18.0 (TBR):
 
-- DRAGEN: support tumor and normal sample name different from the output prefix
-- Re-engineered how the number of CPUs is determined, so when we have many cores available, they are not wasted on a single job that doesn't benefit from many threads. Say, PURPLE COBALT optional number is around 10-15, so if we have 28 cores, we will run COBALT and AMBER in parallel with 14 cores each. This should work for local/AWS runs as well as the HPC runs.
-- Update PURPLE/COBALT GC profile reference file so it fixes a bug:
-> We have found an issue with the mappability file which is used by COBALT to decide which windows to fit. The file was created on the full set ref genome, when we should have used the analysis set. The impact is that some large (and important) sections of hg38 which have alt contigs are assigned 0 mappability and filtered by COBALT. Particularly the HLA and ERBB2 regions are affected. We have generated new files already and I have checked them, but we are just testing on some real samples.
-- DRAGEN: support multi-fastq runs (when input fastq files and RGSM are specified in CSV files and out in the DRAGEN outout folder by the UMCCR worklow).
+- More DRAGEN input options:
+    - Support tumor and normal sample names different from the output prefix (read from the --RGSM tags)
+    - Support multi-fastq runs (when input fastq files and RGSM are specified in CSV files and put in the DRAGEN outout folder by the UMCCR worklow).
+- Improved parallelization.
+    Re-engineered how the number of CPUs is determined, so when we have many cores available, they are not wasted on a single job that doesn't benefit from many threads. Say, PURPLE COBALT optional number is around 10-15, so if we have 28 cores, we will run COBALT and AMBER in parallel with 14 cores each. This should work for local/AWS runs as well as the HPC runs.
+- PURPLE updated:
+    - Use PURPLE v2.40 that reports tumor mutational load and burden
+    - Update COBALT GC profile reference file so it fixes a bug ("We have found an issue with the mappability file which is used by COBALT to decide which windows to fit. The file was created on the full set ref genome, when we should have used the analysis set. The impact is that some large (and important) sections of hg38 which have alt contigs are assigned 0 mappability and filtered by COBALT. Particularly the HLA and ERBB2 regions are affected. We have generated new files already and I have checked them, but we are just testing on some real samples.")
 
 --------------------
 
