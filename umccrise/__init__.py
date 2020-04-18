@@ -2,7 +2,6 @@ import glob
 import math
 import os
 import sys
-import multiprocessing
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
 from ngs_utils.bcbio import BcbioProject
@@ -88,7 +87,7 @@ def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=Fa
     """
     # Checking presets for known HPC clusters, otherwise assuming a for single-machine AWS or local run
     # and just taking the number of available CPUs:
-    ncpus_on_a_machine = hpc.ncpus_on_node or multiprocessing.cpu_count() or 1
+    ncpus_on_a_machine = hpc.ncpus_on_node or len(os.sched_getaffinity(0)) or 1
     if is_cluster:
         # we are not resticted to one machine, so can submit many jobs and let the scheduler figure out the queue
         ncpus_available = ncpus_requested or 32
