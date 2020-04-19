@@ -49,6 +49,8 @@ dependencies:
   - toml        # to read predisposition genes from PCGR toml
   # - tibanna
   - snpeff
+  - bwa         # for oncoviruses
+  - sambamba    # for oncoviruses
   - pip:
     - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
@@ -58,3 +60,4 @@ dependencies:
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
     - "git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
+    - "git+https://github.com/umccr/oncoviruses#egg=oncoviruses"
