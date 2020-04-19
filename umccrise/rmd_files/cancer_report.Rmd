@@ -1197,7 +1197,7 @@ if (!no_sv_found) {
 
 ```{r svtab_rawdt}
 if (!no_sv_found) {
-  sv_detail_table(svtab_rawdt)
+  svtab_rawdt
 } else {
   cat("No SVs called.")
 }
