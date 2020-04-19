@@ -56,6 +56,8 @@ if isinstance(run, BcbioProject):
             bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             prog_versions           = join(run.date_dir, 'programs.txt'),
             data_versions           = join(run.date_dir, 'data_versions.csv'),
+            # oncoviruses_list        = rules.run_oncoviruses.output.prioritized_tsv,
+            oncoviruses_stats       = rules.oncoviral_multiqc.output.yml,
         output:
             filelist                = 'work/{batch}/multiqc_data/filelist.txt',
             generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -91,6 +93,7 @@ if isinstance(run, BcbioProject):
                 input.germline_stats,
                 input.bcftools_somatic_stats,
                 input.bcftools_germline_stats,
+                input.oncoviruses_stats,
             ])
 
             # Bcbio QC files
@@ -115,6 +118,7 @@ if isinstance(run, BcbioProject):
                     '.*Sequence_Length_Distribution.tsv',
                     '.*.html',
                     '.*verifybamid.*',
+                    '.*viral.*',
                 ],
                 include_files=[
                     f'.*{batch.tumor.name}.*',

@@ -66,8 +66,8 @@ include: "purple.smk"
 include: "coverage.smk"
 include: "pcgr.smk"
 include: "rmd.smk"
-include: "igv.smk"
 include: "conpair.smk"
+include: "oncoviruses.smk"
 include: "multiqc.smk"
 
 
@@ -83,6 +83,6 @@ rule umccrise:
         rules.purple.output,
         rules.pcgr.output,
         rules.rmd.output,
-        (rules.igv.output if config.get('upload_igv', 'no') == 'yes' else []),
+        rules.oncoviruses.output,
     output:
         touch('all.done')

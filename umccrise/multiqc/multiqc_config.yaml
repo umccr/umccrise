@@ -246,6 +246,9 @@ custom_data:
 #        - hom_het:
 #        - ts_tv:
 
+        - oncoviruses:
+            format: '{}'
+
 sp:
     umccrise:
         fn_re: '.*(somatic|germline)_stats.yml'
