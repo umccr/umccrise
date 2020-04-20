@@ -237,7 +237,7 @@ if include_germline:
                 rules.germline_leakage_predispose_subset.output.vcf,
             ]
         output:
-            vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz'
+            vcf = '{batch}/small_variants/{batch}-normal-predispose_genes.vcf.gz'
         group: "germline_snv"
         shell:
             'bcftools concat -a {input.vcfs} -Oz -o {output.vcf} '

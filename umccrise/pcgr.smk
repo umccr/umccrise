@@ -52,7 +52,7 @@ include_germline = all(b.germline_vcf for b in batch_by_name.values())
 if include_germline:
     rule run_cpsr:
         input:
-            vcf = '{batch}/small_variants/{batch}-normal-ensemble-predispose_genes.vcf.gz',
+            vcf = '{batch}/small_variants/{batch}-normal-predispose_genes.vcf.gz',
             pcgr_data = hpc.get_ref_file(key='pcgr_data')
         output:
             '{batch}/pcgr/{batch}-normal.cpsr.html'
