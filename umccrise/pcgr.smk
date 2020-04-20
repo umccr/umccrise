@@ -6,9 +6,8 @@ Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarba
 localrules: pcgr_symlink_somatic, pcgr_symlink_germline, pcgr
 
 
-import subprocess
 from ngs_utils.file_utils import which
-
+from ngs_utils.reference_data import get_predispose_genes_txt, get_predispose_genes_bed
 
 rule run_pcgr:
     input:
@@ -66,7 +65,7 @@ if include_germline:
         shell:
             conda_cmd.format('pcgr') +
             'pcgr {input.vcf} -g {params.genome_build} -o {params.output_dir} -s {params.sample_name} --germline '
-            '{params.opt} --pcgr-data {input.pcgr_data}'
+            '{params.opt} --pcgr-data {input.pcgr_data} --predispose-bed {input.predispose_bed}'
 
     rule pcgr_symlink_germline:
         input:

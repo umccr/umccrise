@@ -28,8 +28,10 @@ from umccrise import package_path
 @click.option('--genomes-dir', 'genomes_dir')
 @click.option('--puriry', 'puriry', type=click.FLOAT)
 @click.option('--ploidy', 'ploidy', type=click.FLOAT)
+@click.option('--predispose-genes', 'predispose_genes', type=click.Path(exists=True))
+@click.option('--predispose-bed', 'predispose_bed', type=click.Path(exists=True))
 def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, germline=False, use_docker=None,
-         pcgr_data=None, genomes_dir=None, puriry=None, ploidy=None):
+         pcgr_data=None, genomes_dir=None, puriry=None, ploidy=None, predispose_genes=None, predispose_bed=None):
 
     if not pcgr_data:
         from hpc_utils import hpc
@@ -93,6 +95,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
                f' --no_vcf_validate'
+               f' {f"--custom_panel_gene_list {predispose_genes}" if predispose_genes else ""}'
+               f' {f"--custom_panel {predispose_bed}" if predispose_bed else ""}'
                f' --debug'
         )
     else:
