@@ -37,6 +37,7 @@ def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
     min_significant_completeness = 0.5
     completeness_threshold = '5x'
 
+    viral_data = []
     with open(prioritized_oncoviruses_tsv) as f:
         for l in f:
             if l.startswith('##'):
@@ -46,7 +47,6 @@ def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
             if l.startswith('#'):
                 headers = l.strip().split("\t")  # #virus  size    depth   1x      5x      25x
                 continue
-            viral_data = []
             values_dict = dict(zip(headers, l.strip().split("\t")))
             virus_name = values_dict['#virus']
             ave_depth = float(values_dict['depth'])
@@ -95,14 +95,15 @@ rule oncoviral_multiqc:
         with open(output.yml, 'w') as out:
             data = {
                 'data': data,
-                'title': header['title'],
-                'description': header['description'],
+                # 'title': header['title'],
+                # 'description': header['description'],
             }
             yaml.dump(data, out, default_flow_style=False)
 
 
 rule oncoviruses:
     input:
-        expand(rules.run_oncoviruses.output, batch=batch_by_name.keys())
+        expand(rules.run_oncoviruses.output, batch=batch_by_name.keys()),
+        expand(rules.oncoviral_multiqc.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/oncoviruses.done'))

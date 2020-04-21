@@ -248,11 +248,8 @@ custom_data:
 
         - oncoviruses:  # todo: set thresholds in code instead of hardcoded
             title: 'Viral'
-            description: 'Sequences of known oncoviruses found in umapped reads. Format: (x depth;
-            % of sequence covered at >5x). Viral sequences are from <a href="https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files">GDC</a>
-            found in unmapped reads. Showing significant hits with at least 5x support along
-            at least 50% of the genome.'
             format: '{}'
+            description: 'Sequences of known oncoviruses found in umapped reads. Format: (x depth; % of sequence covered at >5x). Viral sequences are from GDC found in unmapped reads. Showing significant hits with at least 5x support along at least 50% of the genome.'
 
 sp:
     umccrise:
