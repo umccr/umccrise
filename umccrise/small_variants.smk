@@ -3,6 +3,7 @@
 import subprocess
 from os.path import isfile, join
 from ngs_utils.file_utils import get_ungz_gz
+from ngs_utils.reference_data import get_predispose_genes_bed
 from umccrise import package_path
 import toml
 from ngs_utils.vcf_utils import iter_vcf
@@ -155,7 +156,7 @@ if include_germline:
         input:
             vcf = lambda wc: batch_by_name[wc.batch].germline_vcf,
         output:
-            vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-PASS.vcf.gz',
+            vcf = 'work/{batch}/small_variants/germline/{batch}-normal-PASS.vcf.gz',
         group: "germline_snv"
         shell:
             'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -164,19 +165,16 @@ if include_germline:
     rule germline_predispose_subset:
         input:
             vcf = rules.germline_vcf_pass.output.vcf,
+            predispose_genes_bed = get_predispose_genes_bed(run.genome_build, coding_only=False),
         output:
-            vcf = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz',
-            tbi = 'work/{batch}/small_variants/germline/{batch}-normal-' + run.germline_caller + '-predispose_genes.vcf.gz.tbi',
+            vcf = 'work/{batch}/small_variants/germline/{batch}-normal-predispose_genes.vcf.gz',
+            tbi = 'work/{batch}/small_variants/germline/{batch}-normal-predispose_genes.vcf.gz.tbi',
         params:
             ungz = lambda wc, output: get_ungz_gz(output[0])[0]
         group: "germline_snv"
-        run:
-            pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
-            genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
-            def func(rec, vcf):
-                if rec.INFO.get('ANN') is not None and rec.INFO['ANN'].split('|')[3] in genes:
-                    return rec
-            iter_vcf(input.vcf, output.vcf, func)
+        shell:
+            'bcftools view -T {input.predispose_genes_bed} {input.vcf} -Oz -o {output.vcf}'
+            ' && tabix -p vcf {output.vcf}'
 
     # Preparations: annotate TUMOR_X and NORMAL_X fields
     # Used for PCGR, but for all other processing steps too

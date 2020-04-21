@@ -52,7 +52,8 @@ if include_germline:
     rule run_cpsr:
         input:
             vcf = '{batch}/small_variants/{batch}-normal-predispose_genes.vcf.gz',
-            pcgr_data = hpc.get_ref_file(key='pcgr_data')
+            pcgr_data = hpc.get_ref_file(key='pcgr_data'),
+            predispose_bed = get_predispose_genes_bed(run.genome_build),
         output:
             '{batch}/pcgr/{batch}-normal.cpsr.html'
         params:
