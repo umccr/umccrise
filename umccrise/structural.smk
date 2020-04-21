@@ -9,7 +9,7 @@ from cyvcf2 import VCF
 from ngs_utils.file_utils import safe_mkdir, verify_dir, get_ungz_gz, verify_file
 from ngs_utils.logger import critical
 from ngs_utils.dragen import DragenProject
-from vcf_stuff import count_vars, vcf_contains_field, iter_vcf
+from ngs_utils.vcf_utils import count_vars, vcf_contains_field, iter_vcf
 
 
 vcftobedpe = 'vcfToBedpe'

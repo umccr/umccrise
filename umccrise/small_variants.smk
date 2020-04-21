@@ -5,7 +5,7 @@ from os.path import isfile, join
 from ngs_utils.file_utils import get_ungz_gz
 from umccrise import package_path
 import toml
-from vcf_stuff import iter_vcf
+from ngs_utils.vcf_utils import iter_vcf
 import cyvcf2
 import yaml
 from hpc_utils import hpc
