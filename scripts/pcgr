@@ -83,20 +83,26 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
     if germline:
         expected_file_base = join(output_dir, f'{sample}.cpsr.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.cpsr')
+
+        panel_param = '--panel_id 0'
+        if predispose_bed:
+            run_simple(f'cut -f1-4 {predispose_bed} > {join(output_dir, "custom_panel.bed")}')
+            panel_param = f'--custom_panel {join(output_dir, "custom_panel.bed")}'
+        elif predispose_genes:
+            panel_param = f'--custom_panel_gene_list {predispose_genes}'
+
         cmd = (f'{rlibs_env}'
                f'cpsr.py'
                f' {abspath(vcf_path)}'
                f' {dirname(pcgr_data)}'
                f' {output_dir}'
                f' {pcgr_genome}'
-               f' --panel_id 0'
                f' {cpsr_toml}'
                f' {sample}'
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
                f' --no_vcf_validate'
-               f' {f"--custom_panel_gene_list {predispose_genes}" if predispose_genes else ""}'
-               f' {f"--custom_panel {predispose_bed}" if predispose_bed else ""}'
+               f' {panel_param}'
                f' --debug'
         )
     else:
