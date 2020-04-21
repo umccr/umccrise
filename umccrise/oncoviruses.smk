@@ -85,7 +85,7 @@ rule oncoviral_multiqc:
     input:
         prioritized_tsv = '{batch}/oncoviruses/prioritized_oncoviruses.tsv'
     output:
-        yml = 'work/{batch}/oncoviruses/{batch}_multiqc.yml',
+        yml = 'work/{batch}/oncoviruses/{batch}_oncoviruses_stats.yml',
     params:
         sample = lambda wc: batch_by_name[wc.batch].tumor.name
     group: "oncoviruses"

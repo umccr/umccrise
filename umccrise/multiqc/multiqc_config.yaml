@@ -246,12 +246,17 @@ custom_data:
 #        - hom_het:
 #        - ts_tv:
 
-        - oncoviruses:
+        - oncoviruses:  # todo: set thresholds in code instead of hardcoded
+            title: 'Viral'
+            description: 'Sequences of known oncoviruses found in umapped reads. Format: (x depth;
+            % of sequence covered at >5x). Viral sequences are from <a href="https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files">GDC</a>
+            found in unmapped reads. Showing significant hits with at least 5x support along
+            at least 50% of the genome.'
             format: '{}'
 
 sp:
     umccrise:
-        fn_re: '.*(somatic|germline)_stats.yml'
+        fn_re: '.*(somatic|germline|oncoviruses)_stats.yml'
 
 
 extra_fn_clean_trim:
