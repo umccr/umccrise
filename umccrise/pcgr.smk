@@ -11,7 +11,7 @@ from ngs_utils.reference_data import get_predispose_genes_txt, get_predispose_ge
 
 rule run_pcgr:
     input:
-        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
         # cns = '{batch}/purple/{batch}.purple.cnv',
         pcgr_data = hpc.get_ref_file(key='pcgr_data'),
         purple_file = rules.purple_run.output.purity,
@@ -51,7 +51,7 @@ include_germline = all(b.germline_vcf for b in batch_by_name.values())
 if include_germline:
     rule run_cpsr:
         input:
-            vcf = '{batch}/small_variants/{batch}-normal-predispose_genes.vcf.gz',
+            vcf = 'work/{batch}/small_variants/{batch}-germline.predispose_genes.vcf.gz',
             pcgr_data = hpc.get_ref_file(key='pcgr_data'),
             predispose_bed = get_predispose_genes_bed(run.genome_build),
         output:

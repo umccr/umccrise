@@ -32,11 +32,11 @@ localrules: rmd, conda_list
 # Subset to GiaB confident intervals
 rule subset_to_giab:
     input:
-        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
     params:
         regions = hpc.get_ref_file(run.genome_build, key=['hmf_giab_conf'])
     output:
-        'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident.vcf.gz'
+        'work/{batch}/rmd/afs/somatic-confident.vcf.gz'
     group: "rmd"
     shell:
         'bcftools view {input.vcf} -R {params.regions} -Oz -o {output}'
@@ -44,10 +44,10 @@ rule subset_to_giab:
 # Split multiallelics to avoid R parsing issues
 rule split_multiallelic:
     input:
-        vcf = 'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident.vcf.gz',
+        vcf = 'work/{batch}/rmd/afs/somatic-confident.vcf.gz',
         ref_fa = hpc.get_ref_file(run.genome_build, key='fa')
     output:
-        'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident-singleallelic.vcf.gz'
+        'work/{batch}/rmd/afs/somatic-confident-singleallelic.vcf.gz'
     group: "rmd"
     shell:
         'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
@@ -57,7 +57,7 @@ rule split_multiallelic:
 
 rule afs:
     input:
-        'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident-singleallelic.vcf.gz'
+        'work/{batch}/rmd/afs/somatic-confident-singleallelic.vcf.gz'
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid
     output:
@@ -71,7 +71,7 @@ rule afs:
 # Intersect with cancer key genes CDS for a table in Rmd
 rule afs_keygenes:
     input:
-        vcf = 'work/{batch}/rmd/afs/' + run.somatic_caller + '-confident-singleallelic.vcf.gz',
+        vcf = 'work/{batch}/rmd/afs/somatic-confident-singleallelic.vcf.gz',
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid
@@ -92,9 +92,9 @@ rule afs_keygenes:
 # Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the somatic calls:
 rule somatic_to_hg19:
     input:
-        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
     output:
-        'work/{batch}/rmd/' + run.somatic_caller + '-with_chr_prefix.vcf'
+        'work/{batch}/rmd/somatic-with_chr_prefix.vcf'
     group: "rmd"
     run:
         if run.genome_build == 'GRCh37':

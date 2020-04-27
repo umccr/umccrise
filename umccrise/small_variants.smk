@@ -1,7 +1,8 @@
 #################
 #### Somatic ####
+import os
 import subprocess
-from os.path import isfile, join
+from os.path import isfile, join, dirname
 from ngs_utils.file_utils import get_ungz_gz
 from ngs_utils.reference_data import get_predispose_genes_bed
 from umccrise import package_path
@@ -36,8 +37,8 @@ rule somatic_vcf_pass_sort:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].somatic_vcf,
     output:
-        vcf = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-        tbi = 'work/{batch}/small_variants/pass_sort/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+        vcf = 'work/{batch}/small_variants/pass_sort/{batch}-somatic.vcf.gz',
+        tbi = 'work/{batch}/small_variants/pass_sort/{batch}-somatic.vcf.gz.tbi',
     group: "somatic_anno"
     shell:
         '(bcftools view -h {input.vcf} ; bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
@@ -48,8 +49,8 @@ rule somatic_vcf_select_noalt:
         vcf = rules.somatic_vcf_pass_sort.output.vcf,
         noalts_bed = hpc.get_ref_file(run.genome_build, 'noalt_bed'),
     output:
-        vcf = 'work/{batch}/small_variants/noalt/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-        tbi = 'work/{batch}/small_variants/noalt/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+        vcf = 'work/{batch}/small_variants/noalt/{batch}-somatic.vcf.gz',
+        tbi = 'work/{batch}/small_variants/noalt/{batch}-somatic.vcf.gz.tbi',
     group: "somatic_anno"
     shell:
         'bcftools view -R {input.noalts_bed} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
@@ -60,8 +61,8 @@ rule sage:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
     output:
-        vcf = 'work/{batch}/small_variants/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-        tbi = 'work/{batch}/small_variants/sage/{batch}-somatic-' + run.somatic_caller + '.vcf.gz.tbi',
+        vcf = 'work/{batch}/small_variants/sage/{batch}-somatic.vcf.gz',
+        tbi = 'work/{batch}/small_variants/sage/{batch}-somatic.vcf.gz.tbi',
         sage_vcf = '{batch}/small_variants/sage/{batch}-sage.vcf.gz',
         sage_tbi = '{batch}/small_variants/sage/{batch}-sage.vcf.gz.tbi',
     params:
@@ -84,7 +85,7 @@ rule somatic_vcf_annotate:
     input:
         vcf = rules.sage.output.vcf,
     output:
-        vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        vcf = 'work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz',
         subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml',
     params:
         genome = run.genome_build,
@@ -106,8 +107,7 @@ rule somatic_vcf_filter:
     input:
         vcf = rules.somatic_vcf_annotate.output.vcf,
     output:
-        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-        # vcf = 'work/{batch}/small_variants/filter/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic.vcf.gz',
     group: "somatic_filt"
     params:
         tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
@@ -116,23 +116,12 @@ rule somatic_vcf_filter:
         'filter_somatic_vcf {input.vcf} -o {output.vcf}'
          ' -tn {params.tumor_sample} -nn {params.normal_sample}'
 
-# rule somatic_extract_tumor_sample:
-#     input:
-#         vcf = rules.somatic_vcf_filter.output.vcf,
-#     output:
-#         vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '.vcf.gz',
-#     params:
-#         tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.name,
-#     group: "somatic_filt"
-#     shell:
-#         'bcftools view -s {params.tumor_sample} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
-
 rule somatic_vcf_filter_pass:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf
     output:
-        vcf = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
-        tbi = '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz.tbi',
+        vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
+        tbi = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz.tbi',
     group: "somatic_filt"
     shell:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -205,9 +194,9 @@ if include_germline:
             normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
         shell:
             'bcftools filter -i "Germline=1" {input.vcf} | '
-            'bcftools annotate -x "{params.toremove}" | ' \
-            'bcftools view -s {params.tumor_sample} | ' \
-            'sed \'s/{params.tumor_sample}/{params.normal_sample}/\' | ' \
+            'bcftools annotate -x "{params.toremove}" | ' 
+            'bcftools view -s {params.tumor_sample} | ' 
+            'sed \'s/{params.tumor_sample}/{params.normal_sample}/\' | ' 
             'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
     # Subset to ~200 cancer predisposition gene set.

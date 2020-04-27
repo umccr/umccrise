@@ -126,7 +126,7 @@ rule purple_cobalt:
 
 rule purple_somatic_vcf:
     input:
-        '{batch}/small_variants/{batch}-somatic-' + run.somatic_caller + '-PASS.vcf.gz',
+        '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
     output:
         'work/{batch}/purple/somatic.vcf',
     params:

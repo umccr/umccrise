@@ -145,8 +145,8 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
     snakefile = join(package_path(), 'Snakefile')
     cmd += (
         f'snakemake '
-        f'{" ".join(target_rule)} '
         f'--snakefile {snakefile} '
+        f'{" ".join(target_rule)} '
         f'--printshellcmds '
         f'{"--dryrun " if dryrun else ""}'
         f'{"--dag " if dag else ""}'
