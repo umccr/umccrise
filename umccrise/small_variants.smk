@@ -145,7 +145,7 @@ if include_germline:
         input:
             vcf = lambda wc: batch_by_name[wc.batch].germline_vcf,
         output:
-            vcf = 'work/{batch}/small_variants/germline/{batch}-normal-PASS.vcf.gz',
+            vcf = 'work/{batch}/small_variants/germline/{batch}-germline.PASS.vcf.gz',
         group: "germline_snv"
         shell:
             'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -156,8 +156,8 @@ if include_germline:
             vcf = rules.germline_vcf_pass.output.vcf,
             predispose_genes_bed = get_predispose_genes_bed(run.genome_build, coding_only=False),
         output:
-            vcf = 'work/{batch}/small_variants/germline/{batch}-normal-predispose_genes.vcf.gz',
-            tbi = 'work/{batch}/small_variants/germline/{batch}-normal-predispose_genes.vcf.gz.tbi',
+            vcf = 'work/{batch}/small_variants/germline/{batch}-germline.predispose_genes.vcf.gz',
+            tbi = 'work/{batch}/small_variants/germline/{batch}-germline.predispose_genes.vcf.gz.tbi',
         params:
             ungz = lambda wc, output: get_ungz_gz(output[0])[0]
         group: "germline_snv"
@@ -224,7 +224,7 @@ if include_germline:
                 rules.germline_leakage_predispose_subset.output.vcf,
             ]
         output:
-            vcf = '{batch}/small_variants/{batch}-normal-predispose_genes.vcf.gz'
+            vcf = 'work/{batch}/small_variants/{batch}-germline.predispose_genes.vcf.gz',
         group: "germline_snv"
         shell:
             'bcftools concat -a {input.vcfs} -Oz -o {output.vcf} '
@@ -322,11 +322,21 @@ if include_germline:
 #############
 rule small_variants:
     input:
-        expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
-        expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
-        expand(rules.germline_merge_with_leakage.output, batch=batch_by_name.keys()) if include_germline else [],
+        somatic_vcfs = expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
+        somatic_pass_vcfs = expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
+        germline_vcfs = expand(rules.germline_merge_with_leakage.output, batch=batch_by_name.keys())
+            if include_germline else [],
     output:
         temp(touch('log/small_variants.done'))
+    run:
+        if input.germline_vcfs:
+            for batch, germline_vcf in zip(batch_by_name.values(), input.germline_vcfs):
+                assert batch.name in germline_vcf
+                renamed_germline_vcf = join(batch.name, 'small_variants',
+                    f'{batch}__{batch.normal.name}-germline.predispose_genes.vcf.gz')
+                shell(f'cp {germline_vcf} {renamed_germline_vcf}')
+                shell(f'tabix -p vcf {renamed_germline_vcf}')
+
 
 
 
