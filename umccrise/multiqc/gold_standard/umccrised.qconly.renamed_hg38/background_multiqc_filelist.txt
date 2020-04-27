@@ -10,7 +10,6 @@ work/Bob_T/multiqc_data/Bob_T/qc/fastqc/Bob_T.zip
 work/Bob_T/multiqc_data/Bob_T/qc/fastqc/fastqc_data.txt
 work/Bob_T/multiqc_data/Bob_T/qc/samtools/Bob_T-idxstats.txt
 work/Bob_T/multiqc_data/Bob_T/qc/samtools/Bob_T.txt
-work/Bob_T/multiqc_data/Bob_T/qc/viral/Bob_T-gdc-viral-completeness.txt
 work/Bob_T/multiqc_data/Bob_B/qc/peddy/Bob_B-germline.background_pca.json
 work/Bob_T/multiqc_data/Bob_B/qc/peddy/Bob_B-germline.het_check.csv
 work/Bob_T/multiqc_data/Bob_B/qc/peddy/Bob_B-germline.ped_check.csv
@@ -44,7 +43,6 @@ work/Chen_T/multiqc_data/Chen_T/qc/fastqc/Chen_T.zip
 work/Chen_T/multiqc_data/Chen_T/qc/fastqc/fastqc_data.txt
 work/Chen_T/multiqc_data/Chen_T/qc/samtools/Chen_T-idxstats.txt
 work/Chen_T/multiqc_data/Chen_T/qc/samtools/Chen_T.txt
-work/Chen_T/multiqc_data/Chen_T/qc/viral/Chen_T-gdc-viral-completeness.txt
 work/Chen_T/multiqc_data/Chen_B/qc/peddy/Chen_B-germline.background_pca.json
 work/Chen_T/multiqc_data/Chen_B/qc/peddy/Chen_B-germline.het_check.csv
 work/Chen_T/multiqc_data/Chen_B/qc/peddy/Chen_B-germline.ped_check.csv
@@ -78,7 +76,6 @@ work/Alice_T/multiqc_data/Alice_T/qc/fastqc/Alice_T.zip
 work/Alice_T/multiqc_data/Alice_T/qc/fastqc/fastqc_data.txt
 work/Alice_T/multiqc_data/Alice_T/qc/samtools/Alice_T-idxstats.txt
 work/Alice_T/multiqc_data/Alice_T/qc/samtools/Alice_T.txt
-work/Alice_T/multiqc_data/Alice_T/qc/viral/Alice_T-gdc-viral-completeness.txt
 work/Alice_T/multiqc_data/Alice_B/qc/peddy/Alice_B-germline.background_pca.json
 work/Alice_T/multiqc_data/Alice_B/qc/peddy/Alice_B-germline.het_check.csv
 work/Alice_T/multiqc_data/Alice_B/qc/peddy/Alice_B-germline.ped_check.csv
@@ -112,7 +109,6 @@ work/Dakota_T/multiqc_data/Dakota_T/qc/fastqc/Dakota_T.zip
 work/Dakota_T/multiqc_data/Dakota_T/qc/fastqc/fastqc_data.txt
 work/Dakota_T/multiqc_data/Dakota_T/qc/samtools/Dakota_T-idxstats.txt
 work/Dakota_T/multiqc_data/Dakota_T/qc/samtools/Dakota_T.txt
-work/Dakota_T/multiqc_data/Dakota_T/qc/viral/Dakota_T-gdc-viral-completeness.txt
 work/Dakota_T/multiqc_data/Dakota_B/qc/peddy/Dakota_B-germline.background_pca.json
 work/Dakota_T/multiqc_data/Dakota_B/qc/peddy/Dakota_B-germline.het_check.csv
 work/Dakota_T/multiqc_data/Dakota_B/qc/peddy/Dakota_B-germline.ped_check.csv
@@ -146,7 +142,6 @@ work/Elon_T/multiqc_data/Elon_T/qc/fastqc/Elon_T.zip
 work/Elon_T/multiqc_data/Elon_T/qc/fastqc/fastqc_data.txt
 work/Elon_T/multiqc_data/Elon_T/qc/samtools/Elon_T-idxstats.txt
 work/Elon_T/multiqc_data/Elon_T/qc/samtools/Elon_T.txt
-work/Elon_T/multiqc_data/Elon_T/qc/viral/Elon_T-gdc-viral-completeness.txt
 work/Elon_T/multiqc_data/Elon_B/qc/peddy/Elon_B-germline.background_pca.json
 work/Elon_T/multiqc_data/Elon_B/qc/peddy/Elon_B-germline.het_check.csv
 work/Elon_T/multiqc_data/Elon_B/qc/peddy/Elon_B-germline.ped_check.csv

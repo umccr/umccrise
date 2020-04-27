@@ -37,7 +37,7 @@ if isinstance(run, BcbioProject):
         input:
             conf_dir = run.config_dir
         output:
-            done_flag = 'log/config/.done',
+            done_flag = 'log/config.done',
         params:
             conf_dir = 'log/config',
         shell:
@@ -56,8 +56,8 @@ if isinstance(run, BcbioProject):
             bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             prog_versions           = join(run.date_dir, 'programs.txt'),
             data_versions           = join(run.date_dir, 'data_versions.csv'),
-            # oncoviruses_list        = rules.run_oncoviruses.output.prioritized_tsv,
-            oncoviruses_stats       = rules.oncoviral_multiqc.output.yml,
+            oncoviruses_data        = rules.oncoviral_multiqc.output.data_yml,
+            oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml,
         output:
             filelist                = 'work/{batch}/multiqc_data/filelist.txt',
             generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -80,6 +80,8 @@ if isinstance(run, BcbioProject):
                 data_versions_fpath=verify_file(input.data_versions, silent=True),
                 new_dir_for_versions=dirname(output.prog_versions)
             )
+            with open(input.oncoviruses_header) as f:
+                generated_conf.update(yaml.load(f))
 
             # Gold standard QC files
             qc_files.extend(load_background_samples(params.genome_build, project_type ='bcbio'))
@@ -93,11 +95,11 @@ if isinstance(run, BcbioProject):
                 input.germline_stats,
                 input.bcftools_somatic_stats,
                 input.bcftools_germline_stats,
-                input.oncoviruses_stats,
+                input.oncoviruses_data,
             ])
 
             # Bcbio QC files
-            qc_files.extend(parse_bcbio_filelist(
+            bcbio_qc_files = parse_bcbio_filelist(
                 bcbio_mq_filelist=input.bcbio_mq_filelist,
                 bcbio_final_dir=input.bcbio_final_dir,
                 new_mq_data_dir=params.data_dir,
@@ -118,14 +120,15 @@ if isinstance(run, BcbioProject):
                     '.*Sequence_Length_Distribution.tsv',
                     '.*.html',
                     '.*verifybamid.*',
-                    '.*viral.*',
+                    '.*gdc-viral-completeness.txt',
                 ],
                 include_files=[
                     f'.*{batch.tumor.name}.*',
                     f'.*{batch.normal.name}.*',
                     f'.*{batch.name}.*',
                 ],
-            ))
+            )
+            qc_files.extend(bcbio_qc_files)
 
             multiqc_prep_data(
                 generated_conf=generated_conf,
@@ -165,6 +168,8 @@ else:  # dragen
             germline_stats          = rules.germline_stats_report.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
             bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
+            oncoviruses_data        = rules.oncoviral_multiqc.output.data_yml,
+            oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml,
         output:
             filelist                = 'work/{batch}/multiqc_data/filelist.txt',
             generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -180,6 +185,8 @@ else:  # dragen
                 batch=batch,
                 base_dirpath=report_base_path,
             )
+            with open(input.oncoviruses_header) as f:
+                generated_conf.update(yaml.load(f))
 
             # Gold standard QC files
             qc_files.extend(load_background_samples(params.genome_build, project_type ='dragen'))
@@ -193,6 +200,7 @@ else:  # dragen
                 input.germline_stats,
                 input.bcftools_somatic_stats,
                 input.bcftools_germline_stats,
+                input.oncoviruses_data,
             ])
 
             # Dragen QC files

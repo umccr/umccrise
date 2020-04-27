@@ -81,7 +81,7 @@ def multiqc_prep_data(generated_conf, out_filelist_file, out_conf_yaml, qc_files
     if generated_conf:
         with file_transaction(None, out_conf_yaml) as tx:
             with open(tx, 'w') as f:
-                yaml.dump(generated_conf, f, default_flow_style=False)
+                yaml.dump(generated_conf, f, default_flow_style=False, width=float("inf"))
 
     with file_transaction(None, out_filelist_file) as tx:
         try:
