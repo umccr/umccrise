@@ -1,3 +1,4 @@
+from ngs_utils.utils import update_dict
 from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data, parse_bcbio_filelist
 import cyvcf2
 import yaml
@@ -37,7 +38,7 @@ if isinstance(run, BcbioProject):
         input:
             conf_dir = run.config_dir
         output:
-            done_flag = 'log/config.done',
+            done_flag = 'log/config/config.done',
         params:
             conf_dir = 'log/config',
         shell:
@@ -230,10 +231,11 @@ else:  # dragen
 if len(batch_by_name) > 1:
     rule combined_multiqc_prep_multiqc_data:
         input:
-            filelists           = [f'work/{b}/multiqc_data/filelist.txt' for b in batch_by_name.keys()],
+            filelists            = [f'work/{b}/multiqc_data/filelist.txt' for b in batch_by_name.keys()],
+            generated_conf_yamls = [f'work/{b}/multiqc_data/generated_conf.yaml' for b in batch_by_name.keys()],
         output:
-            filelist            = 'multiqc/multiqc_data/filelist.txt',
-            generated_conf_yaml = 'multiqc/multiqc_data/generated_conf.yaml',
+            filelist             = 'multiqc/multiqc_data/filelist.txt',
+            generated_conf_yaml  = 'multiqc/multiqc_data/generated_conf.yaml',
         group: 'combined_multiqc'
         run:
             report_base_path = dirname(abspath(f'multiqc/multiqc_report.html'))
@@ -241,6 +243,11 @@ if len(batch_by_name) > 1:
                 run,
                 base_dirpath=report_base_path,
             )
+            for sample_conf_yaml in input.generated_conf_yamls:
+                with open(sample_conf_yaml) as f:
+                    sample_conf = yaml.load(f)
+                    del sample_conf['umccr']
+                    generated_conf = update_dict(generated_conf, sample_conf)
 
             qc_files = []
             for filelist in input.filelists:

@@ -139,7 +139,7 @@ rule oncoviral_multiqc:
             yaml.dump(dict(
                 sp = dict(
                     oncoviruses = dict(
-                        fn = basename(output.data_yml),
+                        fn_re = basename(output.data_yml).replace(wildcards.batch, '.*'),
                     )
                 ),
                 custom_data = dict(
