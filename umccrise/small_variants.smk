@@ -256,10 +256,14 @@ rule somatic_stats_report:
                 subset_genes = (total_vars - vars_cancer_genes) / total_vars * 100.0
                 all_snps, all_indels, all_others = cnt_vars(input.vcf, passed=False)
 
+        all_vars = all_snps + all_indels + all_others
+        vars = snps + indels + others
+
         data = dict(
             snps=snps,
             indels=indels,
             others=others if others else None,
+            filt_vars=(all_vars - vars) / all_vars * 100.0,
             filt_snps=(all_snps - snps) / all_snps * 100.0,
             filt_indels=(all_indels - indels) / all_indels * 100.0,
             filt_others=(((all_others - others) / all_others * 100.0) if others and all_others else None),

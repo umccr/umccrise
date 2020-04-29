@@ -146,6 +146,9 @@ custom_data:
     # the custom content won't show up :(
     umccrise:
         plot_type: generalstats
+#        id: umccrsie_varaint_anaysis
+#        section_name: 'Variant analysis'
+#        description: 'Variant analysis in Umccrise'
         pconfig:
 
         - subset_genes:
@@ -156,6 +159,15 @@ custom_data:
             format: '{:,.2f}'
             suffix: '%'
 
+        - filt_vars:
+            title: 'Var-filt'
+            description: '% variants filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
+            min: 0
+            max: 100
+            format: '{:,.2f}'
+            scale: 'Reds'
+            suffix: '%'
+            hidden: True
         - filt_snps:
             title: 'SNP-filt'
             description: '% SNPs filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
@@ -164,6 +176,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
+            hidden: True
         - filt_indels:
             title: 'Indel-filt'
             description: '% Indels filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
@@ -172,6 +185,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
+            hidden: True
         - filt_other:
             title: 'Other-filt'
             description: '% Other variants (MNP) filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
@@ -180,6 +194,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
+            hidden: True
 
         - snps:
             title: 'SNP'
@@ -196,6 +211,7 @@ custom_data:
             description: 'Other somatic variants (MNP), passing umccrise filters'
             min: 0
             format: '{:,.0f}'
+            hidden: True
 
         - germline:
             title: 'Germline'
