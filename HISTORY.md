@@ -1,5 +1,6 @@
 0.18.0 (TBR):
 
+- Integrate [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported in MultiQC and the cancer report.
 - More DRAGEN input options:
     - Support tumor and normal sample names different from the output prefix (read from the --RGSM tags)
     - Support multi-fastq runs (when input fastq files and RGSM are specified in CSV files and put in the DRAGEN outout folder by the UMCCR worklow).

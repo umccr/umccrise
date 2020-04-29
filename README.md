@@ -16,6 +16,7 @@ Umccrise is developed to post-processess outputs from cancer variant calling ana
 - Generate a cancer report with mutational signatures, circos plots, prioritized copy number and structural variant calls;
 - Run [CACAO](https://github.com/sigven/cacao) to calculate coverage in common hotspots, as well as goleft to estimate coverage problems;
 - Run [Conpair](https://github.com/nygenome/Conpair) to tumor/normal concordance and sample contamination.
+- Run [oncoviruses](https://github.com/umccr/oncoviruses) to detect viral integration sites and affected genes.
 
 See the [workflow.md](workflow.md) for a detailed description of the workflow.
 
@@ -300,7 +301,7 @@ export PATH=/g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise
 # conda install conda-build anaconda
 
 cd /g/data/gx8/extras/umccrise_017_2020_Jan_dev/pcgr/install_no_docker
-export VERSION=0.8.4.8
+export VERSION=0.8.4.9
 conda build conda_pkg/pcgr
 conda build conda_pkg/pcgr_dockerized
 conda convert --platform osx-64 \
@@ -309,7 +310,7 @@ conda convert --platform osx-64 \
 anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
 
 cd /g/data/gx8/extras/umccrise_017_2020_Jan_dev/cpsr
-export VERSION=0.5.2.4
+export VERSION=0.5.2.5
 conda build conda_pkg/cpsr
 conda build conda_pkg/cpsr_dockerized
 conda convert --platform osx-64 \
