@@ -65,9 +65,9 @@ include: "structural.smk"
 include: "purple.smk"
 include: "coverage.smk"
 include: "pcgr.smk"
-include: "rmd.smk"
-include: "conpair.smk"
 include: "oncoviruses.smk"
+include: "conpair.smk"
+include: "rmd.smk"
 include: "multiqc.smk"
 
 

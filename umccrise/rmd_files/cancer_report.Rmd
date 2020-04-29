@@ -23,6 +23,8 @@ params:
   purple_cnv: 'x'
   purple_purity: 'x'
   purple_qc: 'x'
+  oncoviral_present_viruses: 'x'
+  oncoviral_breakpoints_tsv: 'x'
   conda_list: 'x'
   # genome_build:     'hg38'
   # tumor_name:       'T_SRR7890902_20pc'
@@ -58,7 +60,7 @@ knitr::opts_chunk$set(collapse = TRUE, echo = FALSE,
 batch_name <- "Elon"
 # tumor_name <- strsplit(batch_name, "__")[[1]][2]
 tumor_name <- "Elon_T"
-snv_caller <- "dragen" # ensemble
+snv_caller <- "ensemble" # ensemble
 
 params_tmp <- list(
   spartan = list(
@@ -1735,6 +1737,39 @@ The area of each circle shows the weight (AMBER baf count) of each segment.
 
 ```{r purple_plot_segment, out.width="40%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.segment.png')))
+```
+
+## Oncoviruses {.tabset .tabset-fade #oncoviruses}
+
+Oncoviruses and their integration sites. Viral sequences are obtained from the
+<a href="https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files">GDC database</a>.
+Host genes are reported if the integration site falls on a gene or at least before 100kbp of the gene start.
+
+```{r oncoviruses_table}
+present_viruses <- params$oncoviral_present_viruses
+breakpoints_tsv <- params$oncoviral_breakpoints_tsv
+# present_viruses <- '/Users/vsaveliev/tmp/oncovi/present_viruses.txt'
+# breakpoints_tsv <- '/Users/vsaveliev/tmp/oncovi/oncoviral_breakpoints.tsv'
+
+if (breakpoints_tsv != "" && file.exists(breakpoints_tsv)) {
+  breakpoints <- readr::read_tsv(breakpoints_tsv, col_names = T, col_types = "cciicicccc")
+  breakpoints %>% 
+    dplyr::select(Contig = contig, Start = start, End = end, `Pair count` = PAIR_COUNT, `Affected genes` = Genes, `SV type` = svtype, ID, MATEID) %>% 
+    DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
+                  class = "cell-border display compact",
+                  rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+                  options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
+                                 buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
+    DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+} else {
+  viruses = readr::read_file(present_viruses)
+  if (str_length(viruses) > 0) {
+    cat(str_c("Deteced significant traces of content of the following viruses: ", viruses, ", however no evidence of viral integration into the host genome is observed."))
+  } else {
+    cat("No oncoviral content detected in this sample.")
+  }
+}
+
 ```
 
 ## Addendum {.tabset .tabset-fade #addendum}

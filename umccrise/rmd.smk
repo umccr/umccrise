@@ -4,6 +4,8 @@ from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
 import glob
+
+from snakemake.io import Namedlist
 from umccrise import package_path
 
 
@@ -153,6 +155,7 @@ rule cancer_report:
         purple_rainfall_png  = rules.purple_run.output.rainfall_png,
         purple_baf_png       = rules.purple_circos_baf.output.png,
 
+        oncoviruses          = get_integration_sites_tsv_fn,
         conda_list           = rules.conda_list.output.txt,
 
     params:
@@ -161,15 +164,17 @@ rule cancer_report:
         work_dir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0]),
         rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
-        af_global           = lambda wc, input: abspath(input.af_global),
-        af_keygenes         = lambda wc, input: abspath(input.af_keygenes),
-        somatic_snv         = lambda wc, input: abspath(input.somatic_snv),
-        somatic_sv          = lambda wc, input: abspath(input.somatic_sv),
-        purple_gene_cnv     = lambda wc, input: abspath(input.purple_gene_cnv),
-        purple_cnv          = lambda wc, input: abspath(input.purple_cnv),
-        purple_purity       = lambda wc, input: abspath(input.purple_purity),
-        purple_qc           = lambda wc, input: abspath(input.purple_qc),
-        conda_list          = lambda wc, input: abspath(input.conda_list),
+        af_global       = lambda wc, input: abspath(input.af_global),
+        af_keygenes     = lambda wc, input: abspath(input.af_keygenes),
+        somatic_snv     = lambda wc, input: abspath(input.somatic_snv),
+        somatic_sv      = lambda wc, input: abspath(input.somatic_sv),
+        purple_gene_cnv = lambda wc, input: abspath(input.purple_gene_cnv),
+        purple_cnv      = lambda wc, input: abspath(input.purple_cnv),
+        purple_purity   = lambda wc, input: abspath(input.purple_purity),
+        purple_qc       = lambda wc, input: abspath(input.purple_qc),
+        conda_list      = lambda wc, input: abspath(input.conda_list),
+        oncoviral_present_viruses = lambda wc, input: abspath(input.oncoviruses[0] if isinstance(input.oncoviruses, Namedlist) else input.oncoviruses),
+        oncoviral_breakpoints_tsv = lambda wc, input: abspath(input.oncoviruses[1]) if isinstance(input.oncoviruses, Namedlist) else '',
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
@@ -210,6 +215,8 @@ purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_purity='{params.purple_purity}', \
 purple_qc='{params.purple_qc}', \
+oncoviral_present_viruses='{params.oncoviral_present_viruses}', \
+oncoviral_breakpoints_tsv='{params.oncoviral_breakpoints_tsv}', \
 conda_list='{params.conda_list}' \
 ))" ; \
 cd {params.work_dir} ; \

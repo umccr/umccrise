@@ -3,8 +3,10 @@ from os.path import join, basename
 import yaml
 from hpc_utils import hpc
 from ngs_utils.file_utils import verify_file
+from cyvcf2 import VCF
 
-localrules: oncoviruses
+
+localrules: oncoviruses, oncoviruses_per_batch
 
 
 checkpoint viral_content:
@@ -12,6 +14,7 @@ checkpoint viral_content:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
     output:
         prioritized_tsv = '{batch}/oncoviruses/prioritized_oncoviruses.tsv',
+        present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
     params:
         genomes_dir = hpc.genomes_dir,
         work_dir = 'work/{batch}/oncoviruses',
@@ -31,11 +34,22 @@ checkpoint viral_content:
         #     shell('cp {params.work_dir}/breakpoints.vcf.gz {params.breakpoints_vcf}')
         shell('cp {params.work_dir}/prioritized_oncoviruses.tsv {output.prioritized_tsv}')
 
+        viruses = []
+        with open(output.prioritized_tsv) as f:
+            for l in f:
+                l = l.strip()
+                if l and not l.startswith('#'):
+                    l = l.split('\t')
+                    if l[6] != '.':
+                        viruses.append(l[0])
+        with open(output.present_viruses, 'w') as outf:
+            outf.write(','.join(viruses))
+
 
 rule viral_integration_sites:
     input:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        significant_viruses = 'work/{batch}/oncoviruses/significant_viruses.txt',
+        significant_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
     output:
         breakpoints_vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf.gz',
     params:
@@ -56,6 +70,7 @@ rule viral_integration_sites:
         shell('cp {params.work_dir}/breakpoints.vcf.gz {output.breakpoints_vcf}')
 
 
+# TODO: count viruses, breakpoints and genes for MultiQC report
 def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
     viral_data = []
     with open(prioritized_oncoviruses_tsv) as f:
@@ -99,13 +114,6 @@ def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
             "viral_content": "; ".join([v for i, (c, d, v) in enumerate(viral_data)]) if there_some_hits else '-'
         }
     }
-
-    # f'Sequences of known oncoviruses, found in umapped reads.'
-    # f' Format: (x depth; % of sequence covered at >{significant_coverage}).'
-    # f' Viral sequences are from'
-    # f' <a href="https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files">GDC</a>'
-    # f' found in unmapped reads. Showing significant hits with at least {significant_coverage} support'
-    # f' along at least {int(100 * significant_completeness)}% of the genome.'
     header = {
         'title': 'Viral',
         'description': (
@@ -153,27 +161,61 @@ rule oncoviral_multiqc:
             ), out, default_flow_style=False)
 
 
-def get_integration_sites_input_fn(wildcards):
-    prioritized_tsv = checkpoints.viral_content.get(**wildcards).output.prioritized_tsv
-    viruses = []
-    with open(prioritized_tsv) as f:
-        for l in f:
-            l = l.strip()
-            if l and not l.startswith('#'):
-                l = l.split('\t')
-                if l[6] != '.':
-                    viruses.append(l[0])
-    if viruses:
-        with open(f'work/{wildcards.batch}/oncoviruses/significant_viruses.txt', 'w') as outf:
-            outf.write(','.join(viruses))
-        return rules.viral_integration_sites.output.breakpoints_vcf
+def parse_info_field(rec, name):
+    val = rec.INFO.get(name)
+    if val is None:
+        return ''
+    elif isinstance(val, float) or isinstance(val, int) or isinstance(val, bool) or isinstance(val, str):
+        return str(val)
     else:
-        return prioritized_tsv
+        return ','.join(map(str, val))
+
+
+# Produce a TSV file for further analysis in Rmd
+# sample                chrom  start      end  svtype  PAIR_COUNT  ViralGenes  GenesWithin100kb                               ID                      MATEID
+# PRJ180253_E190-T01-D  chr8   127719201  .    BND     111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:1  MantaBND:0:1:5:0:0:0:0
+# PRJ180253_E190-T01-D  HPV18       6787  .    BND     111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:0  MantaBND:0:1:5:0:0:0:1
+# OR:
+# sample                virus  chrom  host_start  virus_start  PAIR_COUNT  ViralGenes  GenesWithin100kb                               ID                      MATEID
+# PRJ180253_E190-T01-D  HPV18  chr8   127719201   6787         111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:1  MantaBND:0:1:5:0:0:0:0
+rule oncoviruses_breakpoints_tsv:
+    input:
+        vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf.gz',
+        present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
+    output:
+        tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv'
+    group: "oncoviruses"
+    run:
+        sample_name = batch_by_name[wildcards.batch].tumor.name
+        viruses = open(input.present_viruses).read().split(',')
+        with open(output.tsv, 'w') as out:
+            header = ['sample', 'contig', 'start', 'end', 'svtype',
+                      'PAIR_COUNT', 'Genes',  'ID', 'MATEID',]
+            out.write('\t'.join(header) + '\n')
+            for rec in VCF(input.vcf):
+                viral_genes = rec.INFO.get('ViralGenes')
+                host_genes = rec.INFO.get('GenesWithin100kb')
+                data = [sample_name, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
+                        rec.INFO['SVTYPE'],
+                        parse_info_field(rec, 'PAIR_COUNT'),
+                        viral_genes if rec.CHROM in viruses else host_genes,
+                        rec.ID,
+                        parse_info_field(rec, 'MATEID'),
+                        ]
+                out.write('\t'.join(map(str, data)) + '\n')
+
+
+def get_integration_sites_tsv_fn(wildcards):
+    present_viruses = checkpoints.viral_content.get(**wildcards).output.present_viruses
+    if open(present_viruses).read().strip():
+        return present_viruses, rules.oncoviruses_breakpoints_tsv.output.tsv
+    else:
+        return present_viruses
 
 
 rule oncoviruses_per_batch:
     input:
-        get_integration_sites_input_fn,
+        get_integration_sites_tsv_fn,
         expand(rules.oncoviral_multiqc.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/oncoviruses_{batch}.done'))
