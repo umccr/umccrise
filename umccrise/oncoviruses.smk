@@ -1,9 +1,11 @@
-import json
+from collections import defaultdict
 from os.path import join, basename
 import yaml
+from cyvcf2 import VCF
+import csv
 from hpc_utils import hpc
 from ngs_utils.file_utils import verify_file
-from cyvcf2 import VCF
+from ngs_utils.utils import update_dict
 
 
 localrules: oncoviruses, oncoviruses_per_batch
@@ -70,7 +72,49 @@ rule viral_integration_sites:
         shell('cp {params.work_dir}/breakpoints.vcf.gz {output.breakpoints_vcf}')
 
 
-# TODO: count viruses, breakpoints and genes for MultiQC report
+def parse_info_field(rec, name):
+    val = rec.INFO.get(name)
+    if val is None:
+        return ''
+    elif isinstance(val, float) or isinstance(val, int) or isinstance(val, bool) or isinstance(val, str):
+        return str(val)
+    else:
+        return ','.join(map(str, val))
+
+# Produce a TSV file for further analysis in Rmd and MultiQC
+# sample                chrom  start      end  svtype  PAIR_COUNT  ViralGenes  GenesWithin100kb                               ID                      MATEID
+# PRJ180253_E190-T01-D  chr8   127719201  .    BND     111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:1  MantaBND:0:1:5:0:0:0:0
+# PRJ180253_E190-T01-D  HPV18       6787  .    BND     111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:0  MantaBND:0:1:5:0:0:0:1
+# OR:
+# sample                virus  chrom  host_start  virus_start  PAIR_COUNT  ViralGenes  GenesWithin100kb                               ID                      MATEID
+# PRJ180253_E190-T01-D  HPV18  chr8   127719201   6787         111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:1  MantaBND:0:1:5:0:0:0:0
+rule oncoviruses_breakpoints_tsv:
+    input:
+        vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf.gz',
+        present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
+    output:
+        tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv'
+    group: "oncoviruses"
+    run:
+        sample_name = batch_by_name[wildcards.batch].tumor.name
+        viruses = open(input.present_viruses).read().split(',')
+        with open(output.tsv, 'w') as out:
+            header = ['sample', 'contig', 'start', 'end', 'svtype',
+                      'PAIR_COUNT', 'Genes',  'ID', 'MATEID',]
+            out.write('\t'.join(header) + '\n')
+            for rec in VCF(input.vcf):
+                viral_genes = rec.INFO.get('ViralGenes')
+                host_genes = rec.INFO.get('GenesWithin100kb')
+                data = [sample_name, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
+                        rec.INFO['SVTYPE'],
+                        parse_info_field(rec, 'PAIR_COUNT'),
+                        viral_genes if rec.CHROM in viruses else host_genes,
+                        rec.ID,
+                        parse_info_field(rec, 'MATEID'),
+                        ]
+                out.write('\t'.join(map(str, data)) + '\n')
+
+
 def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
     viral_data = []
     with open(prioritized_oncoviruses_tsv) as f:
@@ -109,33 +153,78 @@ def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
         viral_data = [(c, d, v) for c, d, v in viral_data if c >= significant_completeness]
 
     # To add into stats:
+    metric = 'viral_content'
     data = {
         sample_name: {
-            "viral_content": "; ".join([v for i, (c, d, v) in enumerate(viral_data)]) if there_some_hits else '-'
+            metric: "; ".join([v for i, (c, d, v) in enumerate(viral_data)]) if there_some_hits else '-'
         }
     }
     header = {
-        'title': 'Viral',
-        'description': (
-            f'Detected viral sequences associated with cancer, per GDC database. '
-            f'Format: x depth; completeness (% of sequence covered at >{significant_coverage}). '
-            f'Showing significant hits with at least {int(100 * significant_completeness)}% completeness.'
-        ),
+        metric: dict(
+            title='Viruses',
+            description=(
+                f'Detected viral sequences associated with cancer, per GDC database. '
+                f'Format: x depth; completeness (% of sequence covered at >{significant_coverage}). '
+                f'Showing significant hits with at least {int(100 * significant_completeness)}% completeness.'
+            ),
+        )
     }
     return data, header
 
 
+def make_viral_integration_mqc_metrics(present_viruses, breakpoints_tsv):
+    number_of_integration_sites_by_sample = defaultdict(int)
+    with open(breakpoints_tsv) as f:
+        for rec in csv.DictReader(f, delimiter='\t'):
+            contig = rec['contig']
+            sample_name = rec['sample']
+            if contig not in present_viruses:  # human chromosome?
+                number_of_integration_sites_by_sample[sample_name] += 1
+
+    metric = 'viral_integration_sites'
+    data = {sn: {metric: val} for sn, val in number_of_integration_sites_by_sample.items()}
+    header = {
+        metric: dict(
+            title='Viral IS',
+            description='The number of found viral integration sites',
+            min=0,
+            format='{:,.0f}',
+        )
+    }
+    return data, header
+
+
+def get_integration_sites_tsv_fn(wildcards):
+    present_viruses = checkpoints.viral_content.get(**wildcards).output.present_viruses
+    if open(present_viruses).read().strip():
+        return present_viruses, rules.oncoviruses_breakpoints_tsv.output.tsv
+    else:
+        return present_viruses
+
+
 rule oncoviral_multiqc:
     input:
-        prioritized_tsv = '{batch}/oncoviruses/prioritized_oncoviruses.tsv'
+        prioritized_tsv = '{batch}/oncoviruses/prioritized_oncoviruses.tsv',
+        present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
+        wait_for_integration_sites = get_integration_sites_tsv_fn,
     output:
         data_yml = 'work/{batch}/oncoviruses/{batch}_oncoviruses_stats_data.yml',
         header_yml = 'work/{batch}/oncoviruses/{batch}_oncoviruses_stats_header.yml',
     params:
-        sample = lambda wc: batch_by_name[wc.batch].tumor.name
+        sample = lambda wc: batch_by_name[wc.batch].tumor.name,
+        breakpoints_tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv',
     group: "oncoviruses"
     run:
         data, header = make_oncoviral_mqc_metric(input.prioritized_tsv)
+        headers = [header]
+
+        with open(input.present_viruses) as f:
+            present_viruses = [v for v in f.read().strip().split(',') if v]
+        if present_viruses:
+            integration_datas, integration_headers = \
+                make_viral_integration_mqc_metrics(present_viruses, params.breakpoints_tsv)
+            data = update_dict(data, integration_datas)
+            headers.append(integration_headers)
 
         with open(output.data_yml, 'w') as out:
             yaml.dump(dict(
@@ -153,64 +242,10 @@ rule oncoviral_multiqc:
                 custom_data = dict(
                     oncoviruses = dict(
                         plot_type = 'generalstats',
-                        pconfig = [dict(
-                            viral_content = header,
-                        )]
+                        pconfig = headers
                     )
                 ),
             ), out, default_flow_style=False)
-
-
-def parse_info_field(rec, name):
-    val = rec.INFO.get(name)
-    if val is None:
-        return ''
-    elif isinstance(val, float) or isinstance(val, int) or isinstance(val, bool) or isinstance(val, str):
-        return str(val)
-    else:
-        return ','.join(map(str, val))
-
-
-# Produce a TSV file for further analysis in Rmd
-# sample                chrom  start      end  svtype  PAIR_COUNT  ViralGenes  GenesWithin100kb                               ID                      MATEID
-# PRJ180253_E190-T01-D  chr8   127719201  .    BND     111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:1  MantaBND:0:1:5:0:0:0:0
-# PRJ180253_E190-T01-D  HPV18       6787  .    BND     111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:0  MantaBND:0:1:5:0:0:0:1
-# OR:
-# sample                virus  chrom  host_start  virus_start  PAIR_COUNT  ViralGenes  GenesWithin100kb                               ID                      MATEID
-# PRJ180253_E190-T01-D  HPV18  chr8   127719201   6787         111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:1  MantaBND:0:1:5:0:0:0:0
-rule oncoviruses_breakpoints_tsv:
-    input:
-        vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf.gz',
-        present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
-    output:
-        tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv'
-    group: "oncoviruses"
-    run:
-        sample_name = batch_by_name[wildcards.batch].tumor.name
-        viruses = open(input.present_viruses).read().split(',')
-        with open(output.tsv, 'w') as out:
-            header = ['sample', 'contig', 'start', 'end', 'svtype',
-                      'PAIR_COUNT', 'Genes',  'ID', 'MATEID',]
-            out.write('\t'.join(header) + '\n')
-            for rec in VCF(input.vcf):
-                viral_genes = rec.INFO.get('ViralGenes')
-                host_genes = rec.INFO.get('GenesWithin100kb')
-                data = [sample_name, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
-                        rec.INFO['SVTYPE'],
-                        parse_info_field(rec, 'PAIR_COUNT'),
-                        viral_genes if rec.CHROM in viruses else host_genes,
-                        rec.ID,
-                        parse_info_field(rec, 'MATEID'),
-                        ]
-                out.write('\t'.join(map(str, data)) + '\n')
-
-
-def get_integration_sites_tsv_fn(wildcards):
-    present_viruses = checkpoints.viral_content.get(**wildcards).output.present_viruses
-    if open(present_viruses).read().strip():
-        return present_viruses, rules.oncoviruses_breakpoints_tsv.output.tsv
-    else:
-        return present_viruses
 
 
 rule oncoviruses_per_batch:

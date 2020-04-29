@@ -155,7 +155,9 @@ rule cancer_report:
         purple_rainfall_png  = rules.purple_run.output.rainfall_png,
         purple_baf_png       = rules.purple_circos_baf.output.png,
 
-        oncoviruses          = get_integration_sites_tsv_fn,
+        wait_for_integration_sites = get_integration_sites_tsv_fn,
+        oncoviral_present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
+
         conda_list           = rules.conda_list.output.txt,
 
     params:
@@ -173,8 +175,6 @@ rule cancer_report:
         purple_purity   = lambda wc, input: abspath(input.purple_purity),
         purple_qc       = lambda wc, input: abspath(input.purple_qc),
         conda_list      = lambda wc, input: abspath(input.conda_list),
-        oncoviral_present_viruses = lambda wc, input: abspath(input.oncoviruses[0] if isinstance(input.oncoviruses, Namedlist) else input.oncoviruses),
-        oncoviral_breakpoints_tsv = lambda wc, input: abspath(input.oncoviruses[1]) if isinstance(input.oncoviruses, Namedlist) else '',
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
@@ -183,6 +183,12 @@ rule cancer_report:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
     run:
+        oncoviral_present_viruses = abspath(input.oncoviral_present_viruses)
+        oncoviral_breakpoints_tsv = ''
+        with open(input.oncoviral_present_viruses) as f:
+            if [v for v in f.read().strip().split(',') if v]:
+                oncoviral_breakpoints_tsv = abspath('work/{batch}/oncoviruses/oncoviral_breakpoints.tsv')
+
         shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
         shell('mkdir -p {output.rmd_tmp_dir}/img')
         for img_path in [
@@ -215,8 +221,8 @@ purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_purity='{params.purple_purity}', \
 purple_qc='{params.purple_qc}', \
-oncoviral_present_viruses='{params.oncoviral_present_viruses}', \
-oncoviral_breakpoints_tsv='{params.oncoviral_breakpoints_tsv}', \
+oncoviral_present_viruses='{oncoviral_present_viruses}', \
+oncoviral_breakpoints_tsv='{oncoviral_breakpoints_tsv}', \
 conda_list='{params.conda_list}' \
 ))" ; \
 cd {params.work_dir} ; \
