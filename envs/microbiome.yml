@@ -1,0 +1,10 @@
+name: umccrise_microbiome
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - mash
+  - blast

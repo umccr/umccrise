@@ -65,8 +65,9 @@ include: "structural.smk"
 include: "purple.smk"
 include: "coverage.smk"
 include: "pcgr.smk"
-include: "oncoviruses.smk"
 include: "conpair.smk"
+include: "oncoviruses.smk"
+include: "microbiome.smk"
 include: "rmd.smk"
 include: "multiqc.smk"
 
@@ -76,13 +77,14 @@ localrules: umccrise
 
 rule umccrise:
     input:  # Copy here inputs of the "milestone" rules (rules without output defined in the end of each Snakemake.* file)
-        rules.multiqc.output,
         rules.coverage.output,
         rules.structural.output,
         rules.small_variants.output,
         rules.purple.output,
         rules.pcgr.output,
-        rules.rmd.output,
         rules.oncoviruses.output,
+        rules.microbiome.output,
+        rules.rmd.output,
+        rules.multiqc.output,
     output:
         touch('all.done')
