@@ -47,14 +47,13 @@ rule contamination:
     output:
         tumor = 'contamination/' + samples['tumor'] + '.contamination.txt',
         normal = 'contamination/' + samples['normal'] + '.contamination.txt',
-    shell: """
-estimate_tumor_normal_contamination.py\
- -T {input.tumor_pileup}\
- -N {input.normal_pileup}\
- -g {genome} | tee\
- >(grep Tumor | sed 's/Tumor sample/Sample/' > {output.tumor})\
- | grep Normal | sed 's/Normal sample/Sample/' > {output.normal}
-"""
+    run:
+        shell("estimate_tumor_normal_contamination.py"
+" -T {input.tumor_pileup}"
+" -N {input.normal_pileup}"
+" -g {genome} > result.tmp")
+        shell("grep Tumor  result.tmp | sed 's/Tumor sample/Sample/'  > {output.tumor}")
+        shell("grep Normal result.tmp | sed 's/Normal sample/Sample/' > {output.normal}")
 
 
 rule pileup:
@@ -67,7 +66,8 @@ rule pileup:
     params:
         genome = genome
     shell:
-        'run_gatk_pileup_for_sample.py -B {input} -O {output} -g {params.genome} --reference {input.ref_fa}'
+        'run_gatk_pileup_for_sample.py -B {input} -O {output} -g {params.genome} '
+        '--reference {input.ref_fa} && test -s {output}'
 
 
 # rule for_multiqc:
