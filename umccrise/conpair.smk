@@ -25,6 +25,7 @@ rule run_conpair:
     shell:
         'conpair -T {input.tumor_bam} -N {input.normal_bam} --ref-fa {input.ref_fa} -g {params.genome} -j {threads} '
         '-o {params.out_dir} -tn {params.tumor_name} -nn {params.normal_name}'
+        ' || touch work/{wildcards.batch}/conpair/failed'
 
 
 rule conpair:
