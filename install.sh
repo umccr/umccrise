@@ -20,7 +20,7 @@ conda env create -p $PWD/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccris
 conda env create -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
 conda env create -p $PWD/miniconda/envs/${ENV_NAME}_cancer_report --file umccrise/envs/cancer_report.yml
 conda env create -p $PWD/miniconda/envs/${ENV_NAME}_python2 --file umccrise/envs/python2.yml
-
+conda env create -p $PWD/miniconda/envs/${ENV_NAME}_microbiome --file umccrise/envs/microbiome.yml
 if [[ "$OSTYPE" == "darwin"* ]]; then
     conda env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml
 else
