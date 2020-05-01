@@ -26,8 +26,16 @@ rule sv_keep_pass:
     output:
         vcf = 'work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz'
     group: "sv_vcf"
-    shell:
-        'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
+    run:
+        cmd = f'cat {input.vcf}'
+        # remove previous annotation
+        filts_to_remove = [f'{f}' for f in ['INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER',
+                                            'FILTER/Intergenic', 'FILTER/MissingAnn', 'FILTER/REJECT']
+                           if vcf_contains_field(input.vcf, f)]
+        if filts_to_remove:
+            cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
+        cmd += ' | bcftools view -f.,PASS -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
+        shell(cmd)
 
 
 if isinstance(run, DragenProject):
@@ -171,18 +179,7 @@ rule sv_prioritize:
     group: "sv_vcf"
     run:
         assert vcf_contains_field(input.vcf, 'INFO/ANN'), f'Manta {input.vcf} must be annotated with SnpEff'
-
-        cmd = f'cat {input.vcf}'
-        # remove previous annotation
-        filts_to_remove = [f'{f}' for f in ['INFO/SIMPLE_ANN', 'INFO/SV_HIGHEST_TIER',
-                                            'FILTER/Intergenic', 'FILTER/MissingAnn', 'FILTER/REJECT']
-                           if vcf_contains_field(input.vcf, f)]
-        if filts_to_remove:
-            cmd += f' | bcftools annotate -x "' + ','.join(f'{f}' for f in filts_to_remove) + '"'
-
-        cmd += f' | prioritize_sv -g {params.genome} | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}'
-        # keeping INFO/ANN here because later (after PURPLE we reprioritizing)
-        shell(cmd)
+        shell(f'cat {input.vcf} | prioritize_sv -g {params.genome} | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
         assert before == after, (before, after)
