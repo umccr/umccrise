@@ -263,6 +263,5 @@ p_value_min = 5e-8
 n_vcfanno_proc = 4
 n_vep_forks = 4
 vep_skip_intergenic = false
-vcf2maf = true
+vcf2maf = false
 vep_pick_order = "rank,appris,biotype,tsl,ccds,canonical,length,mane"
-
