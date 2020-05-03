@@ -32,7 +32,6 @@ dependencies:
   - multiqc
   - nose
   - versionpy
-  - bed_annotation
   - pyensembl
   - break-point-inspector
   - gatk4 ==4.1.4.1  # Conpair and panel of normals (pinning for Conpair)

@@ -446,17 +446,18 @@ p <- purple_purity
 q <- purple_qc
 purple_qc_summary <- dplyr::tribble(
   ~Variable, ~value, ~details,
-  'QC_Status', glue('{q["QCStatus"]}'), "",
-  'Purity', glue('{p["purity"]} ({p["minPurity"]}-{p["maxPurity"]})'), "Purity of tumor in the sample (and min-max with score within 10% of best)",
-  'Ploidy', glue('{p["ploidy"]} ({p["minPloidy"]}-{p["maxPloidy"]})'), "Average ploidy of tumor sample after adjusting for purity (and min-max with score within 10% of best)",
-  'Gender', glue('{p["gender"]}'), "",
-  'WGD', glue('{p["wholeGenomeDuplication"]}'), "Whole genome duplication",
-  'MSI (indels/Mb)', glue('{p["msStatus"]} ({p["msIndelsPerMb"]})'), "MSI status (MSI, MSS or UNKNOWN if somatic variants not supplied) & MS Indels per Mb",
-  'Polyclonal Prop', p["polyclonalProportion"], "Proportion of CN regions that are more than 0.25 from a whole copy number",
-  'Diploidy Prop', glue('{p["diploidProportion"]} ({p["minDiploidProportion"]}-{p["maxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
-  'Segment_Pass', glue('{q["SegmentPass"]}'), glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
-  'Gender_Pass', glue('{q["GenderPass"]}'), glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
-  'DelGenes_Pass', glue('{q["DeletedGenesPass"]}'), glue('count: {q["DeletedGenes"]}'))
+  'QC_Status'      , glue('{q["QCStatus"]}')                                  , "",
+  'Purity'         , glue('{p["purity"]} ({p["minPurity"]}-{p["maxPurity"]})'), "Purity of tumor in the sample (and min-max with score within 10% of best)",
+  'Ploidy'         , glue('{p["ploidy"]} ({p["minPloidy"]}-{p["maxPloidy"]})'), "Average ploidy of tumor sample after adjusting for purity (and min-max with score within 10% of best)",
+  'Gender'         , glue('{p["gender"]}')                                    , "",
+  'WGD'            , glue('{p["wholeGenomeDuplication"]}')                    , "Whole genome duplication",
+  'MSI (indels/Mb)', glue('{p["msStatus"]} ({p["msIndelsPerMb"]})')           , "MSI status (MSI, MSS or UNKNOWN if somatic variants not supplied) & MS Indels per Mb",
+  'Polyclonal Prop', glue('{p["polyclonalProportion"]}')                      , "Proportion of CN regions that are more than 0.25 from a whole copy number",
+  'Diploidy Prop'  , glue('{p["diploidProportion"]} ({p["minDiploidProportion"]}-{p["maxDiploidProportion"]})'), glue('Proportion of CN regions that have 1 (+- 0.2) minor and major allele'),
+  'Segment_Pass'   , glue('{q["SegmentPass"]}')                               , glue('Score: {q["SegmentScore"]}; Unsupported: {q["UnsupportedSegments"]}'),
+  'Gender_Pass'    , glue('{q["GenderPass"]}')                                , glue('Amber: {q["AmberGender"]}; Cobalt: {q["CobaltGender"]}'),
+  'DelGenes_Pass'  , glue('{q["DeletedGenesPass"]}')                          , glue('count: {q["DeletedGenes"]}'),
+)
 ```
 
 ```{r purple_gene_cnv_prep}
