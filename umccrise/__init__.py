@@ -3,15 +3,17 @@ import math
 import os
 import sys
 from os.path import join, abspath, dirname, isfile, basename, splitext
+
+from ngs_utils.Sample import BaseBatch, BaseProject, BaseSample
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.dragen import DragenProject
 from ngs_utils.utils import flatten
-from ngs_utils.logger import critical, info, debug, warn
-from ngs_utils import logger as ngs_utils_logger
+from ngs_utils.logger import critical, info, debug, warn, error
+from ngs_utils import logger as ngs_utils_logger, bam_utils, vcf_utils
 from hpc_utils import hpc
 from ngs_utils.utils import set_locale; set_locale()
-from os.path import isfile, join, dirname, abspath
+from os.path import isfile, join, dirname, abspath, isdir
 from ngs_utils.file_utils import verify_file
 
 
@@ -24,6 +26,51 @@ def get_sig_rmd_file():
         The file must be located at the same directory as the Snakefile and the patient_analysis module.
     """
     return verify_file(join(package_path(), 'rmd_files', 'sig.Rmd'), is_critical=True)
+
+
+class UmccriseSample(BaseSample):
+    def __init__(self, **kwargs):
+        BaseSample.__init__(self, **kwargs)  # name, dirpath, work_dir, bam, vcf, phenotype, normal_match
+        self.qc_files = []
+
+
+class UmccriseProject(BaseProject):
+    def __init__(self, input_dir=None, silent=False, exclude_samples=None, **kwargs):
+        BaseProject.__init__(self, input_dir=input_dir, **kwargs)
+        self.genome_build = 'hg38'
+
+    def get_or_create_batch(self, tumor_name, normal_name=None):
+        if tumor_name in self.batch_by_name:
+            b = self.batch_by_name[tumor_name]
+        else:
+            b = UmccriseBatch(tumor_name)
+            b.tumor = UmccriseSample(name=tumor_name)
+            if normal_name:
+                b.normal = UmccriseSample(name=normal_name)
+            self.batch_by_name[tumor_name] = b
+            self.samples.extend([b.tumor, b.normal])
+        return b
+
+    def add_file(self, fpath):
+        if fpath.endswith('.bam'):
+            sample_name = bam_utils.sample_name_from_bam(fpath)
+            b = self.get_or_create_batch(sample_name)
+            b.tumor.bam = fpath
+
+        if fpath.endswith('.vcf.gz'):
+            sample_names = vcf_utils.get_sample_names(fpath)
+            if len(sample_names) == 1:
+                b = UmccriseBatch(sample_names[0])
+                b.somatic_vcf = fpath
+            if len(sample_names) == 2:
+                tumor_sn, normal_sn = sample_names
+                b = UmccriseBatch(tumor_sn, normal_sn)
+                b.somatic_vcf = fpath
+
+
+class UmccriseBatch(BaseBatch):
+    # define bam, somatic_vcf, germline_vcf, structural_vcf, qc_files, genome_build
+    pass
 
 
 def prep_inputs(smconfig, silent=False):
@@ -45,39 +92,54 @@ def prep_inputs(smconfig, silent=False):
         ngs_utils_logger.is_debug = True
 
     ngs_utils_logger.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
-    input_path = smconfig.get('input_project', abspath(os.getcwd()))
-    if glob.glob(join(input_path, '*-replay.json')):
-        run = DragenProject(input_path)
-        batch_by_name = run.batch_by_name
+    input_paths = smconfig.get('input_paths', [abspath(os.getcwd())])
 
-    else:
-        run = BcbioProject(input_path,
-                           exclude_samples=exclude_names,
-                           include_samples=include_names,
-                           silent=True)
-        run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
+    run = UmccriseProject()
 
-        if len(run.batch_by_name) == 0:
-            if exclude_names:
-                critical(f'Error: no samples left with the exclusion of batch/sample name(s): {", ".join(exclude_names)}.'
-                         f'Check yaml file for available options: {run.bcbio_yaml_fpath}.')
-            if include_names:
-                critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
-                         f'Check yaml file for available options: {run.bcbio_yaml_fpath}')
-            critical(f'Error: could not parse any batch or samples in the bcbio project. '
-                     f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}')
+    if isinstance(input_paths, str):
+        input_paths = input_paths.split(',')
 
-        # Batch objects index by tumor sample names
-        batches = [b for b in run.batch_by_name.values() if not b.is_germline() and b.tumor and b.normal]
-        assert batches
-        batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
+    for input_path in input_paths:
+        # custom file
+        if isfile(input_path):
+            run.add_file(input_path)
 
-    # Reference files
-    if smconfig.get('genomes_dir'):
-        hpc.set_genomes_dir(smconfig.get('genomes_dir'))
+        # dragen
+        elif isdir(input_path) and glob.glob(join(input_path, '*-replay.json')):
+            run = DragenProject(input_path)
 
-    ngs_utils_logger.is_silent = False
-    return run, batch_by_name
+        # bcbio
+        elif isdir(input_path):
+            run = BcbioProject(input_path,
+                               exclude_samples=exclude_names,
+                               include_samples=include_names,
+                               silent=True)
+            run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
+
+            if len(run.batch_by_name) == 0:
+                if exclude_names:
+                    critical(f'Error: no samples left with the exclusion of batch/sample name(s): {", ".join(exclude_names)}.'
+                             f'Check yaml file for available options: {run.bcbio_yaml_fpath}.')
+                if include_names:
+                    critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
+                             f'Check yaml file for available options: {run.bcbio_yaml_fpath}')
+                critical(f'Error: could not parse any batch or samples in the bcbio project. '
+                         f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}')
+
+            # Batch objects index by tumor sample names
+            batches = [b for b in run.batch_by_name.values() if not b.is_germline() and b.tumor and b.normal]
+            assert batches
+            run.batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
+
+        else:
+            error(f'Cannot find file or dir {input_path}')
+
+        # Reference files
+        if smconfig.get('genomes_dir'):
+            hpc.set_genomes_dir(smconfig.get('genomes_dir'))
+
+        ngs_utils_logger.is_silent = False
+        return run, run.batch_by_name
 
 
 def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=False, is_silent=False):

@@ -22,10 +22,10 @@ from umccrise import prep_inputs, prep_resources
 
 @click.command()
 @click.version_option(version.__version__)
-@click.argument('input_project', type=click.Path(exists=True))
-@click.argument('target_rule', nargs=-1)
+@click.argument('input_paths', type=click.Path(exists=True), nargs=-1)
+@click.option('-T', '--target', 'target_rule', multiple=True, default=['all'],
+              help='Optional list of rules, e.g.: -T pcgr -T coverage -T structural -T small_variants')
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory [def: umccrised]')
-
 @click.option('-s', '--sample', 'sample', help='Comma-separated list of samples or batches to process')
 @click.option('-b', '--batch', 'batch', help='Comma-separated list of samples or batches to process')
 @click.option('-e', '--exclude', 'exclude', help='Comma-separated list of samples or batches to ignore')
@@ -57,14 +57,15 @@ from umccrise import prep_inputs, prep_resources
 
 @click.option('--debug', 'debug', is_flag=True, help='Increases verbosity of messages')
 
-def main(input_project, target_rule=list(), output_dir=None, sample=None, batch=None, exclude=None,
+def main(input_paths, target_rule:list = None, output_dir=None, sample=None, batch=None, exclude=None,
          input_genomes_dir=None, cores=None, cluster=False, cluster_cmd=None, forcerun=None,
          unlock=False, rerun_incomplete=False, restart_times=1, dryrun=False,
          upload_s3=False, upload_igv=False, report=None, dag=False, debug=False):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
-input_project: path to a bcbio run (final or "datestamp" directory) or a Dragen run\n
-target_rule: optional list of rules, e.g.: pcgr coverage structural small_variants rmd igv
+input_paths: a path to inputs:\n
+    * if a dir, treated as a bcbio run folder (a "final" or a "datestamp" directory), or a Dragen run folder\n
+    * if files, BAMs and VCF are supported
 """
 
     output_dir = output_dir or 'umccrised'
@@ -83,11 +84,25 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
 
     tmp_dirs = []
 
-    if isfile(input_project):
-        input_project, tmp_dir = extract_tarball_input(output_dir, input_project, 'Bcbio or Dragen project input')
-        tmp_dirs.append(tmp_dir)
+    if not isinstance(input_paths, list):
+        input_paths = list(input_paths)
 
-    conf['input_project'] = verify_dir(input_project, is_critical=True)
+    # if a project is passed as a tarball, uncompressing
+    clean_input_paths = []
+    for input_path in input_paths:
+        if isfile(input_path):
+            verify_file(input_path, is_critical=True)
+            if input_path.endswith('.tar.gz') or input_path.endswith('.tgz'):
+                input_project, tmp_dir = extract_tarball_input(output_dir, input_paths, 'Bcbio or Dragen project input')
+                tmp_dirs.append(tmp_dir)
+                clean_input_paths.append(verify_dir(input_project))
+            else:
+                clean_input_paths.append(verify_file(input_path))
+        if isdir(input_path):
+            verify_dir(input_path, is_critical=True)
+            clean_input_paths.append(verify_dir(input_path))
+
+    conf['input_paths'] = ','.join(clean_input_paths)
 
     if input_genomes_dir:
         if isfile(input_genomes_dir):
@@ -109,10 +124,7 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
     if exclude:
         conf['exclude'] = exclude
     target_rule = list(target_rule)
-    if 'pcgr_download' in target_rule:
-        conf['pcgr_download'] = 'yes'
 
-    conf['upload_igv'] = 'yes' if upload_igv is True else 'no'
     if unlock: conf['unlock'] = 'yes'
     if debug: conf['debug'] = 'yes'
 
@@ -196,7 +208,7 @@ target_rule: optional list of rules, e.g.: pcgr coverage structural small_varian
 
 
 def extract_tarball_input(output_dir, path, description):
-    if not path.endswith('.tar.gz'):
+    if not path.endswith('.tar.gz') and not path.endswith('.tgz'):
         critical(f'{description} must be either a directory, or a .tar.gz file: {path}')
     input_dir = safe_mkdir(join(output_dir, 'input'))
     tmp_dir = tempfile.TemporaryDirectory(prefix=input_dir)
