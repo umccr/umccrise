@@ -134,12 +134,13 @@ def prep_inputs(smconfig, silent=False):
         else:
             error(f'Cannot find file or dir {input_path}')
 
-        # Reference files
-        if smconfig.get('genomes_dir'):
-            hpc.set_genomes_dir(smconfig.get('genomes_dir'))
+    ngs_utils_logger.is_silent = False
 
-        ngs_utils_logger.is_silent = False
-        return run, run.batch_by_name
+    # Reference files
+    if smconfig.get('genomes_dir'):
+        hpc.set_genomes_dir(smconfig.get('genomes_dir'))
+
+    return run, run.batch_by_name
 
 
 def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=False, is_silent=False):
