@@ -38,7 +38,7 @@ dependencies:
   - scipy                      # Conpair
   - tabix
   - goleft
-  # - awscli
+  - awscli
   - pyasn1      # for awscli - for some reason doesn't install automatically on macos
   - parallel    # for general use
   - pygraphviz  # for snakemake report
