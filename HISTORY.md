@@ -12,7 +12,12 @@
 
 --------------------
 
-0.17.9, 0.17.10 (26 Mar 2020)
+0.17.12, 0.17.11 (4 May 2020)
+
+- Dropping sv-prioritize filters from bcbio, rescuing SVs wrongly marked as "intergenic"
+- CPSR: hiding the genes pane which causes random bugs
+
+0.17.10, 0.17.9 (26 Mar 2020)
 
 - Fix SV processing for FFPE
 
