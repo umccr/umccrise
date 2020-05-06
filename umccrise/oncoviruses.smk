@@ -28,7 +28,7 @@ checkpoint viral_content:
         mem_mb=10000
     benchmark:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
-    group: "oncoviruses"
+    group: "viral_content"
     run:
         shell('oncoviruses {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
               '--genomes-dir {params.genomes_dir} {params.unlock_opt} --only-detect')
@@ -65,11 +65,11 @@ rule viral_integration_sites:
         mem_mb=10000
     benchmark:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
-    group: "oncoviruses"
-    run:
-        shell('oncoviruses {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
-              '--genomes-dir {params.genomes_dir} {params.unlock_opt} -v $(cat {input.significant_viruses})')
-        shell('cp {params.work_dir}/breakpoints.vcf.gz {output.breakpoints_vcf}')
+    group: "viral_is"
+    shell:
+        'oncoviruses {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
+        '--genomes-dir {params.genomes_dir} {params.unlock_opt} -v $(cat {input.significant_viruses})'
+        '; cp {params.work_dir}/breakpoints.vcf.gz {output.breakpoints_vcf}'
 
 
 def parse_info_field(rec, name):
@@ -94,7 +94,7 @@ rule oncoviruses_breakpoints_tsv:
         present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
     output:
         tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv'
-    group: "oncoviruses"
+    group: "viral_is"
     run:
         sample_name = batch_by_name[wildcards.batch].tumor.name
         viruses = open(input.present_viruses).read().split(',')
@@ -213,7 +213,6 @@ rule oncoviral_multiqc:
     params:
         sample = lambda wc: batch_by_name[wc.batch].tumor.name,
         breakpoints_tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv',
-    group: "oncoviruses"
     run:
         data, header = make_oncoviral_mqc_metric(input.prioritized_tsv)
         headers = [header]
