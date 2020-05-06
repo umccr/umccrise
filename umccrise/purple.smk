@@ -70,7 +70,7 @@ rule purple_amber:
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        mem_mb = lambda wildcards, attempt: round(purple_mem * 1.2) + 2000 + (10000 * (attempt - 1)),
+        mem_mb = lambda wildcards, attempt: round(purple_mem * 1.5) + 2000 + (30000 * (attempt - 1)),
     threads:
         threads_per_batch
     run:
@@ -210,6 +210,7 @@ rule purple_circos_baf:
         circos_baf_conf = package_path() + '/rmd_files/misc/circos/circos_baf.conf',
     output:
         png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
+    group: 'purple_main'
     params:
         out_dir = 'work/{batch}/purple/circos_baf',
         gaps_txt_prefix = package_path() + '/rmd_files/misc/circos/gaps',
@@ -240,6 +241,7 @@ rule purple_symlink:
         gene_cnv       = '{batch}/purple/{batch}.purple.cnv.gene.tsv',
         circos_png     = '{batch}/purple/{batch}.purple.circos.png',
         circos_baf_png = '{batch}/purple/{batch}.purple.circos_baf.png',
+    group: 'purple_main'
     params:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
