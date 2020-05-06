@@ -334,10 +334,10 @@ rule small_variants:
         temp(touch('log/small_variants.done'))
     run:
         if input.germline_vcfs:
-            for batch, germline_vcf in zip(batch_by_name.values(), input.germline_vcfs):
+            for bn, batch, germline_vcf in zip(batch_by_name.keys(), batch_by_name.values(), input.germline_vcfs):
                 assert batch.name in germline_vcf
-                renamed_germline_vcf = join(batch.name, 'small_variants',
-                    f'{batch}__{batch.normal.name}-germline.predispose_genes.vcf.gz')
+                renamed_germline_vcf = join(bn, 'small_variants',
+                         f'{batch}__{batch.normal.name}-germline.predispose_genes.vcf.gz')
                 shell(f'cp {germline_vcf} {renamed_germline_vcf}')
                 shell(f'tabix -p vcf {renamed_germline_vcf}')
 
