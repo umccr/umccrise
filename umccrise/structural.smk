@@ -205,7 +205,6 @@ rule sv_prioritize:
     group: "sv_vcf"
     run:
         shell(f'cat {input.vcf} | prioritize_sv -g {params.genome} | bgzip -c > {output.vcf} && tabix -p vcf {output.vcf}')
-        shell(cmd)
         before = count_vars(input.vcf)
         after = count_vars(output.vcf)
         assert before == after, (before, after)
