@@ -12,19 +12,20 @@ else
 fi
 ./miniconda.sh -b -p $PWD/miniconda && rm miniconda.sh
 export PATH=$PWD/miniconda/bin:$PATH
-conda update conda
+conda install mamba
+mamba update conda
 
 ### Install environments
 ENV_NAME=umccrise
-conda env create -p $PWD/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
-conda env create -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
-conda env create -p $PWD/miniconda/envs/${ENV_NAME}_cancer_report --file umccrise/envs/cancer_report.yml
-conda env create -p $PWD/miniconda/envs/${ENV_NAME}_python2 --file umccrise/envs/python2.yml
-conda env create -p $PWD/miniconda/envs/${ENV_NAME}_microbiome --file umccrise/envs/microbiome.yml
+mamba env create -p $PWD/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
+mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
+mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_cancer_report --file umccrise/envs/cancer_report.yml
+mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_python2 --file umccrise/envs/python2.yml
+mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_microbiome --file umccrise/envs/microbiome.yml
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    conda env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml
+    mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml
 else
-    conda env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml
+    mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_linux.yml
 fi
 
 # Instead of `conda activate $PWD/miniconda/envs/${ENV_NAME}`:
