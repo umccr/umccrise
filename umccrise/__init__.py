@@ -35,11 +35,24 @@ class UmccriseSample(BaseSample):
 
 
 class UmccriseProject(BaseProject):
-    def __init__(self, input_dir=None, silent=False, exclude_samples=None, **kwargs):
+    def __init__(self, input_dir=None, include_samples=None, exclude_samples=None,
+                 silent=False, genome_build=None, **kwargs):
         BaseProject.__init__(self, input_dir=input_dir, **kwargs)
-        self.genome_build = 'hg38'
+        self.include_samples = include_samples
+        self.exclude_samples = exclude_samples
+        self.genome_build = genome_build or 'hg38'
 
     def get_or_create_batch(self, tumor_name, normal_name=None):
+        if self.exclude_samples and tumor_name in self.exclude_samples:
+            return None
+        if self.include_samples and tumor_name not in self.include_samples:
+            return None
+        if normal_name:
+            if self.exclude_samples and normal_name in self.exclude_samples:
+                return None
+            if self.include_samples and normal_name not in self.include_samples:
+                return None
+
         if tumor_name in self.batch_by_name:
             b = self.batch_by_name[tumor_name]
         else:
@@ -55,21 +68,24 @@ class UmccriseProject(BaseProject):
         if fpath.endswith('.bam'):
             sample_name = bam_utils.sample_name_from_bam(fpath)
             b = self.get_or_create_batch(sample_name)
-            b.tumor.bam = fpath
+            if b:
+                b.tumor.bam = fpath
 
         if fpath.endswith('.vcf.gz'):
             sample_names = vcf_utils.get_sample_names(fpath)
             if len(sample_names) == 1:
-                b = UmccriseBatch(sample_names[0])
-                b.somatic_vcf = fpath
+                b = self.get_or_create_batch(sample_names[0])
+                if b:
+                    b.somatic_vcf = fpath
             if len(sample_names) == 2:
                 tumor_sn, normal_sn = sample_names
-                b = UmccriseBatch(tumor_sn, normal_sn)
-                b.somatic_vcf = fpath
+                b = self.get_or_create_batch(tumor_sn, normal_sn)
+                if b:
+                    b.somatic_vcf = fpath
 
 
 class UmccriseBatch(BaseBatch):
-    # define bam, somatic_vcf, germline_vcf, structural_vcf, qc_files, genome_build
+    # super class defines bam, somatic_vcf, germline_vcf, structural_vcf, qc_files, genome_build
     pass
 
 
@@ -94,7 +110,10 @@ def prep_inputs(smconfig, silent=False):
     ngs_utils_logger.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
     input_paths = smconfig.get('input_paths', [abspath(os.getcwd())])
 
-    run = UmccriseProject()
+    custom_run = UmccriseProject(
+        include_samples=include_names,
+        exclude_samples=exclude_names)
+    run = None
 
     if isinstance(input_paths, str):
         input_paths = input_paths.split(',')
@@ -102,7 +121,7 @@ def prep_inputs(smconfig, silent=False):
     for input_path in input_paths:
         # custom file
         if isfile(input_path):
-            run.add_file(input_path)
+            custom_run.add_file(input_path)
 
         # dragen
         elif isdir(input_path) and glob.glob(join(input_path, '*-replay.json')):
@@ -141,6 +160,8 @@ def prep_inputs(smconfig, silent=False):
     if smconfig.get('genomes_dir'):
         hpc.set_genomes_dir(smconfig.get('genomes_dir'))
 
+    # TODO: merge runs
+    run = run or custom_run
     return run, run.batch_by_name
 
 
