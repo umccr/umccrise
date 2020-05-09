@@ -135,6 +135,7 @@ input_paths: a path to inputs:\n
             restart_times = 0
     if restart_times is None:
         restart_times = DEFAULT_RESTART_TIMES
+    restart_times = int(restart_times)
 
     #########################
     #### Setting cluster ####
