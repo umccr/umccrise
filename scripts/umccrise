@@ -20,11 +20,11 @@ from hpc_utils import hpc
 from umccrise import prep_inputs, prep_resources
 
 
+DEFAULT_RESTART_TIMES = 2
+
 @click.command()
 @click.version_option(version.__version__)
 @click.argument('input_paths', type=click.Path(exists=True), nargs=-1)
-@click.option('-T', '--target', 'target_rule', multiple=True, default=['all'],
-              help='Optional list of rules, e.g.: -T pcgr -T coverage -T structural -T small_variants')
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory [def: umccrised]')
 @click.option('-s', '--sample', 'sample', help='Comma-separated list of samples or batches to process')
 @click.option('-b', '--batch', 'batch', help='Comma-separated list of samples or batches to process')
@@ -37,21 +37,24 @@ from umccrise import prep_inputs, prep_resources
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
 @click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 
+@click.option('--debug', 'debug', is_flag=True, help='More verboe messages. Sets restart times to 0.')
 # Snakemake:
 @click.option('--forcerun', 'forcerun', help='Comma-separated rules that will be run even if the outputs exist. Propagated to snakemake, space-separated.')
 @click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
 @click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
-@click.option('-r', '--restarts', '--restart-times', 'restart_times', default=3,
-              help='How many times to try out rerunning rules if they fail. "--restart-times 3" means that the rule '
-                   'will be attempted maximum 3 times. Default is 3. Propagated to snakemake (decremented, because '
-                   'snakemake interprets it as "how many times to restart after the rule is failed").')
+@click.option('-r', '--restarts', '--restart-times', 'restart_times',
+              help=f'How many times to try out rerunning rules if they fail. "--restart-times 1" means that the rule '
+                   f'will be attempted maximum 1 time. Default is {DEFAULT_RESTART_TIMES}. The value ropagated '
+                   f'to snakemake is decremented, because snakemake interprets it as "how many times to restart after '
+                   f'the rule is failed").')
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Prints rules and commands '
                                                              'to be run without actually executing them.')
 @click.option('--report', 'report', help='Propagated to snakemake. Create an HTML report with results and statistics. '
                                          'Needs to end in ".html".')
 @click.option('--dag', 'dag', is_flag=True, help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
                                                  'Usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
-# Other:
+
+# Legacy:
 @click.option('--s3/--no-s3'  , 'upload_s3',  default=False, help='Upload results to s3 [deprectated]')
 @click.option('--igv/--no-igv', 'upload_igv', default=False, help='Generate mini-bams and upload to a s3 bucket [deprectated]')
 
@@ -126,7 +129,12 @@ input_paths: a path to inputs:\n
     target_rule = list(target_rule)
 
     if unlock: conf['unlock'] = 'yes'
-    if debug: conf['debug'] = 'yes'
+    if debug:
+        conf['debug'] = 'yes'
+        if restart_times is None:
+            restart_times = 0
+    if restart_times is None:
+        restart_times = DEFAULT_RESTART_TIMES
 
     #########################
     #### Setting cluster ####
