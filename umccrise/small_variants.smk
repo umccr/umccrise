@@ -340,7 +340,7 @@ if include_germline:
         run:
             for bn, batch, germline_vcf in zip(batch_by_name.keys(), batch_by_name.values(), input.germline_vcfs):
                 assert batch.name in germline_vcf
-                shell(f'mkdir {join(bn, "small_variants")}')
+                shell(f'mkdir -p {join(bn, "small_variants")}')
                 renamed_germline_vcf = join(bn, 'small_variants',
                          f'{batch}__{batch.normal.name}-germline.predispose_genes.vcf.gz')
                 shell(f'cp {germline_vcf} {renamed_germline_vcf}')
