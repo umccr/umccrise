@@ -3,11 +3,12 @@ PCGR
 -------------
 Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
 """
-localrules: pcgr_symlink_somatic, pcgr_symlink_germline, pcgr
+localrules: pcgr_symlink_somatic, pcgr_symlink_germline, pcgr, cpsr
 
 
 from ngs_utils.file_utils import which
 from ngs_utils.reference_data import get_predispose_genes_txt, get_predispose_genes_bed
+
 
 rule run_pcgr:
     input:
@@ -78,21 +79,18 @@ if include_germline:
         shell:
             'ln -s {params.source} {output}'
 
-######################
-###  Target rule
+
+######
 
 rule pcgr:
     input:
         expand(rules.pcgr_symlink_somatic.output, batch=batch_by_name.keys()),
-        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys()) if include_germline else []
     output:
         temp(touch('log/pcgr.done'))
 
 rule cpsr:
     input:
-        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys()) if include_germline else []
+        expand(rules.pcgr_symlink_germline.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/cpsr.done'))
-
-
 

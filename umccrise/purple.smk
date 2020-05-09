@@ -259,6 +259,8 @@ rule purple_symlink:
             shutil.copy(fpath, join(f'{wildcards.batch}/purple', new_name))
 
 
+#####
+
 rule purple:
     input:
         expand(rules.purple_symlink.output, batch=batch_by_name.keys()),

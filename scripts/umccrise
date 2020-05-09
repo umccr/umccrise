@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 import os
 import sys
-import traceback
 from os.path import isfile, join, dirname, abspath, isdir
 import click
 import subprocess
-from glob import glob
 import tempfile
 
 from ngs_utils.call_process import run_simple
-from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir, splitext_plus
+from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
 from ngs_utils.logger import warn, info, critical
 from ngs_utils.utils import set_locale; set_locale()
@@ -22,48 +20,50 @@ from umccrise import prep_inputs, prep_resources
 
 DEFAULT_RESTART_TIMES = 2
 
+
 @click.command()
 @click.version_option(version.__version__)
 @click.argument('input_paths', type=click.Path(exists=True), nargs=-1)
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory [def: umccrised]')
-@click.option('-s', '--sample', 'sample', help='Comma-separated list of samples or batches to process')
-@click.option('-b', '--batch', 'batch', help='Comma-separated list of samples or batches to process')
-@click.option('-e', '--exclude', 'exclude', help='Comma-separated list of samples or batches to ignore')
+@click.option('-s', '--sample', 'sample', multiple=True,
+              help='Optionally, specific sample or batch to process, e.g.: -s SAMPLE1 -s BATCH2')
+@click.option('-e', '--exclude', 'exclude', multiple=True,
+              help='Optionally, samples or batches to ignore, e.g.: -e SAMPLE1 -e BATCH2')
 @click.option('--genomes', '--genomes-dir', 'input_genomes_dir', help='Path to the reference data')
+@click.option('-g', '--genome', 'genome_build',
+              help='Genome build for custom runs (hg19, hg38). Genome build of bcbio and Dragen runs is '
+                   'determined automatically.')
+@click.option('-T', '--target', 'include_stages', multiple=True,
+              help='Optionally, specific stage to run, e.g.: -T pcgr -T coverage -T structural -T small_variants')
+@click.option('-E', '--skip-target', 'exclude_stages', multiple=True,
+              help='Optionally, stages to skip, e.g.: -E oncoviruses -E cpsr')
 
-# Cluster:
+# Cluster
 @click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', type=click.INT,
               help='Maximum number of cores to use at single time (works both for local and cluster runs)')
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
-@click.option('--cluster', '--cluster-cmd', 'cluster_cmd', help='Deprecated. Use --cluster-auto instead')
 
-@click.option('--debug', 'debug', is_flag=True, help='More verboe messages. Sets restart times to 0.')
-# Snakemake:
-@click.option('--forcerun', 'forcerun', help='Comma-separated rules that will be run even if the outputs exist. Propagated to snakemake, space-separated.')
-@click.option('--unlock', is_flag=True, help='Use when you are rerunning after Ctrl+C. Propagated to snakemake.')
-@click.option('--rerun-incomplete', is_flag=True, help='[Deprecated]. Propagated to snakemake. Set by default, ignored.')
+# Debug and snakemake
+@click.option('--debug', 'debug', is_flag=True, help='More verboe messages. Also sets restart times to 0.')
+@click.option('--unlock', is_flag=True,
+              help='Use when you are rerunning after Ctrl+C or an error. Propagated to snakemake.')
 @click.option('-r', '--restarts', '--restart-times', 'restart_times',
               help=f'How many times to try out rerunning rules if they fail. "--restart-times 1" means that the rule '
                    f'will be attempted maximum 1 time. Default is {DEFAULT_RESTART_TIMES}. The value ropagated '
                    f'to snakemake is decremented, because snakemake interprets it as "how many times to restart after '
                    f'the rule is failed").')
-@click.option('-n', '--dryrun', 'dryrun', is_flag=True, help='Propagated to snakemake. Prints rules and commands '
-                                                             'to be run without actually executing them.')
-@click.option('--report', 'report', help='Propagated to snakemake. Create an HTML report with results and statistics. '
-                                         'Needs to end in ".html".')
-@click.option('--dag', 'dag', is_flag=True, help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
-                                                 'Usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
+@click.option('-n', '--dryrun', 'dryrun', is_flag=True,
+              help='Propagated to snakemake. Prints rules and commands to be run without actually executing them.')
+@click.option('--report', 'report',
+              help='Propagated to snakemake. Create an HTML report with results and statistics. '
+                   'The argument has to be a file path ending with ".html".')
+@click.option('--dag', 'dag', is_flag=True,
+              help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
+                   'Example usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
 
-# Legacy:
-@click.option('--s3/--no-s3'  , 'upload_s3',  default=False, help='Upload results to s3 [deprectated]')
-@click.option('--igv/--no-igv', 'upload_igv', default=False, help='Generate mini-bams and upload to a s3 bucket [deprectated]')
-
-@click.option('--debug', 'debug', is_flag=True, help='Increases verbosity of messages')
-
-def main(input_paths, target_rule:list = None, output_dir=None, sample=None, batch=None, exclude=None,
-         input_genomes_dir=None, cores=None, cluster=False, cluster_cmd=None, forcerun=None,
-         unlock=False, rerun_incomplete=False, restart_times=1, dryrun=False,
-         upload_s3=False, upload_igv=False, report=None, dag=False, debug=False):
+def main(input_paths, output_dir=None, sample=None, exclude=None, input_genomes_dir=None, genome_build=None,
+         include_stages:list = None, exclude_stages:list = None, cores=None, cluster=False, debug=False,
+         unlock=False, restart_times=None, dryrun=False, report=None, dag=False):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
 input_paths: a path to inputs:\n
@@ -87,9 +87,9 @@ input_paths: a path to inputs:\n
 
     tmp_dirs = []
 
+    # Input paths
     if not isinstance(input_paths, list):
         input_paths = list(input_paths)
-
     # if a project is passed as a tarball, uncompressing
     clean_input_paths = []
     for input_path in input_paths:
@@ -104,17 +104,15 @@ input_paths: a path to inputs:\n
         if isdir(input_path):
             verify_dir(input_path, is_critical=True)
             clean_input_paths.append(verify_dir(input_path))
-
     conf['input_paths'] = ','.join(clean_input_paths)
 
+    # Reference data
     if input_genomes_dir:
         if isfile(input_genomes_dir):
             input_genomes_dir, tmp_dir = extract_tarball_input(output_dir, input_genomes_dir, 'Genomes directory')
             tmp_dirs.append(tmp_dir)
-
     # check hpc_utils can find the genomes dir, and error out if not
     hpc.set_genomes_dir(input_genomes_dir)
-
     conf['genomes_dir'] = verify_dir(hpc.genomes_dir, is_critical=True)
     logger.info(f'Using genomes directory: {hpc.genomes_dir}')
 
@@ -122,11 +120,17 @@ input_paths: a path to inputs:\n
     #### Setting non-path parameters ####
     #####################################
 
-    if sample or batch:
-        conf['sample'] = sample or batch
+    if sample:
+        conf['sample'] = ','.join(sample)
     if exclude:
-        conf['exclude'] = exclude
-    target_rule = list(target_rule)
+        conf['exclude'] = ','.join(exclude)
+
+    if genome_build: conf['genome_build'] = genome_build
+
+    if include_stages:
+        conf['include_stages'] = ','.join(include_stages)
+    if exclude_stages:
+        conf['exclude_stages'] = ','.join(exclude_stages)
 
     if unlock: conf['unlock'] = 'yes'
     if debug:
@@ -142,12 +146,9 @@ input_paths: a path to inputs:\n
     #########################
     cluster_param = ''
     cluster_log_dir = ''
-    if cluster or cluster_cmd:
-        if cluster_cmd:
-            cluster_param = f' --cluster "{cluster_cmd}"'
-        else:
-            cluster_log_dir = safe_mkdir(join(log_dir, 'cluster'))
-            cluster_param = snakemake_utils.make_cluster_cmdl(cluster_log_dir, 'umccrise')
+    if cluster:
+        cluster_log_dir = safe_mkdir(join(log_dir, 'cluster'))
+        cluster_param = snakemake_utils.make_cluster_cmdl(cluster_log_dir, 'umccrise')
 
     ################################
     #### Setting CPUs resources ####
@@ -167,7 +168,6 @@ input_paths: a path to inputs:\n
     cmd += (
         f'snakemake '
         f'--snakefile {snakefile} '
-        f'{" ".join(target_rule)} '
         f'--printshellcmds '
         f'{"--dryrun " if dryrun else ""}'
         f'{"--dag " if dag else ""}'

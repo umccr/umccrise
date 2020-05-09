@@ -10,7 +10,7 @@ from ngs_utils.logger import critical, info, debug, warn
 from ngs_utils import logger as ngs_utils_logger
 from hpc_utils import hpc
 from ngs_utils.utils import set_locale; set_locale()
-from umccrise import prep_inputs
+from umccrise import prep_inputs, prep_stages
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
@@ -26,19 +26,14 @@ run, batch_by_name = prep_inputs(config, silent=within_sub_workflow)
 threads_per_batch = config['threads_per_batch']
 threads_per_sample = config['threads_per_sample']
 
-is_spartan = hpc.name == 'spartan'
-is_raijin = hpc.name == 'raijin'
-is_hpc = is_spartan or is_raijin
-upload_proxy = ''
-if is_spartan:
-    upload_proxy = 'HTTPS_PROXY=http://wwwproxy.unimelb.edu.au:8000 '
-
-upload_igv = is_hpc and config.get('upload_igv', 'no') == 'yes'
-
-
 is_ffpe = False
 if isinstance(run, BcbioProject):
     is_ffpe = run.somatic_caller == 'strelka2'
+
+
+stages = prep_stages([s for s in config.get('include_stages', '').split(',') if s],
+                     [s for s in config.get('exclude_stages', '').split(',') if s])
+debug(f'Stages to run: {stages}')
 
 
 rule all:
@@ -46,7 +41,8 @@ rule all:
     # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
 
 
-# TODO: try subworkflows here? http://snakemake.readthedocs.io/en/stable/snakefiles/modularization.html#sub-workflows
+# TODO: try subworkflows here?
+#  http://snakemake.readthedocs.io/en/stable/snakefiles/modularization.html#sub-workflows
 """
 subworkflow small_variants:
     workdir: 'small_variants'
@@ -57,34 +53,60 @@ rule all:
     output: ...
     shell:  ...
 """
-# Or maybe it's not reasonable and not doable here since the input file is a phony .done, and also we depend on config in subworkflows
+# Or maybe it's not reasonable and not doable here since the input file is a phony .done,
+# and also we depend on config in subworkflows
 
 
-include: "small_variants.smk"
+include: "conpair.smk"
 include: "structural.smk"
+include: "small_variants.smk"
 include: "purple.smk"
 include: "coverage.smk"
 include: "pcgr.smk"
-include: "conpair.smk"
 include: "oncoviruses.smk"
 include: "microbiome.smk"
 include: "rmd.smk"
 include: "multiqc.smk"
 
 
-localrules: umccrise
+localrules: umccrise, copy_config
+
+
+if isinstance(run, BcbioProject):
+    # Copy all files from the config/ directory, omitting all directories
+    # Omitting directories prevents from errors on IAP when the input mount is read-only,
+    # and the directory copied with cp -r inherits the read-only flags, preventing snakemake
+    # from creating files inside of it
+    rule copy_config:
+        input:
+            conf_dir = run.config_dir
+        output:
+            done_flag = 'log/config/config.done',
+        params:
+            conf_dir = 'log/config',
+        shell:
+            'for f in {input.conf_dir}/*; do test ! -f $f || cp $f {params.conf_dir}/; done && '
+            'touch {output.done_flag}'
 
 
 rule umccrise:
-    input:  # Copy here inputs of the "milestone" rules (rules without output defined in the end of each Snakemake.* file)
-        rules.coverage.output,
-        rules.structural.output,
-        rules.small_variants.output,
-        rules.purple.output,
-        rules.pcgr.output,
-        rules.oncoviruses.output,
-        rules.microbiome.output,
-        rules.rmd.output,
-        rules.multiqc.output,
+    # Copy here output of the "milestone" rules
+    # (rules without output defined in the end of each Snakemake.* file)
+    input:
+        rules.copy_config.output if isinstance(run, BcbioProject) else [],
+        rules.conpair.output        if 'conpair'        in stages else [],
+        rules.structural.output     if 'structural'     in stages else [],
+        rules.somatic.output        if 'somatic'        in stages else [],
+        rules.germline.output       if 'germline'       in stages else [],
+        rules.purple.output         if 'purple'         in stages else [],
+        rules.cacao.output          if 'cacao'          in stages else [],
+        rules.mosdepth.output       if 'mosdepth'       in stages else [],
+        rules.goleft.output         if 'goleft'         in stages else [],
+        rules.pcgr.output           if 'pcgr'           in stages else [],
+        rules.cpsr.output           if 'cpsr'           in stages else [],
+        rules.oncoviruses.output    if 'oncoviruses'    in stages else [],
+        rules.microbiome.output     if 'microbiome'     in stages else [],
+        rules.rmd.output            if 'rmd'            in stages else [],
+        rules.multiqc.output        if 'multiqc'        in stages else [],
     output:
         touch('all.done')

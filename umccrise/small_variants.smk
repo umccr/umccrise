@@ -13,7 +13,7 @@ import yaml
 from hpc_utils import hpc
 
 
-localrules: small_variants
+localrules: somatic, germline, small_variants
 
 
 def cnt_vars(vcf_path, passed=False):
@@ -323,17 +323,12 @@ if include_germline:
             'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
 
 
-#############
-rule small_variants:
-    input:
-        somatic_vcfs = expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
-        somatic_pass_vcfs = expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
-        germline_vcfs = expand(rules.germline_merge_with_leakage.output, batch=batch_by_name.keys())
-            if include_germline else [],
-    output:
-        temp(touch('log/small_variants.done'))
-    run:
-        if input.germline_vcfs:
+    rule copy_germline:
+        input:
+            germline_vcfs = expand(rules.germline_merge_with_leakage.output, batch=batch_by_name.keys())
+        output:
+            temp(touch('work/copy_germline.done'))
+        run:
             for bn, batch, germline_vcf in zip(batch_by_name.keys(), batch_by_name.values(), input.germline_vcfs):
                 assert batch.name in germline_vcf
                 renamed_germline_vcf = join(bn, 'small_variants',
@@ -341,6 +336,30 @@ rule small_variants:
                 shell(f'cp {germline_vcf} {renamed_germline_vcf}')
                 shell(f'tabix -p vcf {renamed_germline_vcf}')
 
+
+#############
+
+rule germline:
+    input:
+        germline = 'work/copy_germline.done'
+    output:
+        temp(touch('log/germline.done'))
+
+
+rule somatic:
+    input:
+        somatic_vcfs = expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
+        somatic_pass_vcfs = expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
+    output:
+        temp(touch('log/somatic.done'))
+
+
+rule small_variants:
+    input:
+        'log/germline.done',
+        'log/somatic.done',
+    output:
+        temp(touch('log/small_variants.done'))
 
 
 

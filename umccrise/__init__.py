@@ -227,3 +227,63 @@ def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=Fa
         info(f'Samples found: {num_samples}, using {ncpus_per_sample} cpus per sample.')
 
     return ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node
+
+
+
+STAGES = [
+    'conpair',
+    'structural',
+    'somatic', 'germline',
+    'purple',
+    'mosdepth', 'goleft', 'cacao',
+    'pcgr', 'cpsr',
+    'oncoviruses',
+    'microbiome',
+    'rmd',
+    'multiqc',
+]
+
+def prep_stages(include_stages=None, exclude_stages=None):
+    debug(f'include_stages: {include_stages}')
+    debug(f'exclude_stages: {exclude_stages}')
+    def rename_input_stages(stages):
+        fixed_stages = []
+        for s in stages:
+            if s == 'cancer_report':
+                fixed_stages.append('rmd')
+            elif s == 'sv':
+                fixed_stages.append('structural')
+            elif s == 'purple':
+                fixed_stages.extend(['structural', 'purple'])
+            elif s == 'coverage':
+                fixed_stages.extend(['mosdepth', 'goleft', 'cacao'])
+            elif s == 'small_variants':
+                fixed_stages.extend(['somatic', 'germline'])
+            elif s == 'cpsr':
+                fixed_stages.extend(['germline', 'cpsr'])
+            elif s == 'pcgr':
+                fixed_stages.extend(['somatic', 'pcgr'])
+            elif s not in STAGES:
+                warn(f'Stage {s} is not recognised. Available: {STAGES}')
+            else:
+                fixed_stages.append(s)
+        return fixed_stages
+
+    include_stages = rename_input_stages(include_stages)
+    exclude_stages = rename_input_stages(exclude_stages)
+
+    selected_stages = include_stages or STAGES
+    debug(f'selected_stages: {selected_stages}')
+    selected_stages = [s for s in selected_stages if s not in (exclude_stages or [])]
+    debug(f'selected_stages after removing exlcude_stages: {selected_stages}')
+    return selected_stages
+
+
+
+
+
+
+
+
+
+

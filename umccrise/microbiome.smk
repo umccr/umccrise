@@ -80,9 +80,22 @@ rule run_mash_screen:
         'mash screen {input.refseq_msh} {input.fq} | sort -gr > {output.screen_tab}'
 
 
+rule align_to_4bacteria:
+    input:
+        seq = '/g/data/gx8/projects/Saveliev_APGI/LTS/krakenuniq/db_4bacterias/library/combined.fasta',
+        r1 = 'work/{batch}/microbiome/step2_host_unmapped.R1.fq',
+        r2 = 'work/{batch}/microbiome/step2_host_unmapped.R2.fq',
+    output:
+        'work/{batch}/microbiome/step4_bwa_to_4bacteria.bam'
+    shell:
+        'bwa mem {input.seq} {input.r1} {input.r2} | samtools sort -Obam -o {output} '
+        '&& samtools index {output}'
+
+
 rule microbiome:
     input:
         expand(rules.run_mash_screen.output, batch=batch_by_name.keys()),
+        # expand(rules.align_to_4bacteria.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/microbiome.done'))
 

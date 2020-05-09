@@ -1,11 +1,11 @@
-## Cancer gene coverage
-
-localrules: coverage, cacao, cacao_symlink
-
-
+import subprocess
+from os.path import abspath, dirname, join
 from ngs_utils.reference_data import get_key_genes_bed
 from ngs_utils.file_utils import safe_symlink
 from ngs_utils.file_utils import which
+
+
+localrules: coverage, cacao, cacao_symlink, goleft, mosdepth
 
 
 MIN_VD = 12     # minimal coverage to call a pure heterozygous variant
@@ -136,20 +136,36 @@ rule cacao_symlink:
     run:
         safe_symlink(input[0], output[0], rel=True)
 
+
+#####
+
 rule cacao:
     input:
-        expand(rules.cacao_symlink.output[0],
-               batch=batch_by_name.keys(),
-               phenotype=['tumor', 'normal'])
+        expand(rules.cacao_symlink.output[0], batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
+    output:
+        temp(touch('log/coverage.done'))
+
+
+rule mosdepth:
+    input:
+        expand(rules.run_mosdepth.output[0], batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
+    output:
+        temp(touch('log/mosdepth.done'))
+
+
+rule goleft:
+    input:
+        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys())
+    output:
+        temp(touch('log/goleft.done'))
+
 
 rule coverage:
     input:
-        (expand(rules.mosdepth.output[0],
-                phenotype=['tumor', 'normal'],
-                batch=batch_by_name.keys()) if which('mosdepth') else []),
-        expand(rules.goleft_plots.output[0], batch=batch_by_name.keys()),
-        expand(rules.cacao_symlink.output[0],
-               batch=batch_by_name.keys(),
-               phenotype=['tumor', 'normal'])
+        'log/coverage.done',
+        'log/mosdepth.done',
+        'log/goleft.done',
     output:
         temp(touch('log/coverage.done'))
+
+

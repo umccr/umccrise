@@ -28,23 +28,6 @@ def load_background_samples(genome_build, project_type ='dragen'):
 
 
 if isinstance(run, BcbioProject):
-    localrules: copy_config
-
-    # Copy all files from the config/ directory, omitting all directories
-    # Omitting directories prevents from errors on IAP when the input mount is read-only,
-    # and the directory copied with cp -r inherits the read-only flags, preventing snakemake
-    # from creating files inside of it
-    rule copy_config:
-        input:
-            conf_dir = run.config_dir
-        output:
-            done_flag = 'log/config/config.done',
-        params:
-            conf_dir = 'log/config',
-        shell:
-            'for f in {input.conf_dir}/*; do test ! -f $f || cp $f {params.conf_dir}/; done && '
-            'touch {output.done_flag}'
-
     rule prep_multiqc_data:
         input:
             bcbio_mq_filelist       = join(run.date_dir, 'multiqc/list_files_final.txt'),
@@ -281,16 +264,8 @@ if len(batch_by_name) > 1:
 rule multiqc:
     input:
         expand(rules.batch_multiqc.output, batch=batch_by_name.keys()),
-        rules.copy_config.output if isinstance(run, BcbioProject) else [],
         rules.combined_multiqc.output if len(batch_by_name) > 1 else [],
     output:
         temp(touch('log/multiqc.done'))
-
-
-
-
-
-
-
 
 
