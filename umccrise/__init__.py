@@ -106,13 +106,14 @@ def prep_inputs(smconfig, silent=False):
 
         # dragen
         elif isdir(input_path) and glob.glob(join(input_path, '*-replay.json')):
-            run = DragenProject(input_path)
-
+            run = DragenProject(input_path,
+                               include_samples=include_names,
+                               exclude_samples=exclude_names)
         # bcbio
         elif isdir(input_path):
             run = BcbioProject(input_path,
-                               exclude_samples=exclude_names,
                                include_samples=include_names,
+                               exclude_samples=exclude_names,
                                silent=True)
             run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
 
