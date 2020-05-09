@@ -26,23 +26,26 @@ def _get_low_high_covs(phenotype, purple_file):
 
 
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
-rule mosdepth:
+rule run_mosdepth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
-        purple_file = rules.purple_run.output.purity,
+        purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
         ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
     output:
         '{batch}/coverage/{batch}-{phenotype}.quantized.bed.gz',
         '{batch}/coverage/{batch}-{phenotype}.regions.bed.gz',
     params:
-        prefix = '{batch}/coverage/{batch}-{phenotype}'
+        prefix = '{batch}/coverage/{batch}-{phenotype}',
+        image = 'quay.io/biocontainers/mosdepth:0.2.9--hbeb723e_0'
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000
+    threads:
+        threads_per_sample
     run:
         low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)
         cutoffs = f'0:1:{low_cov}:{high_cov}:'
-        shell(
+        mosdepth_cmd = (
             'export MOSDEPTH_Q0=NO_COVERAGE && '
             'export MOSDEPTH_Q1=LOW_COVERAGE && '
             'export MOSDEPTH_Q2=CALLABLE && '
@@ -53,6 +56,25 @@ rule mosdepth:
             f'--by {input.bed} '
             f'--no-per-base '
         )
+
+        if subprocess.run(f'docker images -q {params.image} 2>/dev/null', shell=True).returncode == 0:
+            relpath_to_abspath = {
+                relpath: abspath(relpath) for relpath in [
+                    dirname(input.bam),
+                    dirname(input.bed),
+                    dirname(input.ref_fa),
+                    dirname(params.prefix),
+                ]
+            }
+            input_mounts = ' '.join(f'-v {path}:{path}' for path in set(relpath_to_abspath.values()))
+            for local_path, docker_path in relpath_to_abspath.items():
+                mosdepth_cmd = mosdepth_cmd.replace(local_path, docker_path)
+            shell(
+                f'docker run {input_mounts} {params.image} bash -c "{mosdepth_cmd}"'
+            )
+        else:
+            shell(mosdepth_cmd)
+
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
 # For CRAM, indexcov takes the .crai files directly on input.
