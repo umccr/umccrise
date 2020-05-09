@@ -5,6 +5,7 @@ import subprocess
 from os.path import isfile, join, dirname
 from ngs_utils.file_utils import get_ungz_gz
 from ngs_utils.reference_data import get_predispose_genes_bed
+from ngs_utils.logger import critical
 from umccrise import package_path
 import toml
 from ngs_utils.vcf_utils import iter_vcf
@@ -161,9 +162,12 @@ if include_germline:
         params:
             ungz = lambda wc, output: get_ungz_gz(output[0])[0]
         group: "germline_snv"
-        shell:
-            'bcftools view -T {input.predispose_genes_bed} {input.vcf} -Oz -o {output.vcf}'
-            ' && tabix -p vcf {output.vcf}'
+        run:
+            shell('bcftools view -T {input.predispose_genes_bed} {input.vcf} -Oz -o {output.vcf}'
+                  ' && tabix -p vcf {output.vcf}')
+            cnt = int(subprocess.check_output(f'bcftools view -H {output.vcf} | wc -l', shell=True).strip())
+            if cnt == 0:
+                critical(f'Found zero germline variants within predisposition genes in {output.vcf}')
 
     # Preparations: annotate TUMOR_X and NORMAL_X fields
     # Used for PCGR, but for all other processing steps too
@@ -227,8 +231,8 @@ if include_germline:
             vcf = 'work/{batch}/small_variants/{batch}-germline.predispose_genes.vcf.gz',
         group: "germline_snv"
         shell:
-            'bcftools concat -a {input.vcfs} -Oz -o {output.vcf} '
-            '&& tabix -p vcf {output.vcf}'
+            'bcftools concat -a {input.vcfs} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
+
 
 rule somatic_stats_report:
     input:
@@ -285,7 +289,9 @@ if include_germline:
     rule germline_stats_report:
         input:
             pass_vcf = rules.germline_vcf_pass.output.vcf,
-            pass_predispose_vcf = rules.germline_merge_with_leakage.output.vcf,
+            pass_predispose_vcf = rules.germline_merge_with_leakage.output.vcf \
+                                  if 'somatic' in stages \
+                                  else rules.germline_predispose_subset.output.vcf,
         output:
             'work/{batch}/small_variants/{batch}_germline_stats.yml',
         params:
@@ -313,7 +319,9 @@ if include_germline:
     # stats section.
     rule bcftools_stats_germline:
         input:
-            rules.germline_leakage_predispose_subset.output.vcf,
+            rules.germline_merge_with_leakage.output.vcf \
+            if 'somatic' in stages else \
+            rules.germline_predispose_subset.output.vcf,
         output:
             '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
         group: "germline_snv"
@@ -322,15 +330,17 @@ if include_germline:
         shell:
             'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
 
-
     rule copy_germline:
         input:
-            germline_vcfs = expand(rules.germline_merge_with_leakage.output, batch=batch_by_name.keys())
+            germline_vcfs = expand(rules.germline_merge_with_leakage.output.vcf
+                                   if 'somatic' in stages else \
+                                   rules.germline_predispose_subset.output.vcf, batch=batch_by_name.keys())
         output:
             temp(touch('work/copy_germline.done'))
         run:
             for bn, batch, germline_vcf in zip(batch_by_name.keys(), batch_by_name.values(), input.germline_vcfs):
                 assert batch.name in germline_vcf
+                shell(f'mkdir {join(bn, "small_variants")}')
                 renamed_germline_vcf = join(bn, 'small_variants',
                          f'{batch}__{batch.normal.name}-germline.predispose_genes.vcf.gz')
                 shell(f'cp {germline_vcf} {renamed_germline_vcf}')
