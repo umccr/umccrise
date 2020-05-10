@@ -5,7 +5,7 @@ from ngs_utils.file_utils import safe_symlink
 from ngs_utils.file_utils import which
 
 
-localrules: coverage, cacao, cacao_symlink, goleft, mosdepth
+localrules: coverage, cacao, goleft, mosdepth
 
 
 MIN_VD = 12     # minimal coverage to call a pure heterozygous variant
@@ -118,6 +118,7 @@ rule run_cacao:
     resources:
         mem_mb=8000
     threads: threads_per_sample
+    group: 'cacao'
     run:
         low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)
         cutoffs = f'0:{low_cov}:{high_cov}'
@@ -133,6 +134,7 @@ rule cacao_symlink:
         rules.run_cacao.output.report
     output:
         '{batch}/{batch}-{phenotype}.cacao.html'
+    group: 'cacao'
     run:
         safe_symlink(input[0], output[0], rel=True)
 

@@ -8,7 +8,7 @@ from umccrise import package_path
 
 
 # localrules: purple
-localrules: purple, purple_symlink
+localrules: purple
 
 
 circos_macos_patch = ('export PERL5LIB=' +

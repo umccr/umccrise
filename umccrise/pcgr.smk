@@ -3,7 +3,7 @@ PCGR
 -------------
 Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
 """
-localrules: pcgr_copy_report, cpsr_copy_report, pcgr, cpsr
+localrules: pcgr, cpsr
 
 
 from os.path import dirname
@@ -16,7 +16,7 @@ rule run_pcgr:
         vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
         # cns = '{batch}/purple/{batch}.purple.cnv',
         pcgr_data = hpc.get_ref_file(key='pcgr_data'),
-        purple_file = rules.purple_run.output.purity,
+        purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
     output:
         'work/{batch}/pcgr/{batch}-somatic.pcgr.html',
         'work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',
@@ -28,6 +28,7 @@ rule run_pcgr:
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 20000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
+    group: 'pcgr'
     run:
         output_dir = dirname(output[0])
         purity = get_purity(input.purple_file)
@@ -42,6 +43,7 @@ rule pcgr_copy_report:
         rules.run_pcgr.output[0]
     output:
         '{batch}/{batch}-somatic.pcgr.html'
+    group: 'pcgr'
     shell:
         'cp {input} {output}'
 
@@ -64,6 +66,7 @@ if include_germline:
             opt = '--no-docker' if not which('docker') else ''
         resources:
             mem_mb=lambda wildcards, attempt: attempt * 20000
+        group: 'cpsr'
         run:
             output_dir = dirname(output[0])
             shell(conda_cmd.format('pcgr') +
@@ -75,6 +78,7 @@ if include_germline:
             rules.run_cpsr.output[0]
         output:
             '{batch}/{batch}-normal.cpsr.html'
+        group: 'cpsr'
         shell:
             'cp {input} {output}'
 
