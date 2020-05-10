@@ -10,7 +10,9 @@ from ngs_utils.bcbio import BcbioProject
 from ngs_utils.dragen import DragenProject
 from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug, warn, error
-from ngs_utils import logger as ngs_utils_logger, bam_utils, vcf_utils
+from ngs_utils import logger as log
+from ngs_utils import bam_utils
+from ngs_utils import vcf_utils
 from hpc_utils import hpc
 from ngs_utils.utils import set_locale; set_locale()
 from os.path import isfile, join, dirname, abspath, isdir
@@ -105,9 +107,9 @@ def prep_inputs(smconfig, silent=False):
         exclude_names = [v for v in flatten([sn.split('__') for sn in exclude_names])]  # support "batch__sample" notation
 
     if smconfig.get('debug', 'no') == 'yes':
-        ngs_utils_logger.is_debug = True
+        log.is_debug = True
 
-    ngs_utils_logger.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
+    log.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
     input_paths = smconfig.get('input_paths', [abspath(os.getcwd())])
 
     custom_run = UmccriseProject(
@@ -154,7 +156,7 @@ def prep_inputs(smconfig, silent=False):
         else:
             error(f'Cannot find file or dir {input_path}')
 
-    ngs_utils_logger.is_silent = False
+    log.is_silent = False
 
     # Reference files
     if smconfig.get('genomes_dir'):
