@@ -347,6 +347,32 @@ if include_germline:
                 shell(f'tabix -p vcf {renamed_germline_vcf}')
 
 
+rule somatic_vcf2maf:
+    input:
+        vcf = rules.somatic_vcf_filter_pass.output.vcf,
+        fa = hpc.get_ref_file(genome=run.genome_build, key='fa')
+    output:
+        maf = '{batch}/small_variants/{batch}-somatic.PASS.maf',
+    params:
+        tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
+        normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
+        ncbi_build = {'hg38': 'GRCh38', 'GRCh37': 'GRCh37'}.get(run.genome_build),
+        uncompressed_tmp_vcf = 'work/{batch}/small_variants/{batch}-somatic.vcf.tmp'
+    group: "somatic_filt"
+    shell:
+        conda_cmd.format('pcgr') +
+        'gunzip -c {input.vcf} > {params.uncompressed_tmp_vcf} '
+        '&& vcf2maf.pl --inhibit-vep ' 
+        '--input-vcf {params.uncompressed_tmp_vcf} '
+        '--output-maf {output.maf} '
+        '--ref-fasta {input.fa} '
+        '--filter-vcf 0 '
+        '--tumor-id {params.tumor_sample} '
+        '--normal-id {params.normal_sample} '
+        '--ncbi-build {params.ncbi_build} '
+        '&& rm {params.uncompressed_tmp_vcf}'
+
+
 #############
 
 rule germline:
@@ -359,6 +385,7 @@ rule germline:
 rule somatic:
     input:
         somatic_vcfs = expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
+        somatic_mafs = expand(rules.somatic_vcf2maf.output.maf, batch=batch_by_name.keys()),
         somatic_pass_vcfs = expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
     output:
         temp(touch('log/somatic.done'))

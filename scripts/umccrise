@@ -77,7 +77,7 @@ input_paths: a path to inputs:\n
     logger.init(log_fpath_=join(log_dir, 'command.txt'), save_previous=True)
 
     if isfile(join(output_dir, 'all.done')):
-        run_simple('touch ' + join(output_dir, 'all.done'))
+        run_simple('rm ' + join(output_dir, 'all.done'))
 
     conf = dict()
 
