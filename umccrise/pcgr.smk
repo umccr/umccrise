@@ -31,12 +31,14 @@ rule run_pcgr:
     group: 'pcgr'
     run:
         output_dir = dirname(output[0])
-        purity = get_purity(input.purple_file)
-        ploidy = get_ploidy(input.purple_file)
-        shell(
-            conda_cmd.format('pcgr') +
+        cmd = (conda_cmd.format('pcgr') +
             'pcgr {input.vcf} -g {params.genome} -o {output_dir} -s {params.sample_name} '
-            '{params.opt} --pcgr-data {input.pcgr_data} --puriry {purity} --ploidy {ploidy}')
+            '{params.opt} --pcgr-data {input.pcgr_data}')
+        if input.purple_file:
+            purity = get_purity(input.purple_file)
+            ploidy = get_ploidy(input.purple_file)
+            cmd += '--puriry {purity} --ploidy {ploidy}'
+        shell(cmd)
 
 rule pcgr_copy_report:
     input:
