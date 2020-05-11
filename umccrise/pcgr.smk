@@ -95,7 +95,7 @@ rule pcgr:
 
 rule cpsr:
     input:
-        expand(rules.cpsr_copy_report.output, batch=batch_by_name.keys()),
+        expand(rules.cpsr_copy_report.output, batch=batch_by_name.keys()) if include_germline else [],
     output:
         temp(touch('log/cpsr.done'))
 
