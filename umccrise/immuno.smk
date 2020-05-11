@@ -58,10 +58,10 @@ rule run_optitype:
     input:
         fastq = rules.hla_fastq.output.fastq
     output:
-        tsv = 'work/{batch}/{phenotype}_hla/optitype/{batch}_{phenotype}_result.tsv',
-        pdf = 'work/{batch}/{phenotype}_hla/optitype/{batch}_{phenotype}_coverage_plot.pdf',
+        tsv = '{batch}/hla/{batch}_{phenotype}_result.tsv',
+        pdf = '{batch}/hla/{batch}_{phenotype}_coverage_plot.pdf',
     params:
-        out_dir = 'work/{batch}/{phenotype}_hla/optitype',
+        out_dir = 'work/{batch}/hla/',
         prefix = '{batch}_{phenotype}',
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000
