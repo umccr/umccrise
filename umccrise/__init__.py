@@ -231,54 +231,52 @@ def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=Fa
     return ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node
 
 
-
-STAGES = [
-    'conpair',
-    'structural',
-    'somatic', 'germline',
-    'purple',
-    'mosdepth', 'goleft', 'cacao',
-    'pcgr', 'cpsr',
-    'oncoviruses',
-    'microbiome',
-    'immuno',
-    'rmd',
-    'multiqc',
-]
-
 def prep_stages(include_stages=None, exclude_stages=None):
+    default_enabled = {
+        'conpair',
+        'structural',
+        'somatic', 'germline',
+        'purple',
+        'mosdepth', 'goleft', 'cacao',
+        'pcgr', 'cpsr',
+        'oncoviruses',
+        'rmd',
+        'multiqc',
+    }
+    default_disabled = {
+        'microbiome',
+        'immuno',
+    }
     debug(f'include_stages: {include_stages}')
     debug(f'exclude_stages: {exclude_stages}')
     def rename_input_stages(stages):
-        fixed_stages = []
+        fixed_stages = set()
         for s in stages:
             if s == 'cancer_report':
-                fixed_stages.append('rmd')
+                fixed_stages |= {'rmd'}
             elif s == 'sv':
-                fixed_stages.append('structural')
+                fixed_stages |= {'structural'}
             elif s == 'purple':
-                fixed_stages.extend(['structural', 'purple'])
+                fixed_stages |= {'structural', 'purple'}
             elif s == 'coverage':
-                fixed_stages.extend(['mosdepth', 'goleft', 'cacao'])
+                fixed_stages |= {'mosdepth', 'goleft', 'cacao'}
             elif s == 'small_variants':
-                fixed_stages.extend(['somatic', 'germline'])
+                fixed_stages |= {'somatic', 'germline'}
             elif s == 'cpsr':
-                fixed_stages.extend(['germline', 'cpsr'])
+                fixed_stages |= {'germline', 'cpsr'}
             elif s == 'pcgr':
-                fixed_stages.extend(['somatic', 'pcgr'])
-            elif s not in STAGES:
-                warn(f'Stage {s} is not recognised. Available: {STAGES}')
+                fixed_stages |= {'somatic', 'pcgr'}
+            elif s not in default_enabled | default_disabled:
+                warn(f'Stage {s} is not recognised. Available: {default_enabled | default_disabled}')
             else:
-                fixed_stages.append(s)
+                fixed_stages |= {s}
         return fixed_stages
 
     include_stages = rename_input_stages(include_stages)
     exclude_stages = rename_input_stages(exclude_stages)
 
-    selected_stages = include_stages or STAGES
+    selected_stages = (include_stages or default_enabled) - exclude_stages
     debug(f'selected_stages: {selected_stages}')
-    selected_stages = [s for s in selected_stages if s not in (exclude_stages or [])]
-    debug(f'selected_stages after removing exlcude_stages: {selected_stages}')
     return selected_stages
 
 
