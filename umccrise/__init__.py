@@ -241,6 +241,7 @@ STAGES = [
     'pcgr', 'cpsr',
     'oncoviruses',
     'microbiome',
+    'immuno',
     'rmd',
     'multiqc',
 ]

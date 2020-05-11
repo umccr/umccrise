@@ -17,7 +17,7 @@ dependencies:
   - bcftools >=1.9
   - openssl >=1.1
   - bedtools
-  - samtools
+  - samtools >=1.10
   - vcfanno
   - vcflib  # for VCF normalisation
   - bedops
@@ -50,7 +50,8 @@ dependencies:
   # - tibanna
   - snpeff
   - bwa         # for oncoviruses
-  - sambamba    # for oncoviruses
+  - sambamba    # for oncoviruses & optitype
+  - optitype
   - pip:
     - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
