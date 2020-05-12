@@ -30,7 +30,7 @@ rule extract_unmapped:
     output:
         host_bam_namesorted = 'work/{batch}/microbiome/step1_unmapped.namesorted.bam',
     threads:
-        min(10, threads_per_batch),
+        threads_per_batch,
     resources:
         mem_mb=10000
     shell:
@@ -46,7 +46,7 @@ rule unmapped_to_fastq:
         fq2 = 'work/{batch}/microbiome/step2_host_unmapped.R2.fq',
         single = 'work/{batch}/microbiome/step2_host_unmapped.single.fq',
     threads:
-        min(10, threads_per_batch),
+        threads_per_batch,
     resources:
         mem_mb=4000
     shell:
@@ -72,7 +72,7 @@ rule run_mash_screen:
     output:
         screen_tab = 'work/{batch}/microbiome/step3_screen.tab',
     threads:
-        min(10, threads_per_batch),
+        threads_per_batch,
     resources:
         mem_mb=4000
     shell:
