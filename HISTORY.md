@@ -1,4 +1,4 @@
-0.18.0 (TBR):
+1.0.0 (TBR):
 
 - Integrate [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported viral strains in MultiQC and integration sites and affected genes in the cancer report.
 - More DRAGEN input options:
