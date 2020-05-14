@@ -12,7 +12,7 @@ else
 fi
 ./miniconda.sh -b -p $PWD/miniconda && rm miniconda.sh
 export PATH=$PWD/miniconda/bin:$PATH
-conda install mamba
+conda install -c conda-forge mamba
 mamba update conda
 
 ### Install environments
