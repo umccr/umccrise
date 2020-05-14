@@ -268,6 +268,8 @@ def prep_stages(include_stages=None, exclude_stages=None):
                 fixed_stages |= {'somatic', 'pcgr'}
             elif s not in default_enabled | default_disabled:
                 warn(f'Stage {s} is not recognised. Available: {default_enabled | default_disabled}')
+            elif s == 'default':
+                fixed_stages |= default_disabled
             else:
                 fixed_stages |= {s}
         return fixed_stages
