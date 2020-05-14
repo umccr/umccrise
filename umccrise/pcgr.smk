@@ -13,7 +13,7 @@ from ngs_utils.reference_data import get_predispose_genes_txt, get_predispose_ge
 
 rule run_pcgr:
     input:
-        vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
         # cns = '{batch}/purple/{batch}.purple.cnv',
         pcgr_data = hpc.get_ref_file(key='pcgr_data'),
         purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
