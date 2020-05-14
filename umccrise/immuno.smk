@@ -18,44 +18,62 @@ sensitivity and also gives us more control over the pipeline flow and resources.
 
 Comparison of taking different sources of input for OptiType:
 
-Just the reads mapping to hg38 HLA choromosomes:
+Dragen+umccrise, using only reads mapping to hg38 HLA choromosomes:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*08:01 B*08:01                 22.0    21.802
 N: 0       A*01:01 A*01:01 B*08:01 B*35:01 C*07:01 C*07:01 10.0    9.91
 
-ALso with reads mapped to chr6 region:
+Dragen+umccrise, plus the reads mapped to the chr6 HLA region:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 1435.0  1383.3400000000008
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 765.0   737.4600000000011
 
-Also with unmapped reads:
-          A1      A2      B1      B2      C1      C2      Reads   Objective
+Dragen+umccrise, also with unmapped reads:
+           A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 1681.0  1620.484000000002
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 929.0   895.5560000000014
 
-With an extra razers2 step:
+Dragen+umccrise, with an extra intermediate razers2 step:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 2384.0  2298.176
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:17 1302.0  1255.1180000000015
 
-Running razers2 on read1 and read2 separately:
+Dragen+umccrise, Running razers2 on read1 and read2 separately, separately fed to OptiType with `-i r1.fq r2.fq`:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 703.0   677.6920000000002
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 373.0   359.57199999999983
 
-bcbio:
+bcbio standalone (internally it merges read1 and read1 together in one file before passing to OptiType):
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:02 C*07:01 1758.0  1710.5339999999999        
 N: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:01 C*07:17 1008.0  980.7739999999995
 
-umccrise on bcbio:
+bcbio+umccrise, read1 and read2 razers'ed separately, separately fed to OptiType with `-i r1.fq r2.fq`:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 685.0   660.3400000000001
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 359.0   346.0759999999999
 
-umccrise fastq prep, bcbio optitype command
+bcbio+umccrise, umccrise for read extraction, but bcbio OptiType command. Same result as umccrise on bcbio with `-i r1.fq r2.fq`:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:02 C*07:01 703.0   677.692
+
+bcbio+umccrise, read1 and read2 merged and fed into optitype together:
+           A1      A2      B1      B2      C1      C2      Reads   Objective
+T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 2365.0  2279.8599999999997
+N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:17 1263.0  1217.522000000001
+
+Feeding read1 and read2 together or separately to OptiType makes difference. Just the matter of
+OptiTypePipeline.py -v --dna -o unmerged -i tumor.1.fastq tumor.2.fastq -c config.ini
+or
+cat tumor.1.fastq tumor.2.fastq > tumor.fastq
+OptiTypePipeline.py -v --dna -o unmerged -i tumor.fastq -c config.ini
+
+What if we try -i -i ?
+OptiTypePipeline.py -v --dna -o unmerged_ii -i tumor.1.fastq -i tumor.2.fastq -c config.ini
+           A1      A2      B1      B2      C1      C2      Reads   Objective
+T: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:02 C*07:01 1105.0  1065.2200000000014
+
+Different result again. Sticking to pre-merging fastq.
 """
 
 HLA_READ_SOURCES = [
@@ -126,7 +144,7 @@ rule hla_fastq:
         threads_per_sample
     group: 'hla'
     shell:
-        'samtools fastq -@{threads} {input.bam} -1 {output.fastq1} -2 {output.fastq2}'
+        'samtools fastq -@{threads} {input.bam} -1 {output.fastq1} -2 {output.fastq2} -N'
 
 rule hla_razers:
     input:
@@ -159,18 +177,18 @@ rule hla_razers_to_fastq:
 
 rule merge_razers_fastqs:
     input:
-        fastqs = expand('work/{{batch}}/hla/razers_{read_source}/{{phenotype}}.{{num}}.fastq',
-                        read_source=HLA_READ_SOURCES),
+        fastqs = expand('work/{{batch}}/hla/razers_{read_source}/{{phenotype}}.{num}.fastq',
+                        read_source=HLA_READ_SOURCES, num=[1, 2]),
     output:
-        fastq = 'work/{batch}/hla/optitype_input/{phenotype}.{num}.fastq'
+        fastq = 'work/{batch}/hla/optitype_input/{phenotype}.fastq'
     group: 'hla'
     shell:
         'cat {input} > {output.fastq}'
 
 rule run_optitype:
     input:
-        fastq1 = 'work/{batch}/hla/optitype_input/{phenotype}.1.fastq',
-        fastq2 = 'work/{batch}/hla/optitype_input/{phenotype}.2.fastq',
+        fastq1 = 'work/{batch}/hla/optitype_input/{phenotype}.fastq',
+        # fastq2 = 'work/{batch}/hla/optitype_input/{phenotype}.2.fastq',
     output:
         tsv = '{batch}/hla/{batch}_{phenotype}_result.tsv',
         pdf = '{batch}/hla/{batch}_{phenotype}_coverage_plot.pdf',
@@ -185,7 +203,7 @@ rule run_optitype:
     benchmark:
         'benchmarks/{batch}/hla/{batch}-{phenotype}-optitype.tsv'
     shell:
-        'OptiTypePipeline.py -i {input.fastq1} {input.fastq2} --dna --verbose '
+        'OptiTypePipeline.py -i {input.fastq1} --dna --verbose '
         '--outdir {params.out_dir} --prefix {params.prefix}'
 
 
