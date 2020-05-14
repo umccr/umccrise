@@ -131,37 +131,68 @@ umccrise <input-folder> -j30 --cluster-cmd "sbatch -p vccc -n {threads} -t 24:00
 Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use by the entire pipeline at a single moment.
 
 
-#### Run selected steps
+#### Running selected stages
 
-Umccrise workflow consists of the following steps: `pcgr`, `coverage`, `structural`, `small_variants`, `rmd`, `multiqc`, `purple`, `igv`.
+Umccrise workflow includes multiple processing stages, that can optionally be can run in isolation The following stages are run by default:
 
-To run just a particular step (or steps), use:
+`conpair`,
+`structural`,
+`somatic`, `germline` (part of `small_variants`),
+`pcgr`,
+`cpsr`,
+`purple`,
+`mosdepth`, `goleft`, `cacao` (part of `coverage`),
+`oncoviruses`,
+`cancer_report`,
+`multiqc`,
+`default` (includes all above).
+
+The following stages are optionally available and can be enabled with `-T`:
+
+`microbiome`
+`immuno`
+
+Example:
 
 ```
-umccrise <input-folder> <step_name>
+# Run only multiqc and PCGR:
+umccrise /bcbio/final/ -T multiqc -T pcgr
+
+# Run all default stages plus the "immuno" stage (HLA typing)
+umccrise /bcbio/final/ -T default -T immuno
 ```
 
-Where `<step_name>` is from the list above. E.g.:
+To exclude stages, use `-E`:
 
 ```
-umccrise <input-folder> pcgr
+# Runs all default stages excluding `conpair` report for contamination and T/N concordance
+umccrise /bcbio/final/ -E conpair
 ```
 
-Note that the `igv` step (preparing minibams and uploading them to `s3://umccr-igv`) takes ~5 hours for a WGS sample compared to ~20 minutes for all other steps combined. For that reason, it is always executed in the end of the pipeline, so you can expect that when it is being executed, all other output is ready.
+
+#### Custom input
+
+Umccrise supports bcbio and DRAGEN projects on input. However you can also feed custom files as multiple positional arguments. VCF and BAM files are supported. Sample name will be extracted from VCF and BAM headers. For now, VCF is assumed to contain T/N somatic small variant calls, BAM file is assumed to be from tumor.
+
+```
+umccrise umccrise sample1.bam sample2.bam sample1.vcf.gz sample3.vcf.gz -o umccrised -j10
+```
+
 
 #### Run on selected samples
 
-By default, Umccrise will process all batches in the run in parallel. You can submit only certain samples/batchs using `--sample` or `--batch` arguments, e.g.:
+By default, Umccrise will process all batches in the run in parallel. You can submit only certain samples/batchs using `-s`/`--sample` arguments, e.g.:
 
 ```
-umccrise <input-folder> --batch cup-batch
-umccrise <input-folder> --sample cup-tumor_1,cup-tumor_2
+# of all samples in a project, takes only sample1 and sample3, plus all corresponding normal/tumor matches:
+umccrise /input/project/final -s sample1 -s sample3
 ```
 
-Or you might want to exclude certain samples/batches with `--exclude`:
+Or you might want to exclude certain samples/batches with `-e`/`--exclude`:
 
 ```
-umccrise <input-folder> --exclude cup-tumor_1,cup-batch_2
+# takes all samples in a project, excluding sample1 and sample2 and corresponding normal/tumor matches:
+umccrise /input/project -e sample1 -e sample2
 ```
 
 ## Updating

@@ -1,14 +1,55 @@
 0.18.0 (TBR):
 
-- Integrate [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported in MultiQC and the cancer report.
+- Integrate [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported viral strains in MultiQC and integration sites and affected genes in the cancer report.
 - More DRAGEN input options:
     - Support tumor and normal sample names different from the output prefix (read from the --RGSM tags)
     - Support multi-fastq runs (when input fastq files and RGSM are specified in CSV files and put in the DRAGEN outout folder by the UMCCR worklow).
+- Custom input. You can also feed custom files using multiple positional arguments. VCF and BAM files are supported. Sample name will be extracted from VCF and BAM headers. For now, VCF is assumed to contain T/N somatic small variant calls, BAM file is assumed to be from tumor. Example:
+
+```
+umccrise umccrise sample1.bam sample2.bam sample1.vcf.gz sample3.vcf.gz -o umccrised -j10
+```
+
 - Improved parallelization.
     Re-engineered how the number of CPUs is determined, so when we have many cores available, they are not wasted on a single job that doesn't benefit from many threads. Say, PURPLE COBALT optional number is around 10-15, so if we have 28 cores, we will run COBALT and AMBER in parallel with 14 cores each. This should work for local/AWS runs as well as the HPC runs.
 - PURPLE updated:
     - Use PURPLE v2.40 that reports tumor mutational load and burden
     - Update COBALT GC profile reference file so it fixes a bug ("We have found an issue with the mappability file which is used by COBALT to decide which windows to fit. The file was created on the full set ref genome, when we should have used the analysis set. The impact is that some large (and important) sections of hg38 which have alt contigs are assigned 0 mappability and filtered by COBALT. Particularly the HLA and ERBB2 regions are affected. We have generated new files already and I have checked them, but we are just testing on some real samples.")
+- Integrate OptiType for HLA typing (disabled by default, can be enabled with `-T immuno`)
+- Re-engineered usage of stages. Add --include-stage (-T) and --exclude-stages (-E), allowed to be provided multiple times. Stages as positional arguments are no longer supported. Instead of:
+
+```
+umccrise /bcbio/final/ multiqc structural
+```
+
+Use:
+
+```
+umccrise /bcbio/final/ -T multiqc -T structural
+```
+
+Positional arguments can now be used for extra custom inputs - BAMs or VCFs, e.g.:
+
+```
+umccrise sample1.bam sample2.bam sample1.vcf.gz sample3.vcf.gz
+```
+
+Sample name will be extracted from VCF and BAM headers. For now, VCF is assumed to contain T/N somatic small variant calls, BAM file is assumed to be from tumor.
+
+In concordance with stages, sample and batch inclusion/exclusion parameters (`-s` and `-e`) are now implemented in the same way allowing to be provided multiple times instead of a comma-separated string. Example:
+
+```
+# of all samples in a project, takes only sample1 and sample3, plus all corresponding normal/tumor matches:
+umccrise /input/project/final -s sample1 -s sample3
+
+# takes all samples in a project, excluding sample1 and sample2 and corresponding normal/tumor matches:
+umccrise /input/project -e sample1 -e sample2
+```
+
+Also add stages: `cpsr` (decoupled from `pcgr`), `somatic`, `maf` and `germline` (fine-grained `small_variants`), `mosdepth`, `goleft` and `cacao` (fine-grained `coverage`), `oncoviruses`, `microbiome`, `immuno` (novel stages).
+
+Not that some of the stages are inter-dependent, e.g. `germline` uses `somatic` to get extra germline leakage, `coverage` uses `purple` to get purity-adjusted coverage thresholds, `multiqc` reports results of  `conpair`, `somatic`, `germline` and `oncoviral` stages, `pcgr` uses `purple` to report per-variant purity and ploidy. However, if you target a certain stage specifically and exclude others, umccrise will use the target stage without the dependency. E.g. `germline` will not contain germline leakage from somatic variants if `somatic` stage is not included, `coverage` report will not pull `purple` and will use reasonable purity threshold defaults instead, `multiqc` will report on available QC data only, etc.
+
 
 --------------------
 
