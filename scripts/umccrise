@@ -175,7 +175,6 @@ input_paths: a path to inputs:\n
         f'--directory {output_dir} '
         f'--cores {ncpus_available} '
         f'{f"--local-cores {ncpus_per_node} " if ncpus_per_node else ""}'
-        f'--rerun-incomplete '
         f'{f"--restart-times {restart_times - 1}" if restart_times > 1 else ""}'
         f'{cluster_param} '
         f'--config {" ".join(k + "=" + str(v) for k, v in conf.items())} '

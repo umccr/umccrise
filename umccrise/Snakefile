@@ -98,6 +98,7 @@ rule umccrise:
         rules.conpair.output        if 'conpair'        in stages else [],
         rules.structural.output     if 'structural'     in stages else [],
         rules.somatic.output        if 'somatic'        in stages else [],
+        rules.maf.output            if 'maf'            in stages else [],
         rules.germline.output       if 'germline'       in stages else [],
         rules.purple.output         if 'purple'         in stages else [],
         rules.cacao.output          if 'cacao'          in stages else [],

@@ -121,8 +121,8 @@ rule somatic_vcf_filter_pass:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf
     output:
-        vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
-        tbi = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz.tbi',
+        vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
+        tbi = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz.tbi',
     group: "somatic_filt"
     shell:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -146,7 +146,7 @@ if include_germline:
         input:
             vcf = lambda wc: batch_by_name[wc.batch].germline_vcf,
         output:
-            vcf = 'work/{batch}/small_variants/germline/{batch}-germline.PASS.vcf.gz',
+            vcf = 'work/{batch}/small_variants/germline/{batch}-germline-PASS.vcf.gz',
         group: "germline_snv"
         shell:
             'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
@@ -238,7 +238,7 @@ rule somatic_stats_report:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf,
         full_vcf = rules.somatic_vcf_select_noalt.output.vcf,
-        subset_highly_mutated_stats = rules.somatic_vcf_annotate.output.subset_highly_mutated_stats,
+        subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml',
     output:
         'work/{batch}/small_variants/{batch}_somatic_stats.yml',
     params:
@@ -352,7 +352,7 @@ rule somatic_vcf2maf:
         vcf = rules.somatic_vcf_filter_pass.output.vcf,
         fa = hpc.get_ref_file(genome=run.genome_build, key='fa')
     output:
-        maf = '{batch}/small_variants/{batch}-somatic.PASS.maf',
+        maf = '{batch}/small_variants/{batch}-somatic-PASS.maf',
     params:
         tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
         normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
@@ -389,6 +389,13 @@ rule somatic:
         somatic_pass_vcfs = expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
     output:
         temp(touch('log/somatic.done'))
+
+
+rule maf:
+    input:
+        somatic_mafs = expand(rules.somatic_vcf2maf.output.maf, batch=batch_by_name.keys()),
+    output:
+        temp(touch('log/maf.done'))
 
 
 rule small_variants:

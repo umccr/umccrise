@@ -34,7 +34,7 @@ localrules: rmd, conda_list
 # Subset to GiaB confident intervals
 rule subset_to_giab:
     input:
-        vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
     params:
         regions = hpc.get_ref_file(run.genome_build, key=['hmf_giab_conf'])
     output:
@@ -94,7 +94,7 @@ rule afs_keygenes:
 # Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the somatic calls:
 rule somatic_to_hg19:
     input:
-        vcf = '{batch}/small_variants/{batch}-somatic.PASS.vcf.gz',
+        vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
     output:
         'work/{batch}/rmd/somatic-with_chr_prefix.vcf'
     group: "rmd"
