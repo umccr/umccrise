@@ -327,27 +327,44 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 Updating PCGR packages:
 
 ```
-source /g/data/gx8/extras/umccrise_017_2020_Jan_dev/load_umccrise.sh
-export PATH=/g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise_pcgr/bin:$PATH
-# conda install conda-build anaconda
+pcgr_version=0.8.4.10
+cpsr_version=0.5.2.6
 
-cd /g/data/gx8/extras/umccrise_017_2020_Jan_dev/pcgr/install_no_docker
-export VERSION=0.8.4.9
+# Locally:
+cd pcgr
+git tag v$pcgr_version
+git push origin v$pcgr_version
+
+cd ../cpsr
+git tag v$cpsr_version
+git push origin v$cpsr_version
+
+dir=/g/data/gx8/extras/umccrise_018_2020_May_dev
+
+source $dir/load_umccrise.sh
+export PATH=$dir/miniconda/envs/umccrise_pcgr/bin:$PATH
+# mamba install conda-build anaconda
+
+cd $dir/pcgr.git
+git pull
+cd install_no_docker
+export VERSION=$pcgr_version
 conda build conda_pkg/pcgr
 conda build conda_pkg/pcgr_dockerized
 conda convert --platform osx-64 \
-    /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/linux-64/pcgr_dockerized-$VERSION-*.tar.bz2 \
-    --output-dir /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/
-anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
+    $dir/miniconda/envs/umccrise/conda-bld/linux-64/pcgr_dockerized-$VERSION-*.tar.bz2 \
+    --output-dir $dir/miniconda/envs/umccrise/conda-bld/
+anaconda upload --force -u pcgr $dir/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
 
-cd /g/data/gx8/extras/umccrise_017_2020_Jan_dev/cpsr
-export VERSION=0.5.2.5
+cd $dir/cpsr.git
+git pull
+export VERSION=$cpsr_version
 conda build conda_pkg/cpsr
 conda build conda_pkg/cpsr_dockerized
 conda convert --platform osx-64 \
-    /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/linux-64/cpsr_dockerized-$VERSION-*.tar.bz2 \
-    --output-dir /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/
-anaconda upload --force -u pcgr /g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
+    $dir/miniconda/envs/umccrise/conda-bld/linux-64/cpsr_dockerized-$VERSION-*.tar.bz2 \
+    --output-dir $dir/miniconda/envs/umccrise/conda-bld/
+anaconda upload --force -u pcgr $dir/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
 ```
 
 
