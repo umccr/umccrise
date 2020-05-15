@@ -97,6 +97,9 @@ rule goleft_plots:
         '--fai {input.fai} '
         '--directory {params.directory} '
         '--sex {params.xchr} '
+        '2>&1 | '
+        'grep -v "indexcov: excluding chromosome" | '
+        'grep -v "no reference stats found" >&2'
 
 
 pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'
