@@ -48,7 +48,7 @@ dependencies:
   # - gsort     # sort vcfs and beds - https://github.com/brentp/gsort
   - toml        # to read predisposition genes from PCGR toml
   # - tibanna
-  - snpeff ==4.5covid19  # pre 4.5covid19 release
+  - snpeff ==4.3.1t  # pre 4.5covid19 release
   - bwa         # for oncoviruses
   - sambamba    # for oncoviruses & optitype
   - optitype
