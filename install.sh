@@ -29,6 +29,7 @@ else
 fi
 
 # Instead of `conda activate $PWD/miniconda/envs/${ENV_NAME}`:
+ENV_NAME=umccrise
 export PATH=$PWD/miniconda/envs/${ENV_NAME}/bin:$PATH
 export CONDA_PREFIX=$PWD/miniconda/envs/umccrise
 

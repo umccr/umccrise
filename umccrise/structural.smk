@@ -77,8 +77,8 @@ rule sv_snpeff_maybe:
         else:
             snpeff_db = hpc.get_ref_file(genome=params.genome, key='snpeff')
             snpeff_db_dir = dirname(snpeff_db)
-            snpeff_db_name = 'GRCh38.86'  # for some reason it doesn't matter if the subdir is named GRCh38.92
-
+            snpeff_db_name = 'GRCh38.99'  # it takes the genome build from `envs/umccrise/share/snpeff-4.5covid19-1/snpEff.config`
+                                          # so it doesn't matter if the subdir is named GRCh38.92
             mem_jvm_gb = min(7, max(30, 3*threads))
             jvm_opts = f'-Xms750m -Xmx{mem_jvm_gb}g'
             java_args = f'-Djava.io.tmpdir={params.tmp_dir}'
