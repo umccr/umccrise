@@ -1,11 +1,11 @@
 from os.path import join
+import glob
+from snakemake.io import Namedlist
 
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
-import glob
 
-from snakemake.io import Namedlist
 from umccrise import package_path
 
 

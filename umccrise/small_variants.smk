@@ -377,7 +377,7 @@ rule somatic_vcf2maf:
 
 rule germline:
     input:
-        germline = 'work/copy_germline.done'
+        germline = 'work/copy_germline.done' if include_germline else []
     output:
         temp(touch('log/germline.done'))
 
@@ -400,7 +400,7 @@ rule maf:
 
 rule small_variants:
     input:
-        'log/germline.done',
+        'log/germline.done' if include_germline else [],
         'log/somatic.done',
     output:
         temp(touch('log/small_variants.done'))
