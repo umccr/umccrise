@@ -37,7 +37,7 @@ rule run_pcgr:
         if input.purple_file:
             purity = get_purity(input.purple_file)
             ploidy = get_ploidy(input.purple_file)
-            cmd += '--puriry {purity} --ploidy {ploidy}'
+            cmd += ' --puriry {purity} --ploidy {ploidy}'
         shell(cmd)
 
 rule pcgr_copy_report:
