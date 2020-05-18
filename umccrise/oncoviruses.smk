@@ -3,9 +3,9 @@ from os.path import join, basename
 import yaml
 from cyvcf2 import VCF
 import csv
-from hpc_utils import hpc
 from ngs_utils.file_utils import verify_file
 from ngs_utils.utils import update_dict
+from reference_data import api as refdata
 
 
 localrules: oncoviruses, oncoviruses_per_batch
@@ -18,7 +18,7 @@ checkpoint viral_content:
         prioritized_tsv = '{batch}/oncoviruses/prioritized_oncoviruses.tsv',
         present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
     params:
-        genomes_dir = hpc.genomes_dir,
+        genomes_dir = refdata.genomes_dir,
         work_dir = 'work/{batch}/oncoviruses',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
@@ -55,7 +55,7 @@ rule viral_integration_sites:
     output:
         breakpoints_vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf.gz',
     params:
-        genomes_dir = hpc.genomes_dir,
+        genomes_dir = refdata.genomes_dir,
         work_dir = 'work/{batch}/oncoviruses',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,

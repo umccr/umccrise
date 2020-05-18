@@ -2,12 +2,12 @@
 import sys
 from os.path import dirname, abspath, join, basename, isfile, splitext
 import click
+from umccrise import package_path
 from ngs_utils.file_utils import splitext_plus, verify_file, safe_mkdir
 from ngs_utils.logger import err, critical
 from ngs_utils.snakemake_utils import run_snakemake
-from hpc_utils import hpc
-from umccrise import package_path
 from ngs_utils.utils import set_locale; set_locale()
+from reference_data import api as refdata
 
 
 @click.command()
@@ -37,7 +37,7 @@ def main(normal_bam, tumor_bam, genome=None, ref_fa=None, output_dir=None,
     output_dir = output_dir or 'conpairred'
     output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
-    ref_fa = ref_fa or hpc.get_ref_file(genome, 'fa')
+    ref_fa = ref_fa or refdata.get_ref_file(genome, 'fa')
 
     normal_name = normal_name or splitext_plus(basename(normal_bam))[0]\
         .replace('-ready', '').replace('-sorted', '')

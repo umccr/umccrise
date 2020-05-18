@@ -8,8 +8,8 @@ from os.path import join, dirname, basename
 from cyvcf2 import VCF
 from ngs_utils.file_utils import safe_mkdir, verify_dir, get_ungz_gz, verify_file
 from ngs_utils.logger import critical
-from ngs_utils.dragen import DragenProject
 from ngs_utils.vcf_utils import count_vars, vcf_contains_field, iter_vcf
+from reference_data import api as refdata
 
 
 vcftobedpe = 'vcfToBedpe'
@@ -40,18 +40,6 @@ rule sv_keep_pass:
         shell(cmd)
 
 
-# rule sv_select_noalt:
-#     input:
-#         vcf = rules.sv_keep_pass.output.vcf,
-#         noalts_bed = hpc.get_ref_file(run.genome_build, 'noalt_bed'),
-#     output:
-#         vcf = 'work/{batch}/structural/noalt/{batch}-manta.vcf.gz',
-#         tbi = 'work/{batch}/structural/noalt/{batch}-manta.vcf.gz.tbi',
-#     group: "somatic_anno"
-#     shell:
-#         'bcftools view -R {input.noalts_bed} {input.vcf} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
-
-
 rule sv_snpeff_maybe:
     input:
         vcf = rules.sv_keep_pass.output.vcf,
@@ -75,7 +63,7 @@ rule sv_snpeff_maybe:
             shell(f"cp {input.vcf} {output.vcf}")
             shell(f"cp {input.tbi} {output.tbi}")
         else:
-            snpeff_db = hpc.get_ref_file(genome=params.genome, key='snpeff')
+            snpeff_db = refdata.get_ref_file(genome=params.genome, key='snpeff')
             snpeff_db_dir = dirname(snpeff_db)
             snpeff_db_name = 'GRCh38.86'  # it takes the genome build from `envs/umccrise/share/snpeff-4.3.1t-3/snpEff.config`
                                           # so it doesn't matter if the subdir is named GRCh38.92
@@ -99,7 +87,7 @@ rule sv_vep:
         tbi = 'work/{batch}/structural/vep/{batch}-sv-vep.vcf.gz.tbi',
     params:
         genome = run.genome_build,
-        pcgr_dir = hpc.get_ref_file(key='pcgr_data'),
+        pcgr_dir = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
     group: "sv_vcf",
     threads:
         threads_per_batch
@@ -405,7 +393,7 @@ rule ribbon_filter_manta:
 rule ribbon_filter_vcfbedtope_starts:
     input:
         bed = rules.ribbon_filter_manta.output[0],
-        fai = hpc.get_ref_file(run.genome_build, key='fa') + '.fai'
+        fai = refdata.get_ref_file(run.genome_build, key='fa') + '.fai'
     output:
         'work/{batch}/structural/ribbon/manta-starts.bed'
     params:
@@ -420,7 +408,7 @@ rule ribbon_filter_vcfbedtope_starts:
 rule ribbon_filter_vcfbedtope_ends:
     input:
         bed = rules.ribbon_filter_manta.output[0],
-        fai = hpc.get_ref_file(run.genome_build, key='fa') + '.fai'
+        fai = refdata.get_ref_file(run.genome_build, key='fa') + '.fai'
     output:
         'work/{batch}/structural/ribbon/manta-ends.bed'
     params:

@@ -4,7 +4,9 @@ localrules: purple
 import glob
 import shutil
 import platform
+from os.path import basename, join
 from umccrise import package_path
+from reference_data import api as refdata
 
 
 # localrules: purple
@@ -20,39 +22,12 @@ circos_macos_patch = ('export PERL5LIB=' +
 purple_mem = min(30000, 5000*threads_per_batch)
 
 
-def get_purple_metric(purple_file, metric='purity'):
-    """ Reading the value from somatic sample from Purple output
-    """
-    with open(purple_file) as f:
-        header, values = f.read().split('\n')[:2]
-    # #Purity  NormFactor  Score   DiploidProportion  Ploidy  Gender  Status  PolyclonalProportion  MinPurity  MaxPurity  MinPloidy  MaxPloidy  MinDiploidProportion  MaxDiploidProportion  Version  SomaticDeviation
-    # 0.7200   1.0400      0.3027  0.8413             1.8611  FEMALE  NORMAL  0.0000                0.6600     0.7700     1.8508     1.8765     0.8241                0.8558                2.17     0.0006
-    data = dict(zip(header.strip('#').split('\t'), values.split('\t')))
-    purity = float(data[metric])
-    return purity
-
-
-def get_purity(purple_file, phenotype='tumor'):
-    """ Reading purity from somatic sample from Purple output
-        Assuming purity 100% for normal
-    """
-    purity = 1.0
-    if phenotype == 'tumor':
-        purity = get_purple_metric(purple_file, 'purity')
-    purity = min(purity, 1.0)
-    return purity
-
-
-def get_ploidy(purple_file):
-    return get_purple_metric(purple_file, metric='ploidy')
-
-
 rule purple_amber:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        het_snps = hpc.get_ref_file(run.genome_build, 'purple_het'),
-        ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
+        het_snps = refdata.get_ref_file(run.genome_build, 'purple_het'),
+        ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
         'work/{batch}/purple/amber/{batch}.amber.baf.tsv',
         'work/{batch}/purple/amber/{batch}.amber.baf.pcf',
@@ -91,8 +66,8 @@ rule purple_cobalt:
     input:
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        gc = hpc.get_ref_file(run.genome_build, 'purple_gc'),
-        ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
+        gc = refdata.get_ref_file(run.genome_build, 'purple_gc'),
+        ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
         'work/{batch}/purple/cobalt/{batch}.chr.len',
         'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.tsv',
@@ -144,9 +119,9 @@ rule purple_run:
         cobalt_dummy      = 'work/{batch}/purple/cobalt/{batch}.chr.len',
         cobalt_dummy_pcf  = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.tsv',
         manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
-        gc                = hpc.get_ref_file(run.genome_build, 'purple_gc'),
+        gc                = refdata.get_ref_file(run.genome_build, 'purple_gc'),
         somatic_vcf       = rules.purple_somatic_vcf.output,
-        ref_fa            = hpc.get_ref_file(run.genome_build, 'fa'),
+        ref_fa            = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
         cnv           = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
         gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',

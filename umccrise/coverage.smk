@@ -3,6 +3,8 @@ from os.path import abspath, dirname, join
 from ngs_utils.reference_data import get_key_genes_bed
 from ngs_utils.file_utils import safe_symlink
 from ngs_utils.file_utils import which
+from umccrise import get_purity
+from reference_data import api as refdata
 
 
 localrules: coverage, cacao, goleft, mosdepth
@@ -31,7 +33,7 @@ rule run_mosdepth:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
         purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
-        ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
+        ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
         '{batch}/coverage/{batch}-{phenotype}.quantized.bed.gz',
         '{batch}/coverage/{batch}-{phenotype}.regions.bed.gz',
@@ -84,7 +86,7 @@ rule goleft_plots:
     input:
         bam = lambda wc: batch_by_name[wc.batch].tumor.bam + \
             ('.crai' if batch_by_name[wc.batch].tumor.bam.endswith('.cram') else ''),
-        fai = hpc.get_ref_file(run.genome_build, 'fa') + '.fai',
+        fai = refdata.get_ref_file(run.genome_build, 'fa') + '.fai',
     params:
         directory = '{batch}/coverage/{batch}-indexcov',
         xchr = 'X' if run.genome_build == 'GRCh37' else 'chrX'
@@ -108,11 +110,11 @@ rule run_cacao:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         purple_file = rules.purple_run.output.purity,
-        ref_fa = hpc.get_ref_file(run.genome_build, 'fa'),
+        ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
         report = '{batch}/coverage/cacao_{phenotype}/{batch}_' + pcgr_genome + '_coverage_cacao.html'
     params:
-        cacao_data = hpc.get_ref_file(key='cacao_data'),
+        cacao_data = refdata.get_ref_file(genome=run.genome_build, key='cacao_data'),
         output_dir = '{batch}/coverage/cacao_{phenotype}',
         docker_opt = '--no-docker' if not which('docker') else '',
         sample_id = '{batch}',

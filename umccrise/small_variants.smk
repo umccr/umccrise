@@ -1,17 +1,16 @@
 #################
 #### Somatic ####
-import os
 import subprocess
 from os.path import isfile, join, dirname
+import toml
+import cyvcf2
+import yaml
 from ngs_utils.file_utils import get_ungz_gz
 from ngs_utils.reference_data import get_predispose_genes_bed
 from ngs_utils.logger import critical
-from umccrise import package_path
-import toml
 from ngs_utils.vcf_utils import iter_vcf
-import cyvcf2
-import yaml
-from hpc_utils import hpc
+from reference_data import api as refdata
+from umccrise import package_path
 
 
 localrules: somatic, germline, small_variants
@@ -48,7 +47,7 @@ rule somatic_vcf_pass_sort:
 rule somatic_vcf_select_noalt:
     input:
         vcf = rules.somatic_vcf_pass_sort.output.vcf,
-        noalts_bed = hpc.get_ref_file(run.genome_build, 'noalt_bed'),
+        noalts_bed = refdata.get_ref_file(run.genome_build, 'noalt_bed'),
     output:
         vcf = 'work/{batch}/small_variants/noalt/{batch}-somatic.vcf.gz',
         tbi = 'work/{batch}/small_variants/noalt/{batch}-somatic.vcf.gz.tbi',
@@ -68,7 +67,7 @@ rule sage:
         sage_tbi = '{batch}/small_variants/sage/{batch}-sage.vcf.gz.tbi',
     params:
         genome = run.genome_build,
-        genomes_dir = hpc.genomes_dir,
+        genomes_dir = refdata.genomes_dir,
         work_dir = 'work/{batch}/small_variants/sage',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
         tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
@@ -90,7 +89,7 @@ rule somatic_vcf_annotate:
         subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml',
     params:
         genome = run.genome_build,
-        genomes_dir = hpc.genomes_dir,
+        genomes_dir = refdata.genomes_dir,
         work_dir = 'work/{batch}/small_variants',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
         tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
@@ -350,7 +349,7 @@ if include_germline:
 rule somatic_vcf2maf:
     input:
         vcf = rules.somatic_vcf_filter_pass.output.vcf,
-        fa = hpc.get_ref_file(genome=run.genome_build, key='fa')
+        fa = refdata.get_ref_file(genome=run.genome_build, key='fa')
     output:
         maf = '{batch}/small_variants/{batch}-somatic-PASS.maf',
     params:

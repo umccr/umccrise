@@ -8,14 +8,16 @@ localrules: pcgr, cpsr
 
 from os.path import dirname
 from ngs_utils.file_utils import which
-from ngs_utils.reference_data import get_predispose_genes_txt, get_predispose_genes_bed
+from ngs_utils.reference_data import get_predispose_genes_bed
+from reference_data import api as refdata
+from umccrise import get_purity, get_ploidy
 
 
 rule run_pcgr:
     input:
         vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
         # cns = '{batch}/purple/{batch}.purple.cnv',
-        pcgr_data = hpc.get_ref_file(key='pcgr_data'),
+        pcgr_data = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
         purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
     output:
         'work/{batch}/pcgr/{batch}-somatic.pcgr.html',
@@ -58,7 +60,7 @@ if include_germline:
             vcf = rules.germline_merge_with_leakage.output.vcf \
                   if 'somatic' in stages else \
                   rules.germline_predispose_subset.output.vcf,
-            pcgr_data = hpc.get_ref_file(key='pcgr_data'),
+            pcgr_data = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
             predispose_bed = get_predispose_genes_bed(run.genome_build),
         output:
             'work/{batch}/cpsr/{batch}-normal.cpsr.html'

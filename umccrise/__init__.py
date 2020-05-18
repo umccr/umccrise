@@ -3,6 +3,7 @@ import math
 import os
 import sys
 from os.path import join, abspath, dirname, isfile, basename, splitext
+from os.path import isfile, join, dirname, abspath, isdir
 
 from ngs_utils.Sample import BaseBatch, BaseProject, BaseSample
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
@@ -13,10 +14,10 @@ from ngs_utils.logger import critical, info, debug, warn, error
 from ngs_utils import logger as log
 from ngs_utils import bam_utils
 from ngs_utils import vcf_utils
-from hpc_utils import hpc
 from ngs_utils.utils import set_locale; set_locale()
-from os.path import isfile, join, dirname, abspath, isdir
 from ngs_utils.file_utils import verify_file
+from hpc_utils import hpc
+from reference_data import api as refdata
 
 
 def package_path():
@@ -160,7 +161,7 @@ def prep_inputs(smconfig, silent=False):
 
     # Reference files
     if smconfig.get('genomes_dir'):
-        hpc.set_genomes_dir(smconfig.get('genomes_dir'))
+        refdata.find_genomes_dir(smconfig.get('genomes_dir'))
 
     # TODO: merge runs
     run = run or custom_run
@@ -282,6 +283,31 @@ def prep_stages(include_stages=None, exclude_stages=None):
     return selected_stages
 
 
+def get_purple_metric(purple_file, metric='purity'):
+    """ Reading the value from somatic sample from Purple output
+    """
+    with open(purple_file) as f:
+        header, values = f.read().split('\n')[:2]
+    # #Purity  NormFactor  Score   DiploidProportion  Ploidy  Gender  Status  PolyclonalProportion  MinPurity  MaxPurity  MinPloidy  MaxPloidy  MinDiploidProportion  MaxDiploidProportion  Version  SomaticDeviation
+    # 0.7200   1.0400      0.3027  0.8413             1.8611  FEMALE  NORMAL  0.0000                0.6600     0.7700     1.8508     1.8765     0.8241                0.8558                2.17     0.0006
+    data = dict(zip(header.strip('#').split('\t'), values.split('\t')))
+    purity = float(data[metric])
+    return purity
+
+
+def get_purity(purple_file, phenotype='tumor'):
+    """ Reading purity from somatic sample from Purple output
+        Assuming purity 100% for normal
+    """
+    purity = 1.0
+    if phenotype == 'tumor':
+        purity = get_purple_metric(purple_file, 'purity')
+    purity = min(purity, 1.0)
+    return purity
+
+
+def get_ploidy(purple_file):
+    return get_purple_metric(purple_file, metric='ploidy')
 
 
 

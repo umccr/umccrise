@@ -34,12 +34,12 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
          pcgr_data=None, genomes_dir=None, puriry=None, ploidy=None, predispose_genes=None, predispose_bed=None):
 
     if not pcgr_data:
-        from hpc_utils import hpc
+        from reference_data import api as refdata
         if genomes_dir:
-            hpc.set_genomes_dir(genomes_dir)
-        pcgr_data = hpc.get_ref_file(key='pcgr_data')
+            refdata.find_genomes_dir(genomes_dir)
+        pcgr_data = refdata.get_ref_file(genome=genome, key='pcgr_data')
         if not pcgr_data:
-            logger.critical(f'PCGR data is not found on the system "{hpc.hostname}".'
+            logger.critical(f'PCGR data is not found on the system "{refdata.name}".'
                             f' Please, provide the path to PCGR data with --pcgr-data.'
                             f' Follow `https://github.com/vladsaveliev/pcgr` to get it.')
     output_dir = output_dir or 'pcgrred'

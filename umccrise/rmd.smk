@@ -1,10 +1,8 @@
 from os.path import join
-import glob
-from snakemake.io import Namedlist
-
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
+from reference_data import api as refdata
 
 from umccrise import package_path
 
@@ -36,7 +34,7 @@ rule subset_to_giab:
     input:
         vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
     params:
-        regions = hpc.get_ref_file(run.genome_build, key=['hmf_giab_conf'])
+        regions = refdata.get_ref_file(run.genome_build, key=['hmf_giab_conf'])
     output:
         'work/{batch}/rmd/afs/somatic-confident.vcf.gz'
     group: "rmd"
@@ -47,7 +45,7 @@ rule subset_to_giab:
 rule split_multiallelic:
     input:
         vcf = 'work/{batch}/rmd/afs/somatic-confident.vcf.gz',
-        ref_fa = hpc.get_ref_file(run.genome_build, key='fa')
+        ref_fa = refdata.get_ref_file(run.genome_build, key='fa')
     output:
         'work/{batch}/rmd/afs/somatic-confident-singleallelic.vcf.gz'
     group: "rmd"

@@ -3,11 +3,14 @@
 localrules: conpair
 
 
+from reference_data import api as refdata
+
+
 rule run_conpair:
     input:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        ref_fa = hpc.get_ref_file(run.genome_build, key='fa')
+        ref_fa = refdata.get_ref_file(run.genome_build, key='fa')
     output:
         concord = directory('work/{batch}/conpair/concordance'),
         contam = directory('work/{batch}/conpair/contamination'),

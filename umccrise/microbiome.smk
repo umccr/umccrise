@@ -3,9 +3,9 @@ from os.path import join, basename
 import yaml
 from cyvcf2 import VCF
 import csv
-from hpc_utils import hpc
 from ngs_utils.file_utils import verify_file
 from ngs_utils.utils import update_dict
+from reference_data import api as refdata
 
 
 localrules: microbiome
@@ -69,7 +69,7 @@ if 'microbiome' in stages:
     rule run_mash_screen:
         input:
             fq = rules.merge_reads.output.fq,
-            refseq_msh = hpc.get_ref_file(key = 'refseq_msh'),
+            refseq_msh = refdata.get_ref_file(key = 'refseq_msh'),
         output:
             screen_tab = 'work/{batch}/microbiome/step3_screen.tab',
         threads:
