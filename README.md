@@ -24,14 +24,22 @@ See the [HISTORY.md](HISTORY.md) for the version history.
 
 Contents:
 - [Umccrise](#umccrise)
+- [Usage](#usage)
 - [Installation](#installation)
 - [Reference data](#reference-data)
+    + [Versioning](#versioning)
+    + [Syncing with Spartan](#syncing-with-spartan)
+    + [Syncing with s3](#syncing-with-s3)
 - [Testing](#testing)
-- [Usage](#usage)
 - [AWS](#aws)
 - [HPC (NCI Gadi)](#hpc--nci-gadi-)
     + [Run selected steps](#run-selected-steps)
     + [Run on selected samples](#run-on-selected-samples)
+- [Advanced usage](#advanced-usage)
+    + [Controlling the number of CPUs](#controlling-the-number-of-cpus)
+    + [Running selected stages](#running-selected-stages)
+    + [Custom input](#custom-input)
+    + [Running on selected samples](#running-on-selected-samples)
 - [Updating](#updating)
 - [Development](#development)
 - [Docker](#docker)
@@ -48,6 +56,18 @@ Contents:
 - [GRIDSS and LINX](#gridss-and-linx)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+
+## Usage
+
+```
+umccrise <input-data ...> -o umccrised
+```
+
+Where <input-folder> can be either bcbio-nextgen analysis results' `final` folder, Dragen analysis results folder, or a custom set of BAM or VCF files.
+
+For more options, see [Advanced usage](#advanced-usage).
+
 
 ## Installation
 
@@ -66,16 +86,33 @@ It will generate `load_umccrise.sh` script that can be sourced to load the umccr
 source load_umccrise.sh
 ```
 
+
 ## Reference data
 
-Also you will need the reference data. Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle mounted to the Docker image under `/genomes`. You can specify a custom path with `--genomes <path>` (the path can be a tarball, which is useful for runs in a pipeline). You can copy the genome bundle from NCI (`/g/data3/gx8/extras/umccrise_2019_Mar/genomes`) anywhere else. To build the bundle from scratch, see [below](#building-reference-data).
+Also you will need the reference data. Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle mounted to the Docker image under `/genomes`. You can specify a custom path with `--genomes <path>` (the path can be a tarball, which is useful for runs in a pipeline). You can sync the genome bundle from NCI (`/g/data3/gx8/extras/umccrise/genomes`) anywhere else. To build the bundle from scratch, see [below](#building-reference-data).
 
-For the reference, to sync the reference data from Spartan to NCI, you can use:
+### Versioning
+
+The reference data is versioned as a python package at https://github.com/umccr/reference_data
+
+
+### Syncing with Spartan
+
+If you want to sync the reference data with Spartan, use:
 
 ```
-cd /data/cephfs/punim0010/extras/umccrise
-rsync -rv --size-only genomes/ rjn:/g/data3/gx8/extras/umccrise/genomes
+cd /g/data3/gx8/extras/umccrise
+rsync -rv --size-only genomes/ spa:/data/cephfs/punim0010/extras/umccrise/genomes
 ```
+
+### Syncing with s3
+
+```
+ref_data_version=1.0.0
+aws s3 sync hg38 s3://umccr-refdata-dev/genomes_${ref_data_version//./}/hg38
+aws s3 sync hg38-manifest.txt s3://umccr-refdata-dev/genomes_${ref_data_version//./}/hg38-manifest.txt
+```
+
 
 ## Testing
 
@@ -87,20 +124,11 @@ git clone https://github.com/umccr/umccrise_test_data
 TEST_OPTS="-c -j2" nosetests -s umccrise_test_data/test.py
 ```
 
-## Usage
-
-```
-umccrise <input-folder> -o umccrised -j10
-```
-
-Where <input-folder> can be either bcbio-nextgen analysis results' `final` folder, or Dragen analysis results folder.
-
-`-j10` specifies the number of cores the pipeline will attempt to use.
-
 
 ## AWS
 
 Umccrise on AWS is run via AWS Batch in a defined compute environment. This is set up and maintained via the [umccrise Terraform Stack][https://github.com/umccr/infrastructure/tree/master/terraform/stacks/umccrise]. This stack also defines the version of umccrise that is used within AWS and how umccrise jobs are triggered.
+
 
 ## HPC (NCI Gadi)
 
@@ -122,16 +150,18 @@ To parallelize the tool using the cluster scheduler, you can use `--cluster-auto
 umccrise <input-folder> -j30 -c
 ```
 
-Alternatively, you can specify a custom submission template with `--cluster-cmd`, e.g.:
+
+## Advanced usage
+
+### Controlling the number of CPUs
+
+To set the number of allowed CPUs to use, set the `-j` option:
 
 ```
-umccrise <input-folder> -j30 --cluster-cmd "sbatch -p vccc -n {threads} -t 24:00:00 --mem {resources.mem_mb} -J umccrise"
+umccrise <input-folder> -j30
 ```
 
-Make sure to use `-j` outside of that template: this options tells snakemake how many cores is allowed to use by the entire pipeline at a single moment.
-
-
-#### Running selected stages
+### Running selected stages
 
 Umccrise workflow includes multiple processing stages, that can optionally be can run in isolation The following stages are run by default:
 
@@ -170,7 +200,7 @@ umccrise /bcbio/final/ -E conpair
 ```
 
 
-#### Custom input
+### Custom input
 
 Umccrise supports bcbio and DRAGEN projects on input. However you can also feed custom files as multiple positional arguments. VCF and BAM files are supported. Sample name will be extracted from VCF and BAM headers. For now, VCF is assumed to contain T/N somatic small variant calls, BAM file is assumed to be from tumor.
 
@@ -179,7 +209,7 @@ umccrise umccrise sample1.bam sample2.bam sample1.vcf.gz sample3.vcf.gz -o umccr
 ```
 
 
-#### Run on selected samples
+### Running on selected samples
 
 By default, Umccrise will process all batches in the run in parallel. You can submit only certain samples/batchs using `-s`/`--sample` arguments, e.g.:
 
@@ -223,7 +253,6 @@ git clone https://github.com/vladsaveliev/NGS_Utils ngs_utils   ; pip install -e
 git clone https://github.com/umccr/hpc_utils                    ; pip install -e hpc_utils
 git clone https://github.com/vladsaveliev/vcf_stuff             ; pip install -e vcf_stuff
 ```
-
 
 ## Docker
 
@@ -555,6 +584,7 @@ wget https://sourceforge.net/projects/snpeff/files/databases/v4_3/snpEff_v4_3_GR
 unzip *.zip
 rm *.zip
 ```
+
 
 ## GRIDSS and LINX
 

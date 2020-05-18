@@ -62,3 +62,4 @@ dependencies:
     - "git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
     - "git+https://github.com/umccr/oncoviruses#egg=oncoviruses"
+    - "git+https://github.com/umccr/reference_data#egg=reference_data"
