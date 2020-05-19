@@ -1,20 +1,16 @@
 #!/usr/bin/env python
 import glob
-import os
-import platform
-import sys
-from os import rename
 from os.path import isfile, join, dirname, abspath, basename, exists
 import click
 import subprocess
 
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
-from ngs_utils import logger
+from ngs_utils import logger, conda_utils
 from ngs_utils.logger import info, critical, err
 from ngs_utils.utils import set_locale; set_locale()
 from umccrise import package_path
-from hpc_utils import hpc
+from reference_data import api as refdata
 
 
 @click.command()
@@ -54,13 +50,13 @@ def main(output_dir=None, normal_bam=None, tumor_bam=None, snv_vcf=None,
     assert genome == 'GRCh37', 'Only GRCh37 is supported for GRIDSS yet'
 
     if genomes_dir:
-        hpc.set_genomes_dir(genomes_dir)
+        refdata.find_genomes_dir(genomes_dir)
     if not gridss_ref_dir:
-        gridss_ref_dir = hpc.get_ref_file(genome, 'gridss_purple_linx_dir')
+        gridss_ref_dir = refdata.get_ref_file(genome, 'gridss_purple_linx_dir')
     if not ref_fa:
-        ref_fa = hpc.get_ref_file(genome, 'fa')
+        ref_fa = ref_fa.get_ref_file(genome, 'fa')
 
-    hmf_env_path = hpc.secondary_conda_env('hmf')
+    hmf_env_path = conda_utils.secondary_conda_env('hmf')
 
     gridss_jar = glob.glob(join(hmf_env_path, 'share/gridss-*/gridss.jar'))[0]
     amber_jar  = glob.glob(join(hmf_env_path, 'share/hmftools-amber-*/amber.jar'))[0]

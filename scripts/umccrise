@@ -29,9 +29,9 @@ DEFAULT_RESTART_TIMES = 2
               help='Optionally, specific sample or batch to process, e.g.: -s SAMPLE1 -s BATCH2')
 @click.option('-e', '--exclude', 'exclude', multiple=True,
               help='Optionally, samples or batches to ignore, e.g.: -e SAMPLE1 -e BATCH2')
-@click.option('--genomes', '--genomes-dir', 'input_genomes_url', help='Path to the reference data. Can be s3')
+@click.option('--genomes', '--genomes-dir', 'input_genomes_url', help='Path to the reference data. Can be s3 or gds')
 @click.option('-g', '--genome', 'genome_build',
-              help='Genome build for custom runs (hg19, hg38). Genome build of bcbio and Dragen runs is '
+              help='Genome build for custom runs (GRCh37, hg38). Genome build of bcbio and Dragen runs is '
                    'determined automatically.')
 @click.option('-T', '--target', 'include_stages', multiple=True,
               help='Optionally, specific stage to run, e.g.: -T pcgr -T coverage -T structural -T small_variants')

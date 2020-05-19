@@ -1786,7 +1786,7 @@ conda_pkgs <- readr::read_table2(params$conda_list, col_names = c("name", "versi
 
 main_pkgs <- c(
   "^cacao", "^conpair$", "^cpsr",
-  "^gridss", "^hmftools", "^hpc", "^htslib$",
+  "^gridss", "^hmftools", "^reference", "^htslib$",
   "^multiqc", "^ngs",
   "pandoc", "^pcgr", "^python$",
   "^r-base$", "snakemake",

@@ -16,7 +16,6 @@ from ngs_utils import bam_utils
 from ngs_utils import vcf_utils
 from ngs_utils.utils import set_locale; set_locale()
 from ngs_utils.file_utils import verify_file
-from hpc_utils import hpc
 from reference_data import api as refdata
 
 
@@ -175,7 +174,7 @@ def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=Fa
     """
     # Checking presets for known HPC clusters, otherwise assuming a for single-machine AWS or local run
     # and just taking the number of available CPUs:
-    ncpus_on_a_machine = hpc.ncpus_on_node or len(os.sched_getaffinity(0)) or 1
+    ncpus_on_a_machine = refdata.ncpus_on_node or len(os.sched_getaffinity(0)) or 1
     if is_cluster:
         # we are not resticted to one machine, so can submit many jobs and let the scheduler figure out the queue
         ncpus_available = ncpus_requested or 32
