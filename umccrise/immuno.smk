@@ -94,6 +94,10 @@ T: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:02 C*07:01 1105.0  1065.22000000
 
 Interestingly it affects the result but not as much. Might worth digging into OptiType source, but
 for the moment it seems find to stick to pre-merging fastqs.
+
+Also, before merging read1 and read2 fastqs, need to make sure to use the `-N` option when 
+running `samtools fastq` so it adds /1 and /2 suffixes to read names. Otherwise OptiType will 
+get confused by identical read names.
 """
 
 HLA_READ_SOURCES = [
