@@ -7,79 +7,99 @@ localrules: immuno
 
 
 """
-Using OptiType to predict HLA types. As input, extracting 3 categories of reads:
-- Reads aligned to HLA hg38 contigs (however they barely contribute anything)
-- Reads mapped to the chr6:29942470-31357179 region (significantly improves sensitivity)
-- Unmapped reads (slightly improves sensitivity)
+Using OptiType to predict HLA types.
 
-Also, adding razers2 step to filter reads to those taht align the HLA reference provided by OptiType.
-This step is actually done by OptiType itself, however doing it separately slightly improves
-sensitivity and also gives us more control over the pipeline flow and resources. 
+As input, exploring 3 categories of reads:
+- Reads aligned to HLA hg38 contigs (however they barely contribute anything for DRAGEN BAMs)
+- Reads mapped to the chr6:29942470-31357179 region (most significantly contributes to usable signal)
+- Unmapped reads (improves signal by 40%)
 
-Comparison of taking different sources of input for OptiType:
+Also, after some experiments, adding razers2 step to pre-filter reads to those that align the HLA 
+reference provided by OptiType. This step is actually done by OptiType itself, however doing it 
+separately improves accuracy a bit and also gives us more control over the pipeline flow and 
+resource allocation. 
 
-Dragen+umccrise, using only reads mapping to hg38 HLA choromosomes:
+Below is a comparison of taking different sources of input for OptiType and running it in different ways. 
+I focus on the last column as a main metric ("Objective") - it seems to represent the amount of signal 
+OptiType was able to use - so it can serve as somewhat an approximation for accuracy.
+
+DRAGEN BAM, using only reads mapping to hg38 HLA choromosomes:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*08:01 B*08:01                 22.0    21.802
 N: 0       A*01:01 A*01:01 B*08:01 B*35:01 C*07:01 C*07:01 10.0    9.91
 
-Dragen+umccrise, plus the reads mapped to the chr6 HLA region:
+DRAGEN BAM, adding reads mapped to the chr6 HLA region:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 1435.0  1383.3400000000008
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 765.0   737.4600000000011
 
-Dragen+umccrise, also with unmapped reads:
+DRAGEN BAM, adding unmapped reads:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 1681.0  1620.484000000002
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 929.0   895.5560000000014
 
-Dragen+umccrise, with an extra intermediate razers2 step:
+DRAGEN BAM, with an extra intermediate razers2 step:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 2384.0  2298.176
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:17 1302.0  1255.1180000000015
 
-Dragen+umccrise, Running razers2 on read1 and read2 separately, separately fed to OptiType with `-i r1.fq r2.fq`:
+DRAGEN BAM, running razers2 on read1 and read2 separately, and separately fed to OptiType with 
+`-i r1.fq r2.fq` as documented at https://github.com/FRED-2/OptiType#usage:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 703.0   677.6920000000002
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 373.0   359.57199999999983
 
-bcbio standalone (internally it merges read1 and read1 together in one file before passing to OptiType):
+For some reason this approach loses a lot of reads. Trying to understand why.
+
+Comparing wit bcbio results on the same sample. Bcbio extacts reads mapped to HLA contigs
+(however the treatment of multimappers is different so it makes sense to do in bcbio, 
+unkike DRAEGEN which needs chr6 reads). Bcbio doesn't run an extra razer2 step, and it 
+merges read1 and read2 before passing to OptiType.
+bcbio standalone (internally merges read1 and read1 together in one file before passing to OptiType):
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:02 C*07:01 1758.0  1710.5339999999999        
 N: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:01 C*07:17 1008.0  980.7739999999995
 
-bcbio+umccrise, read1 and read2 razers'ed separately, separately fed to OptiType with `-i r1.fq r2.fq`:
+Also trying to use bcbio BAM file (BWA-aligned) to run the same procedure we applied to DRAGEN BAM
+(read1 and read2 razers2'ed separately, separately fed to OptiType with `-i r1.fq r2.fq`):
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 685.0   660.3400000000001
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 359.0   346.0759999999999
 
-bcbio+umccrise, umccrise for read extraction, but bcbio OptiType command. Same result as umccrise on bcbio with `-i r1.fq r2.fq`:
+The result is the same as was for DRAGEN BAM. 
+
+Trying to see if it's about the way bcbio configures OptiType. Using bcbio BAM file, extacting reads 
+in umccrise, but then running the bcbio OptiType command using `-i r1.fq r2.fq`. Same result as 
+umccrise on bcbio with `-i r1.fq r2.fq`:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:02 C*07:01 703.0   677.692
 
-bcbio+umccrise, read1 and read2 merged and fed into optitype together:
+However, if we merge reads1 and read2 together and fed as a single fastq file, the result is back
+to a high number. Bcbio BAM, read1 and read2 merged and fed into optitype together:
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:02 2365.0  2279.8599999999997
 N: 0       A*01:01 A*02:01 B*07:02 B*08:01 C*07:01 C*07:17 1263.0  1217.522000000001
 
-Feeding read1 and read2 together or separately to OptiType makes difference. Just the matter of
+So feeding read1 and read2 together or separately to OptiType makes a difference. Just the matter of
 OptiTypePipeline.py -v --dna -o unmerged -i tumor.1.fastq tumor.2.fastq -c config.ini
-or
+vs
 cat tumor.1.fastq tumor.2.fastq > tumor.fastq
 OptiTypePipeline.py -v --dna -o unmerged -i tumor.fastq -c config.ini
 
-What if we try -i -i ?
+Looking at the OptiType source code, it seems that the option parse rather expects -i to be provided
+multiple times, i.e. `-i tumor.1.fastq -i tumor.2.fastq`:
 OptiTypePipeline.py -v --dna -o unmerged_ii -i tumor.1.fastq -i tumor.2.fastq -c config.ini
            A1      A2      B1      B2      C1      C2      Reads   Objective
 T: 0       A*02:01 A*01:01 B*07:02 B*08:01 C*07:02 C*07:01 1105.0  1065.2200000000014
 
-Different result again. Sticking to pre-merging fastq.
+Interestingly it affects the result but not as much. Might worth digging into OptiType source, but
+for the moment it seems find to stick to pre-merging fastqs.
 """
 
 HLA_READ_SOURCES = [
     'from_contigs',
     'from_chr6',
-    # 'from_unmapped',
+    'from_unmapped',
 ]
 
 
