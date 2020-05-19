@@ -50,6 +50,15 @@ Also add stages: `cpsr` (decoupled from `pcgr`), `somatic`, `maf` and `germline`
 
 Not that some of the stages are inter-dependent, e.g. `germline` uses `somatic` to get extra germline leakage, `coverage` uses `purple` to get purity-adjusted coverage thresholds, `multiqc` reports results of  `conpair`, `somatic`, `germline` and `oncoviral` stages, `pcgr` uses `purple` to report per-variant purity and ploidy. However, if you target a certain stage specifically and exclude others, umccrise will use the target stage without the dependency. E.g. `germline` will not contain germline leakage from somatic variants if `somatic` stage is not included, `coverage` report will not pull `purple` and will use reasonable purity threshold defaults instead, `multiqc` will report on available QC data only, etc.
 
+- Support reference data location (or prefix) in form of an `s3://` or `gds://` URL. E.g.
+
+```
+umccrise /input --genomes s3://umccr-refdata-dev/genomes
+```
+
+Would check `s3://umccr-refdata-dev/genomes_102`, `s3://umccr-refdata-dev/genomes_10`, and `s3://umccr-refdata-dev/genomes`, assuming that the [reference_data](https://github.com/umccr/reference_data) package version is `1.0.2`.
+
+Downloads the reference data locally into a `~/umccrise_genomes`.
 
 --------------------
 

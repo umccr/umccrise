@@ -89,7 +89,24 @@ source load_umccrise.sh
 
 ## Reference data
 
-Also you will need the reference data. Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle mounted to the Docker image under `/genomes`. You can specify a custom path with `--genomes <path>` (the path can be a tarball, which is useful for runs in a pipeline). You can sync the genome bundle from NCI (`/g/data3/gx8/extras/umccrise/genomes`) anywhere else. To build the bundle from scratch, see [below](#building-reference-data).
+Also you will need the reference data. Umccrise automatically finds reference data on Spartan and NCI environments, as well as the reference data bundle mounted to the Docker image under `/genomes`.
+
+You can specify a custom path with `--genomes <path>`. The path can be a tarball and will be automatically extracted.
+
+The path can also be a location on S3 or GDS, prefixed with `s3://` or `gds://`. E.g.:
+
+```
+umccrise /input --genomes s3://umccr-refdata-dev/genomes
+```
+
+Versioned locations would also be checked. For the case above, umccrise will check the following locations in the order specified: `s3://umccr-refdata-dev/genomes_102`, `s3://umccr-refdata-dev/genomes_10`, and `s3://umccr-refdata-dev/genomes`, assuming that the [reference_data](https://github.com/umccr/reference_data) package version is `1.0.2`.
+
+Umccrise will sync the reference data locally into a `~/umccrise_genomes`. You can symlink any other path to that path if you want a different location. If the data is already downloaded, umccrise will only attempt to update the changed files or upload new ones. To avoid attempt to check s3/gds again at all, specifiy the downloaded location directly: `--genomes ~/umccrise_genomes`
+
+Another option to specify the reference data is through an environment variable `$UMCCRISE_GENOMES`
+
+If you have access to UMCCR S3, you can sync the refernce data from `s3://umccr-refdata-dev`. If you have access to NCI/Gadi, you can sync the data from `/g/data3/gx8/extras/umccrise/genomes`. Otherwise, you can build the bundle from scratch following the [details below](#building-reference-data).
+
 
 ### Versioning
 
