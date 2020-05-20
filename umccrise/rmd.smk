@@ -185,7 +185,7 @@ rule cancer_report:
         oncoviral_breakpoints_tsv = ''
         with open(input.oncoviral_present_viruses) as f:
             if [v for v in f.read().strip().split(',') if v]:
-                oncoviral_breakpoints_tsv = abspath('work/{batch}/oncoviruses/oncoviral_breakpoints.tsv')
+                oncoviral_breakpoints_tsv = abspath(f'work/{wildcards.batch}/oncoviruses/oncoviral_breakpoints.tsv')
 
         shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
         shell('mkdir -p {output.rmd_tmp_dir}/img')

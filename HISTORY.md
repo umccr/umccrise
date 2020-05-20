@@ -1,6 +1,6 @@
 1.0.0 (TBR):
 
-- Integrate [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported viral strains in MultiQC and integration sites and affected genes in the cancer report.
+- Integrated [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported viral strains in MultiQC and integration sites and affected genes in the cancer report.
 - More DRAGEN input options:
     - Support tumor and normal sample names different from the output prefix (read from the --RGSM tags)
     - Support multi-fastq runs (when input fastq files and RGSM are specified in CSV files and put in the DRAGEN outout folder by the UMCCR worklow).
@@ -15,7 +15,7 @@ umccrise umccrise sample1.bam sample2.bam sample1.vcf.gz sample3.vcf.gz -o umccr
 - PURPLE updated:
     - Use PURPLE v2.40 that reports tumor mutational load and burden
     - Update COBALT GC profile reference file so it fixes a bug ("We have found an issue with the mappability file which is used by COBALT to decide which windows to fit. The file was created on the full set ref genome, when we should have used the analysis set. The impact is that some large (and important) sections of hg38 which have alt contigs are assigned 0 mappability and filtered by COBALT. Particularly the HLA and ERBB2 regions are affected. We have generated new files already and I have checked them, but we are just testing on some real samples.")
-- Integrate OptiType for HLA typing (disabled by default, can be enabled with `-T immuno`)
+- Integrated/oncoviruses/oncoviral_breakpoints.tsv OptiType for HLA typing (disabled by default, can be enabled with `-T immuno`)
 - Re-engineered usage of stages. Add --include-stage (-T) and --exclude-stages (-E), allowed to be provided multiple times. Stages as positional arguments are no longer supported. Instead of:
 
 ```
