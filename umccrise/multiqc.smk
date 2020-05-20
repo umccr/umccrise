@@ -2,7 +2,7 @@ from ngs_utils.utils import update_dict
 from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data, parse_bcbio_filelist
 import cyvcf2
 import yaml
-from os.path import abspath, join, dirname
+from os.path import abspath, join, dirname, basename
 from ngs_utils.file_utils import verify_file
 from ngs_utils.bcbio import BcbioProject
 from umccrise import package_path
@@ -42,6 +42,8 @@ if isinstance(run, BcbioProject):
             data_versions           = join(run.date_dir, 'data_versions.csv'),
             oncoviruses_data        = rules.oncoviral_multiqc.output.data_yml,
             oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml,
+            purple_stats            = rules.purple_run.output.purity,
+            purple_qc               = rules.purple_run.output.qc,
         output:
             filelist                = 'work/{batch}/multiqc_data/filelist.txt',
             generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -70,6 +72,11 @@ if isinstance(run, BcbioProject):
             # Gold standard QC files
             qc_files.extend(load_background_samples(params.genome_build, project_type ='bcbio'))
 
+            renamed_purple_qc    = join(params.data_dir, basename(input.purple_qc   ).replace(wildcards.batch, batch.tumor.name))
+            renamed_purple_stats = join(params.data_dir, basename(input.purple_stats).replace(wildcards.batch, batch.tumor.name))
+            shell(f'cp {input.purple_qc} {renamed_purple_qc}')
+            shell(f'cp {input.purple_stats} {renamed_purple_stats}')
+
             # Umccrise QC files
             qc_files.extend([
                 join(input.conpair_concord, batch.tumor.name + '.concordance.txt'),
@@ -80,6 +87,8 @@ if isinstance(run, BcbioProject):
                 input.bcftools_somatic_stats,
                 input.bcftools_germline_stats,
                 input.oncoviruses_data,
+                renamed_purple_qc,
+                renamed_purple_stats,
             ])
 
             # Bcbio QC files
@@ -154,6 +163,8 @@ else:  # dragen
             bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
             oncoviruses_data        = rules.oncoviral_multiqc.output.data_yml,
             oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml,
+            purple_stats            = rules.purple_run.output.purity,
+            purple_qc               = rules.purple_run.output.qc,
         output:
             filelist                = 'work/{batch}/multiqc_data/filelist.txt',
             generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -175,6 +186,11 @@ else:  # dragen
             # Gold standard QC files
             qc_files.extend(load_background_samples(params.genome_build, project_type ='dragen'))
 
+            renamed_purple_qc    = join(params.data_dir, basename(input.purple_qc   ).replace(batch.name, batch.tumor.name))
+            renamed_purple_stats = join(params.data_dir, basename(input.purple_stats).replace(batch.name, batch.tumor.name))
+            shell(f'cp {input.purple_qc} {renamed_purple_qc}')
+            shell(f'cp {input.purple_stats} {renamed_purple_stats}')
+
             # Umccrise QC files
             qc_files.extend([
                 join(input.conpair_concord, batch.tumor.name + '.concordance.txt'),
@@ -185,6 +201,8 @@ else:  # dragen
                 input.bcftools_somatic_stats,
                 input.bcftools_germline_stats,
                 input.oncoviruses_data,
+                renamed_purple_qc,
+                renamed_purple_stats,
             ])
 
             # Dragen QC files

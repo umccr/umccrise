@@ -61,6 +61,8 @@ table_columns_visible:
     mosdepth:
 #        30_x_pc: False
         median_coverage: False
+    PURPLE:
+        QCStatus: False
 
 bcftools:
     collapse_complementary_changes: False
@@ -101,6 +103,8 @@ umccr:
 highlight_regex: true
 
 module_order:
+    - purple
+    - mosdepth
     - bcbio
     - samtools
     - goleft_indexcov
@@ -218,6 +222,7 @@ custom_data:
             description: 'Germline variants, as found by germline variant calling from the normal sample'
             min: 0
             format: '{:,.0f}'
+
 sp:
     umccrise:
         fn_re: '.*(somatic_stats|germline_stats).yml'
