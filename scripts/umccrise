@@ -47,6 +47,8 @@ DEFAULT_RESTART_TIMES = 2
 @click.option('--debug', 'debug', is_flag=True, help='More verboe messages. Also sets restart times to 0.')
 @click.option('--unlock', is_flag=True,
               help='Use when you are rerunning after Ctrl+C or an error. Propagated to snakemake.')
+@click.option('--rerun-incomplete', 'rerun_incomplete', is_flag=True,
+              help='Propagated to snakemake.')
 @click.option('-r', '--restarts', '--restart-times', 'restart_times',
               help=f'How many times to try out rerunning rules if they fail. "--restart-times 1" means that the rule '
                    f'will be attempted maximum 1 time. Default is {DEFAULT_RESTART_TIMES}. The value ropagated '
@@ -66,7 +68,7 @@ DEFAULT_RESTART_TIMES = 2
 
 def main(input_paths, output_dir=None, sample=None, exclude=None, input_genomes_url=None, genome_build=None,
          include_stages:list = None, exclude_stages:list = None, cores=None, cluster=False, debug=False,
-         unlock=False, restart_times=None, dryrun=False, report=None, dag=False, resources=None):
+         unlock=False, rerun_incomplete=None, restart_times=None, dryrun=False, report=None, dag=False, resources=None):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
 input_paths: a path to inputs:\n
@@ -152,7 +154,7 @@ input_paths: a path to inputs:\n
     #### Setting CPUs resources ####
     ################################
     run, batch_by_name = prep_inputs(conf, silent=True)
-    ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node = \
+    ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node, ncpus_local = \
         prep_resources(num_batches=len(batch_by_name), num_samples=len(run.samples),
             ncpus_requested=cores, is_cluster=cluster_param != '',)
     conf['threads_per_batch'] = ncpus_per_batch
@@ -168,11 +170,12 @@ input_paths: a path to inputs:\n
         f'--snakefile {snakefile} '
         f'--printshellcmds '
         f'{"--dryrun " if dryrun else ""}'
+        f'{"--rerun-incomplete " if rerun_incomplete else ""}'
         f'{"--dag " if dag else ""}'
         f'{f"--report {report} " if report else ""}'
         f'--directory {output_dir} '
         f'--cores {ncpus_available} '
-        f'{f"--local-cores {ncpus_per_node} " if ncpus_per_node else ""}'
+        f'{f"--local-cores {ncpus_local} " if ncpus_local else ""}'
         f'{f"--restart-times {restart_times - 1}" if restart_times > 1 else ""}'
         f'{cluster_param} '
         f'--config {" ".join(k + "=" + str(v) for k, v in conf.items())} '

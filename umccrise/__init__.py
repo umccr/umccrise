@@ -199,15 +199,25 @@ def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=Fa
     """
     # Checking presets for known HPC clusters, otherwise assuming a for single-machine AWS or local run
     # and just taking the number of available CPUs:
-    ncpus_on_a_machine = refdata.ncpus_on_node or len(os.sched_getaffinity(0)) or 1
+
     if is_cluster:
         # we are not resticted to one machine, so can submit many jobs and let the scheduler figure out the queue
-        ncpus_available = ncpus_requested or 32
-        ncpus_per_node = ncpus_on_a_machine
+        ncpus_available = ncpus_requested or refdata.ncpus_on_node
+        ncpus_per_node = refdata.ncpus_on_node
+        if ncpus_per_node:
+            info(f'Number of CPUs on a cluster node: {ncpus_per_node}')
+        ncpus_local = 1
     else:
-        # scheduling is on Snakemake, so restricting to the number of available cpus on a machine
-        ncpus_available = min(ncpus_on_a_machine, ncpus_requested or math.inf)
+        try:
+            ncpus_on_this_machine = len(os.sched_getaffinity(0))
+        except:
+            ncpus_on_this_machine = os.cpu_count()
+        if ncpus_on_this_machine:
+            info(f'Number of CPUs on this machine : {ncpus_on_this_machine}')
+        # scheduling is on Snakemake, so restricting to the number of available cpus on this machine
+        ncpus_available = min(ncpus_on_this_machine, ncpus_requested or math.inf)
         ncpus_per_node = None
+        ncpus_local = ncpus_on_this_machine
 
     ncpus_per_batch = max(1, ncpus_available // num_batches)
     ncpus_per_sample = max(1, ncpus_available // num_samples)
@@ -246,14 +256,15 @@ def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=Fa
         f'so the number of cpus per sample would be ')
 
     if not is_silent:
-        info(f'Final number of CPUs per machine: {ncpus_on_a_machine}')
+        if ncpus_local:
+            info(f'Local CPUs: {ncpus_local}')
         if ncpus_requested:
-            info(f'Total CPUs requested by `umccrise -t`: {ncpus_requested}')
+            info(f'Total CPUs requested by `umccrise --cores`: {ncpus_requested}')
         info(f'The pipeline can use {ncpus_available} CPUs total.')
         info(f'Batches found: {num_batches}, using {ncpus_per_batch} cpus per batch.')
         info(f'Samples found: {num_samples}, using {ncpus_per_sample} cpus per sample.')
 
-    return ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node
+    return ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node, ncpus_local
 
 
 def prep_stages(include_stages=None, exclude_stages=None):
