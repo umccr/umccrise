@@ -33,12 +33,13 @@ def make_report_metadata(proj: BaseProject, batch: BaseBatch=None, base_dirpath=
 
     # General links
     conf['title'] = proj.project_name
-    conf['umccr']['run_section'] = get_run_info(proj,
-                                                base_dirpath=base_dirpath,
-                                                analysis_dir=analysis_dir,
-                                                prog_versions_fpath=prog_versions_fpath,
-                                                data_versions_fpath=data_versions_fpath,
-                                                new_dir_for_versions=new_dir_for_versions)
+    conf['umccr']['run_section'] = get_run_info(
+        proj,
+        base_dirpath=base_dirpath,
+        prog_versions_fpath=prog_versions_fpath,
+        data_versions_fpath=data_versions_fpath,
+        new_dir_for_versions=new_dir_for_versions
+    )
 
     # if bcbio_proj.is_rnaseq:
     #     conf['umccr']['expression_links'] = _rna_general_links(bcbio_proj, base_dirpath)
@@ -184,7 +185,7 @@ def _make_link(fpath, base_dirpath, text=None, blank=False):
         return '<span>' + (text or basename(fpath)) + '</span>'
 
 
-def get_run_info(proj: BaseProject, base_dirpath=None, analysis_dir=None,
+def get_run_info(proj: BaseProject, base_dirpath=None,
                  prog_versions_fpath=None, data_versions_fpath=None,
                  new_dir_for_versions=None):
     info('Getting run and codebase information...')
@@ -261,7 +262,6 @@ def get_run_info(proj: BaseProject, base_dirpath=None, analysis_dir=None,
             data_versions_url = relpath(new_data_versions_fpath, base_dirpath)
             run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
 
-    run_info_dict['analysis_dir'] = analysis_dir or proj.dir
     return run_info_dict
 
 

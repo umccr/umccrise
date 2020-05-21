@@ -91,7 +91,6 @@ was generated and the button that launches the welcome tour.
           + (('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.program_versions) if report.umccr.run_section.program_versions else '')
           + (('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.data_versions) if report.umccr.run_section.data_versions else '')
           + '</dd>' }}
-        {{ '<dt>Analysis directory:</dt><dd>' + config.umccr.run_section.analysis_dir + '</dd>' }}
       {% endif %}
       {% if config.report_header_info and config.report_header_info | length > 0 %}
         {% for d in config.report_header_info %}{% for k, v in d.items() %}
