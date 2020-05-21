@@ -4,6 +4,7 @@ import os
 import sys
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from os.path import isfile, join, dirname, abspath, isdir
+from datetime import datetime
 
 from ngs_utils.Sample import BaseBatch, BaseProject, BaseSample
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
@@ -30,19 +31,22 @@ def get_sig_rmd_file():
     return verify_file(join(package_path(), 'rmd_files', 'sig.Rmd'), is_critical=True)
 
 
-class UmccriseSample(BaseSample):
+class CustomSample(BaseSample):
     def __init__(self, **kwargs):
         BaseSample.__init__(self, **kwargs)  # name, dirpath, work_dir, bam, vcf, phenotype, normal_match
         self.qc_files = []
 
+class CustomBatch(BaseBatch):
+    # super class defines bam, somatic_vcf, germline_vcf, structural_vcf, qc_files, genome_build
+    pass
 
-class UmccriseProject(BaseProject):
+class CustomProject(BaseProject):
     def __init__(self, input_dir=None, include_samples=None, exclude_samples=None,
                  silent=False, genome_build=None, **kwargs):
         BaseProject.__init__(self, input_dir=input_dir, **kwargs)
         self.include_samples = include_samples
         self.exclude_samples = exclude_samples
-        self.genome_build = genome_build or 'hg38'
+        self.genome_build = genome_build
 
     def get_or_create_batch(self, tumor_name, normal_name=None):
         if self.exclude_samples and tumor_name in self.exclude_samples:
@@ -58,10 +62,10 @@ class UmccriseProject(BaseProject):
         if tumor_name in self.batch_by_name:
             b = self.batch_by_name[tumor_name]
         else:
-            b = UmccriseBatch(tumor_name)
-            b.tumor = UmccriseSample(name=tumor_name)
+            b = CustomBatch(tumor_name)
+            b.tumor = CustomSample(name=tumor_name)
             if normal_name:
-                b.normal = UmccriseSample(name=normal_name)
+                b.normal = CustomSample(name=normal_name)
             self.batch_by_name[tumor_name] = b
             self.samples.extend([b.tumor, b.normal])
         return b
@@ -86,10 +90,6 @@ class UmccriseProject(BaseProject):
                     b.somatic_vcf = fpath
 
 
-class UmccriseBatch(BaseBatch):
-    # super class defines bam, somatic_vcf, germline_vcf, structural_vcf, qc_files, genome_build
-    pass
-
 
 def prep_inputs(smconfig, silent=False):
     ###############################
@@ -109,20 +109,23 @@ def prep_inputs(smconfig, silent=False):
     if smconfig.get('debug', 'no') == 'yes':
         log.is_debug = True
 
-    log.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
     input_paths = smconfig.get('input_paths', [abspath(os.getcwd())])
-
-    custom_run = UmccriseProject(
-        include_samples=include_names,
-        exclude_samples=exclude_names)
-    run = None
-
     if isinstance(input_paths, str):
         input_paths = input_paths.split(',')
+
+    custom_run = None
+    found_bcbio_or_dragen_runs = []
+
+    log.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
 
     for input_path in input_paths:
         # custom file
         if isfile(input_path):
+            if custom_run is None:
+                custom_run = CustomProject(
+                    input_dir=adjust_path(os.getcwd()),
+                    include_samples=include_names,
+                    exclude_samples=exclude_names)
             custom_run.add_file(input_path)
 
         # dragen
@@ -130,6 +133,7 @@ def prep_inputs(smconfig, silent=False):
             run = DragenProject(input_path,
                                include_samples=include_names,
                                exclude_samples=exclude_names)
+            found_bcbio_or_dragen_runs.append(run)
         # bcbio
         elif isdir(input_path):
             run = BcbioProject(input_path,
@@ -152,19 +156,40 @@ def prep_inputs(smconfig, silent=False):
             batches = [b for b in run.batch_by_name.values() if not b.is_germline() and b.tumor and b.normal]
             assert batches
             run.batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
+            found_bcbio_or_dragen_runs.append(run)
 
         else:
             error(f'Cannot find file or dir {input_path}')
 
-    log.is_silent = False
+    if custom_run is None and len(found_bcbio_or_dragen_runs) == 1:
+        # only one dragen or bcbio project - can return it directly
+        combined_run = found_bcbio_or_dragen_runs[0]
+
+    else:
+        # multiple bcbio or dragen projects - combining them into a CustomProject
+        combined_run = custom_run or CustomProject()
+        for run in found_bcbio_or_dragen_runs:
+            combined_run.batch_by_name.update(run.batch_by_name)
+            combined_run.samples.extend(run.samples)
+            if combined_run.project_name is None:
+                combined_run.project_name = run.project_name
+            if combined_run.genome_build is None:
+                combined_run.genome_build = run.genome_build
+            else:
+                assert combined_run.genome_build == run.genome_build
+
+    if combined_run.genome_build is None:
+        combined_run.genome_build = 'hg38'
+    if combined_run.project_name is None:
+        combined_run.project_name = 'umccrise_' + datetime.now().strftime("%Y_%m_%d")
 
     # Reference files
     if smconfig.get('genomes_dir'):
         refdata.find_genomes_dir(smconfig.get('genomes_dir'))
 
-    # TODO: merge runs
-    run = run or custom_run
-    return run, run.batch_by_name
+    log.is_silent = False
+
+    return combined_run, combined_run.batch_by_name
 
 
 def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=False, is_silent=False):
