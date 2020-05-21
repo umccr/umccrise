@@ -60,10 +60,13 @@ DEFAULT_RESTART_TIMES = 2
 @click.option('--dag', 'dag', is_flag=True,
               help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
                    'Example usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
+@click.option('--resources', 'resources',
+              help='Can be used to limit the amount of memory allowed to be used, e.g.: --resources mem_mb=1000.'
+                   'Propagated to snakemake.')
 
 def main(input_paths, output_dir=None, sample=None, exclude=None, input_genomes_url=None, genome_build=None,
          include_stages:list = None, exclude_stages:list = None, cores=None, cluster=False, debug=False,
-         unlock=False, restart_times=None, dryrun=False, report=None, dag=False):
+         unlock=False, restart_times=None, dryrun=False, report=None, dag=False, resources=None):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
 input_paths: a path to inputs:\n
@@ -173,6 +176,7 @@ input_paths: a path to inputs:\n
         f'{f"--restart-times {restart_times - 1}" if restart_times > 1 else ""}'
         f'{cluster_param} '
         f'--config {" ".join(k + "=" + str(v) for k, v in conf.items())} '
+        f'{f"--resources {resources} " if resources else ""} '
     )
 
     #################
