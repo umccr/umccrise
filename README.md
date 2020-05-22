@@ -437,14 +437,10 @@ rm segdup.bed_tmp genomicSuperDups.txt.gz
 Generate ENCODE
 
 ```
-git clone https://github.com/Boyle-Lab/Blacklist
-gunzip -c Blacklist/lists/hg19-blacklist.v2.bed.gz | py -x "x[3:]" > Blacklist/lists/GRCh37-blacklist.v2.bed
-
-bgzip Blacklist/lists/GRCh37-blacklist.v2.bed -c > GRCh37/problem_regions/ENCODE/blacklist.v2.bed.gz
-gunzip -c Blacklist/lists/hg38-blacklist.v2.bed.gz | bgzip -c > hg38/problem_regions/ENCODE/blacklist.v2.bed.gz
-tabix -p bed GRCh37/problem_regions/ENCODE/blacklist.v2.bed.gz
-tabix -p bed hg38/problem_regions/ENCODE/blacklist.v2.bed.gz
-rm -rf Blacklist
+wget https://www.encodeproject.org/files/ENCFF356LFX/@@download/ENCFF356LFX.bed.gz
+gunzip -c ENCFF356LFX.bed.gz | bgzip -c > hg38/problem_regions/ENCODE/encode4_unified_blacklist.bed.gz
+tabix -p bed hg38/problem_regions/ENCODE/encode4_unified_blacklist.bed.gz
+rm ENCFF356LFX.bed.gz
 ```
 
 Lift over to hg38:
