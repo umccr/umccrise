@@ -1,9 +1,9 @@
 from ngs_utils.utils import update_dict
-from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data, parse_bcbio_filelist
+from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
 import yaml
 from os.path import abspath, join, dirname, basename
 from ngs_utils.file_utils import verify_file
-from ngs_utils.bcbio import BcbioProject
+from ngs_utils.bcbio import BcbioProject, BcbioBatch
 from ngs_utils.dragen import DragenProject
 from umccrise import package_path
 
@@ -25,6 +25,42 @@ def load_background_samples(genome_build, project_type ='dragen'):
             if l:
                 paths.append(join(gold_standard_dir, l))
     return paths
+
+
+def find_bcbio_qc_files(batch: BcbioBatch, dst_dir):
+    """
+    Finds all QC files by parsing the MultiQC file_list, copies them into `dst_dir`
+    :param bcbio_run: BcbioProject object
+    :param dst_dir: destination directory where the QC files will be copied to
+    :return: list of found QC files
+    """
+    bcbio_qc_files = batch.find_qc_files(
+        dst_dir,
+        # exclude and include applies only to the sample files, not to the background.
+        # first excluding, then including from the remaining.
+        exclude_files=[
+            '.*qsignature.*',
+            '.*bcftools_stats*.txt',
+            '.*indexcov.tsv',
+            '.*ped_check.rel-difference.csv',
+            '.*sort-chr.qsig.vcf.*',
+            '.*Per_base_N_content.tsv',
+            '.*Per_base_sequence_content.tsv',
+            '.*Per_base_sequence_quality.tsv',
+            '.*Per_sequence_GC_content.tsv',
+            '.*Per_sequence_quality_scores.tsv',
+            '.*Per_tile_sequence_quality.tsv',
+            '.*Sequence_Length_Distribution.tsv',
+            '.*.html',
+            '.*verifybamid.*',
+            '.*gdc-viral-completeness.txt',
+        ],
+        include_files=[
+            f'.*{batch.name}.*',
+            f'.*{batch.tumor.name}.*',
+        ] + [f'.*{batch.normal.name}.*'] if batch.normal else [],
+    )
+    return bcbio_qc_files
 
 
 rule prep_multiqc_data:
@@ -51,10 +87,8 @@ rule prep_multiqc_data:
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
 
         if isinstance(run, BcbioProject):
-            bcbio_mq_filelist = join(run.date_dir, 'multiqc/list_files_final.txt'),
-            bcbio_final_dir   = run.final_dir,
-            prog_versions     = join(run.date_dir, 'programs.txt'),
-            data_versions     = join(run.date_dir, 'data_versions.csv'),
+            prog_versions     = join(run.date_dir, 'programs.txt')
+            data_versions     = join(run.date_dir, 'data_versions.csv')
 
             generated_conf, qc_files = make_report_metadata(
                 run,
@@ -75,15 +109,16 @@ rule prep_multiqc_data:
             generated_conf.update(yaml.load(f))
 
         # Gold standard QC files
-        qc_files.extend(load_background_samples(params.genome_build,
-             project_type='bcbio' if isinstance(run, BcbioProject) else 'dragen'))
+        if isinstance(batch, BcbioBatch):
+            qc_files.extend(load_background_samples(params.genome_build, project_type='bcbio'))
+        if isinstance(batch, DragenProject):
+            qc_files.extend(load_background_samples(params.genome_build, project_type='dragen'))
 
+        # Umccrise QC files
         renamed_purple_qc    = join(params.data_dir, basename(input.purple_qc   ).replace(wildcards.batch, batch.tumor.name))
         renamed_purple_stats = join(params.data_dir, basename(input.purple_stats).replace(wildcards.batch, batch.tumor.name))
         shell(f'cp {input.purple_qc} {renamed_purple_qc}')
         shell(f'cp {input.purple_stats} {renamed_purple_stats}')
-
-        # Umccrise QC files
         qc_files.extend([
             join(input.conpair_concord, batch.tumor.name + '.concordance.txt'),
             join(input.conpair_contam, batch.normal.name + '.contamination.txt'),
@@ -97,41 +132,10 @@ rule prep_multiqc_data:
             renamed_purple_stats,
         ])
 
-        if isinstance(run, BcbioProject):
-            # Bcbio QC files
-            bcbio_qc_files = parse_bcbio_filelist(
-                bcbio_mq_filelist=input.bcbio_mq_filelist,
-                bcbio_final_dir=input.bcbio_final_dir,
-                new_mq_data_dir=params.data_dir,
-                # exclude and include applies only to the sample files, not to the background.
-                # first excluding, then including from the remaining.
-                exclude_files=[
-                    '.*qsignature.*',
-                    '.*bcftools_stats*.txt',
-                    '.*indexcov.tsv',
-                    '.*ped_check.rel-difference.csv',
-                    '.*sort-chr.qsig.vcf.*',
-                    '.*Per_base_N_content.tsv',
-                    '.*Per_base_sequence_content.tsv',
-                    '.*Per_base_sequence_quality.tsv',
-                    '.*Per_sequence_GC_content.tsv',
-                    '.*Per_sequence_quality_scores.tsv',
-                    '.*Per_tile_sequence_quality.tsv',
-                    '.*Sequence_Length_Distribution.tsv',
-                    '.*.html',
-                    '.*verifybamid.*',
-                    '.*gdc-viral-completeness.txt',
-                ],
-                include_files=[
-                    f'.*{batch.tumor.name}.*',
-                    f'.*{batch.normal.name}.*',
-                    f'.*{batch.name}.*',
-                ],
-            )
-            qc_files.extend(bcbio_qc_files)
-
-        if isinstance(run, DragenProject):
-            qc_files.extend(batch_by_name[wildcards.batch].all_qc_files()),
+        if isinstance(batch, BcbioBatch):
+            qc_files.extend(find_bcbio_qc_files(batch, params.data_dir))
+        elif isinstance(run, DragenProject):
+            qc_files.extend(batch.all_qc_files()),
 
         multiqc_prep_data(
             generated_conf=generated_conf,
@@ -378,8 +382,7 @@ if len(batch_by_name) > 1:
             report_base_path = dirname(abspath(f'multiqc/multiqc_report.html'))
             generated_conf, _ = make_report_metadata(
                 run,
-                base_dirpath=report_base_path,
-                analysis_dir=run.dir,
+                base_dirpath=report_base_path
             )
             for sample_conf_yaml in input.generated_conf_yamls:
                 with open(sample_conf_yaml) as f:

@@ -8,7 +8,7 @@ from datetime import datetime
 
 from ngs_utils.Sample import BaseBatch, BaseProject, BaseSample
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
-from ngs_utils.bcbio import BcbioProject
+from ngs_utils.bcbio import BcbioProject, BcbioBatch
 from ngs_utils.dragen import DragenProject
 from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug, warn, error
@@ -37,7 +37,9 @@ class CustomSample(BaseSample):
         self.qc_files = []
 
 class CustomBatch(BaseBatch):
-    # super class defines bam, somatic_vcf, germline_vcf, structural_vcf, qc_files, genome_build
+    def __init__(self, name, **kwargs):
+        BaseBatch.__init__(self, name, **kwargs)  # bam, somatic_vcf, germline_vcf, structural_vcf, qc_files, genome_build
+        self.qc_files = []
     pass
 
 class CustomProject(BaseProject):

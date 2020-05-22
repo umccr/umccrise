@@ -15,7 +15,7 @@ from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transa
 from ngs_utils.logger import info, warn, err, critical, timestamp, debug
 
 
-def make_report_metadata(proj: BaseProject, batch: BaseBatch=None, base_dirpath=None, analysis_dir=None,
+def make_report_metadata(proj: BaseProject, batch: BaseBatch=None, base_dirpath=None,
                          prog_versions_fpath=None, data_versions_fpath=None,
                          new_dir_for_versions=None):
     conf = dict()
@@ -56,28 +56,6 @@ def make_report_metadata(proj: BaseProject, batch: BaseBatch=None, base_dirpath=
     return conf, additional_files
 
 
-def _extract_qc_file(fp, new_mq_data_dir, final_dir, f_by_fp=None):
-    """ Extracts QC file `fp` either by copying from `final_dir` (native bcbio),
-        or from tar.gz file `tar_path` (CWL bcbio). Writes into a new file at new_mq_data_dir
-    """
-    if fp.startswith('report/metrics/'):
-        fp = fp.replace('report/metrics/', 'project/multiqc/')  # for CWL _bcbio.txt files
-
-    dst_fp = join(new_mq_data_dir, fp)
-
-    fp_in_final = join(final_dir, fp)
-    if isfile(fp_in_final):
-        safe_mkdir(dirname(dst_fp))
-        shutil.copy2(fp_in_final, dst_fp)
-        return dst_fp
-
-    elif f_by_fp and fp in f_by_fp:
-        safe_mkdir(dirname(dst_fp))
-        with open(dst_fp, 'wb') as out:
-            out.write(f_by_fp[fp].read())
-        return dst_fp
-
-
 def multiqc_prep_data(generated_conf, out_filelist_file, out_conf_yaml, qc_files):
     if generated_conf:
         with file_transaction(None, out_conf_yaml) as tx:
@@ -92,61 +70,6 @@ def multiqc_prep_data(generated_conf, out_filelist_file, out_conf_yaml, qc_files
                         out.write(fp + '\n')
         except OSError as e:
             err(str(e))
-
-
-def parse_bcbio_filelist(bcbio_mq_filelist, bcbio_final_dir, new_mq_data_dir,
-                         exclude_files=None, include_files=None,
-                         bcbio_mq_yaml=None, new_bcbio_mq_yaml=None):
-    if bcbio_mq_yaml and new_bcbio_mq_yaml:
-        shutil.copy(bcbio_mq_yaml, new_bcbio_mq_yaml)
-
-    ########################################
-    ###### Processing bcbio file list ######
-    verify_file(bcbio_mq_filelist, is_critical=True)
-
-    # Cromwell?
-    cwl_targz = join(dirname(bcbio_mq_filelist), 'multiqc-inputs.tar.gz')
-    tar_f_by_fp = dict()
-    if isfile(cwl_targz):
-        logger.info(f'Found CWL MultiQC output {cwl_targz}, extracting required QC files from the archive')
-        if cwl_targz:
-            tar = tarfile.open(cwl_targz)
-            for member in tar.getmembers():
-                rel_fp = member.name
-                if 'call-multiqc_summary/execution/qc/multiqc/' in rel_fp:
-                    rel_fp = rel_fp.split('call-multiqc_summary/execution/qc/multiqc/')[1]
-                tar_f_by_fp[rel_fp] = tar.extractfile(member)
-
-    qc_files_not_found = []
-    qc_files_found = []
-    with open(bcbio_mq_filelist) as inp:
-        for fp in [l.strip() for l in inp if l.strip()]:
-            if fp == 'trimmed' or fp.endswith('/trimmed'):
-                continue  # back-compatibility with bcbio
-            if exclude_files:
-                if isinstance(exclude_files, str):
-                    exclude_files = [exclude_files]
-                if any(re.search(ptn, fp) for ptn in exclude_files):
-                    continue
-            if include_files:
-                if isinstance(include_files, str):
-                    include_files = [include_files]
-                if not any(re.search(ptn, fp) for ptn in include_files):
-                    continue
-
-            new_fp = _extract_qc_file(fp, new_mq_data_dir, bcbio_final_dir, tar_f_by_fp)
-            if not new_fp:
-                qc_files_not_found.append(fp)
-                continue
-            else:
-                qc_files_found.append(new_fp)
-
-    if qc_files_not_found:
-        warn('-')
-        warn(f'Some QC files from list {bcbio_mq_filelist} were not found:' +
-            ''.join('\n  ' + fpath for fpath in qc_files_not_found))
-
-    return qc_files_found
 
 
 def make_multiqc_report(conf_yamls, filelist, multiqc_fpath, extra_params=''):
@@ -241,6 +164,7 @@ def get_run_info(proj: BaseProject, base_dirpath=None,
                             program_versions[l.split(',')[0]] = l.split(',')[1]
                         except:
                             pass
+            safe_mkdir(new_dir_for_versions)
             new_prog_versions_fpath = join(new_dir_for_versions, basename(prog_versions_fpath))
             if umccrsie_version:
                 program_versions['umccrise'] = umccrsie_version
@@ -255,6 +179,7 @@ def get_run_info(proj: BaseProject, base_dirpath=None,
 
         # data version
         if data_versions_fpath:
+            safe_mkdir(new_dir_for_versions)
             new_data_versions_fpath = join(new_dir_for_versions, basename(data_versions_fpath).replace(".csv", ".txt"))
             run_simple(f'cp {data_versions_fpath} {new_data_versions_fpath}')
             info('Saved data_versions file into ' + new_data_versions_fpath)
