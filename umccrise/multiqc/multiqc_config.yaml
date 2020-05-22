@@ -22,7 +22,7 @@ table_columns_visible:
         reads_aligned: False
         percentage_aligned: False                 # is also set in bcbio/__init__.py
         median_coverage: False                    # is also set in bcbio/__init__.py
-    Samtools Stats:
+    Samtools:
         non-primary_alignments_percent: True
         non-primary_alignments: False             # is also set in bcbio/__init__.py
         reads_mapped: False                       # is also set in bcbio/__init__.py
