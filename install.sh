@@ -20,7 +20,6 @@ ENV_NAME=umccrise
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME} --file umccrise/envs/umccrise.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file umccrise/envs/hmf.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_cancer_report --file umccrise/envs/cancer_report.yml
-mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_python2 --file umccrise/envs/python2.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_microbiome --file umccrise/envs/microbiome.yml
 if [[ "$OSTYPE" == "darwin"* ]]; then
     mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file umccrise/envs/pcgr_macos.yml

@@ -1,9 +1,0 @@
-name: umccrise_python2
-
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
-
-dependencies:
-  - manta
