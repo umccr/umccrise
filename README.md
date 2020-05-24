@@ -442,6 +442,29 @@ tabix -p bed hg38/problem_regions/ENCODE/encode4_unified_blacklist.bed.gz
 rm ENCFF356LFX.bed.gz
 ```
 
+Generate the regions for variant calling: hg38-noalt chromosomes excluding the ENCODE blacklist
+
+```
+bedtools subtract -a hg38_noalt.bed -b problem_regions/ENCODE/encode4_unified_blacklist.bed.gz > hg38_noalt_noBlackList.bed
+```
+
+The blacklist removes ~2.3% of the noalt genome size:
+
+```
+bedsize hg38_noalt_noBlackList.bed
+3016716091
+bedsize hg38_noalt.bed
+3088286376
+```
+
+The blacklisted regions contains no hotspots:
+
+```
+bedtools intersect \
+    -a problem_regions/ENCODE/encode4_unified_blacklist.bed.gz\
+    -b hotspots/merged.vcf.gz
+```
+
 Lift over to hg38:
 
 ```
