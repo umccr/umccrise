@@ -45,7 +45,7 @@ dependencies:
   - parallel    # for general use
   - pygraphviz  # for snakemake report
   - pygments    # for snakemake report
-  # - gsort     # sort vcfs and beds - https://github.com/brentp/gsort
+  - gsort       # sort vcfs and beds - https://github.com/brentp/gsort
   - toml        # to read predisposition genes from PCGR toml
   # - tibanna
   - snpeff ==4.3.1t  # pre 4.5covid19 release
