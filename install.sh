@@ -12,6 +12,7 @@ else
 fi
 ./miniconda.sh -b -p $PWD/miniconda && rm miniconda.sh
 export PATH=$PWD/miniconda/bin:$PATH
+conda config --set always_yes yes --set changeps1 no
 conda install -c conda-forge mamba
 mamba update conda
 
