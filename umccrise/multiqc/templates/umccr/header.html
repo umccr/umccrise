@@ -85,40 +85,40 @@ was generated and the button that launches the welcome tour.
 
 <div class="well">
     <dl class="dl-horizontal" style="margin-bottom:0;">
-      {% if report.umccr %}
+      {% if config.title %}
         {{ '<dt>Project:</dt><dd>' + config.title + '</dd>' }}
-        {{ '<dt>Creation date:</dt><dd>' + config.umccr.run_section.run_date
-          + (('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.program_versions) if report.umccr.run_section.program_versions else '')
-          + (('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.data_versions) if report.umccr.run_section.data_versions else '')
-          + '</dd>' }}
       {% endif %}
-      {% if config.report_header_info and config.report_header_info | length > 0 %}
-        {% for d in config.report_header_info %}{% for k, v in d.items() %}
-          <dt>{{ k }}</dt><dd>{{ v }}</dd>
-        {% endfor %}{% endfor %}
+      {% if config.umccr %}
+        {% if config.umccr.run_section %}
+          {{ '<dt>Creation date:</dt><dd>' + config.umccr.run_section.run_date
+            + (('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.program_versions) if config.umccr.run_section.program_versions else '')
+            + (('&nbsp;&nbsp;|&nbsp;&nbsp;' + config.umccr.run_section.data_versions) if config.umccr.run_section.data_versions else '')
+            + '</dd>'
+          }}
+        {% endif %}
       {% endif %}
     </dl>
 </div>
 
-{% if report.umccr %}
+{% if config.umccr %}
 <div style="margin-left: 5px; margin-bottom: 5px;">
     <!-- {{ '<b>Mutations:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(report.umccr.mutations_links) + '</br>'
         if report.umccr.mutations_links }} -->
-    {{ '<b>Expression:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(report.umccr.expression_links) + '</br>'
-        if report.umccr.expression_links }}
+    {{ '<b>Expression:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(config.umccr.expression_links) + '</br>'
+        if config.umccr.expression_links }}
 </div>
 {% endif %}
 
 <hr id="mqc_header_hr" style="margin-bottom: 10px;">
 
-{% if report.umccr and report.umccr.metric_names %}
+{% if config.umccr and config.umccr.metric_names %}
 <div id="general_stats_table_container" class="mqc_table_container">
     <div class="table-responsive">
         <table id="general_stats_table" class="table table-condensed mqc_table">
             <thead>
             <tr class="top_row_tr">
                 <th class="rowheader header">Sample Name</th>
-                {% for metric_name in report.umccr.metric_names %}
+                {% for metric_name in config.umccr.metric_names %}
                 <th class="header"><b>{{ metric_name }}</b></th>
                 {% endfor %}
             </tr>
