@@ -39,7 +39,6 @@ rule run_mosdepth:
         '{batch}/coverage/{batch}-{phenotype}.regions.bed.gz',
     params:
         prefix = '{batch}/coverage/{batch}-{phenotype}',
-        image = 'quay.io/biocontainers/mosdepth:0.2.9--hbeb723e_0'
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000
     threads:
@@ -58,24 +57,7 @@ rule run_mosdepth:
             f'--by {input.bed} '
             f'--no-per-base '
         )
-
-        if subprocess.run(f'docker images -q {params.image} 2>/dev/null', shell=True).returncode == 0:
-            relpath_to_abspath = {
-                relpath: abspath(relpath) for relpath in [
-                    dirname(input.bam),
-                    dirname(input.bed),
-                    dirname(input.ref_fa),
-                    dirname(params.prefix),
-                ]
-            }
-            input_mounts = ' '.join(f'-v {path}:{path}' for path in set(relpath_to_abspath.values()))
-            for local_path, docker_path in relpath_to_abspath.items():
-                mosdepth_cmd = mosdepth_cmd.replace(local_path, docker_path)
-            shell(
-                f'docker run {input_mounts} {params.image} bash -c "{mosdepth_cmd}"'
-            )
-        else:
-            shell(mosdepth_cmd)
+        shell(mosdepth_cmd)
 
 
 # Also bringing in global coverage plots for review (tumor only, quick check for CNVs):
