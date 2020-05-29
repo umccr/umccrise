@@ -466,13 +466,13 @@ rm ENCFF356LFX.bed.gz
 Generate the regions for variant calling: hg38-noalt chromosomes excluding the ENCODE blacklist
 
 ```shell
-bedtools subtract -a hg38_noalt.bed -b problem_regions/ENCODE/encode4_unified_blacklist.bed.gz > hg38_noalt_noBlackList.bed
+bedtools subtract -a hg38_noalt.bed -b problem_regions/ENCODE/encode4_unified_blacklist.bed.gz > hg38_noalt_noBlacklist.bed
 ```
 
 The blacklist removes ~2.3% of the noalt genome size:
 
 ```
-$ bedsize hg38_noalt_noBlackList.bed
+$ bedsize hg38_noalt_noBlacklist.bed
 3016716091
 
 $ bedsize hg38_noalt.bed
