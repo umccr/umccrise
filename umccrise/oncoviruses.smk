@@ -105,9 +105,19 @@ rule oncoviruses_breakpoints_tsv:
             for rec in VCF(input.vcf):
                 viral_genes = rec.INFO.get('ViralGenes')
                 host_genes = rec.INFO.get('GenesWithin100kb')
+                if 'PE' in rec.FORMAT or 'SR' in rec.FORMAT:
+                    read_support = 0
+                    if 'PE' in rec.FORMAT:
+                        read_support += int(rec.format('PE')[0])
+                    if 'SR' in rec.FORMAT:
+                        read_support += int(rec.format('SR')[0])
+                elif 'PAIR_COUNT' in rec.INFO:
+                    read_support = parse_info_field(rec, 'PAIR_COUNT')
+                else:
+                    read_support = ''
                 data = [sample_name, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
                         rec.INFO['SVTYPE'],
-                        parse_info_field(rec, 'PAIR_COUNT'),
+                        str(read_support),
                         viral_genes if rec.CHROM in viruses else host_genes,
                         rec.ID,
                         parse_info_field(rec, 'MATEID'),
