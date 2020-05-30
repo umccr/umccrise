@@ -1753,7 +1753,7 @@ breakpoints_tsv <- params$oncoviral_breakpoints_tsv
 if (breakpoints_tsv != "" && file.exists(breakpoints_tsv)) {
   breakpoints <- readr::read_tsv(breakpoints_tsv, col_names = T, col_types = "cciicicccc")
   breakpoints %>% 
-    dplyr::select(Contig = contig, Start = start, End = end, `Pair count` = PAIR_COUNT, `Affected genes` = Genes, `SV type` = svtype, ID, MATEID) %>% 
+    dplyr::select(Contig = contig, Start = start, End = end, `Read support` = PAIR_COUNT, `Affected genes` = Genes, `SV type` = svtype, ID, MATEID) %>%
     DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                   class = "cell-border display compact",
                   rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
