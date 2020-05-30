@@ -154,7 +154,7 @@ if include_germline:
     rule germline_predispose_subset:
         input:
             vcf = rules.germline_vcf_pass.output.vcf,
-            predispose_genes_bed = get_predispose_genes_bed(run.genome_build, coding_only=True),
+            predispose_genes_bed = get_predispose_genes_bed(run.genome_build, coding_only=False),
         output:
             vcf = 'work/{batch}/small_variants/germline/{batch}-germline.predispose_genes.vcf.gz',
             tbi = 'work/{batch}/small_variants/germline/{batch}-germline.predispose_genes.vcf.gz.tbi',
