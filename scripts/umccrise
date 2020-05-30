@@ -75,11 +75,11 @@ input_paths: a path to inputs:\n
     * if a dir, treated as a bcbio run folder (a "final" or a "datestamp" directory), or a Dragen run folder\n
     * if files, BAMs and VCF are supported
 """
-
     output_dir = output_dir or 'umccrised'
     output_dir = safe_mkdir(abspath(output_dir))
     log_dir = safe_mkdir(join(output_dir, 'log'))
     logger.init(log_fpath_=join(log_dir, 'command.txt'), save_previous=True)
+    logger.info(f'umccrise {version.__version__}')
 
     if isfile(join(output_dir, 'all.done')):
         run_simple('rm ' + join(output_dir, 'all.done'))
