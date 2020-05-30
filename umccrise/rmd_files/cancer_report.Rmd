@@ -856,7 +856,6 @@ for (i in 1:length(chromosomes)) {
   chr_subset = vcf[seqnames(vcf) == chromosomes[i]]
   n = length(chr_subset)
   if (n >= 2) {
-    print(i)
     will_work = TRUE
   }
 }
