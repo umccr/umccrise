@@ -100,7 +100,7 @@ params_tmp <- list(
     purple_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv'),
     purple_purity=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.purity.tsv'),
     purple_qc=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.qc'),
-    conda_list=glue::glue('data/work/{batch_name}/rmd/conda_pkg_list.txt')
+    conda_list=glue::glue('data/work/conda_pkg_list.txt')
   )
 )
 
