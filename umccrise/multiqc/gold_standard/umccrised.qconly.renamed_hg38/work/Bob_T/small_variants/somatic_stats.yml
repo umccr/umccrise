@@ -1,8 +1,0 @@
-data:
-  Bob_T:
-    filt_indels: 89.83516483516483
-    filt_others: null
-    filt_snps: 31.7012151536812
-    indels: 74
-    others: null
-    snps: 1911

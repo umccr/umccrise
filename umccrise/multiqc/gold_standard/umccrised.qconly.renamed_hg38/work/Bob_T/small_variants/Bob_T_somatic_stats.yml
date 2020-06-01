@@ -1,0 +1,9 @@
+data:
+  Bob_T:
+    filt_indels: 89.97252747252747
+    filt_others: null
+    filt_snps: 28.663330950679054
+    filt_vars: 41.32161089052751
+    indels: 73
+    others: null
+    snps: 1996
