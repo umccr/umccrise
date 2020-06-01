@@ -164,14 +164,14 @@ custom_data:
             suffix: '%'
 
         - filt_vars:
-            title: 'Var-filt'
+            title: 'Filt'
             description: '% variants filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
             min: 0
             max: 100
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
-            hidden: True
+            hidden: False
         - filt_snps:
             title: 'SNP-filt'
             description: '% SNPs filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
