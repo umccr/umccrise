@@ -261,7 +261,8 @@ rule filter_sv_vcf:
     input:
         vcf = rules.sv_bpi_maybe.output.vcf
     output:
-        vcf = 'work/{batch}/structural/filt/{batch}-manta.vcf'
+        vcf = 'work/{batch}/structural/filt/{batch}-manta.vcf.gz',
+        tbi = 'work/{batch}/structural/filt/{batch}-manta.vcf.gz.tbi',
     group: "sv_vcf"
     run:
         t_name = batch_by_name[wildcards.batch].tumor.rgid
@@ -275,7 +276,8 @@ bcftools view -f.,PASS {input.vcf} |
 bcftools filter -e "SVTYPE == 'BND' & FORMAT/SR[{tumor_id}:1] - FORMAT/PR[{tumor_id}:1] > 0" |
 bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" |
 bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" |
-bcftools view -s {t_name} > {output.vcf}
+bcftools view -s {t_name} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}
+
 ''')
 
 rule reprioritize_rescued_svs:
@@ -307,7 +309,8 @@ rule copy_sv_vcf_ffpe_mode:
         vcf = '{batch}/structural/{batch}-manta.vcf.gz',
         tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
     shell:
-        'bgzip -c {input.vcf} > {output.vcf} && tabix -p vcf {output.vcf}'
+        'cp {input.vcf} {output.vcf} ; '
+        'cp {input.vcf}.tbi {output.tbi}'
 
 
 def parse_info_field(rec, name):
