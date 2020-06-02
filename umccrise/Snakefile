@@ -22,9 +22,6 @@ run, batch_by_name = prep_inputs(config, silent=within_sub_workflow)
 threads_per_batch = config['threads_per_batch']
 threads_per_sample = config['threads_per_sample']
 
-is_ffpe = False
-if isinstance(run, BcbioProject):
-    is_ffpe = run.somatic_caller == 'strelka2'
 
 
 stages = prep_stages([s for s in config.get('include_stages', '').split(',') if s],

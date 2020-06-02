@@ -17,7 +17,7 @@ vcftobedpe = 'vcfToBedpe'
 MAX_SVS = 50000
 
 
-localrules: structural
+localrules: structural, copy_sv_vcf_ffpe_mode
 
 
 # Keep passed variants.
@@ -278,37 +278,36 @@ bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tu
 bcftools view -s {t_name} > {output.vcf}
 ''')
 
-if not is_ffpe:
-    rule reprioritize_rescued_svs:
-        input:
-            vcf = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
-        output:
-            vcf = '{batch}/structural/{batch}-manta.vcf.gz',
-            tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
-        params:
-            genome = run.genome_build
-        group: "sv_after_purple"
-        run:
-            cmd = f'gunzip -c {input.vcf}' \
-                f' | prioritize_sv -g {params.genome}' \
-                f' | bcftools annotate -x "INFO/ANN"' \
-                f' -Oz -o {output.vcf}' \
-                f' && tabix -p vcf {output.vcf}'
-            shell(cmd)
-            before = count_vars(input.vcf)
-            after = count_vars(output.vcf)
-            assert before == after, (before, after)
+rule reprioritize_rescued_svs:
+    input:
+        vcf = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
+    output:
+        vcf = 'work/{batch}/structural/sv_after_purple/{batch}-manta.vcf.gz',
+        tbi = 'work/{batch}/structural/sv_after_purple/{batch}-manta.vcf.gz.tbi',
+    params:
+        genome = run.genome_build
+    group: "sv_after_purple"
+    run:
+        cmd = f'gunzip -c {input.vcf}' \
+            f' | prioritize_sv -g {params.genome}' \
+            f' | bcftools annotate -x "INFO/ANN"' \
+            f' -Oz -o {output.vcf}' \
+            f' && tabix -p vcf {output.vcf}'
+        shell(cmd)
+        before = count_vars(input.vcf)
+        after = count_vars(output.vcf)
+        assert before == after, (before, after)
 
-else:
-    rule copy_sv_vcf_ffpe_mode:
-        input:
-            vcf = rules.filter_sv_vcf.output.vcf
-        output:
-            vcf = '{batch}/structural/{batch}-manta.vcf.gz',
-            tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
-        group: "sv_after_purple"
-        shell:
-            'bgzip -c {input.vcf} > {output.vcf} && tabix -p vcf {output.vcf}'
+rule copy_sv_vcf_ffpe_mode:
+    input:
+        vcf = lambda wc: rules.filter_sv_vcf.output.vcf \
+                         if batch_by_name[wc.batch].somatic_caller == 'strelka2' \
+                         else f'work/{wc.batch}/structural/sv_after_purple/{wc.batch}-manta.vcf.gz'
+    output:
+        vcf = '{batch}/structural/{batch}-manta.vcf.gz',
+        tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
+    shell:
+        'bgzip -c {input.vcf} > {output.vcf} && tabix -p vcf {output.vcf}'
 
 
 def parse_info_field(rec, name):
@@ -452,10 +451,17 @@ rule bedpe:
 
 #############
 
+rule structural_batch:
+    input:
+        lambda wc: rules.bedpe.output       if batch_by_name[wc.batch].sv_vcf else [],
+        lambda wc: rules.ribbon.output      if batch_by_name[wc.batch].sv_vcf else [],
+        lambda wc: rules.prep_sv_tsv.output if batch_by_name[wc.batch].sv_vcf else [],
+    output:
+        temp(touch('log/structural_{batch}.done'))
+
+
 rule structural:
     input:
-        expand(rules.bedpe.output, batch=batch_by_name.keys()),
-        expand(rules.ribbon.output, batch=batch_by_name.keys()),
-        expand(rules.prep_sv_tsv.output, batch=batch_by_name.keys()),
+        expand(rules.structural_batch.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/structural.done'))
