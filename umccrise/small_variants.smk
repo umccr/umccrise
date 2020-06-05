@@ -35,7 +35,7 @@ def cnt_vars(vcf_path, passed=False):
 
 rule somatic_vcf_pass_sort:
     input:
-        vcf = lambda wc: batch_by_name[wc.batch].somatic_vcf,
+        vcf = lambda wc: batch_by_name[wc.batch].somatic_vcf or [],
     output:
         vcf = 'work/{batch}/small_variants/pass_sort/{batch}-somatic.vcf.gz',
         tbi = 'work/{batch}/small_variants/pass_sort/{batch}-somatic.vcf.gz.tbi',
