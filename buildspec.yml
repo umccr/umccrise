@@ -5,7 +5,7 @@ env:
         "CONTAINER_REPO": "843407916570.dkr.ecr.ap-southeast-2.amazonaws.com"
         "CONTAINER_NAME": "umccrise"
         "S3_REFDATA_BUCKET": "umccr-refdata-dev"
-        "S3_REFDATA_KEY": "genomes_10"
+        "S3_REFDATA_KEY": "genomes"
 phases:
   install:
     runtime-versions:
