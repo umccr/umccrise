@@ -51,6 +51,7 @@ dependencies:
   - snpeff ==4.3.1t  # pre 4.5covid19 release
   - bwa         # for oncoviruses
   - sambamba    # for oncoviruses & optitype
+  - pysam       # for oncoviruses
   - optitype
   - pip:
     - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
