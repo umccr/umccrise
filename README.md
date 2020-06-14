@@ -28,11 +28,17 @@ In summary, umccrise can:
 
 Examples of the reports for a HCC1395/HCC1395BL cell line samples [sequenced and validated by the SEQC-II consortium](https://sites.google.com/view/seqc2/home/data-analysis/high-confidence-somatic-snv-and-indel-v1-1):
 
-- [MultiQC](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-multiqc_report.html) (quality control metrics and plots)
-- [Cancer report](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc_cancer_report.html) (mutational signatures, circos plots, CNV, SV, oncoviruses)
-- [CPSR](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cpsr.html) (germline variants)
-- [PCGR](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html) (somatic variants)
-- CACAO (coverage reports): ([tumor](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html), [normal](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html))
+[MultiQC (quality control metrics and plots) ![MultiQC](docs/multiqc.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-multiqc_report.html)
+
+[Cancer report (mutational signatures, circos plots, CNV, SV, oncoviruses) ![Cancer report](docs/cancer_report.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc_cancer_report.html)
+
+[CPSR (germline variants) ![CPSR](docs/cpsr_list.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cpsr.html)
+
+[PCGR (somatic variants) ![PCGR](docs/pcgr_list.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html)
+
+CACAO (coverage reports):
+[![cacao_tumor](docs/cacao_tumor.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html), 
+[![cacao_normal](docs/cacao_normal.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html), 
 
 See [workflow.md](workflow.md) for a detailed description of the workflow.
 
