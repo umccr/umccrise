@@ -42,14 +42,15 @@ Below the examples of the reports for a HCC1395/HCC1395BL cell line tumor/normal
 
 [4. PCGR (somatic variants) ![PCGR](docs/pcgr.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html)
 
-<br>
-
 5. CACAO (coverage reports):
 
 <a href="https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html"><img src="docs/cacao_tumor.png" alt="cacao_tumor" width="400"/> <a href="https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html"><img src="docs/cacao_normal.png" alt="cacao_normal" width="400"/>
 
 <br>
+
 See [workflow.md](workflow.md) for a detailed description of the workflow.
+
+<br>
 
 See [HISTORY.md](HISTORY.md) for the version history.
 
