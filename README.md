@@ -26,6 +26,10 @@ In summary, umccrise can:
 - Run [Conpair](https://github.com/nygenome/Conpair) to estimate tumor/normal concordance and sample contamination;
 - Run [oncoviruses](https://github.com/umccr/oncoviruses) to detect viral integration sites and affected genes;
 
+See [workflow.md](workflow.md) for a detailed description of the workflow.
+
+See [HISTORY.md](HISTORY.md) for the version history.
+
 Below the examples of the reports for a HCC1395/HCC1395BL cell line tumor/normal pair [sequenced and validated by the SEQC-II consortium](https://sites.google.com/view/seqc2/home/data-analysis/high-confidence-somatic-snv-and-indel-v1-1).
 
 [1. MultiQC (quality control metrics and plots) ![MultiQC](docs/multiqc.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-multiqc_report.html)
@@ -42,17 +46,11 @@ Below the examples of the reports for a HCC1395/HCC1395BL cell line tumor/normal
 
 [4. PCGR (somatic variants) ![PCGR](docs/pcgr.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html)
 
-5. CACAO (coverage reports):
+5. CACAO (coverage reports)
 
 <a href="https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html"><img src="docs/cacao_tumor.png" alt="cacao_tumor" width="400"/> <a href="https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html"><img src="docs/cacao_normal.png" alt="cacao_normal" width="400"/>
 
 <br>
-
-See [workflow.md](workflow.md) for a detailed description of the workflow.
-
-<br>
-
-See [HISTORY.md](HISTORY.md) for the version history.
 
 Contents:
 - [umccrise](#umccrise)
