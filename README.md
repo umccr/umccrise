@@ -26,6 +26,14 @@ In summary, umccrise can:
 - Run [Conpair](https://github.com/nygenome/Conpair) to estimate tumor/normal concordance and sample contamination;
 - Run [oncoviruses](https://github.com/umccr/oncoviruses) to detect viral integration sites and affected genes;
 
+Examples of the reports for a HCC1395/HCC1395BL cell line samples [sequenced and validated by the SEQC-II consortium](https://sites.google.com/view/seqc2/home/data-analysis/high-confidence-somatic-snv-and-indel-v1-1):
+
+- [MultiQC](docs/SEQC-II-50pc__SEQC-II_Tumor_50pc-multiqc_report.html) (quality control metrics and plots)
+- [Cancer report](docs/SEQC-II-50pc__SEQC-II_Tumor_50pc_cancer_report.html) (mutational signatures, circos plots, CNV, SV, oncoviruses)
+- [CPSR](docs/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cpsr.html) (germline variants)
+- [PCGR](docs/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html) (somatic variants)
+- CACAO (coverage reports): ([tumor](docs/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html), [normal](docs/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html))
+
 See [workflow.md](workflow.md) for a detailed description of the workflow.
 
 See [HISTORY.md](HISTORY.md) for the version history.
