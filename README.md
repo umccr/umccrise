@@ -26,20 +26,29 @@ In summary, umccrise can:
 - Run [Conpair](https://github.com/nygenome/Conpair) to estimate tumor/normal concordance and sample contamination;
 - Run [oncoviruses](https://github.com/umccr/oncoviruses) to detect viral integration sites and affected genes;
 
-Examples of the reports for a HCC1395/HCC1395BL cell line samples [sequenced and validated by the SEQC-II consortium](https://sites.google.com/view/seqc2/home/data-analysis/high-confidence-somatic-snv-and-indel-v1-1):
+Below the examples of the reports for a HCC1395/HCC1395BL cell line tumor/normal pair [sequenced and validated by the SEQC-II consortium](https://sites.google.com/view/seqc2/home/data-analysis/high-confidence-somatic-snv-and-indel-v1-1).
 
-[MultiQC (quality control metrics and plots) ![MultiQC](docs/multiqc.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-multiqc_report.html)
+[1. MultiQC (quality control metrics and plots) ![MultiQC](docs/multiqc.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-multiqc_report.html)
 
-[Cancer report (mutational signatures, circos plots, CNV, SV, oncoviruses) ![Cancer report](docs/cancer_report.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc_cancer_report.html)
+<br>
 
-[CPSR (germline variants) ![CPSR](docs/cpsr_list.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cpsr.html)
+[2. Cancer report (mutational signatures, circos plots, CNV, SV, oncoviruses) ![Cancer report](docs/cancer_report.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc_cancer_report.html)
 
-[PCGR (somatic variants) ![PCGR](docs/pcgr_list.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html)
+<br>
 
-CACAO (coverage reports):
+[3. CPSR (germline variants) ![CPSR](docs/cpsr.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cpsr.html)
+
+<br>
+
+[4. PCGR (somatic variants) ![PCGR](docs/pcgr.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html)
+
+<br>
+
+5. CACAO (coverage reports):
 [![cacao_tumor](docs/cacao_tumor.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html), 
 [![cacao_normal](docs/cacao_normal.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html), 
 
+<br>
 See [workflow.md](workflow.md) for a detailed description of the workflow.
 
 See [HISTORY.md](HISTORY.md) for the version history.
