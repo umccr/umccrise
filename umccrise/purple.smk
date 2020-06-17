@@ -19,7 +19,17 @@ circos_macos_patch = ('export PERL5LIB=' +
     if platform.system() == 'Darwin' \
     else ''
 
-purple_mem = min(30000, 5000*threads_per_batch)
+
+
+# https://github.com/PapenfussLab/gridss#how-much-memory-should-i-give-gridss
+# > At least 4GB + 2GB per thread. It is recommended to run GRIDSS with max heap memory (-Xmx)
+# > of 8GB for single-threaded operation (WORKER_THREADS=1), 16GB for multi-core desktop operation,
+# > and 31GB for heavily multi-threaded server operation. Note that due to Java's use of Compressed
+# > Oops, specifying a max heap size of between 32-48GB effectively reduces the memory available
+# > to GRIDSS so is strongly discouraged.
+# This should apply to other java apps too
+purple_mem = max(min(31000, 4000+2000*threads_per_batch), 8000)
+amber_mem  = max(min(31000, 4000+3000*threads_per_batch), 8000)
 
 
 rule purple_amber:
@@ -45,13 +55,13 @@ rule purple_amber:
     benchmark:
         'benchmarks/{batch}/purple/{batch}-amber.tsv'
     resources:
-        mem_mb = lambda wildcards, attempt: round(purple_mem * 1.5) + 2000 + (30000 * (attempt - 1)),
+        mem_mb = int(amber_mem * 1.1),
     threads:
         threads_per_batch
     run:
         shell(
             conda_cmd.format('hmf') +
-            f'AMBER -Xms{params.xms}m -Xmx{resources.mem_mb - 2000}m '
+            f'AMBER -Xms{params.xms}m -Xmx{amber_mem}m '
             f'-tumor {wildcards.batch} '
             f'-tumor_bam {input.tumor_bam} '
             f'-reference {params.normal_name} '
@@ -84,11 +94,11 @@ rule purple_cobalt:
     threads:
         threads_per_batch
     resources:
-        mem_mb = lambda wildcards, attempt: purple_mem + 2000 + (10000 * (attempt - 1)),
+        mem_mb = int(purple_mem * 1.1),
     run:
         shell(
             conda_cmd.format('hmf') +
-            f'COBALT -Xms{params.xms}m -Xmx{resources.mem_mb - 2000}m '
+            f'COBALT -Xms{params.xms}m -Xmx{purple_mem}m '
             f'-reference {params.normal_sname} '
             f'-reference_bam {input.normal_bam} '
             f'-tumor {wildcards.batch} '
@@ -156,13 +166,13 @@ rule purple_run:
     threads:
         min(4, threads_per_batch)
     resources:
-        mem_mb = lambda wildcards, attempt: purple_mem + 1000 + (10000 * (attempt - 1)),
+        mem_mb = int(purple_mem * 1.1),
     run:
         shell(
             conda_cmd.format('hmf') + \
             circos_macos_patch + \
             f'circos -modules ; circos -v ; '
-            f'PURPLE -Xms{params.xms}m -Xmx{resources.mem_mb - 2000}m '
+            f'PURPLE -Xms{params.xms}m -Xmx{purple_mem}m '
             f'-amber {params.outdir}/amber '
             f'-cobalt {params.outdir}/cobalt '
             f'-output_dir {params.outdir} '
