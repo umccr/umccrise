@@ -92,6 +92,9 @@ class CustomProject(BaseProject):
                     b.somatic_vcf = fpath
 
 
+def _clean_sn(snames):
+    return [v for v in flatten([sn.split('__') for sn in snames])]  # support "batch__sample" notation
+
 
 def prep_inputs(smconfig, silent=False):
     ###############################
@@ -99,14 +102,19 @@ def prep_inputs(smconfig, silent=False):
     ###############################
 
     # Parsing a bcbio or Dragen project and including/excluding samples
-    include_names = smconfig.get('batch') or smconfig.get('sample')
-    if include_names:
-        include_names = str(include_names).split(',')
-        include_names = [v for v in flatten([sn.split('__') for sn in include_names])]  # support "batch__sample" notation
+    include_samples_map = dict()
+    if smconfig.get('sample'):
+        for sname in str(smconfig.get('sample')).split(','):
+            if ':' in sname:
+                ori_name, new_name = sname.split(':')
+                include_samples_map[ori_name] = new_name
+            else:
+                include_samples_map[sname] = sname
+    include_names = [ori_name for ori_name, new_name in include_samples_map.items()]
+
     exclude_names = smconfig.get('exclude')
     if exclude_names:
         exclude_names = str(exclude_names).split(',')
-        exclude_names = [v for v in flatten([sn.split('__') for sn in exclude_names])]  # support "batch__sample" notation
 
     if smconfig.get('debug', 'no') == 'yes':
         log.is_debug = True
@@ -126,15 +134,15 @@ def prep_inputs(smconfig, silent=False):
             if custom_run is None:
                 custom_run = CustomProject(
                     input_dir=adjust_path(os.getcwd()),
-                    include_samples=include_names,
+                    include_samples_map=include_samples_map,
                     exclude_samples=exclude_names)
             custom_run.add_file(input_path)
 
         # dragen
         elif isdir(input_path) and glob.glob(join(input_path, '*-replay.json')):
             run = DragenProject(input_path,
-                               include_samples=include_names,
-                               exclude_samples=exclude_names)
+                                include_samples=include_names,
+                                exclude_samples=exclude_names)
             found_bcbio_or_dragen_runs.append(run)
         # bcbio
         elif isdir(input_path):
@@ -154,10 +162,6 @@ def prep_inputs(smconfig, silent=False):
                 critical(f'Error: could not parse any batch or samples in the bcbio project. '
                          f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}')
 
-            # Batch objects index by tumor sample names
-            batches = [b for b in run.batch_by_name.values() if not b.is_germline() and b.tumor and b.normal]
-            assert batches
-            run.batch_by_name = {b.name + '__' + b.tumor.name: b for b in batches}
             found_bcbio_or_dragen_runs.append(run)
 
         else:
@@ -191,85 +195,21 @@ def prep_inputs(smconfig, silent=False):
 
     log.is_silent = False
 
-    return combined_run, combined_run.batch_by_name
+    # Batch objects index by tumor sample names
+    batches = [b for b in combined_run.batch_by_name.values()
+               if not b.is_germline() and b.tumor and b.normal]
+    assert batches
+    batch_by_name = dict()
+    for b in batches:
+        new_name = include_samples_map.get(b.name) or \
+                   include_samples_map.get(b.tumor.name) or \
+                   b.name + '__' + b.tumor.name
+        batch_by_name[new_name] = b
+
+    return combined_run, batch_by_name
 
 
-def prep_resources(num_batches, num_samples, ncpus_requested=None, is_cluster=False, is_silent=False):
-    """ Determines the number of cpus used by a job and the total number of cpus
-        available to snakemake scheduler.
-        :returns ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node=None
-    """
-    # Checking presets for known HPC clusters, otherwise assuming a for single-machine AWS or local run
-    # and just taking the number of available CPUs:
-
-    if is_cluster:
-        # we are not resticted to one machine, so can submit many jobs and let the scheduler figure out the queue
-        ncpus_available = ncpus_requested or refdata.ncpus_on_node
-        ncpus_per_node = refdata.ncpus_on_node
-        if ncpus_per_node:
-            info(f'Number of CPUs on a cluster node: {ncpus_per_node}')
-        ncpus_local = 1
-    else:
-        try:
-            ncpus_on_this_machine = len(os.sched_getaffinity(0))
-        except:
-            ncpus_on_this_machine = os.cpu_count()
-        if ncpus_on_this_machine:
-            info(f'Number of CPUs on this machine : {ncpus_on_this_machine}')
-        # scheduling is on Snakemake, so restricting to the number of available cpus on this machine
-        ncpus_available = min(ncpus_on_this_machine, ncpus_requested or math.inf)
-        ncpus_per_node = None
-        ncpus_local = ncpus_on_this_machine
-
-    ncpus_per_batch = max(1, ncpus_available // num_batches)
-    ncpus_per_sample = max(1, ncpus_available // num_samples)
-
-    def adjust_ncpus_per_job(ncpus, max_ncpus_per_job=10, msg=''):
-        """ Adjusting the number of cpus to a number below <max_ncpus_per_job>.
-            Say, if we have more than 20 cpus on a node and only 1 batch, we should adjust
-            to use only half of that for a batch, so that 2 different jobs (say, AMBER and COBALT)
-            can be run in parallel, because using 20 cpus per one job is a waste.
-        """
-        if ncpus > max_ncpus_per_job:
-            # new_ncpus = ncpus
-            factor = math.ceil(ncpus / max_ncpus_per_job)
-            new_ncpus = ncpus // factor
-            # while True:
-            #     factor += 1
-            #     new_ncpus = ncpus // factor
-            #     print(f'ncpus: {ncpus}, factor: {factor}, new_ncpus: {new_ncpus}')
-            #     if new_ncpus < max_ncpus_per_job:
-            #         print(f'breaking')
-            #         break
-            if not is_silent:
-                info((msg if msg else 'The number of cpus per batch is ') + f'{ncpus} >{max_ncpus_per_job}. '
-                     f'This is usually wasteful, so we are adjusting it '
-                     f'to the number <={max_ncpus_per_job}: {new_ncpus} = {ncpus} // {factor}, so '
-                     f'{factor} different rules can be run in parallel (say, AMBER and COBALT '
-                     f'at the same time).')
-            ncpus = new_ncpus
-        return ncpus
-
-    ncpus_per_batch = adjust_ncpus_per_job(ncpus_per_batch, max_ncpus_per_job=14, msg=
-        f'The number of cpus available is {ncpus_available}, and the number of batches is {num_batches}, '
-        f'so the number of cpus per batch would be ')
-    ncpus_per_sample = adjust_ncpus_per_job(ncpus_per_sample, max_ncpus_per_job=14, msg=
-        f'The number of cpus available is {ncpus_available}, and the number of samples is {num_samples}, '
-        f'so the number of cpus per sample would be ')
-
-    if not is_silent:
-        if ncpus_local:
-            info(f'Local CPUs: {ncpus_local}')
-        if ncpus_requested:
-            info(f'Total CPUs requested by `umccrise --cores`: {ncpus_requested}')
-        info(f'The pipeline can use {ncpus_available} CPUs total.')
-        info(f'Batches found: {num_batches}, using {ncpus_per_batch} cpus per batch.')
-        info(f'Samples found: {num_samples}, using {ncpus_per_sample} cpus per sample.')
-
-    return ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node, ncpus_local
-
-
-def prep_stages(include_stages=None, exclude_stages=None):
+def prep_stages(include_stages=None, exclude_stages=None, run=None):
     default_enabled = {
         'conpair',
         'structural',
@@ -285,9 +225,16 @@ def prep_stages(include_stages=None, exclude_stages=None):
         'microbiome',
         'immuno',
     }
+    # if not all(b.germline_vcf for b in run.batch_by_name.values()):
+    #     default_disabled |= {'germline'}
+    # if not all(b.somatic_vcf for b in run.batch_by_name.values()):
+    #     default_disabled |= {'somatic'}
+    # if not all(b.sv_vcf for b in run.batch_by_name.values()):
+    #     default_disabled |= {'structural'}
+
     debug(f'include_stages: {include_stages}')
     debug(f'exclude_stages: {exclude_stages}')
-    def rename_input_stages(stages):
+    def _rename_input_stages(stages):
         fixed_stages = set()
         for s in stages:
             if s == 'cancer_report':
@@ -314,8 +261,8 @@ def prep_stages(include_stages=None, exclude_stages=None):
                 fixed_stages |= {s}
         return fixed_stages
 
-    include_stages = rename_input_stages(include_stages)
-    exclude_stages = rename_input_stages(exclude_stages)
+    include_stages = _rename_input_stages(include_stages)
+    exclude_stages = _rename_input_stages(exclude_stages)
 
     selected_stages = (include_stages or default_enabled) - exclude_stages
     debug(f'selected_stages: {selected_stages}')
