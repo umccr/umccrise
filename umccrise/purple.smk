@@ -128,7 +128,7 @@ rule purple_run:
         amber_dummy_vcf   = 'work/{batch}/purple/amber/{batch}.amber.baf.vcf.gz',
         cobalt_dummy      = 'work/{batch}/purple/cobalt/{batch}.chr.len',
         cobalt_dummy_pcf  = 'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.tsv',
-        manta_sv_filtered = rules.filter_sv_vcf.output.vcf,
+        manta_sv_filtered = lambda wc: rules.filter_sv_vcf.output.vcf if batch_by_name[wc.batch].sv_vcf else [],
         gc                = refdata.get_ref_file(run.genome_build, 'purple_gc'),
         somatic_vcf       = rules.purple_somatic_vcf.output,
         ref_fa            = refdata.get_ref_file(run.genome_build, 'fa'),
@@ -137,7 +137,6 @@ rule purple_run:
         gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
         purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
         qc            = 'work/{batch}/purple/{batch}.purple.qc',
-        resc_sv_vcf   = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
 
         circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
         input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
@@ -180,7 +179,7 @@ rule purple_run:
             f'-tumor {wildcards.batch} '
             f'-threads {threads} '
             f'-gc_profile {input.gc} '
-            f'-structural_vcf {input.manta_sv_filtered} '
+            f'{f"-structural_vcf {input.manta_sv_filtered}" if input.manta_sv_filtered else ""} '
             f'-somatic_vcf {input.somatic_vcf} '
             f'-ref_genome {input.ref_fa} '
             f'-circos circos 2>&1 | tee {log} '

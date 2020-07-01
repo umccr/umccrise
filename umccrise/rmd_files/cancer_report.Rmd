@@ -352,86 +352,91 @@ abbreviate_effectv <- Vectorize(abbreviate_effect)
 sv_path <- params$somatic_sv
 sv_unmelted <- NULL
 sv_all <- NULL
-
-somatic_sv_tsv <- readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciicccccicccccdciicc")
-no_sv_found = length(readLines(con = sv_path, n = 2)) < 2  # only header in the file
-
-if (!no_sv_found) {
-  sv_unmelted <- somatic_sv_tsv %>%
-    dplyr::select(-caller, -sample) %>%
-    split_sv_field(AF_BPI) %>%
-    split_sv_field(AF_PURPLE) %>%
-    split_sv_field(CN_PURPLE) %>%
-    split_sv_field(CN_change_PURPLE) %>%
-    dplyr::mutate(
-      AF_BPI = ifelse(is.na(AF_BPI), NA, paste0(AF_BPI, " (", AF_BPI1, ",", AF_BPI2, ")")),
-      AF_PURPLE = ifelse(is.na(AF_PURPLE), NA, paste0(AF_PURPLE, " (", AF_PURPLE1, ", ", AF_PURPLE2, ")")),
-      CN_PURPLE = ifelse(is.na(CN_PURPLE), NA, paste0(CN_PURPLE, " (", CN_PURPLE1, ", ", CN_PURPLE2, ")")),
-      CN_change_PURPLE = ifelse(is.na(CN_change_PURPLE), NA, paste0(CN_change_PURPLE, " (", CN_change_PURPLE1, ", ", CN_change_PURPLE2, ")"))
-    ) %>%
-    tidyr::separate(split_read_support, c("SR_ref", "SR_alt"), ",", convert = TRUE) %>%
-    tidyr::separate(paired_support_PR, c("PR_ref", "PR_alt"), ",", convert = TRUE) %>%
-    dplyr::mutate(
-      SR_PR_alt = paste0(SR_alt, ",", PR_alt),
-      SR_PR_ref = paste0(SR_ref, ",", PR_ref),
-      Ploidy = round(as.double(Ploidy_PURPLE), 2),
-      chrom = sub("chr", "", chrom),
-      chrom = as.factor(chrom), # for better DT filtering
-      svtype = ifelse(is.na(PURPLE_status), svtype, "PURPLE_inf"),
-      Start = ifelse(is.na(PURPLE_status), START_BPI, start),
-      nann = count_pieces(annotation, ","),
-      varnum = dplyr::row_number(),
-      varnum = sprintf(glue::glue("%0{nchar(nrow(.))}d"), varnum))
-
-  # Fix BND IDs
-  sv_unmelted_bnd <- sv_unmelted %>%
-    dplyr::filter(svtype == "BND") %>%
-    tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
-    dplyr::group_by(BND_group) %>%
-    dplyr::mutate(
-      BND_ID = dplyr::group_indices(),
-      BND_ID = sprintf(glue::glue("%0{nchar(nrow(.))}d"), BND_ID),
-      BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
-    dplyr::ungroup() %>%
-    dplyr::bind_cols(., .[match(.$ID, .$MATEID), "chrom"]) %>%
-    dplyr::rename(BND_mate_chrom = chrom1)
-
-  sv_unmelted_other <- sv_unmelted %>%
-    dplyr::filter(svtype != "BND")
-
-  sv_unmelted <-
-    dplyr::bind_rows(sv_unmelted_bnd,
-                     sv_unmelted_other) %>%
-    dplyr::mutate(
-      END_BPI = base::format(END_BPI, big.mark = ",", trim = TRUE),
-      End = ifelse(svtype == "BND", paste0(BND_mate_chrom, ":", END_BPI), END_BPI)) %>%
-    dplyr::select(varnum, TierTop = tier,
-                  Chr = chrom, Start, End,
-                  Type = svtype,
-                  ID, MATEID, BND_ID, BND_mate,
-                  SR_PR_alt, SR_PR_ref, Ploidy,
-                  AF_PURPLE, AF_BPI,
-                  CNC = CN_change_PURPLE, CN = CN_PURPLE,
-                  SScore = somaticscore, nann, annotation)
-
-  sv_all <- sv_unmelted %>%
-    dplyr::mutate(annotation = strsplit(annotation, ',')) %>%
-    tidyr::unnest(annotation) %>%
-    tidyr::separate(
-      annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
-      sep = '\\|', convert = FALSE) %>%
-    dplyr::mutate(
-      ntrx = count_pieces(Transcript, "&"),
-      ngen = count_pieces(Genes, "&"),
-      neff = count_pieces(Effect, "&"),
-      Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
-      Genes = Genes %>% stringr::str_replace_all('&', ', '),
-      Effect = abbreviate_effectv(Effect)) %>%
-    dplyr::distinct() %>%
-    dplyr::arrange(Tier, Genes, Effect)
+somatic_sv_tsv <- NULL
+no_sv_found <- T
+if (sv_path == "NA") {
+  sv_unmelted <- tibble(WARNING = "Structural variants were not called")
+  sv_all <- tibble(WARNING = "Structural variants were not called")
 } else {
-  sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
-  sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!!")
+  somatic_sv_tsv = readr::read_tsv(sv_path, col_names = TRUE, col_types = "ccciicccccicccccdciicc")
+  no_sv_found = length(readLines(con = sv_path, n = 2)) < 2  # only header in the file
+  if (no_sv_found) {
+    sv_unmelted <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!")
+    sv_all <- tibble(WARNING = "THERE WERE 0 SVs PRIORITISED!")
+  } else {
+    sv_unmelted <- somatic_sv_tsv %>%
+      dplyr::select(-caller, -sample) %>%
+      split_sv_field(AF_BPI) %>%
+      split_sv_field(AF_PURPLE) %>%
+      split_sv_field(CN_PURPLE) %>%
+      split_sv_field(CN_change_PURPLE) %>%
+      dplyr::mutate(
+        AF_BPI = ifelse(is.na(AF_BPI), NA, paste0(AF_BPI, " (", AF_BPI1, ",", AF_BPI2, ")")),
+        AF_PURPLE = ifelse(is.na(AF_PURPLE), NA, paste0(AF_PURPLE, " (", AF_PURPLE1, ", ", AF_PURPLE2, ")")),
+        CN_PURPLE = ifelse(is.na(CN_PURPLE), NA, paste0(CN_PURPLE, " (", CN_PURPLE1, ", ", CN_PURPLE2, ")")),
+        CN_change_PURPLE = ifelse(is.na(CN_change_PURPLE), NA, paste0(CN_change_PURPLE, " (", CN_change_PURPLE1, ", ", CN_change_PURPLE2, ")"))
+      ) %>%
+      tidyr::separate(split_read_support, c("SR_ref", "SR_alt"), ",", convert = TRUE) %>%
+      tidyr::separate(paired_support_PR, c("PR_ref", "PR_alt"), ",", convert = TRUE) %>%
+      dplyr::mutate(
+        SR_PR_alt = paste0(SR_alt, ",", PR_alt),
+        SR_PR_ref = paste0(SR_ref, ",", PR_ref),
+        Ploidy = round(as.double(Ploidy_PURPLE), 2),
+        chrom = sub("chr", "", chrom),
+        chrom = as.factor(chrom), # for better DT filtering
+        svtype = ifelse(is.na(PURPLE_status), svtype, "PURPLE_inf"),
+        Start = ifelse(is.na(PURPLE_status), START_BPI, start),
+        nann = count_pieces(annotation, ","),
+        varnum = dplyr::row_number(),
+        varnum = sprintf(glue::glue("%0{nchar(nrow(.))}d"), varnum))
+
+    # Fix BND IDs
+    sv_unmelted_bnd <- sv_unmelted %>%
+      dplyr::filter(svtype == "BND") %>%
+      tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
+      dplyr::group_by(BND_group) %>%
+      dplyr::mutate(
+        BND_ID = dplyr::group_indices(),
+        BND_ID = sprintf(glue::glue("%0{nchar(nrow(.))}d"), BND_ID),
+        BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
+      dplyr::ungroup() %>%
+      dplyr::bind_cols(., .[match(.$ID, .$MATEID), "chrom"]) %>%
+      dplyr::rename(BND_mate_chrom = chrom1)
+
+    sv_unmelted_other <- sv_unmelted %>%
+      dplyr::filter(svtype != "BND")
+
+    sv_unmelted <-
+      dplyr::bind_rows(sv_unmelted_bnd,
+                       sv_unmelted_other) %>%
+      dplyr::mutate(
+        END_BPI = base::format(END_BPI, big.mark = ",", trim = TRUE),
+        End = ifelse(svtype == "BND", paste0(BND_mate_chrom, ":", END_BPI), END_BPI)) %>%
+      dplyr::select(varnum, TierTop = tier,
+                    Chr = chrom, Start, End,
+                    Type = svtype,
+                    ID, MATEID, BND_ID, BND_mate,
+                    SR_PR_alt, SR_PR_ref, Ploidy,
+                    AF_PURPLE, AF_BPI,
+                    CNC = CN_change_PURPLE, CN = CN_PURPLE,
+                    SScore = somaticscore, nann, annotation)
+
+    sv_all <- sv_unmelted %>%
+      dplyr::mutate(annotation = strsplit(annotation, ',')) %>%
+      tidyr::unnest(annotation) %>%
+      tidyr::separate(
+        annotation, c('Event', 'Effect', 'Genes', 'Transcript', 'Detail', 'Tier'),
+        sep = '\\|', convert = FALSE) %>%
+      dplyr::mutate(
+        ntrx = count_pieces(Transcript, "&"),
+        ngen = count_pieces(Genes, "&"),
+        neff = count_pieces(Effect, "&"),
+        Transcript = Transcript %>% stringr::str_replace_all('&', ', '),
+        Genes = Genes %>% stringr::str_replace_all('&', ', '),
+        Effect = abbreviate_effectv(Effect)) %>%
+      dplyr::distinct() %>%
+      dplyr::arrange(Tier, Genes, Effect)
+  }
 }
 ```
 
@@ -1041,7 +1046,9 @@ manta_tsv_col_descr <- dplyr::tribble(
   "ID", "ID column in VCF",
   "MATEID", "INFO/MATEID: ID of mate breakend")
 
-check_cols_described(manta_tsv_col_descr$Column, colnames(somatic_sv_tsv))
+if (!is.null(somatic_sv_tsv)) {
+  check_cols_described(manta_tsv_col_descr$Column, colnames(somatic_sv_tsv))
+}
 
 manta_tsv_col_descr %>%
   dplyr::arrange(Column) %>%

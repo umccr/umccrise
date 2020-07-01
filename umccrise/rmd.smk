@@ -136,7 +136,8 @@ rule cancer_report:
         af_global            = rules.afs.output[0],
         af_keygenes          = rules.afs_keygenes.output[0],
         somatic_snv          = rules.somatic_to_hg19.output[0],
-        somatic_sv           = rules.prep_sv_tsv.output[0],
+        somatic_sv           = lambda wc: rules.prep_sv_tsv.output[0]
+                               if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
         purple_gene_cnv      = rules.purple_run.output.gene_cnv,
         purple_cnv           = rules.purple_run.output.cnv,
         purple_purity        = rules.purple_run.output.purity,
@@ -167,7 +168,7 @@ rule cancer_report:
         af_global       = lambda wc, input: abspath(input.af_global),
         af_keygenes     = lambda wc, input: abspath(input.af_keygenes),
         somatic_snv     = lambda wc, input: abspath(input.somatic_snv),
-        somatic_sv      = lambda wc, input: abspath(input.somatic_sv),
+        somatic_sv      = lambda wc, input: abspath(input.somatic_sv) if input.somatic_sv else 'NA',
         purple_gene_cnv = lambda wc, input: abspath(input.purple_gene_cnv),
         purple_cnv      = lambda wc, input: abspath(input.purple_cnv),
         purple_purity   = lambda wc, input: abspath(input.purple_purity),

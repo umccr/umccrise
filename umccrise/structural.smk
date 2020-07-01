@@ -4,7 +4,7 @@ Structural variants
 Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
 import glob
-from os.path import join, dirname, basename
+from os.path import join, dirname, basename, isfile
 from cyvcf2 import VCF
 from ngs_utils.file_utils import safe_mkdir, verify_dir, get_ungz_gz, verify_file
 from ngs_utils.logger import critical
@@ -17,7 +17,7 @@ vcftobedpe = 'vcfToBedpe'
 MAX_SVS = 50000
 
 
-localrules: structural, copy_sv_vcf_ffpe_mode
+localrules: structural, structural_batch, copy_sv_vcf_ffpe_mode
 
 
 # Keep passed variants.
@@ -282,7 +282,9 @@ bcftools view -s {t_name} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}
 
 rule reprioritize_rescued_svs:
     input:
-        vcf = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
+        vcf = lambda wc: 'work/{batch}/purple/{batch}.purple.sv.vcf.gz' \
+            if ('purple' in stages or isfile('work/{batch}/purple/{batch}.purple.sv.vcf.gz')) \
+            else [],
     output:
         vcf = 'work/{batch}/structural/sv_after_purple/{batch}-manta.vcf.gz',
         tbi = 'work/{batch}/structural/sv_after_purple/{batch}-manta.vcf.gz.tbi',
@@ -300,11 +302,12 @@ rule reprioritize_rescued_svs:
         after = count_vars(output.vcf)
         assert before == after, (before, after)
 
+
 rule copy_sv_vcf_ffpe_mode:
     input:
         vcf = lambda wc: rules.filter_sv_vcf.output.vcf \
-                         if batch_by_name[wc.batch].somatic_caller == 'strelka2' \
-                         else f'work/{wc.batch}/structural/sv_after_purple/{wc.batch}-manta.vcf.gz'
+            if ((batch_by_name[wc.batch].somatic_caller == 'strelka2') or ('purple' not in stages)) \
+            else f'work/{wc.batch}/structural/sv_after_purple/{wc.batch}-manta.vcf.gz'
     output:
         vcf = '{batch}/structural/{batch}-manta.vcf.gz',
         tbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',

@@ -3,7 +3,7 @@ PCGR
 -------------
 Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
 """
-localrules: pcgr, cpsr
+localrules: pcgr, cpsr, cpsr_batch
 
 
 from os.path import dirname
@@ -52,42 +52,39 @@ rule pcgr_copy_report:
         'cp {input} {output}'
 
 
-include_germline = all(b.germline_vcf for b in batch_by_name.values())
+rule run_cpsr:
+    input:
+        vcf = rules.germline_merge_with_leakage.output.vcf \
+              if 'somatic' in stages else \
+              rules.germline_predispose_subset.output.vcf,
+        pcgr_data = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
+        predispose_bed = get_predispose_genes_bed(run.genome_build),
+    output:
+        'work/{batch}/cpsr/{batch}-normal.cpsr.html'
+    params:
+        genome_build = run.genome_build,
+        sample_name = '{batch}-normal',
+        opt = '--no-docker' if not which('docker') else ''
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000
+    group: 'cpsr'
+    run:
+        output_dir = dirname(output[0])
+        shell(conda_cmd.format('pcgr') +
+            'pcgr {input.vcf} -g {params.genome_build} -o {output_dir} -s {params.sample_name} --germline '
+            '{params.opt} --pcgr-data {input.pcgr_data} --predispose-bed {input.predispose_bed}')
 
-if include_germline:
-    rule run_cpsr:
-        input:
-            vcf = rules.germline_merge_with_leakage.output.vcf \
-                  if 'somatic' in stages else \
-                  rules.germline_predispose_subset.output.vcf,
-            pcgr_data = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
-            predispose_bed = get_predispose_genes_bed(run.genome_build),
-        output:
-            'work/{batch}/cpsr/{batch}-normal.cpsr.html'
-        params:
-            genome_build = run.genome_build,
-            sample_name = '{batch}-normal',
-            opt = '--no-docker' if not which('docker') else ''
-        resources:
-            mem_mb=lambda wildcards, attempt: attempt * 20000
-        group: 'cpsr'
-        run:
-            output_dir = dirname(output[0])
-            shell(conda_cmd.format('pcgr') +
-                'pcgr {input.vcf} -g {params.genome_build} -o {output_dir} -s {params.sample_name} --germline '
-                '{params.opt} --pcgr-data {input.pcgr_data} --predispose-bed {input.predispose_bed}')
-
-    rule cpsr_copy_report:
-        input:
-            rules.run_cpsr.output[0]
-        output:
-            '{batch}/{batch}-normal.cpsr.html'
-        group: 'cpsr'
-        shell:
-            'cp {input} {output}'
+rule cpsr_copy_report:
+    input:
+        rules.run_cpsr.output[0]
+    output:
+        '{batch}/{batch}-normal.cpsr.html'
+    group: 'cpsr'
+    shell:
+        'cp {input} {output}'
 
 
-######
+############
 
 rule pcgr:
     input:
@@ -95,9 +92,15 @@ rule pcgr:
     output:
         temp(touch('log/pcgr.done'))
 
+rule cpsr_batch:
+    input:
+        lambda wc: rules.cpsr_copy_report.output if batch_by_name[wc.batch].germline_vcf else []
+    output:
+        temp(touch('log/cpsr_{batch}.done'))
+
 rule cpsr:
     input:
-        expand(rules.cpsr_copy_report.output, batch=batch_by_name.keys()) if include_germline else [],
+        expand(rules.cpsr_batch.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/cpsr.done'))
 

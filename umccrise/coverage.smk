@@ -91,7 +91,7 @@ pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'
 rule run_cacao:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        purple_file = rules.purple_run.output.purity,
+        purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
         report = '{batch}/coverage/cacao_{phenotype}/{batch}_' + pcgr_genome + '_coverage_cacao.html'
