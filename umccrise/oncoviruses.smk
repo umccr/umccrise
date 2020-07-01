@@ -25,7 +25,7 @@ checkpoint viral_content:
     threads:
         threads_per_batch
     resources:
-        mem_mb=10000
+        mem_mb = lambda wildcards, attempt: 20000 * attempt,
     benchmark:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
     group: "viral_content"
@@ -62,7 +62,7 @@ rule viral_integration_sites:
     threads:
         threads_per_batch
     resources:
-        mem_mb=10000
+        mem_mb = lambda wildcards, attempt: 10000 * attempt,
     benchmark:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
     group: "viral_is"
