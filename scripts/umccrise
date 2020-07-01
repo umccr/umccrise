@@ -10,15 +10,13 @@ from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
 from ngs_utils.logger import warn, info, critical
+from ngs_utils.snakemake_utils import run_snakemake, make_cluster_cmdl, prep_resources
 from ngs_utils.utils import set_locale; set_locale()
 from ngs_utils import snakemake_utils
 from umccrise import package_path
 from umccrise import _version as version
-from umccrise import prep_inputs, prep_resources
+from umccrise import prep_inputs
 from reference_data import api as refdata
-
-
-DEFAULT_RESTART_TIMES = 2
 
 
 @click.command()
@@ -33,25 +31,27 @@ DEFAULT_RESTART_TIMES = 2
 @click.option('-g', '--genome', 'genome_build',
               help='Genome build for custom runs (GRCh37, hg38). Genome build of bcbio and Dragen runs is '
                    'determined automatically.')
-@click.option('-T', '--target', 'include_stages', multiple=True,
+@click.option('-S', '-T', '--stage', 'include_stages', multiple=True,
               help='Optionally, specific stage to run, e.g.: -T pcgr -T coverage -T structural -T small_variants')
-@click.option('-E', '--skip-target', 'exclude_stages', multiple=True,
+@click.option('-E', '--skip-stage', 'exclude_stages', multiple=True,
               help='Optionally, stages to skip, e.g.: -E oncoviruses -E cpsr')
+#
+# # RNAseq
+# @click.option('--rna-project', 'rna_project', multiple=True,
+#               help='Bcbio RNAseq project with matching samples')
 
 # Cluster
 @click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', type=click.INT,
               help='Maximum number of cores to use at single time (works both for local and cluster runs)')
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
 
-# Debug and snakemakesa
+# Debug and snakemake
 @click.option('--debug', 'debug', is_flag=True, help='More verboe messages. Also sets restart times to 0.')
 @click.option('--unlock', is_flag=True,
               help='Use when you are rerunning after Ctrl+C or an error. Propagated to snakemake.')
-@click.option('--rerun-incomplete', 'rerun_incomplete', is_flag=True,
-              help='Propagated to snakemake.')
 @click.option('-r', '--restarts', '--restart-times', 'restart_times',
               help=f'How many times to try out rerunning rules if they fail. "--restart-times 1" means that the rule '
-                   f'will be attempted maximum 1 time. Default is {DEFAULT_RESTART_TIMES}. The value ropagated '
+                   f'will be attempted maximum 1 time. Default is {snakemake_utils.DEFAULT_RESTART_TIMES}. The value ropagated '
                    f'to snakemake is decremented, because snakemake interprets it as "how many times to restart after '
                    f'the rule is failed").')
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True,
@@ -62,13 +62,13 @@ DEFAULT_RESTART_TIMES = 2
 @click.option('--dag', 'dag', is_flag=True,
               help='Propagated to snakemake. Print the DAG of jobs in the dot language. '
                    'Example usage: umccrise --dag > tmp.txt; cat <cleaned-tmp.txt> | dot -Tsvg > dag.svg')
-@click.option('--resources', 'resources',
+@click.option('--resources', 'hpc_resources',
               help='Can be used to limit the amount of memory allowed to be used, e.g.: --resources mem_mb=1000.'
                    'Propagated to snakemake.')
 
 def main(input_paths, output_dir=None, sample=None, exclude=None, input_genomes_url=None, genome_build=None,
          include_stages:list = None, exclude_stages:list = None, cores=None, cluster=False, debug=False,
-         unlock=False, rerun_incomplete=None, restart_times=None, dryrun=False, report=None, dag=False, resources=None):
+         unlock=False, restart_times=None, dryrun=False, report=None, dag=False, hpc_resources=None):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
 input_paths: a path to inputs:\n
@@ -120,101 +120,50 @@ input_paths: a path to inputs:\n
     #### Setting non-path parameters ####
     #####################################
 
+    if genome_build: conf['genome_build'] = genome_build
+
     if sample:
         conf['sample'] = ','.join(sample)
     if exclude:
         conf['exclude'] = ','.join(exclude)
-
-    if genome_build: conf['genome_build'] = genome_build
 
     if include_stages:
         conf['include_stages'] = ','.join(include_stages)
     if exclude_stages:
         conf['exclude_stages'] = ','.join(exclude_stages)
 
-    if unlock: conf['unlock'] = 'yes'
-    if debug:
-        conf['debug'] = 'yes'
-        if restart_times is None:
-            restart_times = 0
-    if restart_times is None:
-        restart_times = DEFAULT_RESTART_TIMES
-    restart_times = int(restart_times)
-
-    #########################
-    #### Setting cluster ####
-    #########################
-    cluster_param = ''
-    cluster_log_dir = ''
-    if cluster:
-        cluster_log_dir = safe_mkdir(join(log_dir, 'cluster'))
-        cluster_param = snakemake_utils.make_cluster_cmdl(cluster_log_dir, 'umccrise')
-
-    ################################
-    #### Setting CPUs resources ####
-    ################################
     run, batch_by_name = prep_inputs(conf, silent=True)
-    ncpus_per_batch, ncpus_per_sample, ncpus_available, ncpus_per_node, ncpus_local = \
-        prep_resources(num_batches=len(batch_by_name), num_samples=len(run.samples),
-            ncpus_requested=cores, is_cluster=cluster_param != '',)
-    conf['threads_per_batch'] = ncpus_per_batch
-    conf['threads_per_sample'] = ncpus_per_sample
 
-    ###############################
-    #### Building command line ####
-    ###############################
-    cmd = ''
-    snakefile = join(package_path(), 'Snakefile')
-    cmd += (
-        f'snakemake '
-        f'--snakefile {snakefile} '
-        f'--printshellcmds '
-        f'{"--dryrun " if dryrun else ""}'
-        f'{"--rerun-incomplete " if rerun_incomplete else ""}'
-        f'{"--dag " if dag else ""}'
-        f'{f"--report {report} " if report else ""}'
-        f'--directory {output_dir} '
-        f'--cores {ncpus_available} '
-        f'{f"--local-cores {ncpus_local} " if ncpus_local else ""}'
-        f'{f"--restart-times {restart_times - 1}" if restart_times > 1 else ""}'
-        f'{cluster_param} '
-        f'--config {" ".join(k + "=" + str(v) for k, v in conf.items())} '
-        f'{f"--resources {resources} " if resources else ""} '
+    cpu_resources = prep_resources(
+        num_batches=len(batch_by_name),
+        num_samples=len(run.samples),
+        ncpus_requested=cores,
+        ncpus_per_node=refdata.ncpus_on_node,
+        is_cluster=cluster is not None
     )
 
-    #################
-    #### Running ####
-    #################
+    cluster_log_dir = join(log_dir, 'cluster')
+    cluster_param = make_cluster_cmdl(cluster_log_dir, refdata, 'umccrise')
 
-    if unlock:
-        print('* Unlocking previous run... *')
-        run_simple(cmd + ' --unlock')
-        print('* Now rerunning *')
-
-    try:
-        run_simple(cmd)
-    except subprocess.CalledProcessError:
-        logger.error('--------')
-        logger.error(f'Error running Umccrise: snakemake returned a non-zero status. Working directory: {output_dir}')
-        if cluster_log_dir:
-            run_simple(f'chmod -R a+r {cluster_log_dir}', silent=True)
-            logger.error(f'Review cluster job logs in {cluster_log_dir}')
-        for tmp_dir in tmp_dirs: tmp_dir.cleanup()
-        sys.exit(1)
-    except KeyboardInterrupt:
-        logger.error('--------')
-        logger.error(f'Interrupted Umccrise. Fixing logs permissions. Working directory: {output_dir}')
-        if cluster_log_dir:
-            run_simple(f'chmod -R a+r {cluster_log_dir}', silent=True)
-            logger.error(f'Review cluster job logs in {cluster_log_dir}')
-        for tmp_dir in tmp_dirs: tmp_dir.cleanup()
-        sys.exit(1)
-    else:
-        logger.info('--------')
-        if cluster_log_dir:
-            run_simple(f'chmod -R a+r {cluster_log_dir}', silent=True)
-        logger.info(f'Finished. Output directory: {output_dir}')
-        for tmp_dir in tmp_dirs: tmp_dir.cleanup()
+    snakefile = join(package_path(), 'Snakefile')
+    run_snakemake(
+        snakefile, conf,
+        output_dir=output_dir,
+        unlock=unlock,
+        dryrun=dryrun,
+        restart_times=restart_times,
+        debug=debug,
+        cores=cpu_resources.ncpus_available,
+        local_cores=cpu_resources.ncpus_local,
+        ncpus_per_batch=cpu_resources.ncpus_per_batch,
+        ncpus_per_sample=cpu_resources.ncpus_per_sample,
+        resources=hpc_resources,
+        cluster_param=cluster_param,
+        cluster_log_dir=cluster_log_dir,
+        report=report,
+        dag=dag,
+        tmp_dirs=tmp_dirs,
+    )
 
 
 def extract_tarball_input(output_dir, path, description):
