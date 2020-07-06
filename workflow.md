@@ -181,12 +181,8 @@ Umccrise produces 6 reports:
 	* Structural variants,
 	* Copy number variants,
 	* PURPLE QC status,
-	* Circos plot.
-
-
-## Minibam
-
-We optionally can generate a portable mini-version of the BAM file by subsetting it to key cancer genes, somatic variants, and SVs breakpoints.
+	* Circos plot,
+	* Oncoviral content and integration sites.
 
 
 ## Key cancer genes

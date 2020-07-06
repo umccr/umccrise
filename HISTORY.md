@@ -28,7 +28,7 @@ umccrise umccrise sample1.bam sample2.bam sample1.vcf.gz sample3.vcf.gz -o umccr
 - PURPLE updated:
     - Use PURPLE v2.40 that reports tumor mutational load and burden
     - Update COBALT GC profile reference file so it fixes a bug ("We have found an issue with the mappability file which is used by COBALT to decide which windows to fit. The file was created on the full set ref genome, when we should have used the analysis set. The impact is that some large (and important) sections of hg38 which have alt contigs are assigned 0 mappability and filtered by COBALT. Particularly the HLA and ERBB2 regions are affected. We have generated new files already and I have checked them, but we are just testing on some real samples.")
-- Integrated/oncoviruses/oncoviral_breakpoints.tsv OptiType for HLA typing (disabled by default, can be enabled with `-T immuno`)
+- Integrated OptiType for HLA typing (disabled by default, can be enabled with `-T immuno`)
 - Re-engineered usage of stages. Add --include-stage (-T) and --exclude-stages (-E), allowed to be provided multiple times. Stages as positional arguments are no longer supported. Instead of:
 
 ```
