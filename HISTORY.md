@@ -1,4 +1,17 @@
-1.0.0, 1.0.3 (14 Jun 2020):
+1.0.4 (1 Jul 2020)
+
+- Minor fixes:
+    - Fix showing conda package versions
+    - Oncoviruses section in cancer report: fix showing read support
+    - Oncoviruses section in cancer report: rename Pair count -> Read support
+    - MultiQC: fix showing the filtered variants column
+    - Cancer report: suppress rainfall plot debug prints
+- Add PURPLE summary into MultiQC
+- MultiQC: update the background data
+- Coverage stage works for MacOS without docker (mosdepth available for MacOS)
+- Codebuild: revert back the versioned reference data
+
+1.0.0 (14 Jun 2020):
 
 - Integrated [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported viral strains in MultiQC and integration sites and affected genes in the cancer report.
 - More DRAGEN input options:
