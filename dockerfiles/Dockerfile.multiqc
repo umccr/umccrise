@@ -37,3 +37,5 @@ WORKDIR /usr/src/multiqc
 
 # Install MultiQC
 RUN python setup.py install
+
+RUN echo "bcl2fastq: genome_size: 3200000000" >> $HOME/.multiqc_config.yaml

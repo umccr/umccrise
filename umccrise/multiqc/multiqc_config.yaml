@@ -72,6 +72,9 @@ bcftools:
 qualimap:
     general_stats_coverage: 1, 5, 10, 30, 100
 
+bcl2fastq:
+    genome_size: 3200000000
+
 umccr:
     reference_samples:
     - Alice
