@@ -73,6 +73,8 @@ Would check `s3://umccr-refdata-dev/genomes_102`, `s3://umccr-refdata-dev/genome
 
 Downloads the reference data locally into a `~/umccrise_genomes`.
 
+- Germline variants: updated to CPSR 0.5.2.6, which has an option to pass the predispose coding genes _cooridantes_ instead of a list of genes. Passing the same BED file used to generate `-germline.predispose_genes.vcf.gz`, which harmonizes this VCF with the CPSR report, and avoids filtering extra variants by CPSR itself. Visible result: extra variants shown in CPSR reports.
+
 --------------------
 
 0.17.12, 0.17.11 (4 May 2020)
