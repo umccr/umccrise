@@ -139,11 +139,14 @@ input_paths: a path to inputs:\n
         num_samples=len(run.samples),
         ncpus_requested=cores,
         ncpus_per_node=refdata.ncpus_on_node,
-        is_cluster=cluster is not None
+        is_cluster=cluster is not False
     )
 
-    cluster_log_dir = join(log_dir, 'cluster')
-    cluster_param = make_cluster_cmdl(cluster_log_dir, refdata, 'umccrise')
+    cluster_log_dir = None
+    cluster_param = None
+    if cluster is not False:
+        cluster_log_dir = join(log_dir, 'cluster')
+        cluster_param = make_cluster_cmdl(cluster_log_dir, refdata, 'umccrise')
 
     snakefile = join(package_path(), 'Snakefile')
     run_snakemake(
