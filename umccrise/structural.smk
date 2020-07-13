@@ -282,23 +282,24 @@ bcftools view -s {t_name} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}
 
 rule reprioritize_rescued_svs:
     input:
-        vcf = lambda wc: 'work/{batch}/purple/{batch}.purple.sv.vcf.gz' \
+        dummy = lambda wc: 'work/{batch}/purple/{batch}.purple.purity.tsv' \
             if ('purple' in stages or isfile('work/{batch}/purple/{batch}.purple.sv.vcf.gz')) \
             else [],
     output:
         vcf = 'work/{batch}/structural/sv_after_purple/{batch}-manta.vcf.gz',
         tbi = 'work/{batch}/structural/sv_after_purple/{batch}-manta.vcf.gz.tbi',
     params:
+        vcf = 'work/{batch}/purple/{batch}.purple.sv.vcf.gz',
         genome = run.genome_build
     group: "sv_after_purple"
     run:
-        cmd = f'gunzip -c {input.vcf}' \
+        cmd = f'gunzip -c {params.vcf}' \
             f' | prioritize_sv -g {params.genome}' \
             f' | bcftools annotate -x "INFO/ANN"' \
             f' -Oz -o {output.vcf}' \
             f' && tabix -p vcf {output.vcf}'
         shell(cmd)
-        before = count_vars(input.vcf)
+        before = count_vars(params.vcf)
         after = count_vars(output.vcf)
         assert before == after, (before, after)
 
