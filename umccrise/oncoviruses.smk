@@ -164,9 +164,9 @@ def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
             significant = values_dict['significance'] == 'significant'
             viral_data.append((pct_1x, len_5x, ave_depth, virus_name, significant))
     viral_data.sort(reverse=True)
-    there_some_hits = any(sign for p1x, l5x, d, v, sign in viral_data)
-    if not there_some_hits:
-        viral_data = [(p1x, l5x, d, v, sign) for p1x, l5x, d, v, sign in viral_data if sign]
+    hits = [(p1x, l5x, d, v, sign) for p1x, l5x, d, v, sign in viral_data if sign]
+    if hits:
+        viral_data = hits
     else:
         #TODO: use this for a separate oncoviral table:
         # showing all that significant, but at least 3 records even if nothing is significant
@@ -176,7 +176,7 @@ def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
     metric = 'viral_content'
     data = {
         sname: {
-            metric: "; ".join([v for i, (p1x, l5x, d, v, sign) in enumerate(viral_data)]) if there_some_hits else '-'
+            metric: "; ".join([v for i, (p1x, l5x, d, v, sign) in enumerate(viral_data)]) if hits else '-'
         }
     }
     header = {
