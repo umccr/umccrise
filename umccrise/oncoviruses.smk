@@ -100,11 +100,13 @@ rule oncoviruses_breakpoints_tsv:
         viruses = open(input.present_viruses).read().split(',')
         with open(output.tsv, 'w') as out:
             header = ['sample', 'contig', 'start', 'end', 'svtype',
-                      'PAIR_COUNT', 'Genes',  'ID', 'MATEID',]
+                      'PAIR_COUNT', 'DisruptedGenes', 'UpstreamGenes', 'ID', 'MATEID',]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
-                viral_genes = rec.INFO.get('ViralGenes')
-                host_genes = rec.INFO.get('GenesWithin100kb')
+                viral_genes = rec.INFO.get('ViralGenes', '').split(',')
+                disrupted_host_genes = rec.INFO.get('DisruptedGenes', '').split(',')
+                _genes_within_100kb = rec.INFO.get('GenesWithin100kb', '').split(',')
+                upstream_host_genes = [g for g in _genes_within_100kb if g not in disrupted_host_genes]
                 if 'PE' in rec.FORMAT or 'SR' in rec.FORMAT:
                     read_support = 0
                     if 'PE' in rec.FORMAT:
@@ -115,13 +117,16 @@ rule oncoviruses_breakpoints_tsv:
                     read_support = parse_info_field(rec, 'PAIR_COUNT')
                 else:
                     read_support = ''
-                data = [sample_name, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
-                        rec.INFO['SVTYPE'],
-                        str(read_support),
-                        viral_genes if rec.CHROM in viruses else host_genes,
-                        rec.ID,
-                        parse_info_field(rec, 'MATEID'),
-                        ]
+                disrupted_genes = viral_genes if rec.CHROM in viruses else disrupted_host_genes
+                data = [
+                    sample_name, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
+                    rec.INFO['SVTYPE'],
+                    str(read_support),
+                    ', '.join(disrupted_genes) if disrupted_genes else 'None',
+                    '.' if rec.CHROM in viruses else ', '.join(upstream_host_genes),
+                    rec.ID,
+                    parse_info_field(rec, 'MATEID'),
+                ]
                 out.write('\t'.join(map(str, data)) + '\n')
 
 

@@ -1759,14 +1759,17 @@ breakpoints_tsv <- params$oncoviral_breakpoints_tsv
 
 if (breakpoints_tsv != "" && file.exists(breakpoints_tsv)) {
   breakpoints <- readr::read_tsv(breakpoints_tsv, col_names = T, col_types = "cciicicccc")
-  breakpoints %>% 
-    dplyr::select(Contig = contig, Start = start, End = end, `Read support` = PAIR_COUNT, `Affected genes` = Genes, `SV type` = svtype, ID, MATEID) %>%
+  breakpoints %>%
+    dplyr::mutate(Coord = ifelse(is.na(end), start, str_c(start, "-", end))) %>%
+    dplyr::select(Contig = contig, Coord, `Read support` = PAIR_COUNT,
+                  `Disrupted genes` = DisruptedGenes, `Upstream genes` = UpstreamGenes,
+                  `SV type` = svtype, ID, MATEID) %>%
     DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
                   class = "cell-border display compact",
                   rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
                   options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
                                  buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
-    DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+    DT::formatCurrency(~ Coord, currency = "", interval = 3, mark = ",", digits = 0)
 } else {
   viruses = readr::read_file(present_viruses)
   if (str_length(viruses) > 0) {
