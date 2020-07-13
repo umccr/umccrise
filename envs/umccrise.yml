@@ -55,11 +55,11 @@ dependencies:
   - optitype
   - pip:
     - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
-    - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
-    - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
+    - "git+https://github.com/vladsaveliev/NGS_Utils.git@07bcc91eef2ab427ab62ef4d6989b1511cca4d0b#egg=ngs_utils"
+    - "git+https://github.com/vladsaveliev/vcf_stuff.git@3b97188d542b4e39edf2db7bd4bdcf07674b1272#egg=vcf_stuff"
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
     - "git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
-    - "git+https://github.com/umccr/oncoviruses#egg=oncoviruses"
+    - "git+https://github.com/umccr/oncoviruses.git@umccrise104#egg=oncoviruses"
     - "git+https://github.com/umccr/reference_data#egg=reference_data"
