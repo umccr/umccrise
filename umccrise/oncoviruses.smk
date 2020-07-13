@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 from os.path import join, basename
 import yaml
@@ -135,43 +136,47 @@ def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
     with open(prioritized_oncoviruses_tsv) as f:
         ## Viral sequences (from {ONCOVIRAL_SOURCE_URL}) found in unmapped reads
         ## Sample: {SAMPLE}
-        ## Significant completeness: {MIN_SIGNIFICANT_COMPLETENESS}
-        ## Significant coverage: {COMPLETENESS_THRESHOLD}
+        ## Minimal completeness: {MIN_1x_PCT}% at 1x or {MIN_5x_LEN}bp at 5x
         #virus\tsize\tdepth\t1x\t5x\t25x\tsignificance
+        sname, min_1x_pct, min_5x_len = None, None, None
         for l in f:
             if l.startswith('##'):
-                if l.startswith('## Sample'):
-                    sample_name = l.strip().split()[-1]
-                if l.startswith('## Significant completeness'):
-                    significant_completeness = float(l.strip().split()[-1])
-                if l.startswith('## Significant coverage'):
-                    significant_coverage = l.strip().split()[-1]
+                if l.startswith('## Sample:'):
+                    sname = l.strip().split()[-1]
+                    print('Parsed sname', sname)
+                if l.startswith('## Minimal completeness'):
+                    m = re.match(r'## Minimal completeness: (?P<min_1x_pct>[\d.]+)% at 1x or (?P<min_5x_len>[\d.]+)bp at 5x', l)
+                    assert m, l
+                    min_1x_pct = m.group('min_1x_pct')
+                    min_5x_len = m.group('min_5x_len')
                 continue
             if l.startswith('#'):
-                headers = l.strip().split("\t")  # #virus  size    depth   1x      5x      25x
+                assert sname is not None, 'Could not parse sample name from the ## header'
+                assert min_1x_pct is not None, 'Could not parse min_1x_pct from the ## header'
+                assert min_5x_len is not None, 'Could not parse min_5x_len from the ## header'
+                hdr_vals = l.strip().split("\t")  # #virus  size  depth  1x  5x  25x  significance
                 continue
-            values_dict = dict(zip(headers, l.strip().split("\t")))
+            values_dict = dict(zip(hdr_vals, l.strip().split("\t")))
             virus_name = values_dict['#virus']
             ave_depth = float(values_dict['depth'])
-            try:
-                completeness = float(values_dict[significant_coverage])
-            except:
-                print(significant_coverage, values_dict)
-                raise
-            viral_data.append((completeness, ave_depth, virus_name))
+            pct_1x = float(values_dict['1x'])
+            len_5x = int(float(values_dict['5x']) * int(values_dict['size']))
+            significant = values_dict['significance'] == 'significant'
+            viral_data.append((pct_1x, len_5x, ave_depth, virus_name, significant))
     viral_data.sort(reverse=True)
-    there_some_hits = any(c >= significant_completeness for c, d, v in viral_data)
+    there_some_hits = any(sign for p1x, l5x, d, v, sign in viral_data)
     if not there_some_hits:
+        viral_data = [(p1x, l5x, d, v, sign) for p1x, l5x, d, v, sign in viral_data if sign]
+    else:
+        #TODO: use this for a separate oncoviral table:
         # showing all that significant, but at least 3 records even if nothing is significant
         viral_data = viral_data[:2]
-    else:
-        viral_data = [(c, d, v) for c, d, v in viral_data if c >= significant_completeness]
 
     # To add into stats:
     metric = 'viral_content'
     data = {
-        sample_name: {
-            metric: "; ".join([v for i, (c, d, v) in enumerate(viral_data)]) if there_some_hits else '-'
+        sname: {
+            metric: "; ".join([v for i, (p1x, l5x, d, v, sign) in enumerate(viral_data)]) if there_some_hits else '-'
         }
     }
     header = {
@@ -179,8 +184,9 @@ def make_oncoviral_mqc_metric(prioritized_oncoviruses_tsv):
             title='Viruses',
             description=(
                 f'Detected viral sequences associated with cancer, per GDC database. '
-                f'Format: x depth; completeness (% of sequence covered at >{significant_coverage}). '
-                f'Showing significant hits with at least {int(100 * significant_completeness)}% completeness.'
+                f'Format: x depth; 1x completeness (% of sequence covered at >1x), 5x length (base pairs covered at >5x). '
+                f'Showing significant hits with 1x completeness at least {int(100 * pct_1x)}%, '
+                f'or 5x length at least {len_5x}bp.'
             ),
         )
     }
