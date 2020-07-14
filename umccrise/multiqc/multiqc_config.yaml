@@ -63,6 +63,8 @@ table_columns_visible:
         median_coverage: False
     PURPLE:
         QCStatus: False
+        ploidy: False
+        purity: False
 
 bcftools:
     collapse_complementary_changes: False
