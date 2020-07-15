@@ -11,18 +11,18 @@ was generated and the button that launches the welcome tour.
 <style type="text/css">{{ include_file('assets/css/multiqc_umccr.css') }}</style>
 
 <script>
-    window.mqc_highlight_regex_mode = true;
+    let regex_mode = true;
 
     {% if config.umccr.batch %}
-    window.mqc_highlight_f_texts = [
+    let f_texts = [
         "^{{ config.umccr.tumor_name }}$",
         "^{{ config.umccr.tumor_rgid }}$",
         "^{{ config.umccr.tumor_rgid }} \\({{ config.umccr.batch }}\\)$",
         "^{{ config.umccr.normal_name }}$",
         "^{{ config.umccr.normal_rgid }}$",
-        "^{{ config.umccr.normal_rgid }} \\({{ config.umccr.batch }}\\)$"
+        "^{{ config.umccr.normal_rgid }} \\({{ config.umccr.batch }}\\)$",
     ];
-    window.mqc_highlight_f_cols = [
+    let f_cols = [
         "rgb(228, 26, 28)",
         "rgb(228, 26, 28)",
         "rgb(228, 26, 28)",
@@ -33,14 +33,15 @@ was generated and the button that launches the welcome tour.
     {% endif %}
 
     {% for ref_sample in config.umccr.reference_samples %}
-    window.mqc_highlight_f_texts.push("^{{ ref_sample }}$");
-    window.mqc_highlight_f_cols.push("#cccccc");
+    f_texts.push("^{{ ref_sample }}$");
+    f_cols.push("#cccccc");
     {% endfor %}
 
-    $(function(e, regex_mode){
-      var f_texts = window.mqc_highlight_f_texts;
-      var f_cols = window.mqc_highlight_f_cols;
+    window.mqc_highlight_f_texts = f_texts;
+    window.mqc_highlight_f_cols = f_cols;
+    window.mqc_highlight_regex_mode = regex_mode;
 
+    $(function(e, regex_mode){
       $('.mqc_table_sortHighlight').hide();
       $('.mqc_table tbody th').removeClass('highlighted').removeData('highlight');
       $('.mqc_table tbody th').each(function(i){
@@ -58,7 +59,7 @@ was generated and the button that launches the welcome tour.
       });
     });
 
-    $(function () { fastqc_seq_content_heatmap(); });
+    // $(function () { fastqc_seq_content_heatmap(); });
 
     $(function(){
       // Replot graphs
