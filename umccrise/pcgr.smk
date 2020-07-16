@@ -20,9 +20,9 @@ rule run_pcgr:
         pcgr_data = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
         purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
     output:
-        'work/{batch}/pcgr/{batch}-somatic.pcgr.html',
-        'work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',
-        # '{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
+        html = 'work/{batch}/pcgr/{batch}-somatic.pcgr.html',
+        vcf = 'work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',
+        tsv = '{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
     params:
         genome = run.genome_build,
         sample_name = '{batch}-somatic',
@@ -44,12 +44,14 @@ rule run_pcgr:
 
 rule pcgr_copy_report:
     input:
-        rules.run_pcgr.output[0]
+        html = rules.run_pcgr.output.html,
+        tsv = rules.run_pcgr.output.tsv
     output:
-        '{batch}/{batch}-somatic.pcgr.html'
+        html = '{batch}/{batch}-somatic.pcgr.html',
+        tsv = '{batch}/small_variants/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
     group: 'pcgr'
     shell:
-        'cp {input} {output}'
+        'cp {input.html} {output.html}; cp {input.tsv} {output.tsv}'
 
 
 rule run_cpsr:
