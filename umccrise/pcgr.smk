@@ -22,7 +22,7 @@ rule run_pcgr:
     output:
         html = 'work/{batch}/pcgr/{batch}-somatic.pcgr.html',
         vcf = 'work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',
-        tsv = '{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
+        tsv = 'work/{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
     params:
         genome = run.genome_build,
         sample_name = '{batch}-somatic',
