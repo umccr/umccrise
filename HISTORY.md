@@ -1,3 +1,8 @@
+1.0.7 (16 Jul 2020)
+
+- Oncoviruses: decreased the significance threshold to report candidate viruses
+- MultiQC: fix missing variant substitutions plots
+
 1.0.4 (1 Jul 2020)
 
 - Minor fixes:
