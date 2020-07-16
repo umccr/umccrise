@@ -1,7 +1,8 @@
-1.0.7 (16 Jul 2020)
+1.0.8 (16 Jul 2020)
 
 - Oncoviruses: decreased the significance threshold to report candidate viruses
 - MultiQC: fix missing variant substitutions plots
+- PCGR: copy the PCGR TSV file into small_variants
 
 1.0.4 (1 Jul 2020)
 
