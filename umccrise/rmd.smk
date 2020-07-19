@@ -37,7 +37,7 @@ rule subset_to_giab:
         regions = refdata.get_ref_file(run.genome_build, key=['hmf_giab_conf'])
     output:
         'work/{batch}/rmd/afs/somatic-confident.vcf.gz'
-    group: "rmd"
+    group: "rmd_prep"
     shell:
         'bcftools view {input.vcf} -R {params.regions} -Oz -o {output}'
 
@@ -48,7 +48,7 @@ rule split_multiallelic:
         ref_fa = refdata.get_ref_file(run.genome_build, key='fa')
     output:
         'work/{batch}/rmd/afs/somatic-confident-singleallelic.vcf.gz'
-    group: "rmd"
+    group: "rmd_prep"
     shell:
         'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
         'bcftools norm -m \'-\' -f {input.ref_fa} -Ob | ' 
@@ -62,7 +62,7 @@ rule afs:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid
     output:
         'work/{batch}/rmd/afs/af_tumor.txt'
-    group: "rmd"
+    group: "rmd_prep"
     shell:
         'bcftools view {input} -s {params.tumor_name} -Ou | '
         '(printf "af\n"; bcftools query -f "%INFO/TUMOR_AF\\n") > {output} '
@@ -77,46 +77,14 @@ rule afs_keygenes:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid
     output:
         'work/{batch}/rmd/afs/af_tumor_keygenes.txt'
-    group: "rmd"
+    group: "rmd_prep"
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
         ' | bedtools intersect -a stdin -b {input.bed} -header'
         ' | (printf "chrom\\tpos\\tid\\tref\\talt\\taf\\n" ; bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\n")'
         ' > {output} && test -e {output}'
 
-## Mutational signatures VCF
-#
-# Somatic calls to be submitted to CGI. Sharing functionality does not seem to work at this point.
-# Somatic calls only include variants that `PASS` so no additional filtering required.
-#
-# Finally, for the local analysis with MutationalPatterns generate UCSC-versions (hg19) of the somatic calls:
-rule somatic_to_hg19:
-    input:
-        vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
-    output:
-        'work/{batch}/rmd/somatic-with_chr_prefix.vcf'
-    group: "rmd"
-    run:
-        if run.genome_build == 'GRCh37':
-            shell('gunzip -c {input}'
-            " | py -x \"x.replace('##contig=<ID=', '##contig=<ID=chr') if x.startswith('#') else 'chr' + x\""
-            " | py -x \"x.replace('chrMT', 'chrM')\""
-            ' | grep -v chrG > {output}')
-        else:
-            shell('gunzip -c {input} > {output}')
 
-
-# select chr, start, end, gene, min/max_cn, TranscriptID and ChromosomeBand
-#rule rmd_purple_cnv:
-#    input:
-#        purple_cnv = rules.purple_run.output.gene_cnv,
-#    output:
-#        'work/{batch}/rmd/purple.tsv'
-#    group: "rmd"
-#    shell:
-#        'cut -f1-6,11,13 {input} > {output}'
-
-# I hope this can work on a worker node with the other rmd groupies. If not, add to localrules.
 rule conda_list:
     output:
         txt = 'work/conda_pkg_list.txt'
@@ -135,7 +103,7 @@ rule cancer_report:
         key_genes            = get_key_genes(),
         af_global            = rules.afs.output[0],
         af_keygenes          = rules.afs_keygenes.output[0],
-        somatic_snv          = rules.somatic_to_hg19.output[0],
+        somatic_snv          = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
         somatic_sv           = lambda wc: rules.prep_sv_tsv.output[0]
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
         purple_gene_cnv      = rules.purple_run.output.gene_cnv,
@@ -177,7 +145,6 @@ rule cancer_report:
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
         rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
-    group: "rmd"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
