@@ -7,7 +7,7 @@ from umccrise import get_purity
 from reference_data import api as refdata
 
 
-localrules: coverage, cacao, goleft, mosdepth
+localrules: coverage, cacao_symlink, cacao, goleft, mosdepth
 
 
 MIN_VD = 12     # minimal coverage to call a pure heterozygous variant
@@ -94,10 +94,11 @@ rule run_cacao:
         purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
-        report = '{batch}/coverage/cacao_{phenotype}/{batch}_' + pcgr_genome + '_coverage_cacao.html'
+        html = 'work/{batch}/coverage/cacao_{phenotype}/{batch}_' + pcgr_genome + '_coverage_cacao.html',
+        json = 'work/{batch}/coverage/cacao_{phenotype}/{batch}_' + pcgr_genome + '_coverage_cacao.json',
     params:
         cacao_data = refdata.get_ref_file(genome=run.genome_build, key='cacao_data'),
-        output_dir = '{batch}/coverage/cacao_{phenotype}',
+        output_dir = lambda wc, input, output: dirname(output.html),
         docker_opt = '--no-docker' if not which('docker') else '',
         sample_id = '{batch}',
         mode = lambda wc: 'hereditary' if wc.phenotype == 'normal' else 'somatic',
@@ -118,15 +119,14 @@ rule run_cacao:
 
 rule cacao_symlink:
     input:
-        rules.run_cacao.output.report
+        rules.run_cacao.output.html,
+        rules.run_cacao.output.json,
     output:
-        '{batch}/{batch}-{phenotype}.cacao.html'
-    group: 'cacao'
-    run:
-        safe_symlink(input[0], output[0], rel=True)
+        '{batch}/{batch}-{phenotype}.cacao.html',
+        '{batch}/coverage/{batch}-{phenotype}.cacao.json',
+    shell:
+        'cp {input[0]} {output[0]} ; cp {input[1]} {output[1]}'
 
-
-#####
 
 rule cacao:
     input:
