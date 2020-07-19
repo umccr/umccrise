@@ -1,3 +1,4 @@
+import glob
 from ngs_utils.utils import update_dict
 from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
 import yaml
@@ -11,7 +12,7 @@ from umccrise import package_path
 localrules: multiqc
 
 
-def load_background_samples(genome_build, project_type ='dragen'):
+def load_background_samples(genome_build, project_type='dragen'):
     paths = []
     if project_type == 'bcbio':
         gold_standard_dir = join(package_path(), 'multiqc', 'gold_standard', 'umccrised.qconly.renamed')
@@ -54,7 +55,7 @@ def find_bcbio_qc_files(batch: BcbioBatch, dst_dir):
             '.*.html',
             '.*verifybamid.*',
             '.*gdc-viral-completeness.txt',
-        ],
+        ] + (['.*peddy.*'] if 'peddy' in stages else []),
         include_files=[
             f'.*{batch.name}.*',
             f'.*{batch.tumor.name}.*',
@@ -75,6 +76,8 @@ rule prep_multiqc_data:
         oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml,
         purple_stats            = rules.purple_run.output.purity,
         purple_qc               = rules.purple_run.output.qc,
+        peddy_dirs              = expand(rules.run_peddy.output.dir.replace('{batch}', '{{batch}}'), phenotype=['normal'])
+                                    if 'peddy' in stages else [],
     output:
         filelist                = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -131,6 +134,13 @@ rule prep_multiqc_data:
             renamed_purple_qc,
             renamed_purple_stats,
         ])
+        peddy_files = []
+        for d in input.peddy_dirs:
+            peddy_files.extend(glob.glob(join(d, '*.peddy.ped')))
+            peddy_files.extend(glob.glob(join(d, '*.het_check.csv')))
+            peddy_files.extend(glob.glob(join(d, '*.ped_check.csv')))
+            peddy_files.extend(glob.glob(join(d, '*.sex_check.csv')))
+        qc_files.extend(peddy_files)
 
         if isinstance(batch, BcbioBatch):
             qc_files.extend(find_bcbio_qc_files(batch, params.data_dir))

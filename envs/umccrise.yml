@@ -53,6 +53,7 @@ dependencies:
   - sambamba    # for oncoviruses & optitype
   - pysam       # for oncoviruses
   - optitype
+  - peddy
   - pip:
     - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
