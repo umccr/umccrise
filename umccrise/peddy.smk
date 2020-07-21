@@ -27,7 +27,7 @@ rule create_ped_file:
 
 rule run_peddy:
     input:
-        vcf = lambda wc: batch_by_name[wc.batch].germline_vcf or [],
+        vcf = 'work/{batch}/small_variants/germline/{batch}-germline-PASS.vcf.gz',
         ped = 'work/{batch}/peddy.ped',
     output:
         dir = directory('work/{batch}/peddy')
