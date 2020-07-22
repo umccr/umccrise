@@ -148,7 +148,8 @@ MultiQC aggregates QC from different tools. We report the following:
 * Sample contamination level (for both tumor and normal) and tumor/normal concordance (by [Conpair](https://github.com/nygenome/Conpair)),
 * Ancestry and sex (by [Peddy](https://github.com/brentp/peddy)),
 * Mapping QC: the number of mapped reads, paired reads, secondary or duplicated alignments, average coverage (using samtools stats and mosdepth in bcbio),
-* Viral DNA content (in bcbio),
+* Viral content and integration sites ([oncoviruses](https://github.com/umccr/oncoviruses)),
+* PURPLE stats: QC, sex, purity/ploidy, TMB and MSI statuses
 * Number of pre- and post-filtered SNPs and indels (by Umccrise) which indicates germline leakage,
 * Coverage profile by goleft,
 * Variants QC for filtered germline and somatic variants (by bcftools),
