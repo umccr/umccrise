@@ -235,7 +235,6 @@ The following stages are run by default:
 * `oncoviruses`
 * `cancer_report`
 * `multiqc`
-* `default` (includes all above)
 
 The following stages are optionally available and can be enabled with `-T`:
 
@@ -247,9 +246,6 @@ Example:
 ```shell
 # Run only multiqc and PCGR:
 umccrise /bcbio/final/ -T multiqc -T pcgr
-
-# Run all default stages plus the "immuno" stage (HLA typing)
-umccrise /bcbio/final/ -T default -T immuno
 ```
 
 To exclude stages, use `-E`:
