@@ -63,12 +63,12 @@ rule viral_integration_sites:
     threads:
         threads_per_batch
     resources:
-        mem_mb = lambda wildcards, attempt: 10000 * attempt,
+        mem_mb = lambda wildcards, attempt: 20000 * attempt,
     benchmark:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
     group: "viral_is"
     shell:
-        'oncoviruses {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
+        'oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
         '--genomes-dir {params.genomes_dir} {params.unlock_opt} -v $(cat {input.significant_viruses})'
         '; cp {params.work_dir}/breakpoints.vcf.gz {output.breakpoints_vcf}'
 
