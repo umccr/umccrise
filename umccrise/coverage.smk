@@ -106,7 +106,6 @@ rule run_cacao:
     resources:
         mem_mb=8000
     threads: threads_per_sample
-    group: 'cacao'
     run:
         low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)
         cutoffs = f'0:{low_cov}:{high_cov}'

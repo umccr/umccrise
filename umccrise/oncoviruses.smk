@@ -31,7 +31,7 @@ checkpoint viral_content:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
     group: "viral_content"
     run:
-        shell('oncoviruses {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
+        shell('oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
               '--genomes-dir {params.genomes_dir} {params.unlock_opt} --only-detect')
         # if verify_file(join(params.work_dir, 'breakpoints.vcf.gz')):
         #     shell('cp {params.work_dir}/breakpoints.vcf.gz {params.breakpoints_vcf}')

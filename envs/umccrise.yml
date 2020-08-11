@@ -10,9 +10,6 @@ dependencies:
   - python ==3.7.3
   - pip
   - git
-  - ngs_utils
-  - natsort  # for bcbio.py in ngs_utils
-  - tsvtools
   - cython
   - bcftools >=1.9
   - openssl >=1.1
@@ -32,8 +29,6 @@ dependencies:
   - pyyaml >=4  # for multiqc
   - multiqc
   - nose
-  - versionpy
-  - bed_annotation
   - pyensembl
   - break-point-inspector
   - gatk4 ==4.1.4.1  # Conpair and panel of normals (pinning for Conpair)
@@ -54,13 +49,17 @@ dependencies:
   - pysam       # for oncoviruses
   - optitype
   - peddy
+  #
+  - tsvtools
+  - ngs_utils
+  - versionpy
+  - bed_annotation
+  - oviraptor
+  - natsort  # for bcbio.py in ngs_utils
   - pip:
-    - "git+https://github.com/vladsaveliev/versionpy#egg=versionpy"
-    - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"
     - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
     - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
     - "git+https://github.com/vladsaveliev/MultiQC#egg=multiqc"
     - "git+https://github.com/vladsaveliev/MultiQC_bcbio#egg=multiqc_bcbio"
-    - "git+https://github.com/umccr/oncoviruses#egg=oncoviruses"
     - "git+https://github.com/umccr/reference_data#egg=reference_data"
