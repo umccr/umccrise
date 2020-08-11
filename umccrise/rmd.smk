@@ -120,7 +120,7 @@ rule cancer_report:
         purple_clonality_png = 'work/{batch}/purple/plot/{batch}.somatic.clonality.png',
         purple_ploidy_png    = 'work/{batch}/purple/plot/{batch}.somatic.png',
         purple_rainfall_png  = 'work/{batch}/purple/plot/{batch}.somatic.rainfall.png',
-        purple_baf_png       = 'work/{batch}/purple/circos/{batch}.baf.circos',
+        purple_baf_png       = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png',
 
         wait_for_integration_sites = get_integration_sites_tsv_fn,
         oncoviral_present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
