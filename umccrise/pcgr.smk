@@ -18,7 +18,7 @@ rule run_pcgr:
         vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
         # cns = '{batch}/purple/{batch}.purple.cnv',
         pcgr_data = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
-        purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
+        purple_file = 'work/{batch}/purple/{batch}.purple.purity.tsv' if 'purple' in stages else [],
     output:
         html = 'work/{batch}/pcgr/{batch}-somatic.pcgr.html',
         vcf = 'work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',

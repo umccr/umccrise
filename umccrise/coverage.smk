@@ -32,7 +32,7 @@ rule run_mosdepth:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
-        purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
+        purple_file = 'work/{batch}/purple/{batch}.purple.purity.tsv' if 'purple' in stages else [],
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
         '{batch}/coverage/{batch}-{phenotype}.quantized.bed.gz',
@@ -91,7 +91,7 @@ pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'
 rule run_cacao:
     input:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        purple_file = rules.purple_run.output.purity if 'purple' in stages else [],
+        purple_file = 'work/{batch}/purple/{batch}.purple.purity.tsv' if 'purple' in stages else [],
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
         html = 'work/{batch}/coverage/cacao_{phenotype}/{batch}_' + pcgr_genome + '_coverage_cacao.html',
