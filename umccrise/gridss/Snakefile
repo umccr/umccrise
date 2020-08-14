@@ -1,15 +1,16 @@
 import os
 from os.path import join
+from umccrise import package_path
 
 
-T_BAM         = config['tumor_bam']
-N_BAM         = config.get('normal_bam')
-T_NAME        = config.get('tumor_name')
-N_NAME        = config.get('normal_name')
-OUT_DIR       = config['output_dir']
-THREADS       = config.get('cores', 20)
-WORK_DIR      = join(OUT_DIR, 'work')
-GRIDSS_JAR    = config['gridss_jar']
+T_BAM             = config['tumor_bam']
+N_BAM             = config.get('normal_bam')
+T_NAME            = config.get('tumor_name')
+N_NAME            = config.get('normal_name')
+OUT_DIR           = config['output_dir']
+THREADS           = config.get('cores', 8)
+GRIDSS_JAR        = config['gridss_jar']
+GRIDSS_ENV        = config.get('gridss_env')
 
 ## Reference files
 GENOME            = config.get('genome', 'hg38')
@@ -17,6 +18,9 @@ REF_FA            = config.get('ref_fa')
 BLACKLIST         = config.get('blacklist')
 VIRUSES_FA        = config.get('viruses_fa')
 REPEAT_MASKER_BED = config.get('repeat_masker_bed')
+BREAKEND_PON      = config.get('breakend_pon')
+BP_PON            = config.get('bp_pon')
+BP_HOTSPOTS       = config.get('bp_hotspots')
 try:
     from reference_data import api as refdata
 except:
@@ -24,39 +28,27 @@ except:
 else:
     if config.get('genomes_dir'):
         refdata.find_genomes_dir(config.get('genomes_dir'))
-    REF_FA     = REF_FA or refdata.get_ref_file(genome=GENOME, key='fa')
-    BLACKLIST  = BLACKLIST or refdata.get_ref_file(genome=GENOME, key='blacklist')
-    VIRUSES_FA = VIRUSES_FA or refdata.get_ref_file(genome=GENOME, key='gdc_viral_fa')
+    REF_FA       = REF_FA       or refdata.get_ref_file(genome=GENOME, key='fa')
+    BLACKLIST    = BLACKLIST    or refdata.get_ref_file(genome=GENOME, key='blacklist')
+    VIRUSES_FA   = VIRUSES_FA   or refdata.get_ref_file(genome=GENOME, key='gdc_viral_fa')
+    BREAKEND_PON = BREAKEND_PON or refdata.get_ref_file(genome=GENOME, key='gridss_breakend_pon')
+    BP_PON       = BP_PON       or refdata.get_ref_file(genome=GENOME, key='gridss_bp_pon')
+    BP_HOTSPOTS  = BP_HOTSPOTS  or refdata.get_ref_file(genome=GENOME, key='gridss_bp_hotspots')
 
-METRICS_RECORDS = config.get('metricsrecords', 10000000)
-MAX_COVERAGE    = config.get('maxcoverage', 50000)
-JVM_HEAP        = config.get('jvm_heap', '25g')
-
-
-# chunk_size = 1000_000
-# chunk_sequence_change_penalty = 100_000
-#
-# gridss_properties = join(work_dir, 'gridss.properties')
-# with open(gridss_properties, 'w') as f:
-#     f.write(f'''
-# chunkSize={chunk_size}
-# chunkSequenceChangePenalty={chunk_sequence_change_penalty}
-# ''')
-#
-# gridss_cmd_common = f'''
-# {gridss_scripts_dir}/gridss.sh
-# -r {ref_fa}
-# -o {output_dir}/{tumor_name}.sv.vcf
-# -a {output_dir}/{tumor_name}.asm.bam
-# -j {gridss_jar}
-# -w {work_dir}
-# -c {gridss_properties}
-# '''
+MAX_COVERAGE    = config.get('max_coverage')
+JVM_HEAP        = config.get('jvm_heap')
+if JVM_HEAP:
+    JVM_HEAP = min(JVM_HEAP, 32)
+ALIGNER         = config.get('externalaligner')
+CHUNK_SIZE_MIL  = config.get('chunksize_mil')
+MIN_TUMOR_AF    = config.get('min_tumor_af')
 
 
 rule all:
     input:
-        vcf = join(WORK_DIR, 'gridss.viral.vcf.gz'),
+        vcf = join(OUT_DIR, '3_somatic_filter', T_NAME + '-gridss.vcf.gz') \
+              if N_BAM else \
+              join(OUT_DIR, '2_annotate_viruses', T_NAME + '-gridss.vcf.gz'),
 
 
 rule gridss_main:
@@ -66,28 +58,49 @@ rule gridss_main:
         blacklist = BLACKLIST,
         ref_fa = REF_FA,
     output:
-        vcf = join(WORK_DIR, 'gridss.vcf.gz'),
-        assembly = join(WORK_DIR, 'assembly.bam'),
+        vcf = join(OUT_DIR, '1_gridss_main', T_NAME + '-gridss.vcf.gz'),
+        assembly = join(OUT_DIR, '1_gridss_main', T_NAME + '-assembly.bam'),
     params:
-        work_dir = WORK_DIR
+        work_dir = join(OUT_DIR, 'work'),
+        jvm_heap_opt = f'--jvmheap {JVM_HEAP}' if JVM_HEAP else '',
+        max_cov_opt = f'--maxcoverage {MAX_COVERAGE}' if MAX_COVERAGE else '',
+        aligner_opt = f'--externalaligner {ALIGNER}' if ALIGNER else '',
+        rmsk_opt = f'--repeatmaskerbed {REPEAT_MASKER_BED}' if REPEAT_MASKER_BED else '',
+        labels = ','.join(n for n in [N_NAME, T_NAME] if n),
+        export_path = f'export PATH={GRIDSS_ENV}/bin:$PATH; ' if GRIDSS_ENV else '',
     threads: THREADS
-    shell:
-        'gridss '
-        '--reference {input.ref_fa} '
-        '--output {output.vcf} '
-        '--assembly {output.assembly} '
-        '--threads {threads} '
-        '--workingdir {params.work_dir} '
-        '--blacklist {input.blacklist} '
-        '{input.normal_bam} {input.tumor_bam}'
+    run:
+        conf_opt = ''
+        if CHUNK_SIZE_MIL:
+            chunk_size = CHUNK_SIZE_MIL * 1_000_000
+            gridss_properties = join(params.work_dir, 'gridss.properties')
+            with open(gridss_properties, 'w') as f:
+                f.write(f'chunkSize={chunk_size}\n')
+            conf_opt = f'--configuration {gridss_properties}'
+
+        shell(
+            '{params.export_path} gridss '
+            '--reference {input.ref_fa} '
+            '--output {output.vcf} '
+            '--assembly {output.assembly} '
+            '--threads {threads} '
+            '--workingdir {params.work_dir} '
+            '--blacklist {input.blacklist} '
+            '--labels {params.labels} '
+            '{params.jvm_heap_opt} '
+            '{params.max_cov_opt} '
+            '{params.rmsk_opt} '
+            '{conf_opt} '
+            '{input.normal_bam} {input.tumor_bam}'
+        )
 
 
 rule annotate_viral_sequences:
     input:
-        vcf = join(WORK_DIR, 'gridss.vcf.gz'),
+        vcf = rules.gridss_main.output.vcf,
         virues_fa = VIRUSES_FA,
     output:
-        vcf = join(WORK_DIR, 'gridss.viral.vcf.gz'),
+        vcf = join(OUT_DIR, '2_annotate_viruses', T_NAME + '-gridss.vcf.gz'),
     params:
         jar = GRIDSS_JAR,
         mem = '6g',
@@ -102,31 +115,29 @@ rule annotate_viral_sequences:
         'ALIGNMENT=APPEND'
 
 
-if REPEAT_MASKER_BED:
-    rule annotate_repeats:
+if N_BAM:
+    rule somatic_filter:
         input:
-            vcf = join(WORK_DIR, 'gridss.viral.vcf.gz'),
-            repeat_masker_bed = REPEAT_MASKER_BED,
+            vcf = rules.annotate_viral_sequences.output.vcf,
             ref_fa = REF_FA,
+            breakend_pon = BREAKEND_PON,
+            bp_pon = BP_PON,
+            bp_hotspots = BP_HOTSPOTS,
         output:
-            vcf = join(WORK_DIR, 'gridss.viral.repeats.vcf.gz'),
+            vcf = join(OUT_DIR, '3_somatic_filter', T_NAME + '-gridss.vcf.gz'),
         params:
-            jar = GRIDSS_JAR,
-            mem = '3g',
-        threads: THREADS
+            min_tumor_af_opt = f'-min_tumor_af {MIN_TUMOR_AF}' if MIN_TUMOR_AF else '',
+            tumor_name = T_NAME,
+            export_path = f'export PATH={GRIDSS_ENV}/bin:$PATH; ' if GRIDSS_ENV else '',
         shell:
-            'java -Xmx{parmas.mem} -cp {params.jar} '
-            'gridss.AnnotateInsertedSequence '
-            'REFERENCE_SEQUENCE={input.ref_fa} '
-            'INPUT={input.vcf} '
-            'OUTPUT={output.vcf} '
-            'WORKER_THREADS={threads} '
-            'ALIGNMENT=REPLACE '
-            'REPEAT_MASKER_BED={repeat_masker_bed}'
-
-
-
-
-
-
+            '{params.export_path} gripss -Xms4G -Xmx16G '
+            '-input_vcf {input.vcf} '
+            '-output_vcf {output.vcf} '
+            '-ref_genome {input.ref_fa} '
+            '-breakend_pon {input.breakend_pon} '
+            '-breakpoint_pon {input.bp_pon} '
+            '-breakpoint_hotspot {input.bp_hotspots} '
+            '{params.min_tumor_af_opt} '
+            '-tumor {params.tumor_name} && '
+            'test 0 -ne $(gunzip -c {output.vcf} | wc -l)'
 

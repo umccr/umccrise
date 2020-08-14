@@ -32,7 +32,16 @@ from reference_data import api as refdata
               'Can be s3 or gds. Alternative to --gridss-ref-dir')
 @click.option('--ref-fa', 'ref_fa', help='Path to reference fasta (e.g. hg38)')
 @click.option('--viruses-fa', 'viruses_fa', help='Path to viral sequences bwa index prefix '
-                                                 '(e.g. gdc-viral.fa from bcbio bundle)')
+              '(e.g. gdc-viral.fa from bcbio bundle)')
+@click.option('--repeat-masker-bed', 'repeat_masker_bed', help='bedops rmsk2bed BED file for genome')
+
+# Somatic filtering (GRIPSS)
+@click.option('--breakend-pon', 'breakend_pon', help='Single breakend pon bed file, for somatic filtering (GRIPSS)')
+@click.option('--bp-pon', 'bp_pon', help='Paired breakpoint pon bedpe file, for somatic filtering (GRIPSS)')
+@click.option('--bp-hotspots', 'bp_hotspots', help='Paired breakpoint hotspot bedpe file '
+              '(typically known fusion pairs) for somatic filtering (GRIPSS)')
+@click.option('--min-tumor-af', 'min_tumor_af', type=click.FLOAT,
+              help='Min tumor allelic frequency [0.005], for somatic filtering (GRIPSS)')
 
 # Snakemake params:
 @click.option('-t', '--threads', '-j', '--jobs', '--cores', 'requested_cores', type=click.INT,
@@ -42,15 +51,32 @@ from reference_data import api as refdata
               help='Propagated to snakemake. Prints rules and commands to be run without actually '
                    'executing them.')
 
+# Gridss options
+@click.option('--maxcoverage', 'maxcoverage', help='maximum coverage. Regions with coverage in excess of'
+              ' this are ignored.')
+@click.option('--chunksize-mil', 'chunksize_mil', help='In case if GRIDSS has attempted to open too many files '
+              'at once and the OS file handle limit has been reached, it\'s useful to increase the chunk size '
+              'from 10 million to 50 million using --chunksize-mil 50')
+@click.option('--jvm_heap', 'jvm_heap', help='size of JVM heap for assembly and variant calling (-Xmx java parameter). '
+              'Defaults to 25g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory.'
+              'However the maximum value is 32 to avoid Java\'s use of Compressed Oops which will effectively reduce '
+              'the memory available to GRIDSS Recommendations: at least 4GB + 2GB per thread.')
+@click.option('--externalaligner', 'externalaligner', type=click.Choice('bwa', 'minimap2'),
+              help='Aligner to use: bwa or minimap2. BWA is more accurate, '
+                   'but minimap2 does not require index and works much faster')
+
 def main(output_dir=None, tumor_bam=None, normal_bam=None, normal_name=None, tumor_name=None,
-         genome=None, input_genomes_url=None, ref_fa=None, viruses_fa=None,
-         requested_cores=None, unlock=False, dryrun=False):
+         genome=None, input_genomes_url=None, ref_fa=None, viruses_fa=None, repeat_masker_bed=None,
+         breakend_pon=None, bp_pon=None, bp_hotspots=None, min_tumor_af=None,
+         requested_cores=None, unlock=False, dryrun=False,
+         maxcoverage=None, chunksize_mil=None, jvm_heap=None, externalaligner=None):
 
     conf = {}
 
     output_dir = output_dir or 'gridss_results'
     output_dir = safe_mkdir(abspath(output_dir))
-    logger.init(log_fpath_=join(output_dir, 'gridss.log'), save_previous=True)
+    log_dir = safe_mkdir(join(output_dir, 'log'))
+    logger.init(log_fpath_=join(log_dir, 'gridss.log'), save_previous=True)
     if isfile(join(output_dir, 'work', 'all.done')):
         run_simple('rm ' + join(output_dir, 'work', 'all.done'))
     conf['output_dir'] = adjust_path(output_dir)
@@ -66,12 +92,22 @@ def main(output_dir=None, tumor_bam=None, normal_bam=None, normal_name=None, tum
     conf['tumor_name'] = tumor_name
 
     try:
-        cores = len(os.sched_getaffinity(0))
+        machine_cores = len(os.sched_getaffinity(0))
     except:
-        cores = 1
+        machine_cores = 1
+    cores = min(machine_cores, 8)
     if requested_cores:
-        cores = min(requested_cores, cores)
+        cores = min(cores, requested_cores)
     conf['cores'] = cores
+
+    if maxcoverage:
+        conf['maxcoverage'] = maxcoverage
+    if chunksize_mil:
+        conf['chunksize_mil'] = chunksize_mil
+    if jvm_heap:
+        conf['jvm_heap'] = jvm_heap
+    if externalaligner:
+        conf['externalaligner'] = externalaligner
 
     conf['genome'] = genome
     try:
@@ -85,20 +121,40 @@ def main(output_dir=None, tumor_bam=None, normal_bam=None, normal_name=None, tum
             conf['genomes_dir'] = genomes_dir
 
     if ref_fa:
-        if not verify_file(ref_fa + '.bwt'):
-            log.critical(f'Please, index {ref_fa} with `bwa index {ref_fa}`')
+        if not externalaligner == 'minimap2' and not verify_file(ref_fa + '.bwt'):
+            log.critical(f'Please, index {ref_fa} using'
+                         f'    bwa index {ref_fa}')
         if not verify_file(ref_fa + '.fai'):
-            log.critical(f'Please, index {ref_fa} with `samtools faidx {ref_fa}`')
+            log.critical(f'Please, index {ref_fa} using'
+                         f'    samtools faidx {ref_fa}')
         conf['ref_fa'] = ref_fa
     if viruses_fa:
-        if not verify_file(viruses_fa + '.bwt'):
-            log.critical(f'Please, index {viruses_fa} with `bwa index {viruses_fa}`')
+        if not externalaligner == 'minimap2' and not verify_file(viruses_fa + '.bwt'):
+            log.critical(f'Please, index {viruses_fa} using: '
+                         f'    bwa index {viruses_fa}')
         if not verify_file(viruses_fa + '.fai'):
-            log.critical(f'Please, index {viruses_fa} with `samtools faidx {viruses_fa}`')
+            log.critical(f'Please, index {viruses_fa} using '
+                         f'    samtools faidx {viruses_fa}')
         dict_file = viruses_fa.replace('.fa', '.dict')
         if not verify_file(dict_file):
-            log.critical(f'Please, index {viruses_fa} with `samtools dict {viruses_fa} -o {dict_file}`')
+            log.critical(f'Please, index {viruses_fa} using: '
+                         f'   samtools dict {viruses_fa} -o {dict_file}')
+        img_file = viruses_fa + '.img'
+        if not verify_file(img_file):
+            log.critical(f'Please, create an img file for {viruses_fa} using:\n'
+                         f'   gatk BwaMemIndexImageCreator -I  {viruses_fa} -O {img_file}')
+
         conf['viruses_fa'] = verify_file(viruses_fa)
+    if repeat_masker_bed:
+        conf['repeat_masker_bed'] = repeat_masker_bed
+    if breakend_pon:
+        conf['breakend_pon'] = breakend_pon
+    if bp_pon:
+        conf['bp_pon'] = bp_pon
+    if bp_hotspots:
+        conf['bp_hotspots'] = bp_hotspots
+    if min_tumor_af:
+        conf['min_tumor_af'] = min_tumor_af
 
     py_path = sys.executable  # e.g. /miniconda/envs/umccrise_hmf/bin/python
     env_path = dirname(dirname(py_path))  # e.g. /miniconda/envs/umccrise_hmf
@@ -109,7 +165,9 @@ def main(output_dir=None, tumor_bam=None, normal_bam=None, normal_name=None, tum
             found = glob.glob(join(hmf_env_path, 'share/gridss-*/gridss.jar'))
             if not found:
                 critical('Cannot find gridss JAR. Make sure you ran `conda install -c bioconda gridss`')
-    conf['gridss_jar'] = found[0],
+        conf['gridss_env'] = hmf_env_path
+    conf['gridss_jar'] = found[0]
+
 
     run_snakemake(join(package_path(), 'gridss', 'Snakefile'), conf, cores=cores,
                   output_dir=output_dir, unlock=unlock, dryrun=dryrun)
