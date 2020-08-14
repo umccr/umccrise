@@ -1,80 +1,128 @@
-import multiprocessing
 import os
 from os.path import join
-shell.executable(os.environ.get('SHELL', 'bash'))
-shell.prefix("")
 
 
-tumor_bam          = config['tumor_bam         '.strip()]
-normal_bam         = config['normal_bam        '.strip()]
-genome             = config['genome            '.strip()]
-ref_fa             = config['ref_fa            '.strip()]
-tumor_name         = config['tumor_name        '.strip()]
-normal_name        = config['normal_name       '.strip()]
-gridss_jar         = config['gridss_jar        '.strip()]
-gpl_source         = config['gpl_source        '.strip()]
-gridss_ref_dir     = config['gridss_ref_dir    '.strip()]
-gridss_scripts_dir = config['gridss_scripts_dir'.strip()]
-output_dir         = config['output_dir        '.strip()]
-work_dir           = config['work_dir          '.strip()]
-total_cores        = config['total_cores       '.strip()]
+T_BAM         = config['tumor_bam']
+N_BAM         = config.get('normal_bam')
+T_NAME        = config.get('tumor_name')
+N_NAME        = config.get('normal_name')
+OUT_DIR       = config['output_dir']
+THREADS       = config.get('cores', 20)
+WORK_DIR      = join(OUT_DIR, 'work')
+GRIDSS_JAR    = config['gridss_jar']
 
-metricsrecords     = 10000000
-maxcoverage        = 50000
-jvmheap            = "25g"
+## Reference files
+GENOME            = config.get('genome', 'hg38')
+REF_FA            = config.get('ref_fa')
+BLACKLIST         = config.get('blacklist')
+VIRUSES_FA        = config.get('viruses_fa')
+REPEAT_MASKER_BED = config.get('repeat_masker_bed')
+try:
+    from reference_data import api as refdata
+except:
+    pass
+else:
+    if config.get('genomes_dir'):
+        refdata.find_genomes_dir(config.get('genomes_dir'))
+    REF_FA     = REF_FA or refdata.get_ref_file(genome=GENOME, key='fa')
+    BLACKLIST  = BLACKLIST or refdata.get_ref_file(genome=GENOME, key='blacklist')
+    VIRUSES_FA = VIRUSES_FA or refdata.get_ref_file(genome=GENOME, key='gdc_viral_fa')
 
-chunk_size = 1000_000
-chunk_sequence_change_penalty = 100_000
-
-gridss_properties = join(work_dir, 'gridss.properties')
-with open(gridss_properties, 'w') as f:
-    f.write(f'''
-chunkSize={chunk_size}
-chunkSequenceChangePenalty={chunk_sequence_change_penalty}
-''')
-
-gridss_cmd_common = f'''
-{gridss_scripts_dir}/gridss.sh
--r {ref_fa}
--o {output_dir}/{tumor_name}.sv.vcf
--a {output_dir}/{tumor_name}.asm.bam
--j {gridss_jar}
--w {work_dir}
--c {gridss_properties}
-'''
-
-threads_each = 8
-threads_on_node = multiprocessing.cpu_count() or 1
-threads_per_batch  = max(1, min(threads_on_node, total_cores // len(batch_by_name)))
+METRICS_RECORDS = config.get('metricsrecords', 10000000)
+MAX_COVERAGE    = config.get('maxcoverage', 50000)
+JVM_HEAP        = config.get('jvm_heap', '25g')
 
 
-rule partition:
+# chunk_size = 1000_000
+# chunk_sequence_change_penalty = 100_000
+#
+# gridss_properties = join(work_dir, 'gridss.properties')
+# with open(gridss_properties, 'w') as f:
+#     f.write(f'''
+# chunkSize={chunk_size}
+# chunkSequenceChangePenalty={chunk_sequence_change_penalty}
+# ''')
+#
+# gridss_cmd_common = f'''
+# {gridss_scripts_dir}/gridss.sh
+# -r {ref_fa}
+# -o {output_dir}/{tumor_name}.sv.vcf
+# -a {output_dir}/{tumor_name}.asm.bam
+# -j {gridss_jar}
+# -w {work_dir}
+# -c {gridss_properties}
+# '''
+
+
+rule all:
     input:
-    output:
+        vcf = join(WORK_DIR, 'gridss.viral.vcf.gz'),
 
 
-rule preprocess:
+rule gridss_main:
     input:
+        tumor_bam = T_BAM,
+        normal_bam = N_BAM or [],
+        blacklist = BLACKLIST,
+        ref_fa = REF_FA,
     output:
+        vcf = join(WORK_DIR, 'gridss.vcf.gz'),
+        assembly = join(WORK_DIR, 'assembly.bam'),
+    params:
+        work_dir = WORK_DIR
+    threads: THREADS
+    shell:
+        'gridss '
+        '--reference {input.ref_fa} '
+        '--output {output.vcf} '
+        '--assembly {output.assembly} '
+        '--threads {threads} '
+        '--workingdir {params.work_dir} '
+        '--blacklist {input.blacklist} '
+        '{input.normal_bam} {input.tumor_bam}'
 
 
-rule assembly:
+rule annotate_viral_sequences:
     input:
+        vcf = join(WORK_DIR, 'gridss.vcf.gz'),
+        virues_fa = VIRUSES_FA,
     output:
+        vcf = join(WORK_DIR, 'gridss.viral.vcf.gz'),
+    params:
+        jar = GRIDSS_JAR,
+        mem = '6g',
+    threads: THREADS
+    shell:
+        'java -Xmx{params.mem} -cp {params.jar} '
+        'gridss.AnnotateInsertedSequence '
+        'REFERENCE_SEQUENCE={input.virues_fa} '
+        'INPUT={input.vcf} '
+        'OUTPUT={output.vcf} '
+        'WORKER_THREADS={threads} '
+        'ALIGNMENT=APPEND'
 
 
-rule call:
-    input:
-    output:
-
-
-rule merge:
-    input:
-    output:
-
-
-
-
+if REPEAT_MASKER_BED:
+    rule annotate_repeats:
+        input:
+            vcf = join(WORK_DIR, 'gridss.viral.vcf.gz'),
+            repeat_masker_bed = REPEAT_MASKER_BED,
+            ref_fa = REF_FA,
+        output:
+            vcf = join(WORK_DIR, 'gridss.viral.repeats.vcf.gz'),
+        params:
+            jar = GRIDSS_JAR,
+            mem = '3g',
+        threads: THREADS
+        shell:
+            'java -Xmx{parmas.mem} -cp {params.jar} '
+            'gridss.AnnotateInsertedSequence '
+            'REFERENCE_SEQUENCE={input.ref_fa} '
+            'INPUT={input.vcf} '
+            'OUTPUT={output.vcf} '
+            'WORKER_THREADS={threads} '
+            'ALIGNMENT=REPLACE '
+            'REPEAT_MASKER_BED={repeat_masker_bed}'
 
 
 
