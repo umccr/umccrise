@@ -46,9 +46,7 @@ MIN_TUMOR_AF    = config.get('min_tumor_af')
 
 rule all:
     input:
-        vcf = join(OUT_DIR, '3_somatic_filter', T_NAME + '-gridss.vcf.gz') \
-              if N_BAM else \
-              join(OUT_DIR, '2_annotate_viruses', T_NAME + '-gridss.vcf.gz'),
+        vcf = join(OUT_DIR, '3_somatic_filter', T_NAME + '-gridss.vcf.gz')
 
 
 rule gridss_main:
@@ -115,29 +113,30 @@ rule annotate_viral_sequences:
         'ALIGNMENT=APPEND'
 
 
-if N_BAM:
-    rule somatic_filter:
-        input:
-            vcf = rules.annotate_viral_sequences.output.vcf,
-            ref_fa = REF_FA,
-            breakend_pon = BREAKEND_PON,
-            bp_pon = BP_PON,
-            bp_hotspots = BP_HOTSPOTS,
-        output:
-            vcf = join(OUT_DIR, '3_somatic_filter', T_NAME + '-gridss.vcf.gz'),
-        params:
-            min_tumor_af_opt = f'-min_tumor_af {MIN_TUMOR_AF}' if MIN_TUMOR_AF else '',
-            tumor_name = T_NAME,
-            export_path = f'export PATH={GRIDSS_ENV}/bin:$PATH; ' if GRIDSS_ENV else '',
-        shell:
-            '{params.export_path} gripss -Xms4G -Xmx16G '
-            '-input_vcf {input.vcf} '
-            '-output_vcf {output.vcf} '
-            '-ref_genome {input.ref_fa} '
-            '-breakend_pon {input.breakend_pon} '
-            '-breakpoint_pon {input.bp_pon} '
-            '-breakpoint_hotspot {input.bp_hotspots} '
-            '{params.min_tumor_af_opt} '
-            '-tumor {params.tumor_name} && '
-            'test 0 -ne $(gunzip -c {output.vcf} | wc -l)'
+rule somatic_filter:
+    input:
+        vcf = rules.annotate_viral_sequences.output.vcf,
+        ref_fa = REF_FA,
+        breakend_pon = BREAKEND_PON,
+        bp_pon = BP_PON,
+        bp_hotspots = BP_HOTSPOTS,
+    output:
+        vcf = join(OUT_DIR, '3_somatic_filter', T_NAME + '-gridss.vcf.gz'),
+    params:
+        min_tumor_af_opt = f'-min_tumor_af {MIN_TUMOR_AF}' if MIN_TUMOR_AF else '',
+        tumor_name = T_NAME,
+        export_path = f'export PATH={GRIDSS_ENV}/bin:$PATH; ' if GRIDSS_ENV else '',
+        # jar = join(package_path(), 'gridss', 'gripss-jar-with-dependencies.jar')
+    shell:
+        # 'java -Xms4G -Xmx16G -cp {params.jar} com.hartwig.hmftools.gripss.GripssApplicationKt '
+        '{params.export_path} gripss -Xms4G -Xmx16G '
+        '-input_vcf {input.vcf} '
+        '-output_vcf {output.vcf} '
+        '-ref_genome {input.ref_fa} '
+        '-breakend_pon {input.breakend_pon} '
+        '-breakpoint_pon {input.bp_pon} '
+        '-breakpoint_hotspot {input.bp_hotspots} '
+        '{params.min_tumor_af_opt} '
+        '-tumor {params.tumor_name} && '
+        'test 0 -ne $(gunzip -c {output.vcf} | wc -l)'
 
