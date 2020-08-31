@@ -35,10 +35,6 @@ from reference_data import api as refdata
               help='Optionally, specific stage to run, e.g.: -T pcgr -T coverage -T structural -T small_variants')
 @click.option('-E', '--skip-stage', 'exclude_stages', multiple=True,
               help='Optionally, stages to skip, e.g.: -E oncoviruses -E cpsr')
-#
-# # RNAseq
-# @click.option('--rna-project', 'rna_project', multiple=True,
-#               help='Bcbio RNAseq project with matching samples')
 
 # Cluster
 @click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', type=click.INT,
