@@ -47,14 +47,14 @@ rule run_sage:
     params:
         jar = join(package_path(), 'sage-2.2.jar'),
         xms = 4000,
-        xmx = 30000,
+        xmx = 28000,
         genome = run.genome_build,
         tumor_names  = lambda wc: [s.name for s in batch_by_name[wc.batch].tumors],
         normal_names = lambda wc: [s.name for s in batch_by_name[wc.batch].normals] +\
                                   [s.name for s in batch_by_name[wc.batch].rna_samples],
     resources:
-        mem_mb = 32000
-    threads: 16,
+        mem_mb = lambda wildcards, attempt: 30000 * attempt
+    threads: threads_per_batch,
     group: 'sage'
     run:
         shell(conda_cmd.format('hmf') +
