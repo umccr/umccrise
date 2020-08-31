@@ -64,7 +64,6 @@ class CustomProject(BaseProject):
                         germline_vcf=entry.get('germline_vcf'),
                         sv_vcf=entry.get('sv_vcf'))
         self.batch_by_name[entry['sample']] = b
-        info(f'Adding batch {b.name}')
 
         def _full_path(path):
             if not path or path == '.':
@@ -222,7 +221,8 @@ def prep_inputs(smconfig, silent=False):
             with open(input_path) as f:
                 for entry in csv.DictReader(f, delimiter='\t'):
                     b = custom_run.add_batch(entry, dirname(input_path))
-                    include_samples_map[b.name] = b.name
+                    if b:
+                        include_samples_map[b.name] = b.name
 
         # custom file
         elif isfile(input_path):
