@@ -69,8 +69,10 @@ rule run_sage:
             f'-assembly {params.genome} '
             f'-ref_genome {input.ref_fa} '
             f'-out {output.vcf} '
+            f'&& test -s {output.vcf} '
             f'&& tabix -f -p vcf {output.vcf}'
         )
+        verify_file(output.vcf)
 
 
 rule sage_pass:
@@ -81,7 +83,8 @@ rule sage_pass:
         tbi = 'work/{batch}/sage/2_pass/{batch}.vcf.gz.tbi',
     group: 'sage'
     shell:
-        'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} '
+        'test -s {input.vcf} '
+        '&& bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} '
         '&& tabix -p vcf {output.vcf}'
 
 

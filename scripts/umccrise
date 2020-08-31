@@ -47,8 +47,9 @@ from reference_data import api as refdata
               help='Use when you are rerunning after Ctrl+C or an error. Propagated to snakemake.')
 @click.option('-r', '--restarts', '--restart-times', 'restart_times',
               help=f'How many times to try out rerunning rules if they fail. "--restart-times 1" means that the rule '
-                   f'will be attempted maximum 1 time. Default is {snakemake_utils.DEFAULT_RESTART_TIMES}. The value ropagated '
-                   f'to snakemake is decremented, because snakemake interprets it as "how many times to restart after '
+                   f'will be attempted maximum 1 time. Default is {snakemake_utils.DEFAULT_RESTART_TIMES}. The value '
+                   f'propagated to snakemake is decremented, because snakemake interprets it as "how many times '
+                   f'to restart after '
                    f'the rule is failed").')
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True,
               help='Propagated to snakemake. Prints rules and commands to be run without actually executing them.')
