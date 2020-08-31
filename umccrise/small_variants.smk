@@ -10,26 +10,11 @@ from ngs_utils.reference_data import get_predispose_genes_bed
 from ngs_utils.logger import critical
 from ngs_utils.vcf_utils import iter_vcf
 from reference_data import api as refdata
-from umccrise import package_path
+from umccrise import package_path, cnt_vars
 
 
 localrules: somatic, germline, small_variants, germline_batch
 
-
-def cnt_vars(vcf_path, passed=False):
-    snps = 0
-    indels = 0
-    others = 0
-    for rec in cyvcf2.VCF(vcf_path):
-        if passed and rec.FILTER is not None and rec.FILTER != 'PASS':
-            continue
-        if rec.is_snp:
-            snps += 1
-        elif rec.is_indel:
-            indels += 1
-        else:
-            others += 1
-    return snps, indels, others
 
 # rule somatic_vcf_reheader  # change RGIDs to tumor and normal names?
 
