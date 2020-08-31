@@ -148,6 +148,7 @@ input_paths: a path to inputs:\n
     run_snakemake(
         snakefile, conf,
         output_dir=output_dir,
+        log_dir=log_dir,
         unlock=unlock,
         dryrun=dryrun,
         restart_times=restart_times,
