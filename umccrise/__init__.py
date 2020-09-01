@@ -316,6 +316,7 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
         'microbiome',
         'immuno',
         'peddy',
+        'sage2',
     }
     # if not all(b.germline_vcf for b in run.batch_by_name.values()):
     #     default_disabled |= {'germline'}
