@@ -7,27 +7,8 @@ from reference_data import api as refdata
 from umccrise import package_path
 
 
-localrules: rmd, conda_list
+localrules: cancer_report, conda_list
 
-
-## Allelic frequencies
-# AF is not yet integrated into PCGR or CGI. We can extract those from VarDict or Mutect2 for plotting purposes,
-# but still need to look up AF for genes of interest manually. Not entirely ideal but for a rough summary
-# plot but this is going to be sufficient. Can revisit once we've unified AF information across callers:
-
-# For AFs, use VarDict if found, otherwise Mutect2
-# rule choose_af_vcf:
-#     input:
-#         vcfs = lambda wc: expand(join(run.date_dir, f'{batch_by_name[wc.batch].name}-{{caller}}-annotated.vcf.gz'), caller=list(batch_by_name.values())[0].tumor.variantcallers)
-#     output:
-#         '{batch}/somatic/af/variants.vcf.gz'
-#     run:
-#         af_vcf = next((vcf for vcf in input.vcfs if vcf.endswith('-ff-annotated.vcf.gz')), None)
-#         if not af_vcf:
-#             print('Could not find VarDict VCF, falling back to Mutect2')
-#             af_vcf = next((vcf for vcf in input.vcfs if vcf.endswith('-mutect2-annotated.vcf.gz')), None)
-#             assert af_vcf, 'Could not find Mutect2 VCF too'
-#         shell('bcftools view -f.,PASS ' + af_vcf + ' -Oz -o {output}')
 
 # Subset to GiaB confident intervals
 rule subset_to_giab:
@@ -36,7 +17,7 @@ rule subset_to_giab:
     params:
         regions = refdata.get_ref_file(run.genome_build, key=['hmf_giab_conf'])
     output:
-        'work/{batch}/rmd/afs/somatic-confident.vcf.gz'
+        'work/{batch}/cancer_report/afs/somatic-confident.vcf.gz'
     group: "rmd_prep"
     shell:
         'bcftools view {input.vcf} -R {params.regions} -Oz -o {output}'
@@ -44,10 +25,10 @@ rule subset_to_giab:
 # Split multiallelics to avoid R parsing issues
 rule split_multiallelic:
     input:
-        vcf = 'work/{batch}/rmd/afs/somatic-confident.vcf.gz',
+        vcf = 'work/{batch}/cancer_report/afs/somatic-confident.vcf.gz',
         ref_fa = refdata.get_ref_file(run.genome_build, key='fa')
     output:
-        'work/{batch}/rmd/afs/somatic-confident-singleallelic.vcf.gz'
+        'work/{batch}/cancer_report/afs/somatic-confident-singleallelic.vcf.gz'
     group: "rmd_prep"
     shell:
         'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
@@ -57,26 +38,25 @@ rule split_multiallelic:
 
 rule afs:
     input:
-        'work/{batch}/rmd/afs/somatic-confident-singleallelic.vcf.gz'
+        'work/{batch}/cancer_report/afs/somatic-confident-singleallelic.vcf.gz'
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid
     output:
-        'work/{batch}/rmd/afs/af_tumor.txt'
+        'work/{batch}/cancer_report/afs/af_tumor.txt'
     group: "rmd_prep"
     shell:
         'bcftools view {input} -s {params.tumor_name} -Ou | '
         '(printf "af\n"; bcftools query -f "%INFO/TUMOR_AF\\n") > {output} '
         '&& test -e {output}'
 
-# Intersect with cancer key genes CDS for a table in Rmd
 rule afs_keygenes:
     input:
-        vcf = 'work/{batch}/rmd/afs/somatic-confident-singleallelic.vcf.gz',
+        vcf = 'work/{batch}/cancer_report/afs/somatic-confident-singleallelic.vcf.gz',
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
     params:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid
     output:
-        'work/{batch}/rmd/afs/af_tumor_keygenes.txt'
+        'work/{batch}/cancer_report/afs/af_tumor_keygenes.txt'
     group: "rmd_prep"
     shell:
         'bcftools view -f .,PASS {input.vcf} -s {params.tumor_name} -Ov'
@@ -96,8 +76,7 @@ rule conda_list:
         "| grep -v ^# >> {output} ; done"
 
 
-## Running Rmarkdown
-rule cancer_report:
+rule run_cancer_report:
     input:
         rmd_files_dir        = join(package_path(), 'rmd_files'),
         key_genes            = get_key_genes(),
@@ -113,8 +92,6 @@ rule cancer_report:
 
         purple_circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
         purple_input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
-        purple_cn_png        = 'work/{batch}/purple/plot/{batch}.copynumber.png',
-        purple_ma_png        = 'work/{batch}/purple/plot/{batch}.map.png',
         purple_purity_png    = 'work/{batch}/purple/plot/{batch}.purity.range.png',
         purple_segment_png   = 'work/{batch}/purple/plot/{batch}.segment.png',
         purple_clonality_png = 'work/{batch}/purple/plot/{batch}.somatic.clonality.png',
@@ -144,7 +121,7 @@ rule cancer_report:
         conda_list      = lambda wc, input: abspath(input.conda_list),
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
-        rmd_tmp_dir = directory('work/{batch}/rmd/rmd_files'),
+        rmd_tmp_dir = directory('work/{batch}/cancer_report/rmd_files'),
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
@@ -160,8 +137,6 @@ rule cancer_report:
         for img_path in [
             input.purple_circos_png,
             input.purple_input_png,
-            input.purple_cn_png,
-            input.purple_ma_png,
             input.purple_purity_png,
             input.purple_segment_png,
             input.purple_clonality_png,
@@ -197,9 +172,9 @@ cd {params.work_dir} ; \
 
 #############
 
-rule rmd:
+rule cancer_report:
     input:
-        expand(rules.cancer_report.output[0], batch=batch_by_name.keys())
+        expand(rules.run_cancer_report.output[0], batch=batch_by_name.keys())
     output:
-        temp(touch('log/rmd.done'))
+        temp(touch('log/cancer_report.done'))
 

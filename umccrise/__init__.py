@@ -309,7 +309,7 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
         'mosdepth', 'goleft', 'cacao',
         'pcgr', 'cpsr',
         'oncoviruses',
-        'rmd',
+        'cancer_report',
         'multiqc',
     }
     default_disabled = {
@@ -330,8 +330,8 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
     def _rename_input_stages(stages):
         fixed_stages = set()
         for s in stages:
-            if s == 'cancer_report':
-                fixed_stages |= {'rmd'}
+            if s == 'rmd':
+                fixed_stages |= {'cancer_report'}
             elif s == 'sv':
                 fixed_stages |= {'structural'}
             elif s == 'purple':
