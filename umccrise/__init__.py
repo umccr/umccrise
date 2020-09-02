@@ -17,7 +17,7 @@ from ngs_utils import logger as log
 from ngs_utils import bam_utils
 from ngs_utils import vcf_utils
 from ngs_utils.utils import set_locale; set_locale()
-from ngs_utils.file_utils import verify_file
+from ngs_utils.file_utils import verify_file, verify_obj_by_path
 from reference_data import api as refdata
 
 
@@ -69,16 +69,34 @@ class CustomProject(BaseProject):
             if not path or path == '.':
                 return None
             if path.startswith('/'):
-                return verify_file(path, is_critical=True)
+                return verify_obj_by_path(path, is_critical=True)
             else:
                 path = join(base_path, path)
-                return verify_file(path, is_critical=True)
+                return verify_obj_by_path(path, is_critical=True)
 
+        # Adding RNA project for neoantigens
+        rna_bcbio = _full_path(entry.get('rna_bcbio'))
+        rna_sname = entry.get('rna_sample')
+        rna_sample = None
+        if rna_bcbio:
+            if not rna_sname:
+                critical(f'rna_sample must be provided along with rna_bcbio '
+                         f'(for sample {entry["sample"]})')
+            rna_bcbio_project = BcbioProject(rna_bcbio)
+            rna_samples = [s for s in rna_bcbio_project.samples
+                          if s.name == rna_sname]
+            if not rna_samples:
+                critical(f'Could not find RNA sample {rna_sname} in {rna_bcbio}')
+            rna_sample = rna_samples[0]
+
+        # Adding BAMs
+        rna_bam = _full_path(entry.get('rna'))
+        if not rna_bam and rna_sample:
+            rna_bam = rna_sample.bam
         wgs_bam = _full_path(entry.get('wgs'))
         normal_bam = _full_path(entry.get('normal'))
         exome_bam = _full_path(entry.get('exome'))
         exome_normal_bam = _full_path(entry.get('exome_normal'))
-        rna_bam = _full_path(entry.get('rna'))
 
         if wgs_bam:
             wgs_s = CustomSample(
@@ -122,7 +140,10 @@ class CustomProject(BaseProject):
                 exome_s.normal_match = exome_normal_s
                 b.add_normal(exome_normal_s)
 
-        if rna_bam:
+        if rna_sample:
+            self.samples.append(rna_sample)
+            b.add_rna_sample(rna_sample)
+        elif rna_bam:
             rna_s = CustomSample(
                 name=entry['sample'] + '_rna',
                 rgid=bam_utils.sample_name_from_bam(rna_bam),
@@ -304,7 +325,6 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
         'conpair',
         'structural',
         'somatic', 'germline', 'maf',
-        'sage2',
         'purple',
         'mosdepth', 'goleft', 'cacao',
         'pcgr', 'cpsr',
@@ -316,7 +336,6 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
         'microbiome',
         'immuno',
         'peddy',
-        'sage2',
     }
     # if not all(b.germline_vcf for b in run.batch_by_name.values()):
     #     default_disabled |= {'germline'}
