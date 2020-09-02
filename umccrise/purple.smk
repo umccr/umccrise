@@ -140,8 +140,6 @@ rule purple_run:
 
         circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
         input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
-        cn_png        = 'work/{batch}/purple/plot/{batch}.copynumber.png',
-        ma_png        = 'work/{batch}/purple/plot/{batch}.map.png',
         purity_png    = 'work/{batch}/purple/plot/{batch}.purity.range.png',
         segment_png   = 'work/{batch}/purple/plot/{batch}.segment.png',
         clonality_png = 'work/{batch}/purple/plot/{batch}.somatic.clonality.png',
@@ -167,6 +165,7 @@ rule purple_run:
     resources:
         mem_mb = int(purple_mem * 1.1),
     run:
+        safe_mkdir(f'work/{wildcards.batch}/purple/plot/')
         shell(
             conda_cmd.format('hmf') + \
             circos_macos_patch + \
