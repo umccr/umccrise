@@ -3,8 +3,6 @@ from os.path import join, dirname
 
 from ngs_utils.file_utils import which
 
-localrules: immuno
-
 
 """
 Using OptiType to predict HLA types.
@@ -108,6 +106,8 @@ HLA_READ_SOURCES = [
 
 
 if 'immuno' in stages:
+    localrules: immuno
+
     rule extract_hla_from_unmapped:
         input:
             bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
@@ -231,10 +231,44 @@ if 'immuno' in stages:
             'OptiTypePipeline.py -i {input.fastq1} --dna --verbose '
             '--outdir {params.out_dir} --prefix {params.prefix}'
 
+    # cls=['I', 'II'], source=['seq', 'fuse']
+    rule run_nag:
+        input:
+            # somatic_vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
+            somatic_vcf = '{batch}/sage/{batch}.pass.vcf.gz',
+            hla_file = rules.run_optitype.output.tsv,
+            rna_bcbio = lambda wc: batch_by_name[wc.batch].rna_sample.parent_project,
+        output:
+            ranked_seq  = '{batch}/nag/{batch}/pvacseq_results/MHC_Class_I/{batch}.filtered.condensed.ranked.tsv',
+            ranked_fuse = '{batch}/nag/{batch}/pvacfuse_results/MHC_Class_I/{batch}.filtered.condensed.ranked.tsv',
+            qual_seq    = '{batch}/nag/work/{batch}/quality_seq/MHC_Class_I/{batch}_neontigen_quality.tsv',
+            qual_fuse   = '{batch}/nag/work/{batch}/quality_fuse/MHC_Class_I/{batch}_neontigen_quality.tsv',
+        params:
+            sname = lambda wc: wc.batch,
+            rna_sample = lambda wc: batch_by_name[wc.batch].rna_sample.name,
+            output_dir = lambda wc: f'{wc.batch}/nag',
+            genomes_dir = refdata.genomes_dir,
+        shell:
+            'nag -o {params.output_dir} '
+            '-v {input.somatic_vcf} '
+            '-O {input.hla_file} '
+            '-s {wildcards.batch} '
+            '-R {input.rna_bcbio} '
+            '-r {params.rna_sample} '
+            '--genomes {params.genomes_dir} '
+
+    rule nag_summarise:
+        input:
+            expand(rule.run_nag.output.ranked, batch=batch_by_name.keys()),
+        output:
+            summary = 'nag/MHC_Class_I/summary_{source}.tsv'
+        run:
+            nag_summarize(batch_by_name.keys(), input, output.summary)
 
     rule immuno:
         input:
-            expand(rules.run_optitype.output, batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
+            expand(rules.run_optitype.output, batch=batch_by_name.keys(), phenotype=['tumor', 'normal']),
+            expand(rules.nag_summarise.output.summary, source=['seq', 'fuse']),
         output:
             temp(touch('log/immuno.done'))
 
