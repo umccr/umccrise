@@ -334,7 +334,7 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
     }
     default_disabled = {
         'microbiome',
-        'immuno',
+        'neoantigens',
         'peddy',
     }
     # if not all(b.germline_vcf for b in run.batch_by_name.values()):
@@ -365,6 +365,8 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
                 fixed_stages |= {'somatic', 'pcgr'}
             elif s == 'oncoviral':
                 fixed_stages |= {'oncoviruses'}
+            elif s in {'nag', 'immuno'}:
+                fixed_stages |= {'neoantigens'}
             elif s not in default_enabled | default_disabled:
                 critical(f'Stage "{s}" is not recognised. Available: {default_enabled | default_disabled}')
             elif s == 'default':
