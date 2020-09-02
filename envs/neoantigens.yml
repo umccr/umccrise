@@ -1,0 +1,33 @@
+name: neoantigens
+
+channels:
+  - vladsaveliev
+  - bioconda
+  - conda-forge
+  - defaults
+  - anaconda
+
+dependencies:
+  - python
+  - versionpy
+  - ngs_utils
+  - vcf_stuff
+  - reference_data
+  - natsort
+  - snakemake-minimal
+  - click
+  - pyyaml
+  - pysam
+  - numpy
+  - bcftools
+  - tabix
+  - ensembl-vep         # to annotate VCF for pVACseq
+  - pyensembl           # install with pip - conda version errors out (also needs gtfparse>1.1)
+  - kallisto
+  - cyvcf2
+  - blast
+  - pandas
+  - pip:
+    - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
+    - pvactools
+    - vatools

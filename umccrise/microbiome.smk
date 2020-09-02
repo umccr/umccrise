@@ -8,16 +8,13 @@ from ngs_utils.utils import update_dict
 from reference_data import api as refdata
 
 
-localrules: microbiome
-
-
 """
 Working with unmapped reads
 
 Tools:
 - kraken
 - blast
-- mash scren
+- mash screen
 - rkmh https://github.com/edawson/rkmh rkmh performs identification of individual reads, identity-based
   read filtering, and alignment-free variant calling using MinHash (as implemented in Mash). It is compatible 
   with Mash and sourmash via JSON exchange.
@@ -25,6 +22,9 @@ Tools:
 """
 
 if 'microbiome' in stages:
+    localrules: microbiome
+
+
     rule extract_unmapped:
         input:
             host_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
