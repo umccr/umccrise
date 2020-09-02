@@ -35,6 +35,8 @@ from reference_data import api as refdata
               help='Optionally, specific stage to run, e.g.: -T pcgr -T coverage -T structural -T small_variants')
 @click.option('-E', '--skip-stage', 'exclude_stages', multiple=True,
               help='Optionally, stages to skip, e.g.: -E oncoviruses -E cpsr')
+@click.option('--min-af', 'min_af', type=click.INT,
+              help='AF threshold to filter small variants (unless a known hotspot)')
 
 # Cluster
 @click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', type=click.INT,
@@ -64,7 +66,8 @@ from reference_data import api as refdata
                    'Propagated to snakemake.')
 
 def main(input_paths, output_dir=None, sample=None, exclude=None, input_genomes_url=None, genome_build=None,
-         include_stages:list = None, exclude_stages:list = None, cores=None, cluster=False, debug=False,
+         include_stages:list = None, exclude_stages:list = None, min_af=None,
+         cores=None, cluster=False, debug=False,
          unlock=False, restart_times=None, dryrun=False, report=None, dag=False, hpc_resources=None):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
@@ -128,6 +131,9 @@ input_paths: a path to inputs:\n
         conf['include_stages'] = ','.join(include_stages)
     if exclude_stages:
         conf['exclude_stages'] = ','.join(exclude_stages)
+
+    if min_af is not None:
+        conf['min_af'] = min_af
 
     run, batch_by_name = prep_inputs(conf, silent=True)
 
