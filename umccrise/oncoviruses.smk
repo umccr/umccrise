@@ -26,7 +26,7 @@ checkpoint viral_content:
     threads:
         threads_per_batch
     resources:
-        mem_mb = lambda wildcards, attempt: 20000 * attempt,
+        mem_mb = lambda wildcards, attempt: 40000 * attempt,
     benchmark:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
     group: "viral_content"
@@ -234,6 +234,8 @@ rule oncoviral_multiqc:
     params:
         sample = lambda wc: batch_by_name[wc.batch].tumor.name,
         breakpoints_tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv',
+    resources:
+        mem_mb = lambda wildcards, attempt: 4000 * attempt,
     run:
         data, header = make_oncoviral_mqc_metric(input.prioritized_tsv)
         headers = [header]
