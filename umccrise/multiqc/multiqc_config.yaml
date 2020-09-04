@@ -8,7 +8,7 @@ template: 'umccr'
 base_count_multiplier: 0.000000001
 base_count_prefix: 'Gb'
 base_count_desc: 'gigabases'
-make_data_dir: False
+make_data_dir: True
 
 
 # Overwrite the defaults of which table columns are visible by default
