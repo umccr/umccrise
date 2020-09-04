@@ -52,6 +52,7 @@ class CustomProject(BaseProject):
         self.include_samples = include_samples
         self.exclude_samples = exclude_samples
         self.genome_build = genome_build
+        self.parsed_bcbio_projects_by_path = dict()
 
     def add_batch(self, entry, base_path):
         if self.exclude_samples and entry['sample'] in self.exclude_samples:
@@ -75,18 +76,21 @@ class CustomProject(BaseProject):
                 return verify_obj_by_path(path, is_critical=True)
 
         # Adding RNA project for neoantigens
-        rna_bcbio = _full_path(entry.get('rna_bcbio'))
+        rna_bcbio_path = _full_path(entry.get('rna_bcbio'))
         rna_sname = entry.get('rna_sample')
         rna_sample = None
-        if rna_bcbio:
+        if rna_bcbio_path:
             if not rna_sname:
                 critical(f'rna_sample must be provided along with rna_bcbio '
                          f'(for sample {entry["sample"]})')
-            rna_bcbio_project = BcbioProject(rna_bcbio)
+            rna_bcbio_project = self.parsed_bcbio_projects_by_path.get(rna_bcbio_path)
+            if not rna_bcbio_project:
+                rna_bcbio_project = BcbioProject(rna_bcbio_path, silent=True)
+                self.parsed_bcbio_projects_by_path[rna_bcbio_path] = rna_bcbio_project
             rna_samples = [s for s in rna_bcbio_project.samples
                           if s.name == rna_sname]
             if not rna_samples:
-                critical(f'Could not find RNA sample {rna_sname} in {rna_bcbio}')
+                critical(f'Could not find RNA sample {rna_sname} in {rna_bcbio_path}')
             rna_sample = rna_samples[0]
 
         # Adding BAMs
@@ -265,10 +269,12 @@ def prep_inputs(smconfig, silent=False):
 
             if len(run.batch_by_name) == 0:
                 if exclude_names:
-                    critical(f'Error: no samples left with the exclusion of batch/sample name(s): {", ".join(exclude_names)}.'
+                    critical(f'Error: no samples left with the exclusion of batch/sample name(s): '
+                             f'{", ".join(exclude_names)}.'
                              f'Check yaml file for available options: {run.bcbio_yaml_fpath}.')
                 if include_names:
-                    critical(f'Error: could not find a batch or a sample with the name(s): {", ".join(include_names)}. '
+                    critical(f'Error: could not find a batch or a sample with the name(s): '
+                             f'{", ".join(include_names)}. '
                              f'Check yaml file for available options: {run.bcbio_yaml_fpath}')
                 critical(f'Error: could not parse any batch or samples in the bcbio project. '
                          f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}')
