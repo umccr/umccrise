@@ -1,13 +1,12 @@
 name: umccrise_cancer_report
 
 channels:
-  - vladsaveliev
-  - conda-forge
   - bioconda
+  - conda-forge
   - defaults
 
 dependencies:
-  - r-base ==3.5.1
+  - r-base >=4.0
   # R libraries:
   - pandoc
   - r-devtools
@@ -20,15 +19,15 @@ dependencies:
   - r-readr
   - r-rmarkdown
   - r-stringr
-  - r-stringi #>=1.1.7  # for pcgrr
+  - r-stringi
   - r-tidyr
   - bioconductor-delayedarray
-  - bioconductor-summarizedexperiment >=1.8
+  - bioconductor-summarizedexperiment
   - bioconductor-mutationalpatterns
   - bioconductor-bsgenome.hsapiens.ucsc.hg19
-  - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
   - bioconductor-bsgenome.hsapiens.ucsc.hg38
+  - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
   - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
   - bioconductor-genomeinfodb
   - bioconductor-genomeinfodbdata
-  - pyyaml >=4  # for multiqc
+  - pyyaml # for multiqc
