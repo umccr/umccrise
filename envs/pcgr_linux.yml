@@ -8,13 +8,12 @@ channels:
   - defaults
 
 dependencies:
-  - python ==3.7.3
-  - r-base ==3.5.1
-  - r-openssl >=1.1
+  - python >=3.7
+  - r-base >=4.0
   - samtools
   - bcftools
   - click
   - ngs_utils
-  - pcgr ==0.8.4.10
-  - cpsr ==0.5.2.6
-  - cacao
+  - pcgr ==0.8.4.11
+  - cpsr ==0.5.2.7
+  - cacao ==0.2.1.3
