@@ -1796,10 +1796,17 @@ if (breakpoints_tsv != "" && file.exists(breakpoints_tsv)) {
 ### Conda Pkgs Main
 
 ```{r conda_list_main}
-conda_pkgs <- readr::read_table2(params$conda_list, col_names = c("name", "version", "build", "channel", "env"), col_types = "ccccc") %>%
+conda_pkgs <- readr::read_table2(params$conda_list,
+                                 col_names = c("env", "name", "version", "build", "channel"),
+                                 col_types = "ccccc") %>%
+  dplyr::mutate(channel = ifelse(is.na(channel), "MISSING", channel),
+                env = sub("env", "umccrise", env),
+                env = sub("^umccrise_", "", env)) %>%
   dplyr::arrange(name) %>%
   dplyr::group_by(name, version, build, channel) %>%
-  dplyr::summarise(envs = paste(env, collapse = ", "))
+  dplyr::summarise(envs = paste(env, collapse = ", ")) %>%
+  dplyr::ungroup()
+
 
 main_pkgs <- c(
   "^cacao", "^conpair$", "^cpsr",
