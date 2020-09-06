@@ -399,7 +399,7 @@ if (sv_path == "NA") {
       tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
       dplyr::group_by(BND_group) %>%
       dplyr::mutate(
-        BND_ID = dplyr::group_indices(),
+        BND_ID = dplyr::cur_group_id(),
         BND_ID = sprintf(glue::glue("%0{nchar(nrow(.))}d"), BND_ID),
         BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
       dplyr::ungroup()
