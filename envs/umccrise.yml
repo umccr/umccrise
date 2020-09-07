@@ -56,6 +56,7 @@ dependencies:
   - natsort      # for bcbio.py in ngs_utils
   - igvtools
   - openjdk >=11 # for igvtools
+  - vcf2maf
   - pip:
     - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
