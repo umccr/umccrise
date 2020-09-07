@@ -72,8 +72,8 @@ rule conda_list:
         env = ['""', '_pcgr', '_hmf', '_cancer_report'],
     shell:
         "for e in {params.env}; do conda list -p {env_path}$e "
-        "| awk -v var=$e '{{ print $0, var }}' "
-        "| grep -v ^# >> {output} ; done"
+        "| grep -v ^# "
+        "| awk -v var=env$e '{{ print var, $0 }}' >> {output} ; done"
 
 
 rule run_cancer_report:

@@ -76,19 +76,22 @@ params_tmp <- list(
     purple_cnv='',
     purple_purity='',
     purple_qc=''),
-  raijin = list(
-    tumor_name='',
-    batch_name='',
-    genome_build='',
-    key_genes='',
-    af_global='',
-    af_keygenes='',
-    somatic_snv='',
-    somatic_sv='',
-    purple_gene_cnv='',
-    purple_cnv='',
-    purple_purity='',
-    purple_qc=''),
+  gadi = list(
+    tumor_name='T_SRR7890936_50pc',
+    batch_name='SEQCII_50pc__T_SRR7890936_50pc',
+    genome_build='hg38',
+    key_genes='/g/data/gx8/projects/diakumis/conda/envs/umccrise/lib/python3.7/site-packages/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
+    af_global='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/rmd/afs/af_tumor.txt',
+    af_keygenes='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/rmd/afs/af_tumor_keygenes.txt',
+    somatic_snv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/small_variants/SEQCII_50pc__T_SRR7890936_50pc-somatic-PASS.vcf.gz',
+    somatic_sv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/structural/SEQCII_50pc__T_SRR7890936_50pc-manta.tsv',
+    purple_gene_cnv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.cnv.gene.tsv',
+    purple_cnv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.cnv.somatic.tsv',
+    purple_purity='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.purity.tsv',
+    purple_qc='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.qc',
+    oncoviral_present_viruses='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/oncoviruses/present_viruses.txt',
+    oncoviral_breakpoints_tsv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/oncoviruses/oncoviral_breakpoints.tsv',
+    conda_list='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/conda_pkg_list.txt'),
   local = list(
     genome_build='hg38',
     key_genes='data/ref/umccr_cancer_genes.latest.tsv',
@@ -104,7 +107,7 @@ params_tmp <- list(
   )
 )
 
-params <- params_tmp[["local"]]
+params <- params_tmp[["gadi"]]
 params$batch_name <- batch_name
 params$tumor_name <- tumor_name
 
@@ -391,17 +394,22 @@ if (sv_path == "NA") {
         varnum = sprintf(glue::glue("%0{nchar(nrow(.))}d"), varnum))
 
     # Fix BND IDs
-    sv_unmelted_bnd <- sv_unmelted %>%
+    sv_unmelted_bnd1 <- sv_unmelted %>%
       dplyr::filter(svtype == "BND") %>%
       tidyr::separate(ID, into = c("BND_group", "BND_mate"), sep = -1, convert = TRUE, remove = FALSE) %>%
       dplyr::group_by(BND_group) %>%
       dplyr::mutate(
-        BND_ID = dplyr::group_indices(),
+        BND_ID = dplyr::cur_group_id(),
         BND_ID = sprintf(glue::glue("%0{nchar(nrow(.))}d"), BND_ID),
         BND_mate = ifelse(BND_mate == 0, "A", "B")) %>%
-      dplyr::ungroup() %>%
-      dplyr::bind_cols(., .[match(.$ID, .$MATEID), "chrom"]) %>%
-      dplyr::rename(BND_mate_chrom = chrom1)
+      dplyr::ungroup()
+
+    match_id2mateid <- match(sv_unmelted_bnd1$ID, sv_unmelted_bnd1$MATEID)
+
+    sv_unmelted_bnd2 <- sv_unmelted_bnd1[match_id2mateid, c("chrom")] %>%
+      dplyr::rename(BND_mate_chrom = chrom)
+
+    sv_unmelted_bnd <- dplyr::bind_cols(sv_unmelted_bnd1, sv_unmelted_bnd2)
 
     sv_unmelted_other <- sv_unmelted %>%
       dplyr::filter(svtype != "BND")
@@ -1776,10 +1784,17 @@ if (breakpoints_tsv != "" && file.exists(breakpoints_tsv)) {
 ### Conda Pkgs Main
 
 ```{r conda_list_main}
-conda_pkgs <- readr::read_table2(params$conda_list, col_names = c("name", "version", "build", "channel", "env"), col_types = "ccccc") %>%
+conda_pkgs <- readr::read_table2(params$conda_list,
+                                 col_names = c("env", "name", "version", "build", "channel"),
+                                 col_types = "ccccc") %>%
+  dplyr::mutate(channel = ifelse(is.na(channel), "MISSING", channel),
+                env = sub("env", "umccrise", env),
+                env = sub("^umccrise_", "", env)) %>%
   dplyr::arrange(name) %>%
   dplyr::group_by(name, version, build, channel) %>%
-  dplyr::summarise(envs = paste(env, collapse = ", "))
+  dplyr::summarise(envs = paste(env, collapse = ", ")) %>%
+  dplyr::ungroup()
+
 
 main_pkgs <- c(
   "^cacao", "^conpair$", "^cpsr",
