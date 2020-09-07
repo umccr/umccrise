@@ -52,7 +52,16 @@ class CustomProject(BaseProject):
         self.include_samples = include_samples
         self.exclude_samples = exclude_samples
         self.genome_build = genome_build
-        self.parsed_bcbio_projects_by_path = dict()
+        self.input_tsv_fpaths = []
+        self._parsed_bcbio_projects_by_path = dict()
+
+    def _load_bcbio_project(self, bcbio_project_path):
+        proj = self._parsed_bcbio_projects_by_path.get(bcbio_project_path)
+        if not proj:
+            info(f'Loading project {bcbio_project_path}')
+            proj = BcbioProject(bcbio_project_path, silent=True)
+            self._parsed_bcbio_projects_by_path[bcbio_project_path] = proj
+        return proj
 
     def add_batch(self, entry, base_path):
         if self.exclude_samples and entry['sample'] in self.exclude_samples:
@@ -83,10 +92,7 @@ class CustomProject(BaseProject):
             if not rna_sname:
                 critical(f'rna_sample must be provided along with rna_bcbio '
                          f'(for sample {entry["sample"]})')
-            rna_bcbio_project = self.parsed_bcbio_projects_by_path.get(rna_bcbio_path)
-            if not rna_bcbio_project:
-                rna_bcbio_project = BcbioProject(rna_bcbio_path, silent=True)
-                self.parsed_bcbio_projects_by_path[rna_bcbio_path] = rna_bcbio_project
+            rna_bcbio_project = self._load_bcbio_project(rna_bcbio_path)
             rna_samples = [s for s in rna_bcbio_project.samples
                           if s.name == rna_sname]
             if not rna_samples:
