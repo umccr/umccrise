@@ -1,0 +1,13 @@
+name: conpair
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python ==3.7.3
+  - gatk4 ==4.1.4.1
+  - scipy
+  - pip:
+    - "git+https://github.com/vladsaveliev/Conpair#egg=conpair"
