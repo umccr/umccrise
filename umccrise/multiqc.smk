@@ -66,18 +66,24 @@ def find_bcbio_qc_files(batch: BcbioBatch, dst_dir):
 
 rule prep_multiqc_data:
     input:
-        conpair_concord         = rules.run_conpair.output.concord,
-        conpair_contam          = rules.run_conpair.output.contam,
-        somatic_stats           = rules.somatic_stats_report.output[0],
-        germline_stats          = rules.germline_stats_report.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
-        bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0],
-        bcftools_germline_stats = rules.bcftools_stats_germline.output[0] if all(b.germline_vcf for b in batch_by_name.values()) else [],
-        oncoviruses_data        = rules.oncoviral_multiqc.output.data_yml,
-        oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml,
-        purple_stats            = 'work/{batch}/purple/{batch}.purple.purity.tsv',
-        purple_qc               = 'work/{batch}/purple/{batch}.purple.qc',
-        peddy_dirs              = expand(rules.run_peddy.output.dir.replace('{batch}', '{{batch}}'), phenotype=['normal'])
-                                    if 'peddy' in stages else [],
+        conpair_concord         = rules.run_conpair.output.concord if 'conpair' in stages else [],
+        conpair_contam          = rules.run_conpair.output.contam  if 'conpair' in stages else [],
+        somatic_stats           = rules.somatic_stats_report.output[0]   if 'somatic' in stages else [],
+        bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0] if 'somatic' in stages else [],
+        germline_stats          = rules.germline_stats_report.output[0] \
+            if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
+        bcftools_germline_stats = rules.bcftools_stats_germline.output[0] \
+            if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
+        oncoviruses_data        = rules.oncoviral_multiqc.output.data_yml   if 'oncoviruses' in stages else [],
+        oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml if 'oncoviruses' in stages else [],
+        purple_stats            = 'work/{batch}/purple/{batch}.purple.purity.tsv' if 'purple' in stages else [],
+        purple_qc               = 'work/{batch}/purple/{batch}.purple.qc'         if 'purple' in stages else [],
+        samtools_stats_t        = '{batch}/coverage/{batch}-tumor.stats.txt'  if 'samtools_stats' in stages else [],
+        samtools_stats_n        = '{batch}/coverage/{batch}-normal.stats.txt' if 'samtools_stats' in stages else [],
+        mosdepth_t              = '{batch}/coverage/{batch}-tumor.mosdepth.global.dist.txt'  if 'mosdepth' in stages else [],
+        mosdepth_n              = '{batch}/coverage/{batch}-normal.mosdepth.global.dist.txt' if 'mosdepth' in stages else [],
+        peddy_dirs              = expand(rules.run_peddy.output.dir.replace('{batch}', '{{batch}}'), \
+                                         phenotype=['normal']) if 'peddy' in stages else [],
     output:
         filelist                = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -108,9 +114,6 @@ rule prep_multiqc_data:
                 base_dirpath=report_base_path,
             )
 
-        with open(input.oncoviruses_header) as f:
-            generated_conf.update(yaml.load(f))
-
         # Gold standard QC files
         if isinstance(batch, BcbioBatch):
             qc_files.extend(load_background_samples(params.genome_build, project_type='bcbio'))
@@ -118,29 +121,55 @@ rule prep_multiqc_data:
             qc_files.extend(load_background_samples(params.genome_build, project_type='dragen'))
 
         # Umccrise QC files
-        renamed_purple_qc    = join(params.data_dir, basename(input.purple_qc   ).replace(wildcards.batch, batch.tumor.name))
-        renamed_purple_stats = join(params.data_dir, basename(input.purple_stats).replace(wildcards.batch, batch.tumor.name))
-        shell(f'cp {input.purple_qc} {renamed_purple_qc}')
-        shell(f'cp {input.purple_stats} {renamed_purple_stats}')
-        qc_files.extend([
-            join(input.conpair_concord, batch.tumor.name + '.concordance.txt'),
-            join(input.conpair_contam, batch.normal.name + '.contamination.txt'),
-            join(input.conpair_contam, batch.tumor.name + '.contamination.txt'),
-            input.somatic_stats,
-            input.germline_stats,
-            input.bcftools_somatic_stats,
-            input.bcftools_germline_stats,
-            input.oncoviruses_data,
-            renamed_purple_qc,
-            renamed_purple_stats,
-        ])
-        peddy_files = []
-        for d in input.peddy_dirs:
-            peddy_files.extend(glob.glob(join(d, '*.peddy.ped')))
-            peddy_files.extend(glob.glob(join(d, '*.het_check.csv')))
-            peddy_files.extend(glob.glob(join(d, '*.ped_check.csv')))
-            peddy_files.extend(glob.glob(join(d, '*.sex_check.csv')))
-        qc_files.extend(peddy_files)
+        if 'purple' in stages:
+            renamed_purple_qc    = join(params.data_dir, basename(input.purple_qc   ).replace(wildcards.batch, batch.tumor.name))
+            renamed_purple_stats = join(params.data_dir, basename(input.purple_stats).replace(wildcards.batch, batch.tumor.name))
+            shell(f'cp {input.purple_qc} {renamed_purple_qc}')
+            shell(f'cp {input.purple_stats} {renamed_purple_stats}')
+            qc_files.extend([
+                renamed_purple_qc,
+                renamed_purple_stats,
+            ])
+        if 'somatic' in stages:
+            qc_files.extend([
+                input.somatic_stats,
+                input.bcftools_somatic_stats,
+            ])
+        if 'germline' in stages:
+            qc_files.extend([
+                input.germline_stats,
+                input.bcftools_germline_stats,
+            ])
+        if 'oncoviruses' in stages:
+            qc_files.extend([
+                input.oncoviruses_data,
+            ])
+            with open(input.oncoviruses_header) as f:
+                generated_conf.update(yaml.load(f))
+        if 'conpair' in stages:
+            qc_files.extend([
+                join(input.conpair_concord, batch.tumor.name + '.concordance.txt'),
+                join(input.conpair_contam, batch.normal.name + '.contamination.txt'),
+                join(input.conpair_contam, batch.tumor.name + '.contamination.txt'),
+            ])
+        if 'samtools_stats' in stages:
+            qc_files.extend([
+                input.samtools_stats_t,
+                input.samtools_stats_n,
+            ])
+        if 'mosdepth' in stages:
+            qc_files.extend([
+                input.mosdepth_t,
+                input.mosdepth_n,
+            ])
+        if 'peddy' in stages:
+            peddy_files = []
+            for d in input.peddy_dirs:
+                peddy_files.extend(glob.glob(join(d, '*.peddy.ped')))
+                peddy_files.extend(glob.glob(join(d, '*.het_check.csv')))
+                peddy_files.extend(glob.glob(join(d, '*.ped_check.csv')))
+                peddy_files.extend(glob.glob(join(d, '*.sex_check.csv')))
+            qc_files.extend(peddy_files)
 
         if isinstance(batch, BcbioBatch):
             qc_files.extend(find_bcbio_qc_files(batch, params.data_dir))

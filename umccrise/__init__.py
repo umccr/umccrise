@@ -344,6 +344,7 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
         'oncoviruses',
         'cancer_report',
         'multiqc',
+        'combined_multiqc',
     }
     default_disabled = {
         'microbiome',

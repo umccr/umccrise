@@ -13,7 +13,7 @@ from reference_data import api as refdata
 from umccrise import package_path, cnt_vars
 
 
-localrules: somatic, germline, small_variants, germline_batch
+localrules: somatic, germline, germline_batch
 
 
 # rule somatic_vcf_reheader  # change RGIDs to tumor and normal names?
