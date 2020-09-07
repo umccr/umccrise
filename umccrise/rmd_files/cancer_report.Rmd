@@ -1696,18 +1696,6 @@ purple_global_cnv %>%
 PURPLE generates charts for summarising tumor sample characteristics.
 Description is from the [PURPLE docs](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator#charts).
 
-#### Copy number / Minor allele ploidy
-The following figures show the AMBER BAF count weighted distribution of
-copy number and minor allele ploidy throughout the fitted segments.
-Copy numbers are broken down by colour into their respective minor
-allele ploidy (MAP) while the minor allele ploidy figure is broken
-down by copy number.
-
-```{r purple_plot_copynumber, out.width="40%"}
-knitr::include_graphics(c(file.path(img_dir, paste0(params$batch_name, '.copynumber.png')),
-                        file.path(img_dir, paste0(params$batch_name, '.map.png'))))
-```
-
 #### Rainfall
 If a somatic variant VCF has been supplied, a figure will be produced
 showing the somatic variant ploidy broken down by copy number as well

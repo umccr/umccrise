@@ -5,6 +5,7 @@ import sys
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from os.path import isfile, join, dirname, abspath, isdir
 from datetime import datetime
+import csv
 
 from ngs_utils.Sample import BaseBatch, BaseProject, BaseSample
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
@@ -16,7 +17,7 @@ from ngs_utils import logger as log
 from ngs_utils import bam_utils
 from ngs_utils import vcf_utils
 from ngs_utils.utils import set_locale; set_locale()
-from ngs_utils.file_utils import verify_file
+from ngs_utils.file_utils import verify_file, verify_obj_by_path
 from reference_data import api as refdata
 
 
@@ -32,9 +33,10 @@ def get_sig_rmd_file():
 
 
 class CustomSample(BaseSample):
-    def __init__(self, **kwargs):
+    def __init__(self, assay=None, **kwargs):
         BaseSample.__init__(self, **kwargs)  # name, dirpath, work_dir, bam, vcf, phenotype, normal_match
         self.qc_files = []
+        self.assay = assay
 
 class CustomBatch(BaseBatch):
     def __init__(self, name, **kwargs):
@@ -43,12 +45,115 @@ class CustomBatch(BaseBatch):
     pass
 
 class CustomProject(BaseProject):
-    def __init__(self, input_dir=None, include_samples=None, exclude_samples=None,
+    def __init__(self, input_dir=None,
+                 include_samples=None, exclude_samples=None,
                  silent=False, genome_build=None, **kwargs):
         BaseProject.__init__(self, input_dir=input_dir, **kwargs)
         self.include_samples = include_samples
         self.exclude_samples = exclude_samples
         self.genome_build = genome_build
+
+    def add_batch(self, entry, base_path):
+        if self.exclude_samples and entry['sample'] in self.exclude_samples:
+            return None
+        if self.include_samples and entry['sample'] not in self.include_samples:
+            return None
+
+        b = CustomBatch(name=entry['sample'],
+                        somatic_vcf=entry.get('somatic_vcf'),
+                        germline_vcf=entry.get('germline_vcf'),
+                        sv_vcf=entry.get('sv_vcf'))
+        self.batch_by_name[entry['sample']] = b
+
+        def _full_path(path):
+            if not path or path == '.':
+                return None
+            if path.startswith('/'):
+                return verify_obj_by_path(path, is_critical=True)
+            else:
+                path = join(base_path, path)
+                return verify_obj_by_path(path, is_critical=True)
+
+        # Adding RNA project for neoantigens
+        rna_bcbio = _full_path(entry.get('rna_bcbio'))
+        rna_sname = entry.get('rna_sample')
+        rna_sample = None
+        if rna_bcbio:
+            if not rna_sname:
+                critical(f'rna_sample must be provided along with rna_bcbio '
+                         f'(for sample {entry["sample"]})')
+            rna_bcbio_project = BcbioProject(rna_bcbio)
+            rna_samples = [s for s in rna_bcbio_project.samples
+                          if s.name == rna_sname]
+            if not rna_samples:
+                critical(f'Could not find RNA sample {rna_sname} in {rna_bcbio}')
+            rna_sample = rna_samples[0]
+
+        # Adding BAMs
+        rna_bam = _full_path(entry.get('rna'))
+        if not rna_bam and rna_sample:
+            rna_bam = rna_sample.bam
+        wgs_bam = _full_path(entry.get('wgs'))
+        normal_bam = _full_path(entry.get('normal'))
+        exome_bam = _full_path(entry.get('exome'))
+        exome_normal_bam = _full_path(entry.get('exome_normal'))
+
+        if wgs_bam:
+            wgs_s = CustomSample(
+                name=entry['sample'],
+                rgid=bam_utils.sample_name_from_bam(wgs_bam),
+                phenotype='tumor',
+                assay='wgs',
+                bam=wgs_bam)
+            self.samples.append(wgs_s)
+            b.add_tumor(wgs_s)
+
+            if normal_bam:
+                wgs_normal_s = CustomSample(
+                    name=entry['sample'] + '_normal',
+                    rgid=bam_utils.sample_name_from_bam(normal_bam),
+                    phenotype='normal',
+                    assay='wgs',
+                    bam=normal_bam)
+                self.samples.append(wgs_normal_s)
+                wgs_s.normal_match = wgs_normal_s
+                b.add_normal(wgs_normal_s)
+
+        if exome_bam:
+            exome_s = CustomSample(
+                name=entry['sample'] + '_exome',
+                rgid=bam_utils.sample_name_from_bam(exome_bam),
+                phenotype='tumor',
+                assay='exome',
+                bam=exome_bam)
+            self.samples.append(exome_s)
+            b.add_tumor(exome_s)
+
+            if exome_normal_bam:
+                exome_normal_s = CustomSample(
+                    name=entry['sample'] + '_normal_exome',
+                    rgid=bam_utils.sample_name_from_bam(exome_normal_bam),
+                    phenotype='normal',
+                    assay='exome',
+                    bam=exome_normal_bam)
+                self.samples.append(exome_normal_s)
+                exome_s.normal_match = exome_normal_s
+                b.add_normal(exome_normal_s)
+
+        if rna_sample:
+            self.samples.append(rna_sample)
+            b.add_rna_sample(rna_sample)
+        elif rna_bam:
+            rna_s = CustomSample(
+                name=entry['sample'] + '_rna',
+                rgid=bam_utils.sample_name_from_bam(rna_bam),
+                phenotype='normal',
+                assay='rna',
+                bam=rna_bam)
+            self.samples.append(rna_s)
+            b.add_rna_sample(rna_s)
+
+        return b
 
     def get_or_create_batch(self, tumor_name, normal_name=None):
         if self.exclude_samples and tumor_name in self.exclude_samples:
@@ -123,19 +228,25 @@ def prep_inputs(smconfig, silent=False):
     if isinstance(input_paths, str):
         input_paths = input_paths.split(',')
 
-    custom_run = None
     found_bcbio_or_dragen_runs = []
+    custom_run = CustomProject(
+        input_dir=adjust_path(os.getcwd()),
+        include_samples=include_names,
+        exclude_samples=exclude_names)
 
     log.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
 
     for input_path in input_paths:
+        # parsing a tsv file with an input sample on each line
+        if isfile(input_path) and input_path.endswith('.tsv'):
+            with open(input_path) as f:
+                for entry in csv.DictReader(f, delimiter='\t'):
+                    b = custom_run.add_batch(entry, dirname(input_path))
+                    if b:
+                        include_samples_map[b.name] = b.name
+
         # custom file
-        if isfile(input_path):
-            if custom_run is None:
-                custom_run = CustomProject(
-                    input_dir=adjust_path(os.getcwd()),
-                    include_samples_map=include_samples_map,
-                    exclude_samples=exclude_names)
+        elif isfile(input_path):
             custom_run.add_file(input_path)
 
         # dragen
@@ -167,7 +278,7 @@ def prep_inputs(smconfig, silent=False):
         else:
             error(f'Cannot find file or dir {input_path}')
 
-    if custom_run is None and len(found_bcbio_or_dragen_runs) == 1:
+    if len(custom_run.samples) == 0 and len(found_bcbio_or_dragen_runs) == 1:
         # only one dragen or bcbio project - can return it directly
         combined_run = found_bcbio_or_dragen_runs[0]
 
@@ -197,7 +308,7 @@ def prep_inputs(smconfig, silent=False):
 
     # Batch objects index by tumor sample names
     batches = [b for b in combined_run.batch_by_name.values()
-               if not b.is_germline() and b.tumor and b.normal]
+               if not b.is_germline() and (b.tumor or b.tumors) and (b.normal or b.normals)]
     assert batches
     batch_by_name = dict()
     for b in batches:
@@ -218,12 +329,12 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
         'mosdepth', 'goleft', 'cacao',
         'pcgr', 'cpsr',
         'oncoviruses',
-        'rmd',
+        'cancer_report',
         'multiqc',
     }
     default_disabled = {
         'microbiome',
-        'immuno',
+        'neoantigens',
         'peddy',
     }
     # if not all(b.germline_vcf for b in run.batch_by_name.values()):
@@ -238,8 +349,8 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
     def _rename_input_stages(stages):
         fixed_stages = set()
         for s in stages:
-            if s == 'cancer_report':
-                fixed_stages |= {'rmd'}
+            if s == 'rmd':
+                fixed_stages |= {'cancer_report'}
             elif s == 'sv':
                 fixed_stages |= {'structural'}
             elif s == 'purple':
@@ -254,6 +365,8 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
                 fixed_stages |= {'somatic', 'pcgr'}
             elif s == 'oncoviral':
                 fixed_stages |= {'oncoviruses'}
+            elif s in {'nag', 'immuno'}:
+                fixed_stages |= {'neoantigens'}
             elif s not in default_enabled | default_disabled:
                 critical(f'Stage "{s}" is not recognised. Available: {default_enabled | default_disabled}')
             elif s == 'default':
@@ -297,7 +410,21 @@ def get_ploidy(purple_file):
     return get_purple_metric(purple_file, metric='ploidy')
 
 
-
+def cnt_vars(vcf_path, passed=False):
+    import cyvcf2
+    snps = 0
+    indels = 0
+    others = 0
+    for rec in cyvcf2.VCF(vcf_path):
+        if passed and rec.FILTER is not None and rec.FILTER != 'PASS':
+            continue
+        if rec.is_snp:
+            snps += 1
+        elif rec.is_indel:
+            indels += 1
+        else:
+            others += 1
+    return snps, indels, others
 
 
 

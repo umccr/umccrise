@@ -35,15 +35,16 @@ rule all:
 
 include: "conpair.smk"
 include: "structural.smk"
-include: "small_variants.smk"
+include: "somatic.smk"
+include: "germline.smk"
 include: "peddy.smk"
 include: "purple.smk"
 include: "coverage.smk"
 include: "pcgr.smk"
 include: "oncoviruses.smk"
 include: "microbiome.smk"
-include: "immuno.smk"
-include: "rmd.smk"
+include: "neoantigens.smk"
+include: "cancer_report.smk"
 include: "multiqc.smk"
 
 
@@ -86,8 +87,8 @@ rule umccrise:
         rules.cpsr.output           if 'cpsr'           in stages else [],
         rules.oncoviruses.output    if 'oncoviruses'    in stages else [],
         rules.microbiome.output     if 'microbiome'     in stages else [],
-        rules.immuno.output         if 'immuno'         in stages else [],
-        rules.rmd.output            if 'rmd'            in stages else [],
+        rules.neoantigens.output    if 'neoantigens'    in stages else [],
+        rules.cancer_report.output  if 'cancer_report'  in stages else [],
         rules.multiqc.output        if 'multiqc'        in stages else [],
     output:
         touch('all.done')

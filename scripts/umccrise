@@ -35,10 +35,8 @@ from reference_data import api as refdata
               help='Optionally, specific stage to run, e.g.: -T pcgr -T coverage -T structural -T small_variants')
 @click.option('-E', '--skip-stage', 'exclude_stages', multiple=True,
               help='Optionally, stages to skip, e.g.: -E oncoviruses -E cpsr')
-#
-# # RNAseq
-# @click.option('--rna-project', 'rna_project', multiple=True,
-#               help='Bcbio RNAseq project with matching samples')
+@click.option('--min-af', 'min_af', type=click.INT,
+              help='AF threshold to filter small variants (unless a known hotspot)')
 
 # Cluster
 @click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', type=click.INT,
@@ -51,8 +49,9 @@ from reference_data import api as refdata
               help='Use when you are rerunning after Ctrl+C or an error. Propagated to snakemake.')
 @click.option('-r', '--restarts', '--restart-times', 'restart_times',
               help=f'How many times to try out rerunning rules if they fail. "--restart-times 1" means that the rule '
-                   f'will be attempted maximum 1 time. Default is {snakemake_utils.DEFAULT_RESTART_TIMES}. The value ropagated '
-                   f'to snakemake is decremented, because snakemake interprets it as "how many times to restart after '
+                   f'will be attempted maximum 1 time. Default is {snakemake_utils.DEFAULT_RESTART_TIMES}. The value '
+                   f'propagated to snakemake is decremented, because snakemake interprets it as "how many times '
+                   f'to restart after '
                    f'the rule is failed").')
 @click.option('-n', '--dryrun', 'dryrun', is_flag=True,
               help='Propagated to snakemake. Prints rules and commands to be run without actually executing them.')
@@ -67,7 +66,8 @@ from reference_data import api as refdata
                    'Propagated to snakemake.')
 
 def main(input_paths, output_dir=None, sample=None, exclude=None, input_genomes_url=None, genome_build=None,
-         include_stages:list = None, exclude_stages:list = None, cores=None, cluster=False, debug=False,
+         include_stages:list = None, exclude_stages:list = None, min_af=None,
+         cores=None, cluster=False, debug=False,
          unlock=False, restart_times=None, dryrun=False, report=None, dag=False, hpc_resources=None):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
@@ -132,6 +132,9 @@ input_paths: a path to inputs:\n
     if exclude_stages:
         conf['exclude_stages'] = ','.join(exclude_stages)
 
+    if min_af is not None:
+        conf['min_af'] = min_af
+
     run, batch_by_name = prep_inputs(conf, silent=True)
 
     cpu_resources = prep_resources(
@@ -152,6 +155,7 @@ input_paths: a path to inputs:\n
     run_snakemake(
         snakefile, conf,
         output_dir=output_dir,
+        log_dir=log_dir,
         unlock=unlock,
         dryrun=dryrun,
         restart_times=restart_times,
