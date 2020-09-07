@@ -6,7 +6,7 @@ from os.path import dirname
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.logger import debug
 from ngs_utils.utils import set_locale; set_locale()
-from umccrise import prep_inputs, prep_stages
+from umccrise import prep_inputs, prep_stages, CustomProject
 
 shell.executable(os.environ.get('SHELL', 'bash'))
 shell.prefix("")
@@ -48,47 +48,61 @@ include: "cancer_report.smk"
 include: "multiqc.smk"
 
 
-localrules: umccrise, copy_config
+localrules: umccrise, copy_config, copy_tsv_inputs
 
 
-if isinstance(run, BcbioProject):
-    # Copy all files from the config/ directory, omitting all directories
-    # Omitting directories prevents from errors on IAP when the input mount is read-only,
-    # and the directory copied with cp -r inherits the read-only flags, preventing snakemake
-    # from creating files inside of it
-    rule copy_config:
-        input:
-            conf_dir = run.config_dir
-        output:
-            done_flag = 'log/config/config.done',
-        params:
-            conf_dir = 'log/config',
-        shell:
-            'for f in {input.conf_dir}/*; do test ! -f $f || cp $f {params.conf_dir}/; done && '
-            'touch {output.done_flag}'
+# Copy all files from the config/ directory, omitting all directories
+# Omitting directories prevents from errors on IAP when the input mount is read-only,
+# and the directory copied with cp -r inherits the read-only flags, preventing snakemake
+# from creating files inside of it
+rule copy_config:
+    input:
+        conf_dir = run.config_dir if isinstance(run, BcbioProject) else []
+    output:
+        done_flag = 'log/config/config.done',
+    params:
+        conf_dir = 'log/config',
+    shell:
+        'for f in {input.conf_dir}/*; do test ! -f $f || cp $f {params.conf_dir}/; done && '
+        'touch {output.done_flag}'
+
+
+rule copy_tsv_inputs:
+    input:
+        tsv_fpaths = run.input_tsv_fpaths if isinstance(run, CustomProject) else []
+    output:
+        done_flag = 'log/config/tsv_inputs.done',
+    params:
+        conf_dir = 'log/config',
+    shell:
+        'for f in {input.tsv_fpaths}; do test ! -f $f || cp $f {params.conf_dir}/; done && '
+        'touch {output.done_flag}'
 
 
 rule umccrise:
     # Copy here output of the "milestone" rules
     # (rules without output defined in the end of each Snakemake.* file)
     input:
-        rules.copy_config.output if isinstance(run, BcbioProject) else [],
-        rules.conpair.output        if 'conpair'        in stages else [],
-        rules.structural.output     if 'structural'     in stages else [],
-        rules.somatic.output        if 'somatic'        in stages else [],
-        rules.peddy.output          if 'peddy'          in stages else [],
-        rules.maf.output            if 'maf'            in stages else [],
-        rules.germline.output       if 'germline'       in stages else [],
-        rules.purple.output         if 'purple'         in stages else [],
-        rules.cacao.output          if 'cacao'          in stages else [],
-        rules.mosdepth.output       if 'mosdepth'       in stages else [],
-        rules.goleft.output         if 'goleft'         in stages else [],
-        rules.pcgr.output           if 'pcgr'           in stages else [],
-        rules.cpsr.output           if 'cpsr'           in stages else [],
-        rules.oncoviruses.output    if 'oncoviruses'    in stages else [],
-        rules.microbiome.output     if 'microbiome'     in stages else [],
-        rules.neoantigens.output    if 'neoantigens'    in stages else [],
-        rules.cancer_report.output  if 'cancer_report'  in stages else [],
-        rules.multiqc.output        if 'multiqc'        in stages else [],
+        rules.copy_config.output      if isinstance(run, BcbioProject) else [],
+        rules.copy_tsv_inputs.output  if isinstance(run, CustomProject) else [],
+        rules.conpair.output          if 'conpair'          in stages else [],
+        rules.structural.output       if 'structural'       in stages else [],
+        rules.somatic.output          if 'somatic'          in stages else [],
+        rules.peddy.output            if 'peddy'            in stages else [],
+        rules.maf.output              if 'maf'              in stages else [],
+        rules.germline.output         if 'germline'         in stages else [],
+        rules.purple.output           if 'purple'           in stages else [],
+        rules.cacao.output            if 'cacao'            in stages else [],
+        rules.mosdepth.output         if 'mosdepth'         in stages else [],
+        rules.samtools_stats.output   if 'samtools_stats'   in stages else [],
+        rules.igv_count.output        if 'igv_count'        in stages else [],
+        rules.goleft.output           if 'goleft'           in stages else [],
+        rules.pcgr.output             if 'pcgr'             in stages else [],
+        rules.cpsr.output             if 'cpsr'             in stages else [],
+        rules.oncoviruses.output      if 'oncoviruses'      in stages else [],
+        rules.microbiome.output       if 'microbiome'       in stages else [],
+        rules.neoantigens.output      if 'neoantigens'      in stages else [],
+        rules.cancer_report.output    if 'cancer_report'    in stages else [],
+        rules.multiqc.output          if 'multiqc'          in stages else [],
     output:
         touch('all.done')

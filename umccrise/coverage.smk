@@ -37,6 +37,7 @@ rule run_mosdepth:
     output:
         '{batch}/coverage/{batch}-{phenotype}.quantized.bed.gz',
         '{batch}/coverage/{batch}-{phenotype}.regions.bed.gz',
+        '{batch}/coverage/{batch}-{phenotype}.mosdepth.global.dist.txt',
     params:
         prefix = '{batch}/coverage/{batch}-{phenotype}',
     resources:
@@ -127,6 +128,30 @@ rule cacao_symlink:
         'cp {input[0]} {output[0]} ; cp {input[1]} {output[1]}'
 
 
+rule run_samtools_stats:
+    input:
+        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam
+    output:
+        stats = '{batch}/coverage/{batch}-{phenotype}.stats.txt'
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 4000
+    shell:
+        'samtools stats {input.bam} > {output.stats}'
+
+
+rule run_igv_count:
+    input:
+        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
+    output:
+        tdf = '{batch}/coverage/{batch}-{phenotype}.tdf'
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 4000
+    params:
+        genome = run.genome_build
+    shell:
+        'igvtools count {input.bam} {output.tdf} {params.genome}'
+
+
 rule cacao:
     input:
         expand(rules.cacao_symlink.output[0], batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
@@ -148,11 +173,27 @@ rule goleft:
         temp(touch('log/goleft.done'))
 
 
+rule samtools_stats:
+    input:
+        expand(rules.run_samtools_stats.output[0], batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
+    output:
+        temp(touch('log/samtools_stats.done'))
+
+
+rule igv_count:
+    input:
+        expand(rules.run_igv_count.output[0], batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
+    output:
+        temp(touch('log/igv_count.done'))
+
+
 rule coverage:
     input:
         'log/coverage.done',
         'log/mosdepth.done',
         'log/goleft.done',
+        'log/samtools_stats.done',
+        'log/igv_count.done',
     output:
         temp(touch('log/coverage.done'))
 

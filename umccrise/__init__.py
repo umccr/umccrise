@@ -243,6 +243,7 @@ def prep_inputs(smconfig, silent=False):
     for input_path in input_paths:
         # parsing a tsv file with an input sample on each line
         if isfile(input_path) and input_path.endswith('.tsv'):
+            custom_run.input_tsv_fpaths.append(input_path)
             with open(input_path) as f:
                 for entry in csv.DictReader(f, delimiter='\t'):
                     b = custom_run.add_batch(entry, dirname(input_path))
@@ -332,7 +333,7 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
         'structural',
         'somatic', 'germline', 'maf',
         'purple',
-        'mosdepth', 'goleft', 'cacao',
+        'mosdepth', 'goleft', 'cacao', 'samtools_stats', 'igv_count',
         'pcgr', 'cpsr',
         'oncoviruses',
         'cancer_report',
@@ -362,7 +363,7 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
             elif s == 'purple':
                 fixed_stages |= {'structural', 'purple'}
             elif s == 'coverage':
-                fixed_stages |= {'mosdepth', 'goleft', 'cacao'}
+                fixed_stages |= {'mosdepth', 'goleft', 'cacao', 'samtools_stats', 'igv_count'}
             elif s == 'small_variants':
                 fixed_stages |= {'somatic', 'germline'}
             elif s == 'cpsr':
@@ -373,6 +374,9 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
                 fixed_stages |= {'oncoviruses'}
             elif s in {'nag', 'immuno'}:
                 fixed_stages |= {'neoantigens'}
+            elif s == 'multiqc':
+                fixed_stages |= {'purple', 'conpair', 'somatic', 'germline', 'oncoviruses',
+                                 'mosdepth', 'samtools_stats'}
             elif s not in default_enabled | default_disabled:
                 critical(f'Stage "{s}" is not recognised. Available: {default_enabled | default_disabled}')
             elif s == 'default':
@@ -385,7 +389,7 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
     exclude_stages = _rename_input_stages(exclude_stages)
 
     selected_stages = (include_stages or default_enabled) - exclude_stages
-    debug(f'selected_stages: {selected_stages}')
+    debug(f'Selected_stages: {selected_stages}')
     return selected_stages
 
 
