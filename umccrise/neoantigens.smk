@@ -116,6 +116,7 @@ if 'neoantigens' in stages:
             threads_per_sample,
         resources:
             mem_mb=10000
+        group: 'hla'
         shell:
              "sambamba view -t{threads} -fbam -F 'unmapped' {input.bam} -o {output.bam}"
 
@@ -127,8 +128,6 @@ if 'neoantigens' in stages:
         params:
             hla_region = {'hg38': 'chr6:29942470-31357179',
                           'GRCh37': '6:29910247-31324989'}[run.genome_build]
-        resources:
-            mem_mb = lambda wildcards, attempt: attempt * 2000
         group: 'hla'
         shell:
             'sambamba slice {input.bam} {params.hla_region} > {output.bam}'
@@ -138,6 +137,7 @@ if 'neoantigens' in stages:
             bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
         output:
             'work/{batch}/hla/from_contigs/{phenotype}_hla_contigs.txt'
+        group: 'hla'
         shell:
             "samtools view -H {input.bam} | "
             "grep 'SN:HLA' | cut -f2 | sed 's/SN://' > {output}"
@@ -218,7 +218,7 @@ if 'neoantigens' in stages:
             out_dir = '{batch}/hla',
             prefix = '{batch}_{phenotype}',
         resources:
-            mem_mb = lambda wildcards, attempt: attempt * 4000
+            mem_mb=10000
         threads:
             threads_per_sample
         group: 'hla'
@@ -231,8 +231,7 @@ if 'neoantigens' in stages:
     # cls=['I', 'II'], source=['seq', 'fuse']
     rule run_nag:
         input:
-            # somatic_vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
-            somatic_vcf = '{batch}/sage/{batch}.pass.vcf.gz',
+            somatic_vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
             hla_file = '{batch}/hla/{batch}_tumor_result.tsv',
         output:
             ranked_seq  = '{batch}/nag/{batch}/pvacseq_results/MHC_Class_I/{batch}.filtered.condensed.ranked.tsv',
@@ -242,25 +241,29 @@ if 'neoantigens' in stages:
         params:
             sname = lambda wc: wc.batch,
             rna_sample = lambda wc: batch_by_name[wc.batch].rna_samples[0].name,
-            rna_bcbio  = lambda wc: batch_by_name[wc.batch].rna_samples[0].parent_project,
+            rna_bcbio  = lambda wc: batch_by_name[wc.batch].rna_samples[0].parent_project.final_dir,
             output_dir = lambda wc: f'{wc.batch}/nag',
             genomes_dir = refdata.genomes_dir,
+            unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
+        resources:
+            mem_mb=10000
         shell:
             conda_cmd.format('neoantigens') + \
             'nag -o {params.output_dir} '
             '-v {input.somatic_vcf} '
             '-O {input.hla_file} '
             '-s {wildcards.batch} '
-            '-R {input.rna_bcbio} '
+            '-R {params.rna_bcbio} '
             '-r {params.rna_sample} '
             '--genomes {params.genomes_dir} '
+            '{params.unlock_opt}'
 
     rule nag_summarize:
         input:
             expand('{batch}/nag/work/{batch}/quality_{{source}}/MHC_Class_I/{batch}_neontigen_quality.tsv',
                    batch=[b for b in batch_by_name.keys() if batch_by_name[b].rna_samples]),
         output:
-            summary = 'nag/MHC_Class_I/summary_{source}.tsv'
+            summary = 'nag/MHC_Class_I_summary_{source}.tsv'
         shell:
             conda_cmd.format('neoantigens') + \
             'nag_summarize {input} -o {output.summary}'
@@ -268,7 +271,8 @@ if 'neoantigens' in stages:
     rule neoantigens:
         input:
             expand(rules.run_optitype.output, batch=batch_by_name.keys(), phenotype=['tumor', 'normal']),
-            expand(rules.nag_summarize.output.summary, source=['seq', 'fuse']) if any(b for b in batch_by_name.keys() if batch_by_name[b].rna_samples) else [],
+            expand(rules.nag_summarize.output.summary, source=['seq', 'fuse'])
+             if any(b for b in batch_by_name.keys() if batch_by_name[b].rna_samples) else [],
         output:
             temp(touch('log/immuno.done'))
 
