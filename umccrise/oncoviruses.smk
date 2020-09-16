@@ -15,6 +15,7 @@ localrules: oncoviruses, oncoviruses_per_batch
 checkpoint viral_content:
     input:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        tumor_bai = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
     output:
         prioritized_tsv = '{batch}/oncoviruses/prioritized_oncoviruses.tsv',
         present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',

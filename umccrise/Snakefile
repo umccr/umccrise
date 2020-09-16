@@ -33,6 +33,16 @@ rule all:
     # A trick to avoid duplicating all input paths in the top "all" rule which has to be defined on top.
 
 
+rule index_bam:
+    input:
+        bam = '{path}.bam'
+    output:
+        bam = '{path}.bam.bai'
+    threads: threads_per_sample
+    shell:
+        'samtools index -@{threads} {input.bam}'
+
+
 include: "conpair.smk"
 include: "structural.smk"
 include: "somatic.smk"

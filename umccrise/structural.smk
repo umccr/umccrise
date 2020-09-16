@@ -223,7 +223,9 @@ rule sv_bpi_maybe:
     input:
         vcf = rules.sv_subsample_if_too_many.output.vcf,
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        tumor_bai = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        normal_bai = lambda wc: batch_by_name[wc.batch].normal.bam + '.bai',
     output:
         vcf = 'work/{batch}/structural/maybe_bpi/{batch}-manta.vcf'
     group: "sv_vcf"

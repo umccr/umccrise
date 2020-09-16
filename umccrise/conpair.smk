@@ -9,7 +9,9 @@ from reference_data import api as refdata
 rule run_conpair:
     input:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        tumor_bai = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        normal_bai = lambda wc: batch_by_name[wc.batch].normal.bam + '.bai',
         ref_fa = refdata.get_ref_file(run.genome_build, key='fa')
     output:
         concord = directory('work/{batch}/conpair/concordance'),

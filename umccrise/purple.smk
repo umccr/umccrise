@@ -35,7 +35,9 @@ amber_mem  = max(min(31000, 4000+3000*threads_per_batch), 8000)
 rule purple_amber:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        tumor_bai  = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
         normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        normal_bai = lambda wc: batch_by_name[wc.batch].normal.bam + '.bai',
         het_snps = refdata.get_ref_file(run.genome_build, 'purple_het'),
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
@@ -74,8 +76,10 @@ rule purple_amber:
 
 rule purple_cobalt:
     input:
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        tumor_bai  = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
+        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        normal_bai = lambda wc: batch_by_name[wc.batch].normal.bam + '.bai',
         gc = refdata.get_ref_file(run.genome_build, 'purple_gc'),
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:

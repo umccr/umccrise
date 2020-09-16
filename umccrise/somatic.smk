@@ -20,9 +20,12 @@ localrules: somatic, germline, germline_batch
 
 rule run_sage:
     input:
-        tumor_bams  = lambda wc: [s.bam for s in batch_by_name[wc.batch].tumors],
-        normal_bams = lambda wc: [s.bam for s in batch_by_name[wc.batch].normals],
-        rna_bams    = lambda wc: [s.bam for s in batch_by_name[wc.batch].rna_samples],
+        tumor_bams  = lambda wc: [s.bam          for s in batch_by_name[wc.batch].tumors],
+        tumor_bais  = lambda wc: [s.bam + '.bai' for s in batch_by_name[wc.batch].tumors],
+        normal_bams = lambda wc: [s.bam          for s in batch_by_name[wc.batch].normals],
+        normal_bais = lambda wc: [s.bam + '.bai' for s in batch_by_name[wc.batch].normals],
+        rna_bams    = lambda wc: [s.bam          for s in batch_by_name[wc.batch].rna_samples],
+        rna_bais    = lambda wc: [s.bam + '.bai' for s in batch_by_name[wc.batch].rna_samples],
 
         ref_fa        = refdata.get_ref_file(run.genome_build, key='fa'),
         hotspots_vcf  = refdata.get_ref_file(run.genome_build, key='hotspots'),
