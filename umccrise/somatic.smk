@@ -121,9 +121,17 @@ rule somatic_vcf_sage1:
         mem_mb = 20000
     group: "somatic_anno"
     shell:
-        'sage -t {input.tumor_bam} -n {input.normal_bam} -v {input.vcf} -o {output.vcf} -s {output.sage_vcf} '
-        '-tn {params.tumor_sample} -nn {params.normal_sample} '
-        '-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
+        'sage '
+        '-t {input.tumor_bam} '
+        '-n {input.normal_bam} '
+        '-v {input.vcf} '
+        '-o {output.vcf} '
+        '-s {output.sage_vcf} '
+        '-tn {params.tumor_sample} '
+        '-nn {params.normal_sample} '
+        '-w {params.work_dir} '
+        '-g {params.genome} '
+        '--genomes-dir {params.genomes_dir} '
         '{params.unlock_opt}'
 
 rule somatic_vcf_annotate:
@@ -145,11 +153,19 @@ rule somatic_vcf_annotate:
     resources:
         mem_mb = 20000
     group: "somatic_anno"
-    shell:
-        'anno_somatic_vcf {input.vcf} -o {output.vcf} '
-        '-tn {params.tumor_names} -nn {params.normal_names} '
-        '-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
-        '{params.unlock_opt}'
+    run:
+        t_samples = [s.rgid for s in batch_by_name[wildcards.batch].tumors]
+        assert t_samples
+        n_samples = [s.rgid for s in batch_by_name[wildcards.batch].normals]
+        tn_opt = f'-tn {",".join(t_samples)}'
+        nn_opt = f'-nn {",".join(n_samples)}' if n_samples else ''
+        rn_opt = f'-rn {wildcards.batch}_rna' if batch_by_name[wildcards.batch].rna_samples else ''
+        shell(
+            f'anno_somatic_vcf {input.vcf} -o {output.vcf} '
+            f'{tn_opt} {nn_opt} {rn_opt} '
+            f'-w {params.work_dir} -g {params.genome} --genomes-dir {params.genomes_dir} '
+            f'{params.unlock_opt}'
+        )
 
 rule somatic_vcf_filter:
     input:
@@ -159,12 +175,18 @@ rule somatic_vcf_filter:
     group: "somatic_filt"
     params:
         min_af = config.get('min_af', 0.1),
-        tumor_names   = lambda wc: ','.join(s.rgid for s in batch_by_name[wc.batch].tumors),
-        normal_names  = lambda wc: ','.join(s.rgid for s in batch_by_name[wc.batch].normals),
-    shell:
-        'filter_somatic_vcf {input.vcf} -o {output.vcf}'
-         ' -tn {params.tumor_names} -nn {params.normal_names}'
-        ' --min-af {params.min_af}'
+    run:
+        t_samples = [s.rgid for s in batch_by_name[wildcards.batch].tumors]
+        assert t_samples
+        n_samples = [s.rgid for s in batch_by_name[wildcards.batch].normals]
+        tn_opt = f'-tn {",".join(t_samples)}'
+        nn_opt = f'-nn {",".join(n_samples)}' if n_samples else ''
+        rn_opt = f'-rn {wildcards.batch}_rna' if batch_by_name[wildcards.batch].rna_samples else ''
+        shell(
+            f'filter_somatic_vcf {input.vcf} -o {output.vcf} '
+            f'{tn_opt} {nn_opt} {rn_opt} '
+            f'--min-af {params.min_af}'
+        )
 
 rule somatic_vcf_filter_pass:
     input:
