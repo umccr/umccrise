@@ -1,3 +1,10 @@
+1.1.0 (21 Sep 2020)
+
+- Support TSV input
+- Add samtools stats (for QC for TSV runs)
+- Support RNAseq input (currently as part of the TSV input support)
+- Integrate [neoantigens](https://github.com/umccr/neoantigens)
+
 1.0.9 (16 Jul 2020)
 
 - Oncoviruses: decreased the significance threshold to report candidate viruses
