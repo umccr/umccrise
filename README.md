@@ -124,8 +124,8 @@ Umccrise needs a 64G bundle of reference data to run. In UMCCR environemnt, sign
 ```shell
 aws sso login --profile sso-dev-admin
 umccrise_refdata_pull
+export UMCCRISE_GENOMES=${PWD}/refdata/genomes
 ```
-
 
 On HPC like [UniMelb Spartan](https://dashboard.hpc.unimelb.edu.au/)
 or [NCI Gadi](https://nci.org.au/our-systems/hpc-systems), umccrise automatically finds the reference data.

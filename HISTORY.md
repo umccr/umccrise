@@ -4,6 +4,7 @@
 - Add samtools stats (for QC for TSV runs)
 - Support RNAseq input (currently as part of the TSV input support)
 - Integrate [neoantigens](https://github.com/umccr/neoantigens)
+- Add `umccrise_refdata_pull` that pulls genomes as long as you are signed in in UMCCR AWS
 
 1.0.9 (16 Jul 2020)
 
