@@ -30,8 +30,8 @@ def _get_low_high_covs(phenotype, purple_file):
 # Looking at coverage for a limited set of (cancer) genes to assess overall reliability.
 rule run_mosdepth:
     input:
-        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam + '.bai',
+        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
+        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam + '.bai',
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
         purple_file = 'work/{batch}/purple/{batch}.purple.purity.tsv' if 'purple' in stages else [],
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
@@ -68,10 +68,10 @@ rule run_mosdepth:
 #  but it is sufficient to find large-scale differences in coverage.
 rule goleft_plots:
     input:
-        bam = lambda wc: batch_by_name[wc.batch].tumor.bam + \
-            ('.crai' if batch_by_name[wc.batch].tumor.bam.endswith('.cram') else ''),
-        bai = lambda wc: batch_by_name[wc.batch].tumor.bam + \
-            ('.crai' if batch_by_name[wc.batch].tumor.bam.endswith('.cram') else '.bai'),
+        bam = lambda wc: batch_by_name[wc.batch].tumors[0].bam + \
+            ('.crai' if batch_by_name[wc.batch].tumors[0].bam.endswith('.cram') else ''),
+        bai = lambda wc: batch_by_name[wc.batch].tumors[0].bam + \
+            ('.crai' if batch_by_name[wc.batch].tumors[0].bam.endswith('.cram') else '.bai'),
         fai = refdata.get_ref_file(run.genome_build, 'fa') + '.fai',
     params:
         directory = '{batch}/coverage/{batch}-indexcov',
@@ -94,8 +94,8 @@ pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'
 
 rule run_cacao:
     input:
-        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam + '.bai',
+        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
+        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam + '.bai',
         purple_file = 'work/{batch}/purple/{batch}.purple.purity.tsv' if 'purple' in stages else [],
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
@@ -134,8 +134,8 @@ rule cacao_symlink:
 
 rule run_samtools_stats:
     input:
-        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam + '.bai',
+        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
+        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam + '.bai',
     output:
         stats = '{batch}/coverage/{batch}-{phenotype}.stats.txt'
     resources:
@@ -146,8 +146,8 @@ rule run_samtools_stats:
 
 rule run_igv_count:
     input:
-        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
-        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam + '.bai',
+        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
+        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam + '.bai',
     output:
         tdf = '{batch}/coverage/{batch}-{phenotype}.tdf'
     resources:

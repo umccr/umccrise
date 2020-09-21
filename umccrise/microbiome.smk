@@ -27,7 +27,7 @@ if 'microbiome' in stages:
 
     rule extract_unmapped:
         input:
-            host_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
+            host_bam = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
         output:
             host_bam_namesorted = 'work/{batch}/microbiome/step1_unmapped.namesorted.bam',
         threads:

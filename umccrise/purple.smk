@@ -34,10 +34,10 @@ amber_mem  = max(min(31000, 4000+3000*threads_per_batch), 8000)
 
 rule purple_amber:
     input:
-        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        tumor_bai  = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        normal_bai = lambda wc: batch_by_name[wc.batch].normal.bam + '.bai',
+        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
+        tumor_bai  = lambda wc: batch_by_name[wc.batch].tumors[0].bam + '.bai',
+        normal_bam = lambda wc: batch_by_name[wc.batch].normals[0].bam,
+        normal_bai = lambda wc: batch_by_name[wc.batch].normals[0].bam + '.bai',
         het_snps = refdata.get_ref_file(run.genome_build, 'purple_het'),
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
@@ -48,8 +48,8 @@ rule purple_amber:
         'work/{batch}/purple/amber/{batch}.amber.contamination.vcf.gz',
         'work/{batch}/purple/amber/{batch}.amber.qc',
     params:
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
-        normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
+        normal_name = lambda wc: batch_by_name[wc.batch].normals[0].name,
         outdir = 'work/{batch}/purple/amber',
         xms = 4000,
     log:
@@ -76,10 +76,10 @@ rule purple_amber:
 
 rule purple_cobalt:
     input:
-        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        tumor_bai  = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        normal_bai = lambda wc: batch_by_name[wc.batch].normal.bam + '.bai',
+        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
+        tumor_bai  = lambda wc: batch_by_name[wc.batch].tumors[0].bam + '.bai',
+        normal_bam = lambda wc: batch_by_name[wc.batch].normals[0].bam,
+        normal_bai = lambda wc: batch_by_name[wc.batch].normals[0].bam + '.bai',
         gc = refdata.get_ref_file(run.genome_build, 'purple_gc'),
         ref_fa = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
@@ -88,8 +88,8 @@ rule purple_cobalt:
         'work/{batch}/purple/cobalt/{batch}.cobalt.gc.median',
     params:
         outdir = 'work/{batch}/purple/cobalt',
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
-        normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
+        normal_sname = lambda wc: batch_by_name[wc.batch].normals[0].name,
         xms = 2000,
     log:
         'log/purple/{batch}/{batch}.cobalt.log'
@@ -119,7 +119,7 @@ rule purple_somatic_vcf:
     output:
         'work/{batch}/purple/somatic.vcf',
     params:
-        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.rgid,
+        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
     group: 'purple_main'
     shell:
         'bcftools view -s {params.tumor_sname} {input} | '
@@ -157,8 +157,8 @@ rule purple_run:
     group: 'purple_main'
     params:
         outdir = 'work/{batch}/purple',
-        normal_sname = lambda wc: batch_by_name[wc.batch].normal.name,
-        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumor.name,
+        normal_sname = lambda wc: batch_by_name[wc.batch].normals[0].name,
+        tumor_sname  = lambda wc: batch_by_name[wc.batch].tumors[0].name,
         xms = 2000,
     log:
         'log/purple/{batch}/{batch}.purple.log'

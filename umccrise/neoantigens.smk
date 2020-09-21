@@ -109,7 +109,7 @@ if 'neoantigens' in stages:
 
     rule extract_hla_from_unmapped:
         input:
-            bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
+            bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
         output:
             bam = 'work/{batch}/hla/from_unmapped/{phenotype}.bam'
         threads:
@@ -122,7 +122,7 @@ if 'neoantigens' in stages:
 
     rule extract_hla_from_chr6:
         input:
-            bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
+            bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
         output:
             bam = 'work/{batch}/hla/from_chr6/{phenotype}.bam'
         params:
@@ -134,7 +134,7 @@ if 'neoantigens' in stages:
 
     rule extract_hla_contigs:
         input:
-            bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
+            bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
         output:
             'work/{batch}/hla/from_contigs/{phenotype}_hla_contigs.txt'
         group: 'hla'
@@ -144,7 +144,7 @@ if 'neoantigens' in stages:
 
     rule extract_hla_from_hla_contigs:
         input:
-            bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).bam,
+            bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
             hla_contigs = rules.extract_hla_contigs.output[0],
         output:
             bam = 'work/{batch}/hla/from_contigs/{phenotype}.bam'

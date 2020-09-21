@@ -8,10 +8,10 @@ from reference_data import api as refdata
 
 rule run_conpair:
     input:
-        tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        tumor_bai = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        normal_bai = lambda wc: batch_by_name[wc.batch].normal.bam + '.bai',
+        tumor_bam = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
+        tumor_bai = lambda wc: batch_by_name[wc.batch].tumors[0].bam + '.bai',
+        normal_bam = lambda wc: batch_by_name[wc.batch].normals[0].bam,
+        normal_bai = lambda wc: batch_by_name[wc.batch].normals[0].bam + '.bai',
         ref_fa = refdata.get_ref_file(run.genome_build, key='fa')
     output:
         concord = directory('work/{batch}/conpair/concordance'),
@@ -25,11 +25,12 @@ rule run_conpair:
     params:
         genome = run.genome_build,
         out_dir = 'work/{batch}/conpair',
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
-        normal_name = lambda wc: batch_by_name[wc.batch].normal.name,
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
+        normal_name = lambda wc: batch_by_name[wc.batch].normals[0].name,
     shell:
         conda_cmd.format('conpair') + \
-        'conpair -T {input.tumor_bam} -N {input.normal_bam} --ref-fa {input.ref_fa} -g {params.genome} -j {threads} '
+        'conpair -T {input.tumor_bam} -N {input.normal_bam} '
+        '--ref-fa {input.ref_fa} -g {params.genome} -j {threads} '
         '-o {params.out_dir} -tn {params.tumor_name} -nn {params.normal_name}'
         ' || touch work/{wildcards.batch}/conpair/failed'
 

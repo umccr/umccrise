@@ -68,8 +68,8 @@ rule germline_leakage:
     group: "germline_snv"
     params:
         toremove = 'INFO/AC,INFO/AF,INFO/TUMOR_AF,INFO/TUMOR_VD,INFO_TUMOR_MQ,INFO/TUMOR_DP,FORMAT/AD,FORMAT/ADJAF,FORMAT/AF,FORMAT/VD,FILTER',
-        tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
-        normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
+        tumor_sample = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
+        normal_sample = lambda wc: batch_by_name[wc.batch].normals[0].rgid,
     shell:
         'bcftools filter -i "Germline=1" {input.vcf} | '
         'bcftools annotate -x "{params.toremove}" | ' 
@@ -116,7 +116,7 @@ rule germline_stats_report:
     output:
         'work/{batch}/small_variants/{batch}_germline_stats.yml',
     params:
-        sample = lambda wc: batch_by_name[wc.batch].normal.name
+        sample = lambda wc: batch_by_name[wc.batch].normals[0].name
     group: "germline_snv"
     run:
         pass_cnt = int(subprocess.check_output(
@@ -147,7 +147,7 @@ rule bcftools_stats_germline:
         '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
     group: "germline_snv"
     params:
-        sname = lambda wc: batch_by_name[wc.batch].normal.rgid,
+        sname = lambda wc: batch_by_name[wc.batch].normals[0].rgid,
     shell:
         'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
 
@@ -168,7 +168,7 @@ rule germline_batch:
                                            input):
             shell(f'mkdir -p {join(bn, "small_variants")}')
             renamed_germline_vcf = join(bn, 'small_variants',
-                     f'{batch}__{batch.normal.name}-germline.predispose_genes.vcf.gz')
+                     f'{batch}__{batch.normals[0].name}-germline.predispose_genes.vcf.gz')
             shell(f'cp {germline_vcf} {renamed_germline_vcf}')
             shell(f'tabix -p vcf {renamed_germline_vcf}')
 

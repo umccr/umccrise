@@ -40,7 +40,7 @@ rule afs:
     input:
         'work/{batch}/cancer_report/afs/somatic-confident-singleallelic.vcf.gz'
     params:
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].rgid
     output:
         'work/{batch}/cancer_report/afs/af_tumor.txt'
     group: "rmd_prep"
@@ -54,7 +54,7 @@ rule afs_keygenes:
         vcf = 'work/{batch}/cancer_report/afs/somatic-confident-singleallelic.vcf.gz',
         bed = get_key_genes_bed(run.genome_build, coding_only=True),
     params:
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].rgid
     output:
         'work/{batch}/cancer_report/afs/af_tumor_keygenes.txt'
     group: "rmd_prep"
@@ -106,7 +106,7 @@ rule run_cancer_report:
 
     params:
         report_rmd = 'cancer_report.Rmd',
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.rgid,
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
         work_dir = os.getcwd(),
         output_file = lambda wc, output: join(os.getcwd(), output[0]),
         rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,

@@ -14,8 +14,8 @@ localrules: oncoviruses, oncoviruses_per_batch
 
 checkpoint viral_content:
     input:
-        tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        tumor_bai = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
+        tumor_bam = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
+        tumor_bai = lambda wc: batch_by_name[wc.batch].tumors[0].bam + '.bai',
     output:
         prioritized_tsv = '{batch}/oncoviruses/prioritized_oncoviruses.tsv',
         present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
@@ -23,7 +23,7 @@ checkpoint viral_content:
         genomes_dir = refdata.genomes_dir,
         work_dir = 'work/{batch}/oncoviruses',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
     threads:
         threads_per_batch
     resources:
@@ -52,7 +52,7 @@ checkpoint viral_content:
 
 rule viral_integration_sites:
     input:
-        tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
+        tumor_bam = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
         significant_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
     output:
         breakpoints_vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf.gz',
@@ -60,7 +60,7 @@ rule viral_integration_sites:
         genomes_dir = refdata.genomes_dir,
         work_dir = 'work/{batch}/oncoviruses',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumor.name,
+        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
     threads:
         threads_per_batch
     resources:
@@ -98,7 +98,7 @@ rule oncoviruses_breakpoints_tsv:
         tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv'
     group: "viral_is"
     run:
-        sample_name = batch_by_name[wildcards.batch].tumor.name
+        sample_name = batch_by_name[wildcards.batch].tumors[0].name
         viruses = open(input.present_viruses).read().split(',')
         with open(output.tsv, 'w') as out:
             header = ['sample', 'contig', 'start', 'end', 'svtype',
@@ -233,7 +233,7 @@ rule oncoviral_multiqc:
         data_yml = 'work/{batch}/oncoviruses/{batch}_oncoviruses_stats_data.yml',
         header_yml = 'work/{batch}/oncoviruses/{batch}_oncoviruses_stats_header.yml',
     params:
-        sample = lambda wc: batch_by_name[wc.batch].tumor.name,
+        sample = lambda wc: batch_by_name[wc.batch].tumors[0].name,
         breakpoints_tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv',
     resources:
         mem_mb = lambda wildcards, attempt: 4000 * attempt,

@@ -126,7 +126,7 @@ class CustomProject(BaseProject):
                     assay='wgs',
                     bam=normal_bam)
                 self.samples.append(wgs_normal_s)
-                wgs_s.normal_match = wgs_normal_s
+                wgs_s.normal_matches.append(wgs_normal_s)
                 b.add_normal(wgs_normal_s)
 
         if exome_bam:
@@ -147,7 +147,7 @@ class CustomProject(BaseProject):
                     assay='exome',
                     bam=exome_normal_bam)
                 self.samples.append(exome_normal_s)
-                exome_s.normal_match = exome_normal_s
+                exome_s.normal_matches.append(exome_normal_s)
                 b.add_normal(exome_normal_s)
 
         if rna_sample:
@@ -180,11 +180,11 @@ class CustomProject(BaseProject):
             b = self.batch_by_name[tumor_name]
         else:
             b = CustomBatch(tumor_name)
-            b.tumor = CustomSample(name=tumor_name)
+            b.tumors.append(CustomSample(name=tumor_name))
             if normal_name:
-                b.normal = CustomSample(name=normal_name)
+                b.normals.append(CustomSample(name=normal_name))
             self.batch_by_name[tumor_name] = b
-            self.samples.extend([b.tumor, b.normal])
+            self.samples.extend(b.tumors + b.normals)
         return b
 
     def add_file(self, fpath):
@@ -192,7 +192,7 @@ class CustomProject(BaseProject):
             sample_name = bam_utils.sample_name_from_bam(fpath)
             b = self.get_or_create_batch(sample_name)
             if b:
-                b.tumor.bam = fpath
+                b.tumors[0].bam = fpath
 
         if fpath.endswith('.vcf.gz'):
             sample_names = vcf_utils.get_sample_names(fpath)
@@ -321,13 +321,14 @@ def prep_inputs(smconfig, silent=False):
 
     # Batch objects index by tumor sample names
     batches = [b for b in combined_run.batch_by_name.values()
-               if not b.is_germline() and (b.tumor or b.tumors) and (b.normal or b.normals)]
+               if not b.is_germline() and b.tumors
+               and b.normals]
     assert batches
     batch_by_name = dict()
     for b in batches:
         new_name = include_samples_map.get(b.name) or \
-                   include_samples_map.get(b.tumor.name) or \
-                   b.name + '__' + b.tumor.name
+                   include_samples_map.get(b.tumors[0].name) or \
+                   b.name + '__' + b.tumors[0].name
         batch_by_name[new_name] = b
 
     return combined_run, batch_by_name

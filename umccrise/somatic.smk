@@ -103,8 +103,8 @@ rule somatic_vcf_select_noalt:
 rule somatic_vcf_sage1:
     input:
         vcf = rules.somatic_vcf_select_noalt.output.vcf,
-        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
+        tumor_bam  = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
+        normal_bam = lambda wc: batch_by_name[wc.batch].normals[0].bam,
     output:
         vcf = 'work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz',
         tbi = 'work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz.tbi',
@@ -115,8 +115,8 @@ rule somatic_vcf_sage1:
         genomes_dir = refdata.genomes_dir,
         work_dir = 'work/{batch}/small_variants/sage1',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
-        tumor_sample = lambda wc: batch_by_name[wc.batch].tumor.rgid,
-        normal_sample = lambda wc: batch_by_name[wc.batch].normal.rgid,
+        tumor_sample = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
+        normal_sample = lambda wc: batch_by_name[wc.batch].normals[0].rgid,
     resources:
         mem_mb = 20000
     group: "somatic_anno"
@@ -206,7 +206,7 @@ rule bcftools_stats_somatic:
         '{batch}/small_variants/stats/{batch}_bcftools_stats.txt'
     group: "somatic_filt"
     params:
-        sname = lambda wc: batch_by_name[wc.batch].tumor.rgid,
+        sname = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
     shell:
         'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
 
@@ -264,7 +264,7 @@ rule somatic_stats_report:
 rule somatic_vcf2maf:
     input:
         vcf = rules.somatic_vcf_filter_pass.output.vcf,
-        fa = refdata.get_ref_file(genome=run.genome_build, key='fa')
+        fa = refdata.get_ref_file(genome=run.genome_build, key='fa'),
     output:
         maf = '{batch}/small_variants/{batch}-somatic-PASS.maf',
     params:
@@ -273,7 +273,7 @@ rule somatic_vcf2maf:
         tname = lambda wc: [s.rgid for s in batch_by_name[wc.batch].tumors][0],
         nname = lambda wc: [s.rgid for s in batch_by_name[wc.batch].normals][0],
         ncbi_build = {'hg38': 'GRCh38', 'GRCh37': 'GRCh37'}.get(run.genome_build),
-        uncompressed_tmp_vcf = 'work/{batch}/small_variants/{batch}-somatic.vcf.tmp'
+        uncompressed_tmp_vcf = 'work/{batch}/small_variants/{batch}-somatic.vcf.tmp',
     shell:
         'gunzip -c {input.vcf} > {params.uncompressed_tmp_vcf} '
         '&& vcf2maf.pl --inhibit-vep ' 

@@ -58,8 +58,8 @@ def find_bcbio_qc_files(batch: BcbioBatch, dst_dir):
         ] + (['.*peddy.*'] if 'peddy' in stages else []),
         include_files=[
             f'.*{batch.name}.*',
-            f'.*{batch.tumor.name}.*',
-        ] + [f'.*{batch.normal.name}.*'] if batch.normal else [],
+            f'.*{batch.tumors[0].name}.*',
+        ] + [f'.*{batch.normals[0].name}.*'] if batch.normals[0] else [],
     )
     return bcbio_qc_files
 
@@ -82,7 +82,7 @@ rule prep_multiqc_data:
         samtools_stats_n        = '{batch}/coverage/{batch}-normal.stats.txt' if 'samtools_stats' in stages else [],
         mosdepth_t              = '{batch}/coverage/{batch}-tumor.mosdepth.global.dist.txt'  if 'mosdepth' in stages else [],
         mosdepth_n              = '{batch}/coverage/{batch}-normal.mosdepth.global.dist.txt' if 'mosdepth' in stages else [],
-        peddy_dirs              = expand(rules.run_peddy.output.dir.replace('{batch}', '{{batch}}'), \
+        peddy_dirs              = expand(rules.run_peddy.output.dir.replace('{batch}', '{{batch}}'),
                                          phenotype=['normal']) if 'peddy' in stages else [],
     output:
         filelist                = 'work/{batch}/multiqc_data/filelist.txt',
@@ -122,8 +122,10 @@ rule prep_multiqc_data:
 
         # Umccrise QC files
         if 'purple' in stages:
-            renamed_purple_qc    = join(params.data_dir, basename(input.purple_qc   ).replace(wildcards.batch, batch.tumor.name))
-            renamed_purple_stats = join(params.data_dir, basename(input.purple_stats).replace(wildcards.batch, batch.tumor.name))
+            renamed_purple_qc    = join(params.data_dir, basename(input.purple_qc) \
+                .replace(wildcards.batch, batch.tumors[0].name))
+            renamed_purple_stats = join(params.data_dir, basename(input.purple_stats) \
+                .replace(wildcards.batch, batch.tumors[0].name))
             shell(f'cp {input.purple_qc} {renamed_purple_qc}')
             shell(f'cp {input.purple_stats} {renamed_purple_stats}')
             qc_files.extend([
@@ -148,21 +150,21 @@ rule prep_multiqc_data:
                 generated_conf.update(yaml.load(f))
         if 'conpair' in stages:
             qc_files.extend([
-                join(input.conpair_concord, batch.tumor.name + '.concordance.txt'),
-                join(input.conpair_contam, batch.normal.name + '.contamination.txt'),
-                join(input.conpair_contam, batch.tumor.name + '.contamination.txt'),
+                join(input.conpair_concord, batch.tumors[0].name + '.concordance.txt'),
+                join(input.conpair_contam, batch.normals[0].name + '.contamination.txt'),
+                join(input.conpair_contam, batch.tumors[0].name + '.contamination.txt'),
             ])
-        if 'samtools_stats' in stages:
+        if 'samtools_stats' in stages and not isinstance(run, BcbioProject):
             qc_files.extend([
                 input.samtools_stats_t,
                 input.samtools_stats_n,
             ])
-        if 'mosdepth' in stages:
+        if 'mosdepth' in stages and not isinstance(run, BcbioProject):
             qc_files.extend([
                 input.mosdepth_t,
                 input.mosdepth_n,
             ])
-        if 'peddy' in stages:
+        if 'peddy' in stages and not isinstance(run, BcbioProject):
             peddy_files = []
             for d in input.peddy_dirs:
                 peddy_files.extend(glob.glob(join(d, '*.peddy.ped')))
@@ -196,8 +198,9 @@ rule batch_multiqc:
         list_files = input.filelist
         if isinstance(run, BcbioProject):
             other_samples=[
-                s.name for s in run.samples if s.name not in [batch_by_name[wildcards.batch].tumor.name,
-                                                              batch_by_name[wildcards.batch].normal.name]]
+                s.name for s in run.samples if s.name not in
+                    [batch_by_name[wildcards.batch].tumors[0].name,
+                     batch_by_name[wildcards.batch].normals[0].name]]
             if other_samples:
                 greps = ''.join(f' | grep -v "__{sn}/" | grep -v "/{sn}/" | grep -v "/{sn}_bcbio.txt"' for sn in other_samples)
                 list_files = f'<(cat {input.filelist}{greps})'

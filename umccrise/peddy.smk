@@ -13,7 +13,7 @@ rule create_ped_file:
         ped = 'work/{batch}/peddy.ped'
     group: 'peddy'
     params:
-        sample_name = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype).name,
+        sample_name = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].name,
     run:
         header = ['#Family_ID', 'Individual_ID', 'Paternal_ID', 'Maternal_ID', 'Sex', 'Phenotype']
                   # P003         CCR180088_NH18T002P003    -9             -9      0            2
@@ -34,7 +34,7 @@ rule run_peddy:
     group: 'peddy'
     params:
         prefix = lambda wc, input, output: \
-            join(output.dir, getattr(batch_by_name[wc.batch], wc.phenotype).name),
+            join(output.dir, getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].name),
         genome = run.genome_build,
         phenotype = lambda wc: wc.phenotype,
     threads:

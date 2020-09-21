@@ -222,10 +222,10 @@ rule sv_subsample_if_too_many:
 rule sv_bpi_maybe:
     input:
         vcf = rules.sv_subsample_if_too_many.output.vcf,
-        tumor_bam = lambda wc: batch_by_name[wc.batch].tumor.bam,
-        tumor_bai = lambda wc: batch_by_name[wc.batch].tumor.bam + '.bai',
-        normal_bam = lambda wc: batch_by_name[wc.batch].normal.bam,
-        normal_bai = lambda wc: batch_by_name[wc.batch].normal.bam + '.bai',
+        tumor_bam = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
+        tumor_bai = lambda wc: batch_by_name[wc.batch].tumors[0].bam + '.bai',
+        normal_bam = lambda wc: batch_by_name[wc.batch].normals[0].bam,
+        normal_bai = lambda wc: batch_by_name[wc.batch].normals[0].bam + '.bai',
     output:
         vcf = 'work/{batch}/structural/maybe_bpi/{batch}-manta.vcf'
     group: "sv_vcf"
@@ -267,7 +267,7 @@ rule filter_sv_vcf:
         tbi = 'work/{batch}/structural/filt/{batch}-manta.vcf.gz.tbi',
     group: "sv_vcf"
     run:
-        t_name = batch_by_name[wildcards.batch].tumor.rgid
+        t_name = batch_by_name[wildcards.batch].tumors[0].rgid
         vcf_samples = VCF(input.vcf).samples
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.vcf}, available: {vcf_samples}"
         tumor_id = vcf_samples.index(t_name)
@@ -341,8 +341,8 @@ rule prep_sv_tsv:
         '{batch}/structural/{batch}-manta.tsv'
     group: "sv_after_purple"
     run:
-        sample_name = batch_by_name[wildcards.batch].tumor.name
-        rgid = batch_by_name[wildcards.batch].tumor.rgid
+        sample_name = batch_by_name[wildcards.batch].tumors[0].name
+        rgid = batch_by_name[wildcards.batch].tumors[0].rgid
         vcf_samples = VCF(input.vcf).samples
         assert rgid in vcf_samples, f"Tumor sample {rgid} is not in VCF {input.vcf}, available: {vcf_samples}"
         tumor_id = VCF(input.vcf).samples.index(rgid)
