@@ -144,6 +144,8 @@ rule purple_run:
 
         circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
         input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
+        cn_png        = 'work/{batch}/purple/plot/{batch}.copynumber.png',
+        ma_png        = 'work/{batch}/purple/plot/{batch}.map.png',
         purity_png    = 'work/{batch}/purple/plot/{batch}.purity.range.png',
         segment_png   = 'work/{batch}/purple/plot/{batch}.segment.png',
         clonality_png = 'work/{batch}/purple/plot/{batch}.somatic.clonality.png',
