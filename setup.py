@@ -26,6 +26,7 @@ setup(
         'scripts/conpair',
         'scripts/gpl.py',
         'scripts/gridss.py',
+        'scripts/umccrise_refdata_pull',
     ],
     include_package_data=True,
     zip_safe=False,

@@ -114,15 +114,23 @@ source umccrise.git/install.sh
 The above will generate a `load_umccrise.sh` script that can be sourced to load the umccrise conda environment on demand:
 
 ```shell
-source load_umccrise.sh
+bash load_umccrise.sh
 ```
 
 ## Reference data
 
-You will need to access the required reference data. umccrise automatically finds reference data on the [UniMelb Spartan](https://dashboard.hpc.unimelb.edu.au/)
-and [NCI Gadi](https://nci.org.au/our-systems/hpc-systems) HPC environments, as well as the reference data bundle mounted to the Docker image under `/genomes`.
+Umccrise needs a 64G bundle of reference data to run. In UMCCR environemnt, sign in to AWS, and run `umccrise_refdata_pull`
 
-You can specify a custom path with `--genomes <path>`. The path can be a tarball and will be automatically extracted.
+```shell
+aws sso login --profile sso-dev-admin
+umccrise_refdata_pull
+```
+
+
+On HPC like [UniMelb Spartan](https://dashboard.hpc.unimelb.edu.au/)
+or [NCI Gadi](https://nci.org.au/our-systems/hpc-systems), umccrise automatically finds the reference data.
+
+Alternatively, you can specify a custom path with `--genomes <path>`. The path can be a tarball and will be automatically extracted.
 
 The path can also be a location on S3 or GDS, prefixed with `s3://` or `gds://`. E.g.:
 

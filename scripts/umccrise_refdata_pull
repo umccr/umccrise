@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+LOCATION=${1:-"$PWD"}
+GENOME_BUILD=${2:-"hg38"}
+
+git clone https://github.com/umccr/reference_data ${LOCATION}/refdata
+cd ${LOCATION}/refdata || exit
+scripts/reference_data_pull ${GENOME_BUILD}
