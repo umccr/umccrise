@@ -33,8 +33,6 @@ dependencies:
   - break-point-inspector
   - tabix
   - goleft
-  - awscli
-  - pyasn1      # for awscli - for some reason doesn't install automatically on macos
   - parallel    # for general use
   - pygraphviz  # for snakemake report
   - pygments    # for snakemake report
@@ -52,7 +50,6 @@ dependencies:
   - ngs_utils
   - versionpy
   - bed_annotation
-  - oviraptor
   - natsort      # for bcbio.py in ngs_utils
   - igvtools
   - openjdk >=11 # for igvtools

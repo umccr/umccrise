@@ -1,0 +1,11 @@
+name: umccrise_oviraptor
+
+channels:
+  - vladsaveliev
+  - bioconda
+  - conda-forge
+  - defaults
+  - anaconda
+
+dependencies:
+  - oviraptor

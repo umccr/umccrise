@@ -27,6 +27,7 @@ mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file ${GIT_DIR}/envs/h
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_cancer_report --file ${GIT_DIR}/envs/cancer_report.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_conpair --file ${GIT_DIR}/envs/conpair.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_neoantigens --file ${GIT_DIR}/envs/neoantigens.yml
+mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_oviraptor --file ${GIT_DIR}/envs/oviraptor.yml
 if [[ "$OSTYPE" == "darwin"* ]]; then
     mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_pcgr --file ${GIT_DIR}/envs/pcgr_macos.yml
 else

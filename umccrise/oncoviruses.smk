@@ -32,8 +32,11 @@ checkpoint viral_content:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
     group: "viral_content"
     run:
-        shell('oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
-              '--genomes-dir {params.genomes_dir} {params.unlock_opt} --only-detect')
+        shell(
+            conda_cmd.format('oviraptor') + \
+            'oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
+            '--genomes-dir {params.genomes_dir} {params.unlock_opt} --only-detect'
+        )
         # if verify_file(join(params.work_dir, 'breakpoints.vcf.gz')):
         #     shell('cp {params.work_dir}/breakpoints.vcf.gz {params.breakpoints_vcf}')
         shell('cp {params.work_dir}/prioritized_oncoviruses.tsv {output.prioritized_tsv}')
@@ -69,6 +72,7 @@ rule viral_integration_sites:
         'benchmarks/{batch}/oncoviruses/{batch}-oncoviruses.tsv'
     group: "viral_is"
     shell:
+        conda_cmd.format('oviraptor') + \
         'oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
         '--genomes-dir {params.genomes_dir} {params.unlock_opt} -v $(cat {input.significant_viruses})'
         '; cp {params.work_dir}/breakpoints.vcf.gz {output.breakpoints_vcf}'
