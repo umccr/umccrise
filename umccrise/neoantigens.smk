@@ -245,6 +245,8 @@ if 'neoantigens' in stages:
             output_dir = lambda wc: f'{wc.batch}/nag',
             genomes_dir = refdata.genomes_dir,
             unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
+        threads:
+            threads_per_batch
         resources:
             mem_mb=10000
         shell:
