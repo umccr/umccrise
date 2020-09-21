@@ -23,7 +23,8 @@ threads_per_batch = config['threads_per_batch']
 threads_per_sample = config['threads_per_sample']
 
 
-stages = prep_stages([s for s in config.get('include_stages', '').split(',') if s],
+stages = prep_stages(run,
+                     [s for s in config.get('include_stages', '').split(',') if s],
                      [s for s in config.get('exclude_stages', '').split(',') if s])
 debug(f'Stages to run: {stages}')
 

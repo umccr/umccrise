@@ -334,13 +334,13 @@ def prep_inputs(smconfig, silent=False):
     return combined_run, batch_by_name
 
 
-def prep_stages(include_stages=None, exclude_stages=None, run=None):
+def prep_stages(run, include_stages=None, exclude_stages=None):
     default_enabled = {
         'conpair',
         'structural',
         'somatic', 'germline', 'maf',
         'purple',
-        'mosdepth', 'goleft', 'cacao', 'samtools_stats', 'igv_count',
+        'mosdepth', 'goleft', 'cacao',
         'pcgr', 'cpsr',
         'oncoviruses',
         'cancer_report',
@@ -371,7 +371,9 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
             elif s == 'purple':
                 fixed_stages |= {'structural', 'purple'}
             elif s == 'coverage':
-                fixed_stages |= {'mosdepth', 'goleft', 'cacao', 'samtools_stats', 'igv_count'}
+                fixed_stages |= {'mosdepth', 'goleft', 'cacao'}
+                if not (isinstance(run, BcbioProject) or isinstance(run, DragenProject)):
+                    fixed_stages |= {'samtools_stats'}
             elif s == 'small_variants':
                 fixed_stages |= {'somatic', 'germline'}
             elif s == 'cpsr':
@@ -384,7 +386,9 @@ def prep_stages(include_stages=None, exclude_stages=None, run=None):
                 fixed_stages |= {'neoantigens'}
             elif s == 'multiqc':
                 fixed_stages |= {'purple', 'conpair', 'somatic', 'germline', 'oncoviruses',
-                                 'mosdepth', 'samtools_stats'}
+                                 'mosdepth'}
+                if not (isinstance(run, BcbioProject) or isinstance(run, DragenProject)):
+                    fixed_stages |= {'mosdepth', 'samtools_stats'}
             elif s not in default_enabled | default_disabled:
                 critical(f'Stage "{s}" is not recognised. Available: {default_enabled | default_disabled}')
             elif s == 'default':

@@ -199,7 +199,6 @@ rule coverage:
         'log/mosdepth.done',
         'log/goleft.done',
         'log/samtools_stats.done',
-        'log/igv_count.done',
     output:
         temp(touch('log/coverage.done'))
 
