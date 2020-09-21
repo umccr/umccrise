@@ -20,7 +20,7 @@ rule subset_to_giab:
         'work/{batch}/cancer_report/afs/somatic-confident.vcf.gz'
     group: "rmd_prep"
     shell:
-        'bcftools view {input.vcf} -R {params.regions} -Oz -o {output}'
+        'bcftools view {input.vcf} -T <(gunzip -c {params.regions}) -Oz -o {output}'
 
 # Split multiallelics to avoid R parsing issues
 rule split_multiallelic:
@@ -92,6 +92,8 @@ rule run_cancer_report:
 
         purple_circos_png    = 'work/{batch}/purple/plot/{batch}.circos.png',
         purple_input_png     = 'work/{batch}/purple/plot/{batch}.input.png',
+        purple_cn_png        = 'work/{batch}/purple/plot/{batch}.copynumber.png',
+        purple_ma_png        = 'work/{batch}/purple/plot/{batch}.map.png',
         purple_purity_png    = 'work/{batch}/purple/plot/{batch}.purity.range.png',
         purple_segment_png   = 'work/{batch}/purple/plot/{batch}.segment.png',
         purple_clonality_png = 'work/{batch}/purple/plot/{batch}.somatic.clonality.png',
@@ -137,6 +139,8 @@ rule run_cancer_report:
         for img_path in [
             input.purple_circos_png,
             input.purple_input_png,
+            input.purple_cn_png,
+            input.purple_ma_png,
             input.purple_purity_png,
             input.purple_segment_png,
             input.purple_clonality_png,
