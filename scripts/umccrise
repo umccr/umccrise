@@ -42,6 +42,8 @@ from reference_data import api as refdata
 @click.option('-t', '--threads', '-j', '--jobs', '--cores', 'cores', type=click.INT,
               help='Maximum number of cores to use at single time (works both for local and cluster runs)')
 @click.option('-c', '--cluster-auto', 'cluster', is_flag=True, help='Submit jobs to cluster')
+@click.option('--cluster-cmd', 'cluster_submit_cmd',
+              help='Command to run cluster with (to override -c/--cluster-auto)')
 
 # Debug and snakemake
 @click.option('--debug', 'debug', is_flag=True, help='More verboe messages. Also sets restart times to 0.')
@@ -67,7 +69,7 @@ from reference_data import api as refdata
 
 def main(input_paths, output_dir=None, sample=None, exclude=None, input_genomes_url=None, genome_build=None,
          include_stages:list = None, exclude_stages:list = None, min_af=None,
-         cores=None, cluster=False, debug=False,
+         cores=None, cluster=False, cluster_submit_cmd=None, debug=False,
          unlock=False, restart_times=None, dryrun=False, report=None, dag=False, hpc_resources=None):
     """
 Umccrise (post-process) a bcbio or Dragen project.\n
@@ -120,7 +122,8 @@ input_paths: a path to inputs:\n
     #### Setting non-path parameters ####
     #####################################
 
-    if genome_build: conf['genome_build'] = genome_build
+    if genome_build:
+        conf['genome_build'] = genome_build
 
     if sample:
         conf['sample'] = ','.join(sample)
@@ -142,14 +145,14 @@ input_paths: a path to inputs:\n
         num_samples=len(run.samples),
         ncpus_requested=cores,
         ncpus_per_node=refdata.ncpus_on_node,
-        is_cluster=cluster is not False
+        is_cluster=cluster is not False or cluster_submit_cmd
     )
 
     cluster_log_dir = None
     cluster_param = None
-    if cluster is not False:
+    if cluster is not False or cluster_submit_cmd:
         cluster_log_dir = join(log_dir, 'cluster')
-        cluster_param = make_cluster_cmdl(cluster_log_dir, refdata, 'umccrise')
+        cluster_param = make_cluster_cmdl(cluster_log_dir, refdata, 'umccrise', cluster_submit_cmd)
 
     snakefile = join(package_path(), 'Snakefile')
     run_snakemake(

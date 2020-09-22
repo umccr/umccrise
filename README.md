@@ -329,10 +329,10 @@ An example command to run umccrise on docker could be (although <abbr title="You
 
 ```shell
 docker run -t --cpus 4 \
-        -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir \
-        -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project \
-        -v=/codebuild/output/refdata/genomes:/work/genomes \
-        umccr/umccrise /bcbio_project -o /output_dir --genomes /work/genomes
+    -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir \
+    -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project \
+    -v=/codebuild/output/refdata/genomes:/work/genomes \
+    umccr/umccrise /bcbio_project -o /output_dir --genomes /work/genomes
 ```
 
 This example assumes that:
