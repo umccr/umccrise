@@ -81,19 +81,16 @@ rule germline_leakage:
 rule germline_leakage_predispose_subset:
     input:
         vcf = rules.germline_leakage.output.vcf,
+        predispose_genes_bed = get_predispose_genes_bed(run.genome_build, coding_only=False),
     output:
         vcf = 'work/{batch}/small_variants/germline/{batch}-tumor-germline-leakage-predispose_genes.vcf.gz',
         tbi = 'work/{batch}/small_variants/germline/{batch}-tumor-germline-leakage-predispose_genes.vcf.gz.tbi',
     params:
         ungz = lambda wc, output: get_ungz_gz(output[0])[0]
     group: "germline_snv"
-    run:
-        pcgr_toml_fpath = join(package_path(), 'pcgr', 'cpsr.toml')
-        genes = [g for g in toml.load(pcgr_toml_fpath)['cancer_predisposition_genes']]
-        def func(rec, vcf):
-            if rec.INFO.get('PCGR_SYMBOL') is not None and rec.INFO['PCGR_SYMBOL'] in genes:
-                return rec
-        iter_vcf(input.vcf, output.vcf, func)
+    shell:
+        'bcftools view -T {input.predispose_genes_bed} {input.vcf} -Oz -o {output.vcf}'
+        ' && tabix -p vcf {output.vcf}'
 
 rule germline_merge_with_leakage:
     input:
