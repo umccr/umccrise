@@ -108,13 +108,13 @@ Create a `umccrise` directory and install the umccrise GitHub repo along with th
 mkdir umccrise
 cd umccrise
 git clone https://github.com/umccr/umccrise umccrise.git
-source umccrise.git/install.sh
+bash umccrise.git/install.sh
 ```
 
 The above will generate a `load_umccrise.sh` script that can be sourced to load the umccrise conda environment on demand:
 
 ```shell
-bash load_umccrise.sh
+source load_umccrise.sh
 ```
 
 ## Reference data
