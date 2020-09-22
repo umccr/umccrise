@@ -3,6 +3,7 @@
 import os
 import platform
 import sys
+import glob
 from os import rename
 from os.path import isfile, join, dirname, abspath, basename, exists
 import click
@@ -24,7 +25,8 @@ from umccrise import package_path
 @click.option('--germline', is_flag=True)
 @click.option('--docker/--no-docker', 'use_docker', is_flag=True, default=None)
 @click.option('--pcgr-data', type=click.Path(exists=True),
-              help='Path to PCGR data directory (defaults are known for spartan and raijin, or if --genomes-dir is provided)')
+              help='Path to PCGR data directory (defaults are known for spartan and raijin, '
+                   'or if --genomes-dir is provided)')
 @click.option('--genomes-dir', 'genomes_dir')
 @click.option('--puriry', 'puriry', type=click.FLOAT)
 @click.option('--ploidy', 'ploidy', type=click.FLOAT)
@@ -50,6 +52,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
     pcgr_toml = join(package_path(), 'pcgr', 'pcgr.toml')
     cpsr_toml = join(package_path(), 'pcgr', 'cpsr.toml')
     sample = sample or splitext_plus(basename(vcf_path))[0]
+    sample_cropped = sample[:35]  # pcgr requires sample names shorter than 35
     if genome is None:
         genome = 'GRCh37'
     pcgr_genome = 'grch38' if ('38' in genome) else 'grch37'
@@ -70,18 +73,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
             else:
                 use_docker = True
 
-    rlibs_env = ''
-    # if not use_docker:
-    #     r_pcgrr_dir_ori = join(pcgr_dir, 'src', 'R', 'pcgrr')
-    #     r_pcgrr_dir_dst = safe_mkdir(join(output_dir, 'work', sample))
-    #     info(f'Installing a copy of the "pcgrr" package to avoid the race condition for template tmp files: '
-    #          f'{r_pcgrr_dir_ori} -> {r_pcgrr_dir_dst}')
-    #     os.environ['R_LIBS'] = r_pcgrr_dir_dst + ':' + os.environ.get('R_LIBS', '')
-    #     rlibs_env = f'R_LIBS={r_pcgrr_dir_dst} '
-    #     run(f'{rlibs_env}R -e "library(devtools); devtools::install(\'{r_pcgrr_dir_ori}\')"')
-
     if germline:
-        expected_file_base = join(output_dir, f'{sample}.cpsr.{pcgr_genome}')
+        expected_file_base = join(output_dir, f'{sample_cropped}.cpsr.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.cpsr')
 
         panel_param = '--panel_id 0'
@@ -89,16 +82,15 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
             run_simple(f'cut -f1-4 {predispose_bed} > {join(output_dir, "custom_panel.bed")}')
             panel_param = f'--custom_panel {join(output_dir, "custom_panel.bed")}'
         elif predispose_genes:
-            panel_param = f'--custom_panel_gene_list {predispose_genes}'
+            panel_param = f'--custom_list {predispose_genes}'
 
-        cmd = (f'{rlibs_env}'
-               f'cpsr.py'
-               f' {abspath(vcf_path)}'
-               f' {dirname(pcgr_data)}'
-               f' {output_dir}'
-               f' {pcgr_genome}'
-               f' {cpsr_toml}'
-               f' {sample}'
+        cmd = (f'cpsr.py'
+               f' --query_vcf {abspath(vcf_path)}'
+               f' --pcgr_dir {dirname(pcgr_data)}'
+               f' --output_dir {output_dir}'
+               f' --genome_assembly {pcgr_genome}'
+               f' --conf {cpsr_toml}'
+               f' --sample_id {sample_cropped}'
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
                f' --no_vcf_validate'
@@ -106,7 +98,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                f' --debug'
         )
     else:
-        expected_file_base = join(output_dir, f'{sample}.pcgr_acmg.{pcgr_genome}')
+        expected_file_base = join(output_dir, f'{sample_cropped}.pcgr_acmg.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.pcgr')
 
         purple_tsv_fixed = None
@@ -117,15 +109,14 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                            f'{{ print $1,$2,$3,-4 }} else {{ print $1,$2,$3, log($4/2)/log(2) }} }}\') > ' \
                            f'{purple_tsv_fixed}'
             run_simple(prep_cnv_cmd)
-        cmd = (f'{rlibs_env}'
-               f'pcgr.py'
+        cmd = (f'pcgr.py'
                f' --input_vcf {abspath(vcf_path)}' +
               (f' --input_cna {purple_tsv_fixed}' if purple_tsv_fixed else '') +
-               f' {dirname(pcgr_data)}'
-               f' {output_dir}'
-               f' {pcgr_genome}'
-               f' {pcgr_toml}'
-               f' {sample}'
+               f' --pcgr_dir {dirname(pcgr_data)}'
+               f' --output_dir {output_dir}'
+               f' --genome_assembly {pcgr_genome}'
+               f' --conf {pcgr_toml}'
+               f' --sample_id {sample_cropped}'
                f' {" --docker-uid root" if use_docker else " --no-docker"}'
                f' --force_overwrite'
                f' --no_vcf_validate' +
@@ -140,17 +131,11 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
         err(f'Error running PCGR.\n')
         raise
 
-    endings = ['.pass.vcf.gz', '.pass.vcf.gz.tbi', '.html']
-    if not germline:
-        endings.append('.snvs_indels.tiers.tsv')
-    for ending in endings:
-        expected_path = expected_file_base + ending
-        renamed_path = renamed_file_base + ending
-        if not isfile(expected_path):
-            err('--------\n')
-            critical('Error running PCGR: expected output file is not produced: ' + expected_path)
-        rename(expected_path, renamed_path)
-        info(f'PCGR report: {renamed_path}')
-    
+    for expected_fpath in glob.glob(f'{expected_file_base}*'):
+        renamed_fpath = expected_fpath.replace(expected_file_base, renamed_file_base)
+        rename(expected_fpath, renamed_fpath)
+        if renamed_fpath.endswith('.html'):
+            info(f'PCGR report: {renamed_fpath}')
+
 if __name__ == '__main__':
     main()

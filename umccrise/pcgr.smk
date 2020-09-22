@@ -73,8 +73,9 @@ rule run_cpsr:
     run:
         output_dir = dirname(output[0])
         shell(conda_cmd.format('pcgr') +
-            'pcgr {input.vcf} -g {params.genome_build} -o {output_dir} -s {params.sample_name} --germline '
-            '{params.opt} --pcgr-data {input.pcgr_data} --predispose-bed {input.predispose_bed}')
+            'pcgr {input.vcf} -g {params.genome_build} -o {output_dir} -s {params.sample_name} '
+            '--germline {params.opt} --pcgr-data {input.pcgr_data} '
+            '--predispose-bed {input.predispose_bed}')
 
 rule cpsr_copy_report:
     input:
