@@ -273,6 +273,20 @@ For now, the VCF file is assumed to contain T/N somatic small variant calls, and
 umccrise sample1.bam sample2.bam sample1.vcf.gz sample3.vcf.gz -o umccrised -j10
 ```
 
+You can also provide a TSV file as input. If any input file has an extention `.tsv` (e.g. `umccrise input.tsv`) the file is assumed as a TSV file with a header, and any of the following columns in arbitrary order:
+  - `sample`
+  - `wgs` (WGS tumor BAM, required)
+  - `normal` (WGS normal BAM, required)
+  - `exome` (optional tumor BAM)
+  - `exome_normal` (optional normal BAM)
+  - `rna` (optional WTS BAM, however required for neoantigens)
+  - `rna_bcbio` (optional path to RNAseq bcbio workflow, required for neoantigens)
+  - `rna_sample` (sample name in the RNAseq bcbio workflow above, required for neoantigens)
+  - `somatic_vcf` (tumor/normal somatic VCF calls, optional. If not provided, SAGE will be run)
+  - `germline_vcf` (germline variant calls, optional)
+  - `sv_vcf` (SV calls, optional)
+
+
 ### Running on selected samples
 
 By default, umccrise will process all batches in the run in parallel. You can submit only certain samples/batches using `-s`/`--sample` arguments, e.g.:

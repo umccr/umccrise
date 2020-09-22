@@ -1,10 +1,22 @@
-1.1.0 (21 Sep 2020)
+1.1.0 (22 Sep 2020)
 
-- Support TSV input
+- Support TSV input (if input file ends with `.tsv`, assumes it's a TSV file with a header and any of the following columns in arbitrary order:
+  - `sample`
+  - `wgs` (WGS tumor BAM, required)
+  - `normal` (WGS normal BAM, required)
+  - `exome` (optional tumor BAM)
+  - `exome_normal` (optional normal BAM)
+  - `rna` (optional WTS BAM, however required for neoantigens)
+  - `rna_bcbio` (optional path to RNAseq bcbio workflow, required for neoantigens)
+  - `rna_sample` (sample name in the RNAseq bcbio workflow above, required for neoantigens)
+  - `somatic_vcf` (tumor/normal somatic VCF calls. If not provided, SAGE will be run)
+  - `germline_vcf` (germline variant calls)
+  - `sv_vcf` (SV calls)
 - Add samtools stats (for QC for TSV runs)
 - Support RNAseq input (currently as part of the TSV input support)
 - Integrate [neoantigens](https://github.com/umccr/neoantigens)
 - Add `umccrise_refdata_pull` that pulls genomes as long as you are signed in in UMCCR AWS
+- Update PCGR to 0.9.0, CPSR to 0.6.0 (cosmetic changes + database updates)
 
 1.0.9 (16 Jul 2020)
 
