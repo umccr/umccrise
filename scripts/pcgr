@@ -8,6 +8,7 @@ from os import rename
 from os.path import isfile, join, dirname, abspath, basename, exists
 import click
 import subprocess
+from distutils.version import LooseVersion
 
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
@@ -73,6 +74,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
             else:
                 use_docker = True
 
+    is_old_pcgr = check_pcgr_version()
+
     if germline:
         expected_file_base = join(output_dir, f'{sample_cropped}.cpsr.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.cpsr')
@@ -83,20 +86,35 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
             panel_param = f'--custom_panel {join(output_dir, "custom_panel.bed")}'
         elif predispose_genes:
             panel_param = f'--custom_list {predispose_genes}'
+            if is_old_pcgr:
+                panel_param = f'--custom_panel_gene_list {predispose_genes}'
 
-        cmd = (f'cpsr.py'
-               f' --query_vcf {abspath(vcf_path)}'
-               f' --pcgr_dir {dirname(pcgr_data)}'
-               f' --output_dir {output_dir}'
-               f' --genome_assembly {pcgr_genome}'
-               f' --conf {cpsr_toml}'
-               f' --sample_id {sample_cropped}'
-               f' {" --docker-uid root" if use_docker else " --no-docker"}'
-               f' --force_overwrite'
-               f' --no_vcf_validate'
-               f' {panel_param}'
-               f' --debug'
-        )
+        if is_old_pcgr:
+            cmd = (f'cpsr.py'
+                   f' {abspath(vcf_path)}'
+                   f' {dirname(pcgr_data)}'
+                   f' {output_dir}'
+                   f' {pcgr_genome}'
+                   f' {cpsr_toml}'
+                   f' {sample_cropped}'
+                   f' {" --docker-uid root" if use_docker else " --no-docker"}'
+                   f' --force_overwrite'
+                   f' --no_vcf_validate'
+                   f' {panel_param}'
+                   f' --debug')
+        else:
+            cmd = (f'cpsr.py'
+                   f' --query_vcf {abspath(vcf_path)}'
+                   f' --pcgr_dir {dirname(pcgr_data)}'
+                   f' --output_dir {output_dir}'
+                   f' --genome_assembly {pcgr_genome}'
+                   f' --conf {cpsr_toml}'
+                   f' --sample_id {sample_cropped}'
+                   f' {" --docker-uid root" if use_docker else " --no-docker"}'
+                   f' --force_overwrite'
+                   f' --no_vcf_validate'
+                   f' {panel_param}'
+                   f' --debug')
     else:
         expected_file_base = join(output_dir, f'{sample_cropped}.pcgr_acmg.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.pcgr')
@@ -109,21 +127,36 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                            f'{{ print $1,$2,$3,-4 }} else {{ print $1,$2,$3, log($4/2)/log(2) }} }}\') > ' \
                            f'{purple_tsv_fixed}'
             run_simple(prep_cnv_cmd)
-        cmd = (f'pcgr.py'
-               f' --input_vcf {abspath(vcf_path)}' +
-              (f' --input_cna {purple_tsv_fixed}' if purple_tsv_fixed else '') +
-               f' --pcgr_dir {dirname(pcgr_data)}'
-               f' --output_dir {output_dir}'
-               f' --genome_assembly {pcgr_genome}'
-               f' --conf {pcgr_toml}'
-               f' --sample_id {sample_cropped}'
-               f' {" --docker-uid root" if use_docker else " --no-docker"}'
-               f' --force_overwrite'
-               f' --no_vcf_validate' +
-              (f' --tumor_purity {puriry}' if puriry else '') +
-              (f' --tumor_ploidy {ploidy}' if ploidy else '') +
-               f' --debug'
-        )
+        if is_old_pcgr:
+            cmd = (f'pcgr.py'
+                   f' --input_vcf {abspath(vcf_path)}' +
+                  (f' --input_cna {purple_tsv_fixed}' if purple_tsv_fixed else '') +
+                   f' {dirname(pcgr_data)}'
+                   f' {output_dir}'
+                   f' {pcgr_genome}'
+                   f' {pcgr_toml}'
+                   f' {sample_cropped}'
+                   f' {" --docker-uid root" if use_docker else " --no-docker"}'
+                   f' --force_overwrite'
+                   f' --no_vcf_validate' +
+                  (f' --tumor_purity {puriry}' if puriry else '') +
+                  (f' --tumor_ploidy {ploidy}' if ploidy else '') +
+                   f' --debug')
+        else:
+            cmd = (f'pcgr.py'
+                   f' --input_vcf {abspath(vcf_path)}' +
+                  (f' --input_cna {purple_tsv_fixed}' if purple_tsv_fixed else '') +
+                   f' --pcgr_dir {dirname(pcgr_data)}'
+                   f' --output_dir {output_dir}'
+                   f' --genome_assembly {pcgr_genome}'
+                   f' --conf {pcgr_toml}'
+                   f' --sample_id {sample_cropped}'
+                   f' {" --docker-uid root" if use_docker else " --no-docker"}'
+                   f' --force_overwrite'
+                   f' --no_vcf_validate' +
+                  (f' --tumor_purity {puriry}' if puriry else '') +
+                  (f' --tumor_ploidy {ploidy}' if ploidy else '') +
+                   f' --debug')
     try:
         run_simple(cmd)
     except subprocess.SubprocessError:
@@ -136,6 +169,18 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
         rename(expected_fpath, renamed_fpath)
         if renamed_fpath.endswith('.html'):
             info(f'PCGR report: {renamed_fpath}')
+
+
+def check_pcgr_version():
+    res = subprocess.check_output('pcgr.py --version', shell=True)
+    if not isinstance(res, str):
+        res = res.decode(errors='replace')
+    v = res.split()[1]  # pcgr.py 0.9.0rc
+    is_old = LooseVersion(v) < LooseVersion('0.9.0')
+    if is_old:
+        info(f'PCGR version {v} is older than 0.9.0, so using the old syntax')
+    return is_old
+
 
 if __name__ == '__main__':
     main()
