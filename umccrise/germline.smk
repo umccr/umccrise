@@ -28,18 +28,20 @@ rule haplotype_caller:
     group: "germline_snv"
     params:
         genome = run.genome_build,
+        tmp_dir = lambda wc: safe_mkdir(f'work/{wc.batch}/small_variants/haplotype_caller/tmp_dir'),
+        xms = 2000,
+        xmx = 45000,
     resources:
         mem_mb = 50000
     threads: threads_per_batch,
     shell:
-        'gatk4 -T HaplotypeCaller '
-        '-R {input.ref_fa} '
-        '-o {output.vcf} '
-        '-I {input.normal_bam} '
-        '-L {input.predispose_genes_bed} '
-        '--max_alternate_alleles 3 '
-        '-variant_index_parameter 128000 '
-        '-variant_index_type LINEAR'
+        'gatk --java-options "-Xms{params.xms}m -Xmx{params.xmx}m" '
+        'HaplotypeCaller '
+        '--input {input.normal_bam} '
+        '--output {output.vcf} '
+        '--reference {input.ref_fa} '
+        '--intervals {input.predispose_genes_bed} '
+        '--tmp-dir {params.tmp_dir} ' 
 
 rule germline_vcf_pass:
     input:
