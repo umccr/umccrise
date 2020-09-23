@@ -191,12 +191,12 @@ rule germline_batch:
     output:
         temp(touch('log/germline_{batch}.done'))
     run:
-        for bn, batch, germline_vcf in zip(batch_by_name.keys(),
-                                           batch_by_name.values(),
-                                           input):
-            shell(f'mkdir -p {join(bn, "small_variants")}')
-            renamed_germline_vcf = join(bn, 'small_variants',
-                     f'{batch}__{batch.normals[0].name}-germline.predispose_genes.vcf.gz')
+        b = batch_by_name[wildcards.batch]
+        shell(f'mkdir -p {join(wildcards.batch, "small_variants")}')
+        germline_vcf = input[0]
+        if germline_vcf:
+            renamed_germline_vcf = join(wildcards.batch, 'small_variants',
+                                        f'{b.name}__{b.normals[0].name}-germline.predispose_genes.vcf.gz')
             shell(f'cp {germline_vcf} {renamed_germline_vcf}')
             shell(f'tabix -p vcf {renamed_germline_vcf}')
 

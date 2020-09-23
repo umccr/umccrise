@@ -97,7 +97,7 @@ rule pcgr:
 
 rule cpsr_batch:
     input:
-        lambda wc: rules.cpsr_copy_report.output if batch_by_name[wc.batch].germline_vcf else []
+        lambda wc: rules.cpsr_copy_report.output if batch_by_name[wc.batch].germline_vcf or 'haplotype_caller' in stages else []
     output:
         temp(touch('log/cpsr_{batch}.done'))
 
