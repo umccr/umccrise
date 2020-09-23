@@ -193,8 +193,8 @@ rule germline_batch:
     run:
         b = batch_by_name[wildcards.batch]
         shell(f'mkdir -p {join(wildcards.batch, "small_variants")}')
-        germline_vcf = input[0]
-        if germline_vcf:
+        if input:
+            germline_vcf = input[0]
             renamed_germline_vcf = join(wildcards.batch, 'small_variants',
                                         f'{b.name}__{b.normals[0].name}-germline.predispose_genes.vcf.gz')
             shell(f'cp {germline_vcf} {renamed_germline_vcf}')
