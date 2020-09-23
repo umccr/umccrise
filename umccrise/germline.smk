@@ -16,9 +16,36 @@ from umccrise import package_path, cnt_vars
 localrules: germline, germline_batch
 
 
+rule haplotype_caller:
+    input:
+        normal_bam = lambda wc: [s.bam for s in batch_by_name[wc.batch].normals][0],
+        normal_bai = lambda wc: [s.bam + '.bai' for s in batch_by_name[wc.batch].normals][0],
+        ref_fa = refdata.get_ref_file(run.genome_build, key='fa'),
+        predispose_genes_bed = get_predispose_genes_bed(run.genome_build, coding_only=False),
+    output:
+        vcf = 'work/{batch}/small_variants/haplotype_caller/{batch}.vcf.gz',
+        tbi = 'work/{batch}/small_variants/haplotype_caller/{batch}.vcf.gz.tbi',
+    group: "germline_snv"
+    params:
+        genome = run.genome_build,
+    resources:
+        mem_mb = 50000
+    threads: threads_per_batch,
+    shell:
+        'gatk4 -T HaplotypeCaller '
+        '-R {input.ref_fa} '
+        '-o {output.vcf} '
+        '-I {input.normal_bam} '
+        '-L {input.predispose_genes_bed} '
+        '--max_alternate_alleles 3 '
+        '-variant_index_parameter 128000 '
+        '-variant_index_type LINEAR'
+
 rule germline_vcf_pass:
     input:
-        vcf = lambda wc: batch_by_name[wc.batch].germline_vcf or [],
+        vcf = lambda wc: batch_by_name[wc.batch].germline_vcf or \
+            (f'work/{wc.batch}/small_variants/haplotype_caller/{wc.batch}.vcf.gz' \
+             if 'haplotype_caller' in stages else []),
     output:
         vcf = 'work/{batch}/small_variants/germline/{batch}-germline-PASS.vcf.gz',
     group: "germline_snv"
@@ -153,7 +180,8 @@ rule bcftools_stats_germline:
 
 rule germline_batch:
     input:
-        lambda wc: [] if not batch_by_name[wc.batch].germline_vcf \
+        lambda wc: [] if (not batch_by_name[wc.batch].germline_vcf and \
+                          not 'haplotype_caller' in stages) \
                   else rules.germline_merge_with_leakage.output.vcf \
                        if 'somatic' in stages else \
                        rules.germline_predispose_subset.output.vcf
