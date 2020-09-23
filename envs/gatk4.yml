@@ -1,4 +1,5 @@
-name: umccrise_conpair
+name: umccrise_gatk4
+# conpair and haplotype caller
 
 channels:
   - conda-forge

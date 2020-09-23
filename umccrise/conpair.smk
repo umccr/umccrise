@@ -28,7 +28,7 @@ rule run_conpair:
         tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
         normal_name = lambda wc: batch_by_name[wc.batch].normals[0].name,
     shell:
-        conda_cmd.format('conpair') + \
+        conda_cmd.format('gatk4') + \
         'conpair -T {input.tumor_bam} -N {input.normal_bam} '
         '--ref-fa {input.ref_fa} -g {params.genome} -j {threads} '
         '-o {params.out_dir} -tn {params.tumor_name} -nn {params.normal_name}'

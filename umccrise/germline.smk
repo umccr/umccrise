@@ -25,7 +25,7 @@ rule haplotype_caller:
     output:
         vcf = 'work/{batch}/small_variants/haplotype_caller/{batch}.vcf.gz',
         tbi = 'work/{batch}/small_variants/haplotype_caller/{batch}.vcf.gz.tbi',
-    group: "germline_snv"
+    group: "haplotype_caller"
     params:
         genome = run.genome_build,
         tmp_dir = lambda wc: safe_mkdir(f'work/{wc.batch}/small_variants/haplotype_caller/tmp_dir'),
@@ -35,6 +35,7 @@ rule haplotype_caller:
         mem_mb = 50000
     threads: threads_per_batch,
     shell:
+        conda_cmd.format('gatk4') + \
         'gatk --java-options "-Xms{params.xms}m -Xmx{params.xmx}m" '
         'HaplotypeCaller '
         '--input {input.normal_bam} '

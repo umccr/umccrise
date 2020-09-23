@@ -25,7 +25,7 @@ ENV_NAME=umccrise
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME} --file ${GIT_DIR}/envs/umccrise.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_hmf --file ${GIT_DIR}/envs/hmf.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_cancer_report --file ${GIT_DIR}/envs/cancer_report.yml
-mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_conpair --file ${GIT_DIR}/envs/conpair.yml
+mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_gatk4 --file ${GIT_DIR}/envs/gatk4.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_neoantigens --file ${GIT_DIR}/envs/neoantigens.yml
 mamba env create -p $PWD/miniconda/envs/${ENV_NAME}_oviraptor --file ${GIT_DIR}/envs/oviraptor.yml
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -60,3 +60,5 @@ R -e "BiocManager::install('TxDb.Hsapiens.UCSC.hg38.knownGene')"
 
 # Clean up
 conda clean --yes --tarballs
+
+# TODO: clone vladsaveliev/pVACtools and do `pip install /g/data/gx8/extras/umccrise_2020_Sep/pVACtools`
