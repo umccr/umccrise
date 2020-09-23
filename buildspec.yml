@@ -40,17 +40,17 @@ phases:
       - git clone --depth 1 https://github.com/umccr/umccrise_test_data umccrise_test_data
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       # Pull refdata
-      - git clone https://github.com/umccr/reference_data $PWD/reference_data &&
-        cd $PWD/reference_data &&
+      - git clone https://github.com/umccr/reference_data reference_data &&
+        cd reference_data &&
         dvc config cache.type reflink,hardlink,symlink &&
         dvc pull &&
         dvc version &&
-        cd $PWD
-      - du -sh $PWD/reference_data/genomes
-      - tree -L 1 $PWD/reference_data/genomes
+        cd ..
+      - du -sh reference_data/genomes
+      - tree -L 1 reference_data/genomes
       - df -h
       # Run minimal test with downsized sample data - dragen
-      - tree -L 1 $PWD/umccrise_test_data/data/dragen_test_project
+      - tree -L 1 umccrise_test_data/data/dragen_test_project
       - docker run -t --cpus 8
         -v=$PWD/umccrise_test_data/results/dragen_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/dragen_test_project:/dragen_project
