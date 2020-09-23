@@ -55,6 +55,7 @@ dependencies:
   - openjdk >=11 # for igvtools
   - vcf2maf
   - dvc
+  - gatk4  # for haplotype caller
   - pip:
     - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
