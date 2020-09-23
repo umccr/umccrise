@@ -9,7 +9,7 @@ import csv
 
 from ngs_utils.Sample import BaseBatch, BaseProject, BaseSample
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
-from ngs_utils.bcbio import BcbioProject, BcbioBatch
+from ngs_utils.bcbio import BcbioProject, BcbioBatch, detect_bcbio_dir
 from ngs_utils.dragen import DragenProject
 from ngs_utils.utils import flatten
 from ngs_utils.logger import critical, info, debug, warn, error
@@ -267,7 +267,7 @@ def prep_inputs(smconfig, silent=False):
                                 exclude_samples=exclude_names)
             found_bcbio_or_dragen_runs.append(run)
         # bcbio
-        elif isdir(input_path):
+        elif isdir(input_path) and detect_bcbio_dir(input_path, silent=True):
             run = BcbioProject(input_path,
                                include_samples=include_names,
                                exclude_samples=exclude_names,
@@ -289,7 +289,8 @@ def prep_inputs(smconfig, silent=False):
             found_bcbio_or_dragen_runs.append(run)
 
         else:
-            error(f'Cannot find file or dir {input_path}')
+            error(f'Cannot recognize file or dir {input_path}. '
+                  f'Expected: a bcbio or Dragen output folder, or a TSV file, or a BAM or a VCF file.')
 
     if len(custom_run.samples) == 0 and len(found_bcbio_or_dragen_runs) == 1:
         # only one dragen or bcbio project - can return it directly
