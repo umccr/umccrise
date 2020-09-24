@@ -74,9 +74,9 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
             else:
                 use_docker = True
 
-    is_old_pcgr = check_pcgr_version()
-
     if germline:
+        is_old_cpsr = check_cpsr_version()
+
         expected_file_base = join(output_dir, f'{sample_cropped}.cpsr.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.cpsr')
 
@@ -86,10 +86,10 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
             panel_param = f'--custom_panel {join(output_dir, "custom_panel.bed")}'
         elif predispose_genes:
             panel_param = f'--custom_list {predispose_genes}'
-            if is_old_pcgr:
+            if is_old_cpsr:
                 panel_param = f'--custom_panel_gene_list {predispose_genes}'
 
-        if is_old_pcgr:
+        if is_old_cpsr:
             cmd = (f'cpsr.py'
                    f' {abspath(vcf_path)}'
                    f' {dirname(pcgr_data)}'
@@ -116,6 +116,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                    f' {panel_param}'
                    f' --debug')
     else:
+        is_old_pcgr = check_pcgr_version()
+
         expected_file_base = join(output_dir, f'{sample_cropped}.pcgr_acmg.{pcgr_genome}')
         renamed_file_base = join(output_dir, f'{sample}.pcgr')
 
@@ -179,6 +181,17 @@ def check_pcgr_version():
     is_old = LooseVersion(v) < LooseVersion('0.9.0')
     if is_old:
         info(f'PCGR version {v} is older than 0.9.0, so using the old syntax')
+    return is_old
+
+
+def check_cpsr_version():
+    res = subprocess.check_output('cpsr.py --version', shell=True)
+    if not isinstance(res, str):
+        res = res.decode(errors='replace')
+    v = res.split()[1]  # pcgr.py 0.9.0rc
+    is_old = LooseVersion(v) < LooseVersion('0.6.0')
+    if is_old:
+        info(f'CPSR version {v} is older than 0.6.0, so using the old syntax')
     return is_old
 
 
