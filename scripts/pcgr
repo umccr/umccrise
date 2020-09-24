@@ -45,6 +45,13 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
             logger.critical(f'PCGR data is not found on the system "{refdata.name}".'
                             f' Please, provide the path to PCGR data with --pcgr-data.'
                             f' Follow `https://github.com/vladsaveliev/pcgr` to get it.')
+
+    if vcf_path.endswith('.vcf'):
+        run_simple(f'bgzip {vcf_path}')
+        vcf_path = vcf_path + '.gz'
+    if not isfile(vcf_path + '.tbi'):
+        run_simple(f'tabix -p vcf {vcf_path}')
+
     output_dir = output_dir or 'pcgrred'
     output_dir = abspath(output_dir)
     safe_mkdir(output_dir)
