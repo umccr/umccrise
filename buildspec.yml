@@ -47,18 +47,18 @@ phases:
       - df -h
       # Run minimal test with downsized sample data - dragen
       - tree -L 1 umccrise_test_data/data/dragen_test_project
-      - docker run -t --cpus 8
+      - docker run -t --cpus 1
         -v=$PWD/umccrise_test_data/results/dragen_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/dragen_test_project:/dragen_project
         -v=$PWD/reference_data/genomes:/work/genomes
         $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
-        umccrise /dragen_project -o /output_dir --genomes /work/genomes
+        umccrise /dragen_project -o /output_dir --genomes /work/genomes -j1
       # Run minimal test with downsized sample data - bcbio
       - tree -L 1 $PWD/umccrise_test_data/data/bcbio_test_project
-      - docker run -t --cpus 8
+      - docker run -t --cpus 1
         -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
         -v=$PWD/umccrise_test_data/data/bcbio_test_project:/bcbio_project
         -v=$PWD/reference_data/genomes:/work/genomes
         $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
-        umccrise /bcbio_project -o /output_dir --genomes /work/genomes
+        umccrise /bcbio_project -o /output_dir --genomes /work/genomes -j1
       - docker push $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
