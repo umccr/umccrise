@@ -27,6 +27,7 @@ dependencies:
   - cyvcf2
   - blast
   - pandas
+  - sambamba
   - pip:
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
     - pvactools
