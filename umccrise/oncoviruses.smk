@@ -38,8 +38,8 @@ checkpoint viral_content:
             '--genomes-dir {params.genomes_dir} {params.unlock_opt} '
             '--cores {threads} --only-detect'
         )
-        # if verify_file(join(params.work_dir, 'breakpoints.vcf.gz')):
-        #     shell('cp {params.work_dir}/breakpoints.vcf.gz {params.breakpoints_vcf}')
+        # if verify_file(join(params.work_dir, 'breakpoints.vcf')):
+        #     shell('cp {params.work_dir}/breakpoints.vcf {params.breakpoints_vcf}')
         shell('cp {params.work_dir}/prioritized_oncoviruses.tsv {output.prioritized_tsv}')
 
         viruses = []
@@ -59,7 +59,7 @@ rule viral_integration_sites:
         tumor_bam = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
         significant_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
     output:
-        breakpoints_vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf.gz',
+        breakpoints_vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf',
     params:
         genomes_dir = refdata.genomes_dir,
         work_dir = 'work/{batch}/oncoviruses',
@@ -77,7 +77,7 @@ rule viral_integration_sites:
         'oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
         '--genomes-dir {params.genomes_dir} {params.unlock_opt} --cores {threads} '
         '-v $(cat {input.significant_viruses})'
-        '; cp {params.work_dir}/breakpoints.vcf.gz {output.breakpoints_vcf}'
+        '; cp {params.work_dir}/breakpoints.vcf {output.breakpoints_vcf}'
 
 
 def parse_info_field(rec, name):
@@ -98,7 +98,7 @@ def parse_info_field(rec, name):
 # PRJ180253_E190-T01-D  HPV18  chr8   127719201   6787         111         L1          AC104370.1,AC108925.1,CASC11,MYC,MIR1204,PVT1  MantaBND:0:1:5:0:0:0:1  MantaBND:0:1:5:0:0:0:0
 rule oncoviruses_breakpoints_tsv:
     input:
-        vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf.gz',
+        vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf',
         present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
     output:
         tsv = 'work/{batch}/oncoviruses/oncoviral_breakpoints.tsv'
