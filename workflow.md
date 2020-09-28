@@ -8,6 +8,16 @@ Umccrise post-processess outputs of cancer variant calling analysis pipelines fr
 
 This part of the workflow filters and prioritizes somatic variant calls. The idea of filtering is to remove most of the artefacts and germline leakage, but at the same time to be permissive towards known clinically important sites even if the variants are low quality.
 
+To outline the filtering routine, there are 3 basic steps:
+
+1. Call candidate variants (2/3 mutect2/strelka2/vardict) with a cut-off AF>=1%.
+2. Keep a candidate variant if either:
+    1. AF>=10%, it's not in PoN and not common in gnomAD 
+    2. The variant is potentially known. One of the following applies: PCGR TIER 1 or 2, IntOGen driver mutation, cancerhotspots.org hotspot, ClinVar pathogenic or uncertain (to include mixed evidence); COSMIC count >=10; TCGA pancancer count >=5; ICGC PCAWG count >= 3.
+3. Additionally, we run SAGE on a list of hotspot sites (from CGI, CIViC, OncoKB - curated by HMF). The difference between 2.2 is that we are not restricted to the candidate variants from mutect2/strelka2/vardict, but rather to the hotspot sites.
+
+In detail:
+
 *Input*: for [bcbio](https://github.com/umccr/workflows/tree/master/bcbio), it's a somatic variant call output from a `variant2` tumor/normal (T/N) variant calling workflow. It can be either an "ensemble" somatic VCF `<batch>-ensemble-annotated.vcf.gz` (e.g. build from variants supported by at least 2 of 3 callers - in UMCCR, we use [Strelka](https://github.com/Illumina/strelka), [VarDict](https://github.com/AstraZeneca-NGS/VarDict), and [Mutect](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)), or Strelka somatic VCF `<batch>-strelka2-annotated.vcf.gz` (in UMCCR, we process WGS FFPE samples with Strelka-only workflow to avoid performance issues with other callers). We also call variants at AF>1% (`min_allele_fraction: 1` setting in bcbio config), however that's not essential.
 
 1. Extract passing calls (with `PASS` in FILTER)
@@ -47,7 +57,7 @@ This part of the workflow filters and prioritizes somatic variant calls. The ide
 8. [Filter variants](https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf) to remove putative germline variants and artefacts, but make sure to keep known hotspots/actionable variants:
 	*  Keep variants called by SAGE in known hotspots (CGI, CiViC, OncoKB) regardless of other evidence;
 	*  Keep variants PCGR TIER 1 and 2 (strong and potential clinical significance, according to [ACMG](https://www.ncbi.nlm.nih.gov/pubmed/27993330) standard guidelines) regardless of other evidence;
-	*  Keep all driver mutations ([Intogen](https://www.intogen.org/)); [mutation hotspots](http://cancerhotspots.org/]); [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) likely pathogenic or uncertain; COSMIC count >=10; TCGA pancancer count >=5; ICGC PCAWG count >= 3 (all annotated by PCGR), regardless of other evidence;
+	*  Keep all driver mutations ([Intogen](https://www.intogen.org/)); [mutation hotspots](http://cancerhotspots.org/]); [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) pathogenic or uncertain (to include the mixed evidence); COSMIC count >=10; TCGA pancancer count >=5; ICGC PCAWG count >= 3 (all annotated by PCGR), regardless of other evidence;
 	*  For all other variants, apply the following LCR, PoN, depth and AF filters. Remove variants for which one or more of the following conditions apply:
 		* `AF`<10%,
 		* Common variant in GnomAD (max `population AF`>=1%), add into the germline set (see below);
