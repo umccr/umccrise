@@ -34,7 +34,7 @@ phases:
     commands:
       # Clone test data
 #      - git clone --depth 1 https://github.com/umccr/umccrise_test_data umccrise_test_data
-#      - $(aws ecr get-login --no-include-email --region ap-southeast-2)
+      - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       # Pull refdata
 #      - git clone https://github.com/umccr/reference_data reference_data &&
 #        cd reference_data &&
