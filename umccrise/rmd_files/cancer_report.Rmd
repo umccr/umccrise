@@ -1763,7 +1763,7 @@ Host genes are reported if the integration site falls on a gene or at least befo
 present_viruses <- params$oncoviral_present_viruses
 breakpoints_tsv <- params$oncoviral_breakpoints_tsv
 
-if (breakpoints_tsv != NA && breakpoints_tsv != "" && file.exists(breakpoints_tsv)) {
+if (!is.na(breakpoints_tsv) && breakpoints_tsv != "" && file.exists(breakpoints_tsv)) {
   breakpoints <- readr::read_tsv(breakpoints_tsv, col_names = T, col_types = "cciicicccc")
   breakpoints %>%
     dplyr::mutate(Coord = ifelse(is.na(end), start, str_c(start, "-", end))) %>%
@@ -1777,7 +1777,7 @@ if (breakpoints_tsv != NA && breakpoints_tsv != "" && file.exists(breakpoints_ts
                                  buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
     DT::formatCurrency(~ Coord, currency = "", interval = 3, mark = ",", digits = 0)
 } else {
-  if (present_viruses != NA && present_viruses != "" && file.exists(present_viruses)) {
+  if (!is.na(present_viruses) && present_viruses != "" && file.exists(present_viruses)) {
     viruses = readr::read_file(present_viruses)
     if (str_length(viruses) > 0) {
       cat(str_c("Deteced significant traces of content of the following viruses: ", viruses, ", however no evidence of viral integration into the host genome is observed."))
