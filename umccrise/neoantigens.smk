@@ -248,7 +248,7 @@ if 'neoantigens' in stages:
         threads:
             threads_per_batch
         resources:
-            mem_mb=10000
+            mem_mb=20000
         shell:
             conda_cmd.format('neoantigens') + \
             'nag -o {params.output_dir} '
