@@ -139,8 +139,8 @@ rule run_cancer_report:
                     oncoviral_breakpoints_tsv = \
                         abspath(f'work/{wildcards.batch}/oncoviruses/oncoviral_breakpoints.tsv')
             ov_cmdl = (
-                f"oncoviral_present_viruses='{oncoviral_present_viruses}', \\\n"
-                f"oncoviral_breakpoints_tsv='{oncoviral_breakpoints_tsv}', \\"
+                f"oncoviral_present_viruses='{oncoviral_present_viruses}', "
+                f"oncoviral_breakpoints_tsv='{oncoviral_breakpoints_tsv}', "
             )
 
         shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
