@@ -101,8 +101,10 @@ rule run_cancer_report:
         purple_rainfall_png  = 'work/{batch}/purple/plot/{batch}.somatic.rainfall.png',
         purple_baf_png       = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png',
 
-        wait_for_integration_sites = get_integration_sites_tsv_fn,
-        oncoviral_present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
+        wait_for_integration_sites = get_integration_sites_tsv_fn
+             if 'oncoviruses' in stages else [],
+        oncoviral_present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt'
+             if 'oncoviruses' in stages else [],
 
         conda_list           = rules.conda_list.output.txt,
 
@@ -128,11 +130,18 @@ rule run_cancer_report:
         mem_mb=lambda wildcards, attempt: attempt * 10000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
     run:
-        oncoviral_present_viruses = abspath(input.oncoviral_present_viruses)
-        oncoviral_breakpoints_tsv = ''
-        with open(input.oncoviral_present_viruses) as f:
-            if [v for v in f.read().strip().split(',') if v]:
-                oncoviral_breakpoints_tsv = abspath(f'work/{wildcards.batch}/oncoviruses/oncoviral_breakpoints.tsv')
+        ov_cmdl = ''
+        if 'oncoviruses' in stages:
+            oncoviral_present_viruses = abspath(input.oncoviral_present_viruses)
+            oncoviral_breakpoints_tsv = ''
+            with open(input.oncoviral_present_viruses) as f:
+                if [v for v in f.read().strip().split(',') if v]:
+                    oncoviral_breakpoints_tsv = \
+                        abspath(f'work/{wildcards.batch}/oncoviruses/oncoviral_breakpoints.tsv')
+            ov_cmdl = (
+                f"oncoviral_present_viruses='{oncoviral_present_viruses}', \\\n"
+                f"oncoviral_breakpoints_tsv='{oncoviral_breakpoints_tsv}', \\"
+            )
 
         shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
         shell('mkdir -p {output.rmd_tmp_dir}/img')
@@ -166,8 +175,7 @@ purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_purity='{params.purple_purity}', \
 purple_qc='{params.purple_qc}', \
-oncoviral_present_viruses='{oncoviral_present_viruses}', \
-oncoviral_breakpoints_tsv='{oncoviral_breakpoints_tsv}', \
+{ov_cmdl} \
 conda_list='{params.conda_list}' \
 ))" ; \
 cd {params.work_dir} ; \
