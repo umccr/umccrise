@@ -35,7 +35,7 @@ phases:
       # Clone test data
       - git clone --depth 1 https://github.com/umccr/umccrise_test_data umccrise_test_data
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
-       Pull refdata
+      # Pull refdata
       - git clone https://github.com/umccr/reference_data reference_data &&
         cd reference_data &&
         dvc config cache.type reflink,hardlink,copy &&
@@ -45,7 +45,7 @@ phases:
       - du -sh reference_data/genomes
       - tree -L 1 reference_data/genomes
       - df -h
-       Run minimal test with downsized sample data - dragen
+      # Run minimal test with downsized sample data - dragen
       - tree -L 1 umccrise_test_data/data/dragen_test_project
       - codebuild-breakpoint
       - docker run -t --cpus 1
