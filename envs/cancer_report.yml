@@ -18,6 +18,7 @@ dependencies:
   - r-purrr
   - r-readr
   - r-rmarkdown
+  - r-cairo  # fixes "address (nil), cause 'memory not mapped'"
   - r-stringr
   - r-stringi
   - r-tidyr
