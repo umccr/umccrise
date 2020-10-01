@@ -115,7 +115,8 @@ input_paths: a path to inputs:\n
 
     # Find the genomes dir, and extract or pull it from s3/gds if needed, or error out if can't
     refdata.find_genomes_dir(input_genomes_url)
-    conf['genomes_dir'] = verify_dir(refdata.genomes_dir, is_critical=True)
+    conf['genomes_dir'] = verify_dir(refdata.genomes_dir, is_critical=True,
+                                     description='Refernece genomes directory')
     logger.info(f'Using genomes directory: {refdata.genomes_dir}')
 
     #####################################
