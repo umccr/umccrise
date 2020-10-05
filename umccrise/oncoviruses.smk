@@ -36,7 +36,7 @@ checkpoint viral_content:
             conda_cmd.format('oviraptor') + \
             'oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
             '--genomes-dir {params.genomes_dir} {params.unlock_opt} '
-            '--cores {threads} --only-detect'
+            '--cores {threads} --only-detect --aligner bwa'
         )
         # if verify_file(join(params.work_dir, 'breakpoints.vcf')):
         #     shell('cp {params.work_dir}/breakpoints.vcf {params.breakpoints_vcf}')
@@ -76,7 +76,7 @@ rule viral_integration_sites:
         conda_cmd.format('oviraptor') + \
         'oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
         '--genomes-dir {params.genomes_dir} {params.unlock_opt} --cores {threads} '
-        '-v $(cat {input.significant_viruses})'
+        '-v $(cat {input.significant_viruses}) --aligner bwa '
         '; cp {params.work_dir}/breakpoints.vcf {output.breakpoints_vcf}'
 
 

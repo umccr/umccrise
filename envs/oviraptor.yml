@@ -10,3 +10,4 @@ channels:
 dependencies:
   - oviraptor
   - reference_data
+  - bwa
