@@ -366,13 +366,13 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
     def _rename_input_stages(stages):
         fixed_stages = set()
         for s in stages:
-            if s == 'rmd':
-                fixed_stages |= {'cancer_report'}
-            elif s == 'sv':
+            if s in {'rmd', 'cancer_report'}:
+                fixed_stages |= {'cancer_report', 'oncoviruses'}
+            elif s in {'sv', 'structural'}:
                 fixed_stages |= {'structural'}
-            elif s == 'purple':
+            elif s in {'purple', 'cnv'}:
                 fixed_stages |= {'structural', 'purple'}
-            elif s == 'coverage':
+            elif s in {'coverage'}:
                 fixed_stages |= {'mosdepth', 'goleft', 'cacao'}
                 if not (isinstance(run, BcbioProject) or isinstance(run, DragenProject)):
                     fixed_stages |= {'samtools_stats'}
@@ -382,19 +382,19 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
                 fixed_stages |= {'germline', 'cpsr'}
             elif s == 'pcgr':
                 fixed_stages |= {'somatic', 'pcgr'}
-            elif s == 'oncoviral':
+            elif s in {'oncoviral', 'oviraptor', 'oncoviruses', 'viruses', 'viral'}:
                 fixed_stages |= {'oncoviruses'}
-            elif s in {'nag', 'immuno'}:
+            elif s in {'nag', 'immuno', 'neoantigens'}:
                 fixed_stages |= {'neoantigens'}
             elif s == 'multiqc':
-                fixed_stages |= {'purple', 'conpair', 'somatic', 'germline', 'oncoviruses',
-                                 'mosdepth'}
+                fixed_stages |= {'multiqc', 'purple', 'conpair', 'somatic', 'germline',
+                                 'oncoviruses', 'mosdepth'}
                 if not (isinstance(run, BcbioProject) or isinstance(run, DragenProject)):
-                    fixed_stages |= {'mosdepth', 'samtools_stats'}
+                    fixed_stages |= {'samtools_stats'}
+            elif s == 'default':
+                fixed_stages |= default_enabled
             elif s not in default_enabled | default_disabled:
                 critical(f'Stage "{s}" is not recognised. Available: {default_enabled | default_disabled}')
-            elif s == 'default':
-                fixed_stages |= default_disabled
             else:
                 fixed_stages |= {s}
         return fixed_stages
