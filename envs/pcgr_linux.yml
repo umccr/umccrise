@@ -14,6 +14,6 @@ dependencies:
   - bcftools
   - click
   - ngs_utils
-  - pcgr ==0.8.4.11
-  - cpsr ==0.5.2.7
+  - pcgr ==0.9.0.1
+  - cpsr ==0.6.0.1
   - cacao ==0.2.1.3

@@ -32,9 +32,8 @@ from umccrise import package_path
 @click.option('--puriry', 'puriry', type=click.FLOAT)
 @click.option('--ploidy', 'ploidy', type=click.FLOAT)
 @click.option('--predispose-genes', 'predispose_genes', type=click.Path(exists=True))
-@click.option('--predispose-bed', 'predispose_bed', type=click.Path(exists=True))
 def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, germline=False, use_docker=None,
-         pcgr_data=None, genomes_dir=None, puriry=None, ploidy=None, predispose_genes=None, predispose_bed=None):
+         pcgr_data=None, genomes_dir=None, puriry=None, ploidy=None, predispose_genes=None):
 
     if not pcgr_data:
         from reference_data import api as refdata
@@ -88,10 +87,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
         renamed_file_base = join(output_dir, f'{sample}.cpsr')
 
         panel_param = '--panel_id 0'
-        if predispose_bed:
-            run_simple(f'cut -f1-4 {predispose_bed} > {join(output_dir, "custom_panel.bed")}')
-            panel_param = f'--custom_panel {join(output_dir, "custom_panel.bed")}'
-        elif predispose_genes:
+        if predispose_genes:
             panel_param = f'--custom_list {predispose_genes}'
             if is_old_cpsr:
                 panel_param = f'--custom_panel_gene_list {predispose_genes}'
@@ -170,14 +166,16 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
         run_simple(cmd)
     except subprocess.SubprocessError:
         err('--------\n')
-        err(f'Error running PCGR.\n')
+        err(f'Error running {"PCGR" if not germline else "CPSR"}.\n')
         raise
 
+    err(f'Finished {"PCGR" if not germline else "CPSR"}.\n')
     for expected_fpath in glob.glob(f'{expected_file_base}*'):
-        renamed_fpath = expected_fpath.replace(expected_file_base, renamed_file_base)
-        rename(expected_fpath, renamed_fpath)
-        if renamed_fpath.endswith('.html'):
-            info(f'PCGR report: {renamed_fpath}')
+        if isfile(expected_fpath):
+            renamed_fpath = expected_fpath.replace(expected_file_base, renamed_file_base)
+            rename(expected_fpath, renamed_fpath)
+            if renamed_fpath.endswith('.html'):
+                info(f'{"PCGR" if not germline else "CPSR"} report: {renamed_fpath}')
 
 
 def check_pcgr_version():

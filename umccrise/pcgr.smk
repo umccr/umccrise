@@ -8,7 +8,7 @@ localrules: pcgr, cpsr, cpsr_batch
 
 from os.path import dirname
 from ngs_utils.file_utils import which
-from ngs_utils.reference_data import get_predispose_genes_bed
+from ngs_utils.reference_data import get_predispose_genes_txt
 from reference_data import api as refdata
 from umccrise import get_purity, get_ploidy
 
@@ -60,7 +60,7 @@ rule run_cpsr:
               if 'somatic' in stages else \
               rules.germline_predispose_subset.output.vcf,
         pcgr_data = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
-        predispose_bed = get_predispose_genes_bed(run.genome_build),
+        predispose_genes_txt = get_predispose_genes_txt(),
     output:
         'work/{batch}/cpsr/{batch}-normal.cpsr.html'
     params:
@@ -75,7 +75,7 @@ rule run_cpsr:
         shell(conda_cmd.format('pcgr') +
             'pcgr {input.vcf} -g {params.genome_build} -o {output_dir} -s {params.sample_name} '
             '--germline {params.opt} --pcgr-data {input.pcgr_data} '
-            '--predispose-bed {input.predispose_bed}')
+            '--predispose-genes {input.predispose_genes_txt}')
 
 rule cpsr_copy_report:
     input:
