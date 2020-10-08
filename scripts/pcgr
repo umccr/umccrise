@@ -87,10 +87,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
         renamed_file_base = join(output_dir, f'{sample}.cpsr')
 
         panel_param = '--panel_id 0'
-        if predispose_genes:
+        if predispose_genes and not is_old_cpsr:
             panel_param = f'--custom_list {predispose_genes}'
-            if is_old_cpsr:
-                panel_param = f'--custom_panel_gene_list {predispose_genes}'
 
         if is_old_cpsr:
             cmd = (f'cpsr.py'
