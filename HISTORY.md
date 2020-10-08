@@ -1,5 +1,7 @@
-1.1.0 (22 Sep 2020)
+1.1.0 (8 Oct 2020)
 
+- Update PCGR to 0.9.0, CPSR to 0.6.0 (cosmetic changes + database updates)
+- Use [DVC](https://dvc.org/) for managing the reference data. Add `umccrise_refdata_pull` script to pull genomes as long as you are signed in under an UMCCR AWS account
 - Support TSV input (if input file ends with `.tsv`, assumes it's a TSV file with a header and any of the following columns in arbitrary order:
   - `sample`
   - `wgs` (WGS tumor BAM, required)
@@ -12,11 +14,10 @@
   - `somatic_vcf` (tumor/normal somatic VCF calls. If not provided, SAGE will be run)
   - `germline_vcf` (germline variant calls)
   - `sv_vcf` (SV calls)
-- Add samtools stats (for QC for TSV runs)
-- Support RNAseq input (currently as part of the TSV input support)
-- Integrate [neoantigens](https://github.com/umccr/neoantigens)
-- Add `umccrise_refdata_pull` that pulls genomes as long as you are signed in in UMCCR AWS
-- Update PCGR to 0.9.0, CPSR to 0.6.0 (cosmetic changes + database updates)
+- Add samtools stats (for TSV runs, where bcbio or Dragen QC is not available)
+- Integrate [neoantigens](https://github.com/umccr/neoantigens), trigger with `-S neoantigens`
+- Integrate Optitype HLA calling (used for neoantigen calling, `-S neoantigens`)
+- Support RNAseq input (currently a part of the TSV input support; used for the neoantigen calling)
 
 1.0.9 (16 Jul 2020)
 

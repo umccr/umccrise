@@ -433,8 +433,8 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 Updating PCGR packages:
 
 ```shell
-pcgr_version=0.8.4.10
-cpsr_version=0.5.2.6
+pcgr_version=0.9.0.1
+cpsr_version=0.6.0.1
 
 # Locally:
 cd pcgr
@@ -445,32 +445,32 @@ cd ../cpsr
 git tag v$cpsr_version
 git push origin v$cpsr_version
 
-dir=/g/data/gx8/extras/umccrise_018_2020_May_dev
+dir=/g/data/gx8/extras/umccrise_2020_Sep
 
 source $dir/load_umccrise.sh
 export PATH=$dir/miniconda/envs/umccrise_pcgr/bin:$PATH
 # mamba install conda-build anaconda
 
 cd $dir/pcgr.git
-git pull
+git pull --rebase
 cd install_no_docker
 export VERSION=$pcgr_version
 conda build conda_pkg/pcgr
 conda build conda_pkg/pcgr_dockerized
 conda convert --platform osx-64 \
-    $dir/miniconda/envs/umccrise/conda-bld/linux-64/pcgr_dockerized-$VERSION-*.tar.bz2 \
-    --output-dir $dir/miniconda/envs/umccrise/conda-bld/
-anaconda upload --force -u pcgr $dir/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
+    $dir/miniconda/envs/umccrise_pcgr/conda-bld/linux-64/pcgr_dockerized-$VERSION-*.tar.bz2 \
+    --output-dir $dir/miniconda/envs/umccrise_pcgr/conda-bld/
+anaconda upload --force -u pcgr $dir/miniconda/envs/umccrise_pcgr/conda-bld/*/*-$VERSION-*.tar.bz2
 
 cd $dir/cpsr.git
-git pull
+git pull --rebase
 export VERSION=$cpsr_version
 conda build conda_pkg/cpsr
 conda build conda_pkg/cpsr_dockerized
 conda convert --platform osx-64 \
-    $dir/miniconda/envs/umccrise/conda-bld/linux-64/cpsr_dockerized-$VERSION-*.tar.bz2 \
-    --output-dir $dir/miniconda/envs/umccrise/conda-bld/
-anaconda upload --force -u pcgr $dir/miniconda/envs/umccrise/conda-bld/*/*-$VERSION-*.tar.bz2
+    $dir/miniconda/envs/umccrise_pcgr/conda-bld/linux-64/cpsr_dockerized-$VERSION-*.tar.bz2 \
+    --output-dir $dir/miniconda/envs/umccrise_pcgr/conda-bld/
+anaconda upload --force -u pcgr $dir/miniconda/envs/umccrise_pcgr/conda-bld/*/*-$VERSION-*.tar.bz2
 ```
 
 
