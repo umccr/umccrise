@@ -19,6 +19,7 @@ params:
   af_keygenes: 'x'
   somatic_snv: 'x'
   somatic_sv: 'x'
+  somatic_sv_vcf: 'x'
   purple_gene_cnv: 'x'
   purple_cnv: 'x'
   purple_purity: 'x'
@@ -34,6 +35,7 @@ params:
   # af_keygenes:      '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/rmd/afs/af_tumor_keygenes.txt'
   # somatic_snv:      '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/rmd/dragen-with_chr_prefix.vcf'
   # somatic_sv:       '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/T_SRR7890902_20pc/structural/T_SRR7890902_20pc-manta.tsv'
+  # somatic_sv_vcf:       '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/T_SRR7890902_20pc/structural/T_SRR7890902_20pc-manta.vcf.gz'
   # purple_gene_cnv:  '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/purple/T_SRR7890902_20pc.purple.cnv.gene.tsv'
   # purple_cnv:       '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/purple/T_SRR7890902_20pc.purple.cnv.somatic.tsv'
   # purple_purity:    '~/rjn/extras/vlad/synced/umccr/umccrise_test_data/results/T_SRR7890902_20pc/work/T_SRR7890902_20pc/purple/T_SRR7890902_20pc.purple.purity.tsv'
@@ -57,10 +59,9 @@ knitr::opts_chunk$set(collapse = TRUE, echo = FALSE,
 ```
 
 ```{r render_report_interactively, eval=F, echo=F}
-batch_name <- "Elon"
+batch_name <- "SEQCII_50pc__T_SRR7890936_50pc"
 # tumor_name <- strsplit(batch_name, "__")[[1]][2]
-tumor_name <- "Elon_T"
-snv_caller <- "ensemble" # ensemble
+tumor_name <- "T_SRR7890936_50pc"
 
 params_tmp <- list(
   spartan = list(
@@ -72,6 +73,7 @@ params_tmp <- list(
     af_keygenes='',
     somatic_snv='',
     somatic_sv='',
+    somatic_sv_vcf='',
     purple_gene_cnv='',
     purple_cnv='',
     purple_purity='',
@@ -85,6 +87,7 @@ params_tmp <- list(
     af_keygenes='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/rmd/afs/af_tumor_keygenes.txt',
     somatic_snv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/small_variants/SEQCII_50pc__T_SRR7890936_50pc-somatic-PASS.vcf.gz',
     somatic_sv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/structural/SEQCII_50pc__T_SRR7890936_50pc-manta.tsv',
+    somatic_sv_vcf='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/structural/SEQCII_50pc__T_SRR7890936_50pc-manta.vcf.gz',
     purple_gene_cnv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.cnv.gene.tsv',
     purple_cnv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.cnv.somatic.tsv',
     purple_purity='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.purity.tsv',
@@ -95,19 +98,22 @@ params_tmp <- list(
   local = list(
     genome_build='hg38',
     key_genes='data/ref/umccr_cancer_genes.latest.tsv',
-    af_global=glue::glue('data/work/{batch_name}/rmd/afs/af_tumor.txt'),
-    af_keygenes=glue::glue('data/work/{batch_name}/rmd/afs/af_tumor_keygenes.txt'),
-    somatic_snv=glue::glue('data/work/{batch_name}/rmd/{snv_caller}-with_chr_prefix.vcf'),
-    somatic_sv=glue::glue('data/{batch_name}/structural/{batch_name}-manta.tsv'),
-    purple_gene_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv'),
-    purple_cnv=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv'),
-    purple_purity=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.purity.tsv'),
-    purple_qc=glue::glue('data/work/{batch_name}/purple/{batch_name}.purple.qc'),
-    conda_list=glue::glue('data/work/conda_pkg_list.txt')
+    af_global=glue::glue('data/umccrised/work/{batch_name}/cancer_report/afs/af_tumor.txt'),
+    af_keygenes=glue::glue('data/umccrised/work/{batch_name}/cancer_report/afs/af_tumor_keygenes.txt'),
+    somatic_snv=glue::glue('data/umccrised/{batch_name}/small_variants/{batch_name}-somatic-PASS.vcf.gz'),
+    somatic_sv=glue::glue('data/umccrised/{batch_name}/structural/{batch_name}-manta.tsv'),
+    somatic_sv_vcf=glue::glue('data/umccrised/{batch_name}/structural/{batch_name}-manta.vcf.gz'),
+    purple_gene_cnv=glue::glue('data/umccrised/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv'),
+    purple_cnv=glue::glue('data/umccrised/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv'),
+    purple_purity=glue::glue('data/umccrised/work/{batch_name}/purple/{batch_name}.purple.purity.tsv'),
+    purple_qc=glue::glue('data/umccrised/work/{batch_name}/purple/{batch_name}.purple.qc'),
+    oncoviral_present_viruses='data/umccrised/work/{batch_name}/oncoviruses/present_viruses.txt',
+    oncoviral_breakpoints_tsv='data/umccrised/work/{batch_name}/oncoviruses/oncoviral_breakpoints.tsv',
+    conda_list=glue::glue('data/umccrised/work/conda_pkg_list.txt')
   )
 )
 
-params <- params_tmp[["gadi"]]
+params <- params_tmp[["local"]]
 params$batch_name <- batch_name
 params$tumor_name <- tumor_name
 
@@ -141,6 +147,8 @@ library(readr)
 library(rmarkdown)
 library(stringr)
 library(tidyr)
+# umccr
+library(gpgr)
 ```
 
 ```{r funcs}
@@ -202,8 +210,39 @@ af_stats <- af_both %>%
   dplyr::summarise(n = n(),
                    mean = round(mean(af), 2),
                    median = round(median(af), 2),
-                   mode = round(mode2(af), 2)) %>%
+                   mode = round(mode2(af), 2),
+                   .groups = "drop_last") %>%
   tidyr::complete(set, fill = list(n = 0))
+```
+
+```{r hrd_prep}
+chord_sv_df <- gpgr::chord_mantavcf2df(params$somatic_sv_vcf)
+chord_res <- gpgr::chord_run(
+  vcf.snv = params$somatic_snv,
+  df.sv = chord_sv_df,
+  sv.caller = "manta",
+  sample.name = params$tumor_name,
+  ref.genome = params$genome_build,
+  verbose = TRUE)
+
+hrdetect_res <- NULL
+# HRDetect doesn't handle empty files
+if (gpgr::vcf_is_empty(params$somatic_sv_vcf) |
+    gpgr::vcf_is_empty(params$somatic_snv)) {
+  hrdetect_res <- tibble::tribble(
+    ~sample, ~Probability, ~intercept, ~del.mh.prop, ~SNV3, ~SV3, ~SV5, ~hrd, ~SNV8,
+    params$tumor_name, NA, NA, NA, NA, NA, NA, NA, NA
+  )
+} else {
+  hrdetect_res <- gpgr::hrdetect_run(
+    nm = params$tumor_name,
+    snvindel_vcf = params$somatic_snv,
+    sv_vcf = params$somatic_sv_vcf,
+    cnv_file = params$purple_cnv,
+    genome = params$genome_build,
+    snvoutdir = tempdir()) %>%
+  dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
+}
 ```
 
 ```{r mutational_sigs_prep}
@@ -572,6 +611,9 @@ summarise_sigs <- function(mut_sig_contr) {
     paste(collapse = ", ")
 }
 
+hrd_summary <- list(chord = round(chord_res[["prediction"]][, "p_hrd", drop = TRUE], 3),
+                    hrdetect = round(hrdetect_res[, "Probability", drop = TRUE], 3))
+
 af_summary <- af_stats %>%
   knitr::kable(format = "html", caption = "AF Summary Stats") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
@@ -607,6 +649,8 @@ qc_summary_all <- purple_qc_summary %>%
       ~Variable, ~value,
       "Top MutSigs", glue::glue("{htmltools::strong('Old:')} {summarise_sigs(mut_sig_contr)} ",
                                 "- {htmltools::strong('New:')} {summarise_sigs(mut_sig_contr2)}"),
+      "HRD", glue::glue("{htmltools::strong('CHORD:')} {hrd_summary$chord}; ",
+                        "{htmltools::strong('HRDetect:')} {hrd_summary$hrdetect}"),
       "CNVs (Somatic)", glue::glue("{htmltools::strong('Min: ')}{cnv_summary['Min']}; ",
                                    "{htmltools::strong('Max: ')}{cnv_summary['Max']}; ",
                                    "{htmltools::strong('N: ')}{cnv_summary['N']} "),
@@ -875,6 +919,25 @@ for (i in 1:length(chromosomes)) {
 if (will_work) {
   MutationalPatterns::plot_rainfall(somatic_snv[[1]], chromosomes = seqnames(get(ref_genome))[1:22], cex = 1.2, ylim = 1e+09)
 }
+```
+
+## HRD (Homologous Recombination Deficiency) Detection {#hrd}
+
+```{r chord_res}
+tibble::tibble(col = colnames(chord_res$prediction), val = unlist(chord_res$prediction[1, ])) %>%
+  DT::datatable(class = "cell-border display compact",
+                caption = "CHORD Results",
+                rownames = FALSE, extensions = c("Buttons"),
+                options = list(buttons = c('csv', 'excel'), dom = 'Brti', paging = FALSE)) %>%
+  DT::formatStyle(columns = c("col"), fontWeight = 'bold', `text-align` = 'left')
+
+
+tibble::tibble(col = colnames(hrdetect_res), val = unlist(hrdetect_res[1, ])) %>%
+  DT::datatable(class = "cell-border display compact",
+                caption = "HRDetect Results",
+                rownames = FALSE, extensions = c("Buttons"),
+                options = list(buttons = c('csv', 'excel'), dom = 'Brti', paging = FALSE)) %>%
+  DT::formatStyle(columns = c("col"), fontWeight = 'bold', `text-align` = 'left')
 ```
 
 
