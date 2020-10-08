@@ -11,5 +11,3 @@ dependencies:
   - oviraptor
   - reference_data
   - bwa
-  - pip:
-    - "git+https://github.com/vladsaveliev/oviraptor#egg=oviraptor"
