@@ -41,9 +41,9 @@ was generated and the button that launches the welcome tour.
     bg_cols.push(gray);
     {% endfor %}
 
-    window.mqc_highlight_f_texts = f_texts;
-    window.mqc_highlight_f_cols = f_cols;
-    window.mqc_highlight_regex_mode = regex_mode;
+    window.mqc_highlight_f_texts = f_texts.concat(bg_texts);
+    window.mqc_highlight_f_cols = f_cols.concat(bg_cols);
+    window.mqc_highlight_regex_mode = true;
 
     $(function(e, regex_mode){
       $('.mqc_table_sortHighlight').hide();
@@ -53,21 +53,14 @@ was generated and the button that launches the welcome tour.
           .each(function(i) {
         var th = $(this);
         var thtext = $(this).text();
-        $.each(f_texts, function(idx, f_text){
-          if((window.mqc_highlight_regex_mode && thtext.match(f_text))
-              || (!window.mqc_highlight_regex_mode && thtext.indexOf(f_text) > -1)){
-            var thiscolor = f_cols[idx];
-            th.addClass('highlighted').data('highlight', idx);
-            $('.mqc_table_sortHighlight').show();
-            th.css('color', thiscolor);
-          }
-        });
-        $.each(bg_texts, function(idx, f_text){
-          if((window.mqc_highlight_regex_mode && thtext.match(f_text))
-              || (!window.mqc_highlight_regex_mode && thtext.indexOf(f_text) > -1)){
-            var thiscolor = bg_cols[idx];
-            th.css('color', thiscolor);
-          }
+        var thiscolor = gray;
+        $.each(window.mqc_highlight_f_texts, function(idx, f_text){
+          if (thtext.match(f_text)) {
+            thiscolor = window.mqc_highlight_f_cols[idx];
+   	      }
+          th.addClass('highlighted').data('highlight', idx);
+          $('.mqc_table_sortHighlight').show();
+          th.css('color', thiscolor);
         });
       });
     });
