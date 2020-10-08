@@ -683,6 +683,33 @@ unzip *.zip
 rm *.zip
 ```
 
+### DVC
+
+We use [DVC](https://dvc.org/doc) to track reference data in the [reference_data](https://github.com/umccr/reference_data) repo
+
+```
+git clone git@github.com:umccr/reference_data.git reference_data.git
+cd reference_data.git
+
+# The first time we did:
+rsync -trv /g/data/gx8/extras/umccrise_genomes/hg38 genomes/
+dvc init
+dvc add genomes/hg38
+# Alternatively, could used `run`:
+#dvc run -n copy_hg38 -o genomes/hg38 rsync -trv /g/data/gx8/extras/umccrise_genomes/hg38 genomes/
+dvc remote add -d storage s3://umccr-refdata-dev/dvc-storage
+dvc push
+
+# To pull the ref data, do:
+dvc pull
+
+# To update, do:
+rsync -trv /g/data/gx8/extras/umccrise_genomes/hg38 genomes/
+dvc add genomes/hg38
+git add genomes/.gitignore genomes/hg38.dvc
+dvc push
+``` 
+
 
 ## GRIDSS and LINX
 
