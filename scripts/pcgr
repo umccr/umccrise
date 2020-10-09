@@ -159,7 +159,13 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                    f' --no_vcf_validate' +
                   (f' --tumor_purity {puriry}' if puriry else '') +
                   (f' --tumor_ploidy {ploidy}' if ploidy else '') +
-                   f' --debug')
+                   f' --debug ' +
+                   f' --estimate_tmb ' +
+                   f' --estimate_msi_status ' +
+                   f' --estimate_signatures ' +
+                   f' --include_trials ' +
+                   f' --assay WGS '
+               )
     try:
         run_simple(cmd)
     except subprocess.SubprocessError:
