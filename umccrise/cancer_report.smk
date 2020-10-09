@@ -85,6 +85,8 @@ rule run_cancer_report:
         somatic_snv          = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
         somatic_sv           = lambda wc: rules.prep_sv_tsv.output[0]
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
+        somatic_sv_vcf       = lambda wc: '{batch}/structural/{batch}-manta.vcf.gz'
+                               if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
         purple_cnv           = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
         purple_gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
         purple_purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
@@ -118,6 +120,7 @@ rule run_cancer_report:
         af_keygenes     = lambda wc, input: abspath(input.af_keygenes),
         somatic_snv     = lambda wc, input: abspath(input.somatic_snv),
         somatic_sv      = lambda wc, input: abspath(input.somatic_sv) if input.somatic_sv else 'NA',
+        somatic_sv_vcf  = lambda wc, input: abspath(input.somatic_sv_vcf) if input.somatic_sv_vcf else 'NA',
         purple_gene_cnv = lambda wc, input: abspath(input.purple_gene_cnv),
         purple_cnv      = lambda wc, input: abspath(input.purple_cnv),
         purple_purity   = lambda wc, input: abspath(input.purple_purity),
@@ -171,6 +174,7 @@ af_global='{params.af_global}', \
 af_keygenes='{params.af_keygenes}', \
 somatic_snv='{params.somatic_snv}', \
 somatic_sv='{params.somatic_sv}', \
+somatic_sv_vcf='{params.somatic_sv_vcf}', \
 purple_gene_cnv='{params.purple_gene_cnv}', \
 purple_cnv='{params.purple_cnv}', \
 purple_purity='{params.purple_purity}', \
