@@ -1,6 +1,14 @@
+1.1.2 (9 Oct 2020)
+
+- Added [GPGR dependency](https://umccr.github.io/gpgr/) to handle R-related enhancements more efficiently
+- Include HRD results from HRDetect and CHORD into the cancer report
+
+1.1.1 (9 Oct 2020)
+
+- Update PCGR to 0.9.0, CPSR to 0.6.0. Includes cosmetic changes and database updates. CPSR counts intronic variants in the "Other variants" summary, as the number there will be high compared to the previous version, however they don't go into any TIER down the report.
+
 1.1.0 (8 Oct 2020)
 
-- Update PCGR to 0.9.0, CPSR to 0.6.0 (cosmetic changes + database updates)
 - Use [DVC](https://dvc.org/) for managing the reference data. Add `umccrise_refdata_pull` script to pull genomes as long as you are signed in under an UMCCR AWS account
 - Support TSV input (if input file ends with `.tsv`, assumes it's a TSV file with a header and any of the following columns in arbitrary order:
   - `sample`
@@ -18,6 +26,7 @@
 - Integrate [neoantigens](https://github.com/umccr/neoantigens), trigger with `-S neoantigens`
 - Integrate Optitype HLA calling (used for neoantigen calling, `-S neoantigens`)
 - Support RNAseq input (currently a part of the TSV input support; used for the neoantigen calling)
+
 
 1.0.9 (16 Jul 2020)
 
