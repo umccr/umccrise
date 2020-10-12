@@ -433,8 +433,8 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 Updating PCGR packages:
 
 ```shell
-pcgr_version=0.9.0.1
-cpsr_version=0.6.0.1
+pcgr_version=0.9.0.2
+cpsr_version=0.6.0.2
 
 # Locally:
 cd pcgr

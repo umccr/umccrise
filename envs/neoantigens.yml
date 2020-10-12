@@ -21,14 +21,17 @@ dependencies:
   - numpy
   - bcftools
   - tabix
-  - ensembl-vep         # to annotate VCF for pVACseq
+  - ensembl-vep==98.3   # to annotate VCF for pVACseq
   - pyensembl           # install with pip - conda version errors out (also needs gtfparse>1.1)
   - kallisto
   - cyvcf2
   - blast
   - pandas
   - sambamba
+  - pandoc
   - pip:
-    - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
     - pvactools
     - vatools
+    - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
+    - "git+https://github.com/vladsaveliev/pVACtools"
+    - "git+https://github.com/umccr/neoantigens"
