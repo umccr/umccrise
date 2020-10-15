@@ -388,7 +388,7 @@ rule prep_sv_tsv:
                         parse_info_field(rec, 'BPI_END'),
                         rec.ID,
                         parse_info_field(rec, 'MATEID'),
-                        rec.ALT
+                        rec.ALT[0]
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 
