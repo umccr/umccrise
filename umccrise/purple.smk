@@ -208,7 +208,7 @@ rule purple_circos_baf:
         shell('mkdir -p {params.out_dir}')
         shell('cp {params.gaps_txt_prefix}_{params.genome_build}.txt {params.out_dir}/gaps.txt')
         out_conf = join(params.out_dir, basename(input.circos_baf_conf))
-        shell('sed s/SAMPLE/{wildcards.batch}/ {input.circos_baf_conf} > ' + out_conf)
+        shell('sed -e s/SAMPLE/{wildcards.batch}/ -e s/HG_ASSEMBLY/{params.genome_build}/ {input.circos_baf_conf} > ' + out_conf)
         shell('cp {input.baf} {params.out_dir}')
         shell('cp {input.cnv} {params.out_dir}')
         shell('cp {input.map} {params.out_dir}')
