@@ -11,6 +11,7 @@ dependencies:
   # R libraries:
   - pandoc
   - r-devtools
+  - r-details
   - r-dplyr
   - r-dt
   - r-ggplot2
