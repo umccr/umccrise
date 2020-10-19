@@ -5,6 +5,7 @@ from os.path import isfile, join, dirname
 import toml
 import cyvcf2
 import yaml
+import shutil
 from ngs_utils.file_utils import get_ungz_gz
 from ngs_utils.reference_data import get_predispose_genes_bed
 from ngs_utils.logger import critical
@@ -287,6 +288,21 @@ rule somatic_vcf2maf:
         '&& rm {params.uncompressed_tmp_vcf}'
 
 
+rule pierian:
+    input:
+        snv = rules.somatic_vcf_filter_pass.output.vcf,
+        sv = '{batch}/structural/{batch}-manta.vcf.gz',
+        cnv = '{batch}/purple/{batch}.purple.cnv.somatic.tsv',
+    output:
+        snv_renamed = '{batch}/pierian/{batch}.somatic-PASS-single.grch38.vcf.gz',
+        sv_renamed = '{batch}/pierian/{batch}-manta.single.vcf.gz',
+        cnv_renamed = '{batch}/pierian/{batch}.purple.cnv',
+    run:
+        shutil.copy(f'{input.snv}', f'{output.snv_renamed}')
+        shutil.copy(f'{input.sv}', f'{output.sv_renamed}')
+        shutil.copy(f'{input.cnv}', f'{output.cnv_renamed}')
+
+
 #############
 
 rule somatic:
@@ -294,6 +310,7 @@ rule somatic:
         somatic_vcfs = expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
         somatic_mafs = expand(rules.somatic_vcf2maf.output.maf, batch=batch_by_name.keys()),
         somatic_pass_vcfs = expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
+        pierian = expand(rules.pierian.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/somatic.done'))
 

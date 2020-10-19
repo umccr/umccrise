@@ -339,7 +339,7 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
     default_enabled = {
         'conpair',
         'structural',
-        'somatic', 'germline', 'maf',
+        'somatic', 'germline', 'maf', 'pierian',
         'purple',
         'mosdepth', 'goleft', 'cacao',
         'pcgr', 'cpsr',
