@@ -137,8 +137,9 @@ rule purple_run:
         somatic_vcf       = rules.purple_somatic_vcf.output,
         ref_fa            = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
-        cnv           = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
-        gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
+        som_cnv       = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
+        germ_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.germline.tsv',
+        som_gene_cnv  = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
         purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
         qc            = 'work/{batch}/purple/{batch}.purple.qc',
 
