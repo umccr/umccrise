@@ -222,8 +222,8 @@ rule purple_circos_baf:
 
 rule purple_symlink:
     input:
-        rules.purple_run.output.cnv,
-        rules.purple_run.output.gene_cnv,
+        rules.purple_run.output.som_cnv,
+        rules.purple_run.output.som_gene_cnv,
         rules.purple_run.output.circos_png,
         rules.purple_circos_baf.output.png,
     output:
