@@ -1,4 +1,4 @@
-from os.path import join, abspath
+from os.path import join, abspath, dirname
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
@@ -116,7 +116,8 @@ rule run_cancer_report:
         report_rmd = 'cancer_report.Rmd',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
         work_dir = os.getcwd(),
-        output_file = lambda wc, output: join(os.getcwd(), output[0]),
+        result_outdir   = lambda wc, output: join(os.getcwd(), dirname(output[0]), 'cancer_report_tables'),
+        output_file     = lambda wc, output: join(os.getcwd(), output[0]),
         rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
         af_global       = lambda wc, input: abspath(input.af_global),
         af_keygenes     = lambda wc, input: abspath(input.af_keygenes),
@@ -170,6 +171,7 @@ cd {output.rmd_tmp_dir} && \
 Rscript -e "rmarkdown::render('{params.report_rmd}', \
 output_file='{params.output_file}', \
 params=list( \
+result_outdir='{params.result_outdir}', \
 tumor_name='{params.tumor_name}', \
 batch_name='{wildcards.batch}', \
 genome_build='{params.rmd_genome_build}', \
