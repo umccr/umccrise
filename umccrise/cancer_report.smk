@@ -87,6 +87,7 @@ rule run_cancer_report:
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
         somatic_sv_vcf       = lambda wc: '{batch}/structural/{batch}-manta.vcf.gz'
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
+        purple_som_snv_vcf   = 'work/{batch}/purple/{batch}.purple.somatic.vcf.gz'
         purple_som_cnv       = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
         purple_som_gene_cnv  = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
         purple_germ_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.germline.tsv',
@@ -122,6 +123,7 @@ rule run_cancer_report:
         somatic_snv     = lambda wc, input: abspath(input.somatic_snv),
         somatic_sv      = lambda wc, input: abspath(input.somatic_sv) if input.somatic_sv else 'NA',
         somatic_sv_vcf  = lambda wc, input: abspath(input.somatic_sv_vcf) if input.somatic_sv_vcf else 'NA',
+        purple_som_snv_vcf = lambda wc, input: abspath(input.purple_som_snv_vcf),
         purple_som_cnv  = lambda wc, input: abspath(input.purple_som_cnv),
         purple_som_gene_cnv = lambda wc, input: abspath(input.purple_som_gene_cnv),
         purple_germ_cnv = lambda wc, input: abspath(input.purple_germ_cnv),
@@ -177,6 +179,7 @@ af_keygenes='{params.af_keygenes}', \
 somatic_snv='{params.somatic_snv}', \
 somatic_sv='{params.somatic_sv}', \
 somatic_sv_vcf='{params.somatic_sv_vcf}', \
+purple_som_snv_vcf='{params.purple_som_snv_vcf}', \
 purple_som_gene_cnv='{params.purple_som_gene_cnv}', \
 purple_som_cnv='{params.purple_som_cnv}', \
 purple_germ_cnv='{params.purple_germ_cnv}', \
