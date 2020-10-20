@@ -87,7 +87,7 @@ rule run_cancer_report:
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
         somatic_sv_vcf       = lambda wc: '{batch}/structural/{batch}-manta.vcf.gz'
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
-        purple_som_snv_vcf   = 'work/{batch}/purple/{batch}.purple.somatic.vcf.gz'
+        purple_som_snv_vcf   = 'work/{batch}/purple/{batch}.purple.somatic.vcf.gz',
         purple_som_cnv       = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
         purple_som_gene_cnv  = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
         purple_germ_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.germline.tsv',
