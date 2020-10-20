@@ -103,7 +103,6 @@ rule umccrise:
         rules.maf.output              if 'maf'              in stages else [],
         rules.germline.output         if 'germline'         in stages else [],
         rules.purple.output           if 'purple'           in stages else [],
-        rules.pierian.output          if 'pierian'          in stages else [],
         rules.cacao.output            if 'cacao'            in stages else [],
         rules.mosdepth.output         if 'mosdepth'         in stages else [],
         rules.samtools_stats.output   if 'samtools_stats'   in stages else [],
