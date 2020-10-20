@@ -193,7 +193,7 @@ af_stats <- af_both %>%
   tidyr::complete(set, fill = list(n = 0))
 ```
 
-```{r hrd_prep}
+```{r hrd_prep, results='hide'}
 #---- Homologous Recombination Deficiency ----#
 chord_sv_df <- gpgr::chord_mantavcf2df(params$somatic_sv_vcf)
 chord_res <- gpgr::chord_run(
