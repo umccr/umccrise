@@ -115,6 +115,7 @@ library(dplyr)
 library(glue)
 library(ggplot2)
 library(htmltools)
+library(jsonlite)
 library(knitr)
 library(kableExtra)
 library(purrr)
@@ -129,11 +130,6 @@ library(gpgr)
 ```{r funcs}
 img_dir <- file.path("img") # created when copying purple files to tmp dir
 result_outdir <- params$result_outdir # directory to write tables to
-dir.create(result_outdir, recursive = TRUE)
-dir.create(file.path(result_outdir, "hrd"), recursive = TRUE)
-dir.create(file.path(result_outdir, "sv"), recursive = TRUE)
-dir.create(file.path(result_outdir, "purple"), recursive = TRUE)
-dir.create(file.path(result_outdir, "sigs"), recursive = TRUE)
 
 # for checking if the columns in the dt are all described
 check_cols_described <- function(cols, descr) {
@@ -160,6 +156,36 @@ sv_detail_table <- function(tab) {
     tibble::as_tibble() %>%
     dplyr::left_join(sv_col_descr, by = "Column")
 }
+
+mkdir <- function(d) {
+  if (!dir.exists(d)) {
+    dir.create(d, recursive = TRUE)
+  }
+}
+
+write_tsvgz <- function(x, path, ...) {
+  assertthat::assert_that(endsWith(path, ".gz"))
+  tsv_path <- file.path(result_outdir, path)
+  mkdir(dirname(tsv_path))
+  readr::write_tsv(x = x, path = tsv_path, ...)
+}
+
+write_jsongz <- function(x, path, ...) {
+  assertthat::assert_that(endsWith(path, ".gz"))
+  json_path <- file.path(result_outdir, "json",  path)
+  mkdir(dirname(json_path))
+  gz <- gzfile(json_path, open = "w")
+  jsonlite::write_json(x = x, path = gz, ...)
+  close(gz)
+}
+
+write_tsvjsongz <- function(x, path, ...) {
+  json_path <- paste0(path, ".json.gz")
+  tsv_path <- paste0(path, ".tsv.gz")
+  write_tsvgz(x, tsv_path)
+  write_jsongz(x, json_path)
+}
+
 ```
 
 ```{r allele_freq_prep}
@@ -236,18 +262,18 @@ mut_mat <- MutationalPatterns::mut_matrix(vcf_list = somatic_snv, ref_genome = r
 
 ###--- OLD Sigs ---###
 # Get Sanger sigs from "http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt"
-sig_probs <- file.path("misc/sig/v2_mar2015/signatures_probabilities.txt")
+sig_probs1 <- file.path("misc/sig/v2_mar2015/signatures_probabilities.txt")
 # better be explicit - the sig_probs file has 7 extra empty columns
-col_types <- paste0(c("ccc", paste0(rep("d", 30), collapse = ""), "ccccccc"), collapse = "")
-col_names <- c("SubstType", "Trinucleotide", "SomMutType", paste0("Sig", 1:30), paste0("foo", 1:7))
-cancer_signatures <-
-  readr::read_tsv(sig_probs, col_names = col_names, col_types = col_types, skip = 1) %>%
+ctypes <- paste0(c("ccc", paste0(rep("d", 30), collapse = ""), "ccccccc"), collapse = "")
+cnames <- c("SubstType", "Trinucleotide", "SomMutType", paste0("Sig", 1:30), paste0("foo", 1:7))
+cancer_signatures1 <-
+  readr::read_tsv(sig_probs1, col_names = cnames, col_types = ctypes, skip = 1) %>%
   dplyr::arrange(SubstType)
 
 # sanity check - need to be in same order
-stopifnot(all(cancer_signatures$SomMutType == rownames(mut_mat)))
+stopifnot(all(cancer_signatures1$SomMutType == rownames(mut_mat)))
 # select only 30 sig columns, 96 mut types
-cancer_signatures <- cancer_signatures %>%
+cancer_signatures1 <- cancer_signatures1 %>%
   dplyr::select(4:33) %>%
   as.matrix()
 
@@ -268,25 +294,25 @@ cancer_signatures2 <- cancer_signatures2 %>%
   as.matrix()
 
 # Fit mutation matrix to cancer signatures
-fit_res <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures)
+fit_res1 <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures1)
 fit_res2 <- MutationalPatterns::fit_to_signatures(mut_matrix = mut_mat, signatures = cancer_signatures2)
 
 # Convert to tibbles for more bullet-proof subsetting
-fit_res <- tibble::tibble(
-  sig = rownames(fit_res$contribution), # matrix rownames
-  contr = unname(fit_res$contribution[, 1])) # matrix single column -> vector
+fit_res1 <- tibble::tibble(
+  sig = rownames(fit_res1$contribution), # matrix rownames
+  contr = unname(fit_res1$contribution[, 1])) # matrix single column -> vector
 
 fit_res2 <- tibble::tibble(
   sig = rownames(fit_res2$contribution),
   contr = unname(fit_res2$contribution[, 1]))
 
 # Select signatures with some contribution
-fit_res_contr <- dplyr::filter(fit_res, contr > 0)
+fit_res_contr1 <- dplyr::filter(fit_res1, contr > 0)
 fit_res_contr2 <- dplyr::filter(fit_res2, contr > 0)
 
 # If there are no signatures, return a dummy tibble
-if (nrow(fit_res_contr) == 0) {
-  fit_res_contr <- tibble::tibble(
+if (nrow(fit_res_contr1) == 0) {
+  fit_res_contr1 <- tibble::tibble(
     sig = "NOSIGS",
     contr = 0
   )
@@ -299,8 +325,8 @@ if (nrow(fit_res_contr2) == 0) {
   )
 }
 
-mut_sig_contr <-
-  fit_res_contr %>%
+mut_sig_contr1 <-
+  fit_res_contr1 %>%
   dplyr::mutate(contr = round(contr, 0),
                 Freq = round(contr / sum(contr), 2),
                 Rank = as.integer(base::rank(-contr))) %>%
@@ -314,8 +340,8 @@ mut_sig_contr2 <-
   dplyr::select(Rank, Signature = sig, Contribution = contr, Freq) %>%
   dplyr::arrange(Rank)
 
-readr::write_tsv(mut_sig_contr, file.path(result_outdir, "sigs/mutsig1.tsv"))
-readr::write_tsv(mut_sig_contr2, file.path(result_outdir, "sigs/mutsig2.tsv"))
+write_tsvjsongz(mut_sig_contr1, "sigs/mutsig1")
+write_tsvjsongz(mut_sig_contr2, "sigs/mutsig2")
 ```
 
 ```{r sv_prep}
@@ -345,8 +371,9 @@ if (sv_path == "NA") {
     sv_col_descr <- sv$col_descr
   }
 }
-readr::write_tsv(sv_unmelted, file.path(result_outdir, "sv/01_sv_unmelted.tsv"))
-readr::write_tsv(sv_all, file.path(result_outdir, "sv/02_sv_melted.tsv"))
+
+write_tsvjsongz(sv_unmelted, "sv/01_sv_unmelted")
+write_tsvjsongz(sv_all, "sv/02_sv_melted")
 ```
 
 ```{r purple_prep}
@@ -360,9 +387,10 @@ purple_qc_summary <- dplyr::bind_rows(
 purple_cnv_som <- gpgr::purple_cnv_som_process(params$purple_som_cnv)
 purple_cnv_som_gene <- gpgr::purple_cnv_som_gene_process(params$purple_som_gene_cnv, params$key_genes)
 purple_cnv_germ <- gpgr::purple_cnv_germ_process(params$purple_germ_cnv)
-readr::write_tsv(purple_cnv_som$tab, file.path(result_outdir, "purple/purple_cnv_som.tsv"))
-readr::write_tsv(purple_cnv_som_gene$tab, file.path(result_outdir, "purple/purple_cnv_som_gene.tsv"))
-readr::write_tsv(purple_cnv_germ$tab, file.path(result_outdir, "purple/purple_cnv_germ.tsv"))
+
+write_tsvjsongz(purple_cnv_som$tab, "purple/purple_cnv_som")
+write_tsvjsongz(purple_cnv_som_gene$tab, "purple/purple_cnv_som_gene")
+write_tsvjsongz(purple_cnv_germ$tab, "purple/purple_cnv_germ")
 ```
 
 ## Summary
@@ -412,7 +440,7 @@ There are several reasons PURPLE may classify a sample as failed:
 
 ```{r summary_tables}
 summarise_sigs <- function(mut_sig_contr) {
-  mut_sig_contr %>%
+  mut_sig_contr1 %>%
     head(2) %>%
     dplyr::mutate(string = paste0(Signature, " (", Contribution, " - ", Freq, ")")) %>%
     dplyr::pull(string) %>%
@@ -445,7 +473,7 @@ if (no_sv_found) {
 
 qc_summary_all <- dplyr::tribble(
   ~n, ~variable, ~value, ~details,
-  5, "Top MutSigs", glue::glue("Old: {summarise_sigs(mut_sig_contr)}",
+  5, "Top MutSigs", glue::glue("Old: {summarise_sigs(mut_sig_contr1)}",
                                 "New: {summarise_sigs(mut_sig_contr2)}", .sep = "\n"),
   glue::glue("Old: v2 COSMIC (https://cancer.sanger.ac.uk/cosmic/signatures_v2.tt)",
              "New: v3 COSMIC (https://cancer.sanger.ac.uk/cosmic/signatures)", .sep = "\n"),
@@ -461,8 +489,6 @@ qc_summary_all <- dplyr::tribble(
     purple_qc_summary
   ) %>%
   dplyr::arrange(n)
-
-readr::write_tsv(qc_summary_all, file.path(result_outdir, "qc_summary.tsv"))
 
 qc_summary_all %>%
   dplyr::mutate(
@@ -481,7 +507,6 @@ qc_summary_all %>%
         TRUE ~ "black"))) %>%
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
-
 ```
 
 ## Somatic Mutation Profiles
@@ -691,7 +716,7 @@ sig_table <-
                 signature = paste0("Sig", signature)) %>%
   dplyr::select(Signature = signature, Description = description, Plot)
 
-mut_sig_contr %>%
+mut_sig_contr1 %>%
   dplyr::left_join(sig_table, by = "Signature") %>%
   knitr::kable() %>%
   kableExtra::kable_styling(c("hover", "striped"), font_size = 12) %>%
@@ -824,8 +849,8 @@ hrdetect_res_tab <- tibble::tibble(col = colnames(hrdetect_res),
                                    val = unlist(hrdetect_res[1, ]))
 chord_res_tab <- tibble::tibble(col = colnames(chord_res$prediction),
                                 val = unlist(chord_res$prediction[1, ]))
-readr::write_tsv(hrdetect_res_tab, file.path(result_outdir, "hrd/hrdetect.tsv"))
-readr::write_tsv(chord_res_tab, file.path(result_outdir, "hrd/chord.tsv"))
+write_tsvjsongz(hrdetect_res_tab, "hrd/hrdetect")
+write_tsvjsongz(chord_res_tab, "hrd/chord")
 
 colnames(hrdetect_res_tab) <- c("HRDetect", "Results")
 colnames(chord_res_tab) <- c("CHORD", "Results1")
@@ -1135,12 +1160,10 @@ sv_BND_purple <- sv_all %>%
   dplyr::filter(Type %in% c("PURPLE_inf")) %>%
   dplyr::select(Tier, Start, Effect, Detail, Ploidy, CN, CNC, ID)
 
-readr::write_tsv(
+write_tsvjsongz(
   dplyr::bind_cols(sv_BND_main, sv_BND_other %>% dplyr::select(-nrow)),
-  file.path(result_outdir, "sv/03_sv_BND_main.tsv"))
-readr::write_tsv(
-  sv_BND_purple,
-  file.path(result_outdir, "sv/04_sv_BND_purpleinf.tsv"))
+  "sv/03_sv_BND_main")
+write_tsvjsongz(sv_BND_purple, "sv/04_sv_BND_purpleinf")
 
 sv_BND_maindt <- sv_BND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1213,29 +1236,27 @@ sv_noBND_main <- sv_noBND %>%
   dplyr::select(nrow, vcfnum, TierTop, Tier, Type, Start, End, Effect,
                 Genes, Transcript, Detail, SR_alt, PR_alt, AF_PURPLE)
 
-readr::write_tsv(sv_noBND_main, file.path(result_outdir, "sv/05_sv_noBND_main.tsv"))
+write_tsvjsongz(sv_noBND_main, "sv/05_sv_noBND_main")
 
 sv_noBND_other <- sv_noBND %>%
   dplyr::select(vcfnum, Ploidy, AF_BPI, CNC, CN, SR_PR_ref, SScore) %>%
   dplyr::distinct()
 
-readr::write_tsv(sv_noBND_other, file.path(result_outdir, "sv/06_sv_noBND_other.tsv"))
+write_tsvjsongz(sv_noBND_other, "sv/06_sv_noBND_other")
 
 sv_noBND_manygenes <- sv_noBND %>%
   dplyr::filter(ngen > max_genes) %>%
   dplyr::select(nrow, vcfnum, Tier, Type, Start, End,
                 Effect, ngen, Genes = Genes_original)
 
-readr::write_tsv(sv_noBND_manygenes,
-                 file.path(result_outdir, "sv/07_sv_noBND_manygenes.tsv"))
+write_tsvjsongz(sv_noBND_manygenes, "sv/07_sv_noBND_manygenes")
 
 sv_noBND_manytx <- sv_noBND %>%
   dplyr::filter(ntrx > max_transcripts) %>%
   dplyr::select(nrow, vcfnum, Tier, Type, Start, End,
                 Effect, ntrx, Transcript = Transcript_original)
 
-readr::write_tsv(sv_noBND_manytx,
-                 file.path(result_outdir, "sv/08_sv_noBND_manytranscripts.tsv"))
+write_tsvjsongz(sv_noBND_manytx, "sv/08_sv_noBND_manytranscripts")
 
 sv_noBND_maindt <- sv_noBND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1525,7 +1546,7 @@ conda_pkgs %>%
 
 ```{r report_inputs}
 report_inputs <- dplyr::tibble(key = names(params), value = unlist(params))
-readr::write_tsv(report_inputs, file.path(result_outdir, "report_inputs.tsv"))
+write_tsvjsongz(report_inputs, "report_inputs")
 
 report_inputs %>%
   knitr::kable(format = "html") %>%

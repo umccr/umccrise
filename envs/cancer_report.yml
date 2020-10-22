@@ -17,6 +17,7 @@ dependencies:
   - r-ggplot2
   - r-gpgr
   - r-htmlwidgets
+  - r-jsonlite
   - r-kableextra
   - r-purrr
   - r-readr
