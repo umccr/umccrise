@@ -245,8 +245,7 @@ if (gpgr::vcf_is_empty(params$somatic_sv_vcf) |
     sv_vcf = params$somatic_sv_vcf,
     cnv_tsv = params$purple_som_cnv,
     genome = params$genome_build,
-    snvoutdir = tempdir()) %>%
-  dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
+    snvoutdir = tempdir())
 }
 ```
 
@@ -440,7 +439,7 @@ There are several reasons PURPLE may classify a sample as failed:
 
 ```{r summary_tables}
 summarise_sigs <- function(mut_sig_contr) {
-  mut_sig_contr1 %>%
+  mut_sig_contr %>%
     head(2) %>%
     dplyr::mutate(string = paste0(Signature, " (", Contribution, " - ", Freq, ")")) %>%
     dplyr::pull(string) %>%
@@ -559,12 +558,19 @@ The following post-processing steps occur:
 
 
 ```{r allele_freq_plot_stats, fig.width=10, fig.height=3}
-af_summary <- af_stats %>%
-  knitr::kable(format = "html", caption = "AF Summary Stats") %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
-  kableExtra::column_spec(1, bold = TRUE)
-
-af_summary
+af_stats %>%
+  gt::gt(rowname_col = "set") %>%
+  gt::tab_header(
+    title = "AF Summary Stats"
+  ) %>%
+  gt::tab_stubhead(label = "Set") %>%
+  gt::tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_stub(rows = TRUE)
+  ) %>%
+  gt::tab_options(table.align = "left")
 
 ggplot2::ggplot(data = af_both, ggplot2::aes(af)) +
   ggplot2::geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#008080") +
@@ -862,35 +868,10 @@ that includes HRDetect.
 
 </details>
 
-
-```{r chord_res}
-hrdetect_res_tab <- tibble::tibble(col = colnames(hrdetect_res),
-                                   val = unlist(hrdetect_res[1, ]))
-chord_res_tab <- tibble::tibble(col = colnames(chord_res$prediction),
-                                val = unlist(chord_res$prediction[1, ]))
-write_tsvjsongz(hrdetect_res_tab, "hrd/hrdetect")
-write_tsvjsongz(chord_res_tab, "hrd/chord")
-
-colnames(hrdetect_res_tab) <- c("HRDetect", "Results")
-colnames(chord_res_tab) <- c("CHORD", "Results1")
-
-cnames_final <- c("HRDetect", " ", " ", "CHORD", " ", "CHORD (cont.)", " ")
-
-dplyr::bind_cols(
-  hrdetect_res_tab,
-  tibble::tibble(x = rep("  |", 9)),
-  dplyr::bind_rows(chord_res_tab[1:8, ],
-                   tibble::tribble(
-                     ~CHORD, ~Results1,
-                     " ", " "
-                   )),
-  chord_res_tab[9:17, ] %>%  purrr::set_names(c("CHORD2", "Results2"))
-) %>%
-  dplyr::mutate(HRDetect = kableExtra::cell_spec(HRDetect, bold = TRUE),
-                CHORD = kableExtra::cell_spec(CHORD, bold = TRUE),
-                CHORD2 = kableExtra::cell_spec(CHORD2, bold = TRUE)) %>%
-  knitr::kable(escape = FALSE, caption = "HRD Results", col.names = cnames_final) %>%
-  kableExtra::kable_paper(c("hover", "striped"), full_width = FALSE, position = "left")
+```{r chord_hrdetect_res}
+hrd_results <- gpgr::hrd_summary(hrdetect_res, chord_res)
+write_tsvjsongz(hrd_results$hrd_results_tab, "hrd/chord_hrdetect")
+hrd_results$hrd_results_gt
 ```
 
 
