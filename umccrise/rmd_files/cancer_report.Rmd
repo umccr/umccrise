@@ -113,6 +113,7 @@ library(details)
 library(DT)
 library(dplyr)
 library(glue)
+library(gt)
 library(ggplot2)
 library(htmltools)
 library(jsonlite)
@@ -167,7 +168,7 @@ write_tsvgz <- function(x, path, ...) {
   assertthat::assert_that(endsWith(path, ".gz"))
   tsv_path <- file.path(result_outdir, path)
   mkdir(dirname(tsv_path))
-  readr::write_tsv(x = x, path = tsv_path, ...)
+  readr::write_tsv(x = x, file = tsv_path, ...)
 }
 
 write_jsongz <- function(x, path, ...) {
@@ -185,7 +186,6 @@ write_tsvjsongz <- function(x, path, ...) {
   write_tsvgz(x, tsv_path)
   write_jsongz(x, json_path)
 }
-
 ```
 
 ```{r allele_freq_prep}
@@ -450,10 +450,15 @@ summarise_sigs <- function(mut_sig_contr) {
 hrd_summary <- list(chord = round(chord_res[["prediction"]][, "p_hrd", drop = TRUE], 3),
                     hrdetect = round(hrdetect_res[, "Probability", drop = TRUE], 3))
 
-cnv_summary <- purple_cnv_som$tab %>%
-  dplyr::summarise(Min = round(min(CN), 2),
-                   Max = round(max(CN), 2),
-                   N = dplyr::n()) %>% unlist()
+cnv_summary <-
+  list(som = purple_cnv_som$tab, germ = purple_cnv_germ$tab) %>%
+  dplyr::bind_rows(.id = "group") %>%
+  dplyr::group_by(group) %>%
+  dplyr::summarise(
+    Min = round(min(CN), 2),
+    Max = round(max(CN), 2),
+    N = dplyr::n(), .groups = "drop_last") %>%
+  base::split(.$group)
 
 if (no_sv_found) {
   sv_summary <- tibble(unmelted = c(0), melted = c(0))
@@ -473,14 +478,17 @@ if (no_sv_found) {
 
 qc_summary_all <- dplyr::tribble(
   ~n, ~variable, ~value, ~details,
-  5, "Top MutSigs", glue::glue("Old: {summarise_sigs(mut_sig_contr1)}",
-                                "New: {summarise_sigs(mut_sig_contr2)}", .sep = "\n"),
-  glue::glue("Old: v2 COSMIC (https://cancer.sanger.ac.uk/cosmic/signatures_v2.tt)",
-             "New: v3 COSMIC (https://cancer.sanger.ac.uk/cosmic/signatures)", .sep = "\n"),
+  5, "MutSigs (Old)", glue::glue("{summarise_sigs(mut_sig_contr1)}"),
+  "v2 COSMIC (https://cancer.sanger.ac.uk/cosmic/signatures_v2.tt)",
+  5, "MutSigs (New)", glue::glue("{summarise_sigs(mut_sig_contr2)}"),
+  "v3 COSMIC (https://cancer.sanger.ac.uk/cosmic/signatures)",
   6, "HRD", glue::glue("CHORD: {hrd_summary$chord}; HRDetect: {hrd_summary$hrdetect}"), "",
-  16, "CNVs (Somatic)", glue::glue("Min: {cnv_summary['Min']}; ",
-                                   "Max: {cnv_summary['Max']}; ",
-                                   "N: {cnv_summary['N']} "), "",
+  16, "CNVs (Somatic)", glue::glue("Min: {cnv_summary[['som']]$Min}; ",
+                                   "Max: {cnv_summary[['som']]$Max}; ",
+                                   "N: {cnv_summary[['som']]$N} "), "",
+  16, "CNVs (Germline)", glue::glue("Min: {cnv_summary[['germ']]$Min}; ",
+                                   "Max: {cnv_summary[['germ']]$Max}; ",
+                                   "N: {cnv_summary[['germ']]$N} "), "",
   17, "SVs (unmelted)", paste(rev(sv_summary$unmelted), collapse = ", "), "",
   18, "SVs (melted)", paste(rev(sv_summary$melted), collapse = ", "), "",
   19, "Genome", params$genome_build, ""
@@ -488,25 +496,36 @@ qc_summary_all <- dplyr::tribble(
   dplyr::bind_rows(
     purple_qc_summary
   ) %>%
-  dplyr::arrange(n)
+  dplyr::arrange(n) %>%
+  dplyr::select(-n)
 
 qc_summary_all %>%
-  dplyr::mutate(
-    details = kableExtra::cell_spec(details),
-    variable = kableExtra::cell_spec(variable, bold = TRUE),
-    value = kableExtra::cell_spec(
-      value,
-      color = dplyr::case_when(
-        value == "PASS" ~ "green",
-        grepl("FAIL", value) ~ "red",
-        value == "FEMALE" ~ "purple",
-        value == "MALE" ~ "blue",
-        value == "MALE_KLINEFELTER" ~ "red",
-        value == "TRUE" ~ "green",
-        value == "FALSE" ~ "red",
-        TRUE ~ "black"))) %>%
-  knitr::kable(escape = FALSE) %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
+  gt::gt(rowname_col = "variable") %>%
+  gt::tab_style(
+    style = list(
+      cell_fill(color = "#FF4646"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = vars(value),
+      rows = grepl("FAIL", value) & variable == "QC_Status")) %>%
+  gt::tab_style(
+    style = list(
+      cell_fill(color = "#FF4646"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = vars(value),
+      rows = grepl("FALSE", value) & variable %in% c("Segment_Pass", "Gender_Pass", "DelGenes_Pass"))) %>%
+  gt::tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_stub(rows = TRUE)
+  ) %>%
+  gt::cols_align("left") %>%
+  gt::opt_row_striping() %>%
+  gt::tab_options(table.align = "left")
 ```
 
 ## Somatic Mutation Profiles
@@ -1520,7 +1539,7 @@ conda_pkgs <- readr::read_table2(params$conda_list,
                 env = sub("^umccrise_", "", env)) %>%
   dplyr::arrange(name) %>%
   dplyr::group_by(name, version, build, channel) %>%
-  dplyr::summarise(envs = paste(env, collapse = ", ")) %>%
+  dplyr::summarise(envs = paste(env, collapse = ", "), .groups = "drop_last") %>%
   dplyr::ungroup()
 
 
