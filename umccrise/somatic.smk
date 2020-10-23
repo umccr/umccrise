@@ -14,7 +14,7 @@ from reference_data import api as refdata
 from umccrise import package_path, cnt_vars
 
 
-localrules: somatic, germline, germline_batch
+localrules: somatic, germline, germline_batch, pierian
 
 
 # rule somatic_vcf_reheader  # change RGIDs to tumor and normal names?
@@ -292,15 +292,26 @@ rule pierian:
     input:
         snv = rules.somatic_vcf_filter_pass.output.vcf,
         sv = '{batch}/structural/{batch}-manta.vcf.gz',
+        svtbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
         cnv = '{batch}/purple/{batch}.purple.cnv.somatic.tsv',
     output:
         snv_renamed = '{batch}/pierian/{batch}.somatic-PASS-single.grch38.vcf.gz',
         sv_renamed = '{batch}/pierian/{batch}-manta.single.vcf.gz',
         cnv_renamed = '{batch}/pierian/{batch}.purple.cnv',
     run:
-        shutil.copy(f'{input.snv}', f'{output.snv_renamed}')
-        shutil.copy(f'{input.sv}', f'{output.sv_renamed}')
+        # copy sv + cnv since no processing required
         shutil.copy(f'{input.cnv}', f'{output.cnv_renamed}')
+        shutil.copy(f'{input.sv}', f'{output.sv_renamed}')
+        shutil.copy(f'{input.svtbi}', f'{output.sv_renamed}.tbi')
+        #shutil.copy(f'{input.snv}', f'{output.snv_renamed}')
+        # grab tumor column from snv vcf
+        t_name = batch_by_name[wildcards.batch].tumors[0].rgid
+        vcf_samples = cyvcf2.VCF(input.snv).samples
+        assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.snv}, available: {vcf_samples}"
+        shell('''
+bcftools view {input.snv} -s {t_name} -Oz -o {output.snv_renamed} && tabix -p vcf {output.snv_renamed}
+
+''')
 
 
 #############
