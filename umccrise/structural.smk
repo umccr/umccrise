@@ -1,8 +1,7 @@
 """
 Structural variants
-------------------
-Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
+
 import glob
 from os.path import join, dirname, basename, isfile
 from cyvcf2 import VCF

@@ -131,17 +131,7 @@ library(gpgr)
 ```{r funcs}
 img_dir <- file.path("img") # created when copying purple files to tmp dir
 result_outdir <- params$result_outdir # directory to write tables to
-
-# for checking if the columns in the dt are all described
-check_cols_described <- function(cols, descr) {
-  stopifnot(is.character(cols), is.atomic(cols))
-  stopifnot(is.character(descr), is.atomic(descr))
-  for (col in cols) {
-    if (!col %in% descr) {
-      warning(glue::glue("{col} is not described!"))
-    }
-  }
-}
+blank_lines <- function(n = 10){cat(rep("&nbsp;  ",n), sep="\n")}
 
 # get js indices when using in DT options
 col_ind_js <- function(dt, col) {
@@ -152,72 +142,24 @@ col_ind_js <- function(dt, col) {
 
 # used in SV table Details
 sv_detail_table <- function(tab) {
+  # for checking if the columns in the dt are all described
+  check_cols_described <- function(cols, descr) {
+    stopifnot(is.character(cols), is.atomic(cols))
+    stopifnot(is.character(descr), is.atomic(descr))
+    for (col in cols) {
+      if (!col %in% descr) {
+        warning(glue::glue("{col} is not described!"))
+      }
+    }
+  }
+
   check_cols_described(colnames(tab), sv_col_descr$Column)
   list(Column = colnames(tab)) %>%
     tibble::as_tibble() %>%
     dplyr::left_join(sv_col_descr, by = "Column")
 }
-
-mkdir <- function(d) {
-  if (!dir.exists(d)) {
-    dir.create(d, recursive = TRUE)
-  }
-}
-
-write_tsvgz <- function(x, path, ...) {
-  assertthat::assert_that(endsWith(path, ".gz"))
-  tsv_path <- file.path(result_outdir, path)
-  mkdir(dirname(tsv_path))
-  readr::write_tsv(x = x, file = tsv_path, ...)
-}
-
-write_jsongz <- function(x, path, ...) {
-  assertthat::assert_that(endsWith(path, ".gz"))
-  json_path <- file.path(result_outdir, "json",  path)
-  mkdir(dirname(json_path))
-  gz <- gzfile(json_path, open = "w")
-  jsonlite::write_json(x = x, path = gz, ...)
-  close(gz)
-}
-
-write_tsvjsongz <- function(x, path, ...) {
-  json_path <- paste0(path, ".json.gz")
-  tsv_path <- paste0(path, ".tsv.gz")
-  write_tsvgz(x, tsv_path)
-  write_jsongz(x, json_path)
-}
 ```
 
-```{r allele_freq_prep}
-#---- Allele Frequencies ----#
-set.seed(42)
-af_global <-
-  readr::read_tsv(params$af_global, col_types = "d") %>%
-  dplyr::mutate(set = "Global")
-
-af_keygenes <-
-  readr::read_tsv(params$af_keygenes, col_types = "cicccd") %>%
-  dplyr::select(af) %>%
-  dplyr::mutate(set = 'Key genes CDS')
-
-af_both <-
-  dplyr::bind_rows(af_global, af_keygenes) %>%
-  dplyr::mutate(set = factor(set, levels = c("Global", "Key genes CDS")))
-
-mode2 <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-
-af_stats <- af_both %>%
-  dplyr::group_by(set) %>%
-  dplyr::summarise(n = n(),
-                   mean = round(mean(af), 2),
-                   median = round(median(af), 2),
-                   mode = round(mode2(af), 2),
-                   .groups = "drop_last") %>%
-  tidyr::complete(set, fill = list(n = 0))
-```
 
 ```{r hrd_prep, results='hide'}
 #---- Homologous Recombination Deficiency ----#
@@ -339,8 +281,8 @@ mut_sig_contr2 <-
   dplyr::select(Rank, Signature = sig, Contribution = contr, Freq) %>%
   dplyr::arrange(Rank)
 
-write_tsvjsongz(mut_sig_contr1, "sigs/mutsig1")
-write_tsvjsongz(mut_sig_contr2, "sigs/mutsig2")
+gpgr::write_tsvjsongz(mut_sig_contr1, "sigs/mutsig1", result_outdir)
+gpgr::write_tsvjsongz(mut_sig_contr2, "sigs/mutsig2", result_outdir)
 ```
 
 ```{r sv_prep}
@@ -371,8 +313,8 @@ if (sv_path == "NA") {
   }
 }
 
-write_tsvjsongz(sv_unmelted, "sv/01_sv_unmelted")
-write_tsvjsongz(sv_all, "sv/02_sv_melted")
+gpgr::write_tsvjsongz(sv_unmelted, "sv/01_sv_unmelted", result_outdir)
+gpgr::write_tsvjsongz(sv_all, "sv/02_sv_melted", result_outdir)
 ```
 
 ```{r purple_prep}
@@ -387,9 +329,13 @@ purple_cnv_som <- gpgr::purple_cnv_som_process(params$purple_som_cnv)
 purple_cnv_som_gene <- gpgr::purple_cnv_som_gene_process(params$purple_som_gene_cnv, params$key_genes)
 purple_cnv_germ <- gpgr::purple_cnv_germ_process(params$purple_germ_cnv)
 
-write_tsvjsongz(purple_cnv_som$tab, "purple/purple_cnv_som")
-write_tsvjsongz(purple_cnv_som_gene$tab, "purple/purple_cnv_som_gene")
-write_tsvjsongz(purple_cnv_germ$tab, "purple/purple_cnv_germ")
+gpgr::write_tsvjsongz(purple_cnv_som$tab, "purple/purple_cnv_som", result_outdir)
+gpgr::write_tsvjsongz(purple_cnv_som_gene$tab, "purple/purple_cnv_som_gene", result_outdir)
+gpgr::write_tsvjsongz(purple_cnv_germ$tab, "purple/purple_cnv_germ", result_outdir)
+```
+
+```{r, results='asis'}
+blank_lines(2)
 ```
 
 ## Summary
@@ -446,18 +392,16 @@ summarise_sigs <- function(mut_sig_contr) {
     paste(collapse = ", ")
 }
 
-hrd_summary <- list(chord = round(chord_res[["prediction"]][, "p_hrd", drop = TRUE], 3),
-                    hrdetect = round(hrdetect_res[, "Probability", drop = TRUE], 3))
+hrd_summary <- list(chord = chord_res[["prediction"]][, "p_hrd", drop = TRUE],
+                    hrdetect = hrdetect_res[, "Probability", drop = TRUE])
 
 cnv_summary <-
   list(som = purple_cnv_som$tab, germ = purple_cnv_germ$tab) %>%
-  dplyr::bind_rows(.id = "group") %>%
-  dplyr::group_by(group) %>%
-  dplyr::summarise(
+  purrr::map(~ dplyr::summarise(
+    .x,
     Min = round(min(CN), 2),
     Max = round(max(CN), 2),
-    N = dplyr::n(), .groups = "drop_last") %>%
-  base::split(.$group)
+    N = dplyr::n(), .groups = "drop_last"))
 
 if (no_sv_found) {
   sv_summary <- tibble(unmelted = c(0), melted = c(0))
@@ -527,7 +471,15 @@ qc_summary_all %>%
   gt::tab_options(table.align = "left")
 ```
 
+```{r, results='asis'}
+blank_lines(1)
+```
+
 ## Somatic Mutation Profiles
+
+```{r, results='asis'}
+blank_lines(1)
+```
 
 ### Allelic Frequencies {#allelic-freqs}
 Summarised below are the allele frequencies (AFs) for somatic variants detected
@@ -557,31 +509,21 @@ The following post-processing steps occur:
 </details>
 
 
-```{r allele_freq_plot_stats, fig.width=10, fig.height=3}
-af_stats %>%
-  gt::gt(rowname_col = "set") %>%
-  gt::tab_header(
-    title = "AF Summary Stats"
-  ) %>%
-  gt::tab_stubhead(label = "Set") %>%
-  gt::tab_style(
-    style = list(
-      cell_text(weight = "bold")
-    ),
-    locations = cells_stub(rows = TRUE)
-  ) %>%
-  gt::tab_options(table.align = "left")
+```{r allele_freq_stats}
+af_summary_results <- gpgr::af_summary(params$af_global, params$af_keygenes)
+af_summary_results$af_stats_gt
+```
 
-ggplot2::ggplot(data = af_both, ggplot2::aes(af)) +
-  ggplot2::geom_histogram(stat = 'bin', binwidth = 0.01, fill = "#008080") +
-  ggplot2::facet_wrap(~set, scales = 'free_y', drop = FALSE) +
-  ggplot2::scale_x_continuous(name = "Allele Frequency",
-                     breaks = seq(0, 1, by = 0.1),
-                     limits = c(0, 1), expand = c(0, 0)) +
-  ggplot2::theme_bw() +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, vjust = 1, hjust = 1),
-        panel.grid.minor = ggplot2::element_blank()) +
-  ggplot2::labs(title = "AF count distribution")
+```{r, results='asis'}
+blank_lines(1)
+```
+
+```{r allele_freq_plot, fig.width=10, fig.height=3}
+af_summary_results$af_plot
+```
+
+```{r, results='asis'}
+blank_lines(1)
 ```
 
 ### Mutational Signatures {.tabset .tabset-fade #signatures}
@@ -712,6 +654,10 @@ MutationalPatterns::plot_strand(strand_counts_rep, mode = "relative")
 MutationalPatterns::plot_strand_bias(strand_bias_rep)
 ```
 
+```{r, results='asis'}
+blank_lines(1)
+```
+
 ### Signature Contribution {.tabset .tabset-fade #contributions}
 
 <details>
@@ -730,7 +676,9 @@ and reference signature plots from <https://cancer.sanger.ac.uk/cosmic/signature
 
 </details>
 
-<p>&nbsp;</p>
+```{r, results='asis'}
+blank_lines(1)
+```
 
 #### OLD
 
@@ -747,6 +695,11 @@ mut_sig_contr1 %>%
   kableExtra::kable_styling(c("hover", "striped"), font_size = 12) %>%
   kableExtra::scroll_box(height = "400px")
 ```
+
+```{r, results='asis'}
+blank_lines(1)
+```
+
 
 #### NEW
 
@@ -768,7 +721,9 @@ mut_sig_contr2 %>%
   kableExtra::scroll_box(height = "400px")
 ```
 
-<p>&nbsp;</p>
+```{r, results='asis'}
+blank_lines(1)
+```
 
 ### Rainfall Plot {#rainfall}
 Rainfall plots show the distribution of mutations along the genome, with mutation types
@@ -809,14 +764,17 @@ along with an ID that is shared by grouped variants.
 gpgr::purple_kataegis(params$purple_som_snv_vcf) %>%
   knitr::kable(escape = FALSE, caption = "Kataegis Regions.",
                format = "html", format.args = list(big.mark = ",")) %>%
-  kableExtra::kable_paper("hover", full_width = FALSE, position = "left") %>%
+  kableExtra::kable_minimal("hover", full_width = FALSE, position = "left") %>%
   kableExtra::scroll_box(height = "250px")
 ```
 
-```{r purple_plot_somaticrainfall, out.width="90%"}
+```{r purple_plot_somaticrainfall, out.width="80%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.rainfall.png')))
 ```
 
+```{r, results='asis'}
+blank_lines(1)
+```
 
 ## HRD (Homologous Recombination Deficiency) Detection {#hrd}
 
@@ -869,11 +827,14 @@ that includes HRDetect.
 </details>
 
 ```{r chord_hrdetect_res}
-hrd_results <- gpgr::hrd_summary(hrdetect_res, chord_res)
-write_tsvjsongz(hrd_results$hrd_results_tab, "hrd/chord_hrdetect")
+hrd_results <- gpgr::hrd_results_tabs(hrdetect_res, chord_res)
+gpgr::write_tsvjsongz(hrd_results$hrd_results_tab, "hrd/chord_hrdetect", result_outdir)
 hrd_results$hrd_results_gt
 ```
 
+```{r, results='asis'}
+blank_lines(1)
+```
 
 ## Circos Plots {.tabset .tabset-fade #circos}
 Circos plots are generated by PURPLE.
@@ -1033,8 +994,6 @@ sv_tsv_descr %>%
   kableExtra::scroll_box(height = "250px")
 ```
 
-<p>&nbsp;</p>
-
 __Prioritisation process__
 
 1. Annotate with [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) based on Ensembl gene model
@@ -1077,8 +1036,6 @@ gpgr::EFFECT_ABBREVIATIONS %>%
 
 </details>
 
-<p>&nbsp;</p>
-
 ### Summary
 
 ```{r plot_bnd_sr_pr_tot_lines, fig.width=10, fig.height=6}
@@ -1089,31 +1046,44 @@ p2
 ```
 
 
-```{r sv_summary, results='asis', eval=!no_sv_found}
-sv_tier_vs_svtype <- function() {
-  l <- list(unmelted = sv_unmelted %>% dplyr::select(TierTop, Type),
-            melted = sv_all %>% dplyr::select(Tier, Type)) %>%
-    purrr::map(function(x) addmargins(table(x, useNA = 'ifany')))
+```{r sv_summary, eval=!no_sv_found}
+d <-
+  list(unmelted = sv_unmelted %>% dplyr::select(Tier = TierTop, Type),
+       melted = sv_all %>% dplyr::select(Tier, Type)) %>%
+  dplyr::bind_rows(.id = "group") %>%
+  dplyr::mutate(group = factor(group, levels = c("unmelted", "melted"))) %>%
+  dplyr::group_by(group) %>%
+  dplyr::count(Tier, Type) %>%
+  tidyr::pivot_wider(names_from = Type, values_from = n) %>%
+  dplyr::ungroup() %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(tot = sum(dplyr::c_across(!(c(group, Tier))), na.rm = TRUE))
 
-  cap_unmelt <- glue::glue("SV type by {htmltools::strong('top')} tier {htmltools::strong('before')}",
-                           "{htmltools::br()}breaking down by annotation")
-  cap_melt <- glue::glue("SV type by {htmltools::strong('individual')} tier {htmltools::strong('after')}",
-                         "{htmltools::br()}breaking down by annotation")
-  unmelted <- knitr::kable(l$unmelted, format = "html", caption = cap_unmelt, output = FALSE) %>%
-    kableExtra::kable_paper(c("hover", "striped"), full_width = FALSE, position = "float_right")
-  melted <- knitr::kable(l$melted, format = "html",
-                         caption = cap_melt, output = FALSE) %>%
-    kableExtra::kable_paper(c("hover", "striped"), full_width = FALSE, position = "float_right")
+d %>%
+  gt::gt(
+    groupname_col = "group",
+    rowname_col = "Tier") %>%
+  gt::tab_header(
+    title = "SV type counts by tier",
+    subtitle = "(TopTier used for melted variants)"
+  ) %>%
+  gt::tab_stubhead(label = "Tier") %>%
+  gt::summary_rows(groups = TRUE,
+                   fns = list(tot = ~sum(., na.rm = TRUE)),
+                   drop_trailing_zeros = TRUE) %>%
+  gt::fmt_missing(columns = dplyr::everything()) %>%
+  gt::tab_style(
+    style = list(
+      cell_text(weight = "bold")
+    ),
+    locations = cells_stub(rows = TRUE)
+  ) %>%
+  gt::cols_align("right") %>%
+  gt::tab_options(table.align = "left")
+```
 
-  list(unmelted = unmelted, melted = melted)
-}
-cat(c(
-  '<table><tr valign="top"><td>',
-  sv_tier_vs_svtype()$unmelted,
-  '</td>', '<td>',
-  sv_tier_vs_svtype()$melted,
-  '</td></tr></table>'),
-  sep = '')
+```{r, results='asis'}
+blank_lines(1)
 ```
 
 ### Unmelted Variants {#sv-unmelted}
@@ -1138,6 +1108,10 @@ details::details(sv_detail_table(svtab_raw))
 svtab_rawdt
 ```
 
+```{r, results='asis'}
+blank_lines(2)
+```
+
 ### Translocations (BNDs) {.tabset .tabset-fade #translocations}
 
 ```{r svtab_BND, eval=!no_sv_found}
@@ -1160,10 +1134,10 @@ sv_BND_purple <- sv_all %>%
   dplyr::filter(Type %in% c("PURPLE_inf")) %>%
   dplyr::select(Tier, Start, Effect, Detail, Ploidy, CN, CNC, ID)
 
-write_tsvjsongz(
+gpgr::write_tsvjsongz(
   dplyr::bind_cols(sv_BND_main, sv_BND_other %>% dplyr::select(-nrow)),
-  "sv/03_sv_BND_main")
-write_tsvjsongz(sv_BND_purple, "sv/04_sv_BND_purpleinf")
+  "sv/03_sv_BND_main", result_outdir)
+gpgr::write_tsvjsongz(sv_BND_purple, "sv/04_sv_BND_purpleinf", result_outdir)
 
 sv_BND_maindt <- sv_BND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1196,6 +1170,10 @@ sv_BND_purpledt <- sv_BND_purple %>%
 ```{r sv_BND_main, eval=!no_sv_found}
 details::details(sv_detail_table(sv_BND_main))
 sv_BND_maindt
+```
+
+```{r, results='asis'}
+blank_lines(2)
 ```
 
 #### Other Columns
@@ -1236,27 +1214,27 @@ sv_noBND_main <- sv_noBND %>%
   dplyr::select(nrow, vcfnum, TierTop, Tier, Type, Start, End, Effect,
                 Genes, Transcript, Detail, SR_alt, PR_alt, AF_PURPLE)
 
-write_tsvjsongz(sv_noBND_main, "sv/05_sv_noBND_main")
+gpgr::write_tsvjsongz(sv_noBND_main, "sv/05_sv_noBND_main", result_outdir)
 
 sv_noBND_other <- sv_noBND %>%
   dplyr::select(vcfnum, Ploidy, AF_BPI, CNC, CN, SR_PR_ref, SScore) %>%
   dplyr::distinct()
 
-write_tsvjsongz(sv_noBND_other, "sv/06_sv_noBND_other")
+gpgr::write_tsvjsongz(sv_noBND_other, "sv/06_sv_noBND_other", result_outdir)
 
 sv_noBND_manygenes <- sv_noBND %>%
   dplyr::filter(ngen > max_genes) %>%
   dplyr::select(nrow, vcfnum, Tier, Type, Start, End,
                 Effect, ngen, Genes = Genes_original)
 
-write_tsvjsongz(sv_noBND_manygenes, "sv/07_sv_noBND_manygenes")
+gpgr::write_tsvjsongz(sv_noBND_manygenes, "sv/07_sv_noBND_manygenes", result_outdir)
 
 sv_noBND_manytx <- sv_noBND %>%
   dplyr::filter(ntrx > max_transcripts) %>%
   dplyr::select(nrow, vcfnum, Tier, Type, Start, End,
                 Effect, ntrx, Transcript = Transcript_original)
 
-write_tsvjsongz(sv_noBND_manytx, "sv/08_sv_noBND_manytranscripts")
+gpgr::write_tsvjsongz(sv_noBND_manytx, "sv/08_sv_noBND_manytranscripts", result_outdir)
 
 sv_noBND_maindt <- sv_noBND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1305,6 +1283,10 @@ details::details(sv_detail_table(sv_noBND_main))
 sv_noBND_maindt
 ```
 
+```{r, results='asis'}
+blank_lines(2)
+```
+
 #### Other Columns
 
 ```{r sv_noBND2_other, eval=!no_sv_found}
@@ -1331,6 +1313,10 @@ The purity and ploidy estimator
 [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator)
 is used to generate a copy number profile for the somatic sample.
 
+```{r, results='asis'}
+blank_lines(1)
+```
+
 ### UMCCR Gene Somatic CNV Calls {#cnv-gene}
 
 <details>
@@ -1350,8 +1336,6 @@ purple_cnv_som_gene$descr %>%
 
 </details>
 
-<p>&nbsp;</p>
-
 ```{r purple_gene_cnv_tab}
 purple_cnv_som_gene$tab %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1361,6 +1345,10 @@ purple_cnv_som_gene$tab %>%
                                buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
   DT::formatCurrency(~ start + end, currency = "", interval = 3, mark = ",", digits = 0) %>%
   DT::formatRound(~ minCN + maxCN, digits = 1)
+```
+
+```{r, results='asis'}
+blank_lines(2)
 ```
 
 ### Genome-wide Somatic CNV Segments {#cnv-segs}
@@ -1386,8 +1374,6 @@ purple_cnv_som$descr %>%
 
 </details>
 
-<p>&nbsp;</p>
-
 ```{r purple_cnv_som_tab}
 purple_cnv_som$tab %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1396,6 +1382,10 @@ purple_cnv_som$tab %>%
                 options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
                                buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
+```
+
+```{r, results='asis'}
+blank_lines(2)
 ```
 
 ### Genome-wide __Germline__ CNV Segments
@@ -1410,6 +1400,9 @@ purple_cnv_germ$tab %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
+```{r, results='asis'}
+blank_lines(2)
+```
 
 ### PURPLE Charts {.tabset .tabset-fade #purple-charts}
 PURPLE generates charts for summarising tumor sample characteristics.
@@ -1425,6 +1418,10 @@ down by copy number.
 ```{r purple_plot_copynumber, out.width="40%"}
 knitr::include_graphics(c(file.path(img_dir, paste0(params$batch_name, '.copynumber.png')),
                         file.path(img_dir, paste0(params$batch_name, '.map.png'))))
+```
+
+```{r, results='asis'}
+blank_lines(2)
 ```
 
 #### Rainfall
@@ -1505,6 +1502,10 @@ if (!is.na(breakpoints_tsv) && breakpoints_tsv != "" && file.exists(breakpoints_
 
 ```
 
+```{r, results='asis'}
+blank_lines(1)
+```
+
 ## Addendum {.tabset .tabset-fade #addendum}
 
 <a href="#top">Back to top</a>
@@ -1546,7 +1547,7 @@ conda_pkgs %>%
 
 ```{r report_inputs}
 report_inputs <- dplyr::tibble(key = names(params), value = unlist(params))
-write_tsvjsongz(report_inputs, "report_inputs")
+gpgr::write_tsvjsongz(report_inputs, "report_inputs", result_outdir)
 
 report_inputs %>%
   knitr::kable(format = "html") %>%
@@ -1585,6 +1586,4 @@ knitr::kable(si_pkg, format = "html") %>%
   kableExtra::column_spec(1, bold = TRUE) %>%
   kableExtra::scroll_box(height = "400px")
 ```
-
-<p>&nbsp;</p>
 
