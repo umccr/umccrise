@@ -119,6 +119,7 @@ library(htmltools)
 library(jsonlite)
 library(knitr)
 library(kableExtra)
+library(patchwork)
 library(purrr)
 library(readr)
 library(rmarkdown)
@@ -753,6 +754,7 @@ if (will_work) {
 }
 ```
 
+### Kataegis
 Somatic variants of type C>T and C>G in a TpCpN context are annotated as
 showing Kataegis (Nik Zainal et al., 2012) if there are three or more
 mutations of that type, strand and context localised within a
@@ -761,14 +763,18 @@ The annotation describes the strand it was found on
 along with an ID that is shared by grouped variants.
 
 ```{r purple_kataegis_table}
-gpgr::purple_kataegis(params$purple_som_snv_vcf) %>%
-  knitr::kable(escape = FALSE, caption = "Kataegis Regions.",
+kat <- gpgr::purple_kataegis(params$purple_som_snv_vcf)
+if (nrow(kat) > 0) {
+  knitr::kable(kat, escape = FALSE, caption = "Kataegis Regions.",
                format = "html", format.args = list(big.mark = ",")) %>%
-  kableExtra::kable_minimal("hover", full_width = FALSE, position = "left") %>%
-  kableExtra::scroll_box(height = "250px")
+    kableExtra::kable_minimal("hover", full_width = FALSE, position = "left") %>%
+    kableExtra::scroll_box(height = "150px")
+} else {
+  cat("No kataegis regions detected.")
+}
 ```
 
-```{r purple_plot_somaticrainfall, out.width="80%"}
+```{r purple_plot_somaticrainfall, out.width="70%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.rainfall.png')))
 ```
 
@@ -777,7 +783,6 @@ blank_lines(1)
 ```
 
 ## HRD (Homologous Recombination Deficiency) Detection {#hrd}
-
 
 <details>
 <summary>Description</summary>
@@ -1038,13 +1043,11 @@ gpgr::EFFECT_ABBREVIATIONS %>%
 
 ### Summary
 
-```{r plot_bnd_sr_pr_tot_lines, fig.width=10, fig.height=6}
+```{r plot_bnd_sr_pr_tot_lines, fig.width=12, fig.height=6, out.width="90%"}
 p1 <- gpgr:::plot_bnd_sr_pr_tot_lines(sv_unmelted)
-p2 <- gpgr::plot_bnd_sr_pr_tot_hist(sv_unmelted)
-p1
-p2
+p2 <- gpgr::plot_bnd_sr_pr_tot_hist(sv_unmelted) + ggplot2::theme(legend.position = "none")
+(p1 | p2) + patchwork::plot_layout(widths = c(3, 2))
 ```
-
 
 ```{r sv_summary, eval=!no_sv_found}
 d <-
@@ -1101,7 +1104,6 @@ svtab_rawdt <- svtab_raw %>%
                   scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
                   buttons = c('csv'), dom = 'Blfrtip'))
 ```
-
 
 ```{r svtab_raw_details, eval=!no_sv_found}
 details::details(sv_detail_table(svtab_raw))
@@ -1408,6 +1410,18 @@ blank_lines(2)
 PURPLE generates charts for summarising tumor sample characteristics.
 Description is from the [PURPLE docs](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator#charts).
 
+#### Purity/ploidy
+The following 'sunrise' chart shows the range of scores of all examined solutions of
+purity and ploidy. Crosshairs identify the best purity / ploidy solution.
+
+```{r purple_plot_purityrange, out.width="40%"}
+knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.purity.range.png')))
+```
+
+```{r, results='asis'}
+blank_lines(2)
+```
+
 #### Copy number / Minor allele ploidy
 The following figures show the AMBER BAF count weighted distribution of
 copy number and minor allele ploidy throughout the fitted segments.
@@ -1420,24 +1434,12 @@ knitr::include_graphics(c(file.path(img_dir, paste0(params$batch_name, '.copynum
                         file.path(img_dir, paste0(params$batch_name, '.map.png'))))
 ```
 
-```{r, results='asis'}
-blank_lines(2)
-```
-
 #### Rainfall
 If a somatic variant VCF has been supplied, a figure will be produced
 showing the somatic variant ploidy broken down by copy number.
 
 ```{r purple_plot_somatic, out.width="40%"}
 knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.png')))
-```
-
-#### Purity/ploidy
-The following 'sunrise' chart shows the range of scores of all examined solutions of
-purity and ploidy. Crosshairs identify the best purity / ploidy solution.
-
-```{r purple_plot_purityrange, out.width="40%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.purity.range.png')))
 ```
 
 #### Clonality
@@ -1489,9 +1491,11 @@ if (!is.na(breakpoints_tsv) && breakpoints_tsv != "" && file.exists(breakpoints_
     DT::formatCurrency(~ Coord, currency = "", interval = 3, mark = ",", digits = 0)
 } else {
   if (!is.na(present_viruses) && present_viruses != "" && file.exists(present_viruses)) {
-    viruses = readr::read_file(present_viruses)
+    viruses <- readr::read_file(present_viruses)
     if (str_length(viruses) > 0) {
-      cat(str_c("Deteced significant traces of content of the following viruses: ", viruses, ", however no evidence of viral integration into the host genome is observed."))
+      cat(str_c("Detected significant traces of content of the following viruses: ",
+                viruses,
+                ", however no evidence of viral integration into the host genome is observed."))
     } else {
       cat("No oncoviral content detected in this sample.")
     }
@@ -1499,7 +1503,6 @@ if (!is.na(breakpoints_tsv) && breakpoints_tsv != "" && file.exists(breakpoints_
     cat("Oncoviral detection was disabled in the umccrise run with `-E oncoviruses`.")
   }
 }
-
 ```
 
 ```{r, results='asis'}
@@ -1513,9 +1516,10 @@ blank_lines(1)
 ### Conda Pkgs Main
 
 ```{r conda_list_main}
-conda_pkgs <- readr::read_table2(params$conda_list,
-                                 col_names = c("env", "name", "version", "build", "channel"),
-                                 col_types = "ccccc") %>%
+conda_pkgs <-
+  readr::read_table2(params$conda_list,
+                     col_names = c("env", "name", "version", "build", "channel"),
+                     col_types = "ccccc") %>%
   dplyr::mutate(channel = ifelse(is.na(channel), "MISSING", channel),
                 env = sub("env", "umccrise", env),
                 env = sub("^umccrise_", "", env)) %>%
@@ -1524,19 +1528,16 @@ conda_pkgs <- readr::read_table2(params$conda_list,
   dplyr::summarise(envs = paste(env, collapse = ", "), .groups = "drop_last") %>%
   dplyr::ungroup()
 
-
-main_pkgs <- c(
-  "^cacao", "^conpair$", "^cpsr",
-  "^gridss", "^hmftools", "^reference", "^htslib$",
-  "^multiqc", "^ngs",
-  "pandoc", "^pcgr", "^python$",
-  "^r-base$", "snakemake",
-  "^umccrise$") %>%
-  paste(collapse = "|")
-
-conda_pkgs %>%
-  dplyr::filter(grepl(main_pkgs, name)) %>%
-  dplyr::arrange(desc(name)) %>%
+# main pkgs
+tibble::tibble(
+  name = c(
+    "umccrise", "r-gpgr", "r-base", "pcgr", "cpsr", "cacao",
+    "hmftools-purple", "hmftools-amber", "hmftools-cobalt", "hmftools-sage",
+    "multiqc", "multiqc-bcbio", "reference-data",
+    "samtools", "bcftools", "htslib", "ngs_utils", "python", "pandoc"
+  )
+) %>%
+  dplyr::left_join(conda_pkgs, by = "name") %>%
   knitr::kable(format = "html") %>%
   kableExtra::kable_paper(c("hover", "striped"), full_width = TRUE, position = "left") %>%
   kableExtra::column_spec(1, bold = TRUE) %>%
@@ -1565,25 +1566,3 @@ conda_pkgs %>%
                 options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
                                buttons = c('csv'), dom = 'Bfrtip'))
 ```
-
-```{r session_info, eval=F}
-si <- devtools::session_info(include_base = TRUE)
-si_pl <- unclass(si$platform) %>% as_tibble() %>% t()
-# si_pkg <- unclass(si$packages) %>%
-#   dplyr::as_tibble() %>%
-#   dplyr::select(package, version = ondiskversion, path, datestamp = date)
-
-dplyr::tibble(var = row.names(si_pl),
-              value = si_pl[, , drop = TRUE]) %>%
-  knitr::kable(format = "html") %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left") %>%
-  kableExtra::column_spec(1, bold = TRUE)
-```
-
-```{r session_info_pkgs, eval=F}
-knitr::kable(si_pkg, format = "html") %>%
-  kableExtra::kable_styling(full_width = TRUE, position = "left") %>%
-  kableExtra::column_spec(1, bold = TRUE) %>%
-  kableExtra::scroll_box(height = "400px")
-```
-
