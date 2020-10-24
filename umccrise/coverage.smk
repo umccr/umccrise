@@ -77,7 +77,7 @@ rule goleft_plots:
         directory = '{batch}/coverage/{batch}-indexcov',
         xchr = 'X' if run.genome_build == 'GRCh37' else 'chrX'
     output:
-        '{batch}/coverage/{batch}-indexcov/index.html'
+        '{batch}/coverage/{batch}-indexcov/indexcov_png_html.tar.gz'
     resources:
         mem_mb=2000
     shell:
@@ -87,7 +87,8 @@ rule goleft_plots:
         '--sex {params.xchr} '
         '2>&1 | '
         'grep -v "indexcov: excluding chromosome" | '
-        'grep -v "no reference stats found" >&2'
+        'grep -v "no reference stats found" >&2 ;'
+        'tar -czf {params.directory}/indexcov_png_html.tar.gz {params.directory}/{{*.html,*.png}} --remove-files'
 
 
 pcgr_genome = 'grch38' if '38' in run.genome_build else 'grch37'

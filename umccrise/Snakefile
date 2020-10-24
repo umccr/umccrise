@@ -2,6 +2,7 @@
 """
 import os
 import sys
+import shutil
 from os.path import dirname
 from ngs_utils.bcbio import BcbioProject
 from ngs_utils.logger import debug
@@ -117,3 +118,7 @@ rule umccrise:
         rules.multiqc.output          if 'multiqc'          in stages else [],
     output:
         touch('all.done')
+
+onsuccess:
+    print("Workflow finished! Deleting .snakemake/metadata")
+    shutil.rmtree(".snakemake/metadata")

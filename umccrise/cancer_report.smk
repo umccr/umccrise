@@ -1,3 +1,4 @@
+import shutil
 from os.path import join, abspath, dirname
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
@@ -191,7 +192,13 @@ purple_qc='{params.purple_qc}', \
 conda_list='{params.conda_list}' \
 ))" ; \
 cd {params.work_dir} ; \
+rm {output.rmd_tmp_dir}/vccc_small.jpg
+rm {output.rmd_tmp_dir}/style.css
+rm {output.rmd_tmp_dir}/_navbar.html
 """)
+
+        shutil.rmtree(f"{output.rmd_tmp_dir}/img")
+        shutil.rmtree(f"{output.rmd_tmp_dir}/misc")
 
 
 #############
