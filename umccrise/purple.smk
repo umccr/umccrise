@@ -137,8 +137,10 @@ rule purple_run:
         somatic_vcf       = rules.purple_somatic_vcf.output,
         ref_fa            = refdata.get_ref_file(run.genome_build, 'fa'),
     output:
-        cnv           = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
-        gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
+        som_cnv       = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
+        som_snv_vcf   = 'work/{batch}/purple/{batch}.purple.somatic.vcf.gz',
+        germ_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.germline.tsv',
+        som_gene_cnv  = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
         purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
         qc            = 'work/{batch}/purple/{batch}.purple.qc',
 
@@ -208,7 +210,7 @@ rule purple_circos_baf:
         shell('mkdir -p {params.out_dir}')
         shell('cp {params.gaps_txt_prefix}_{params.genome_build}.txt {params.out_dir}/gaps.txt')
         out_conf = join(params.out_dir, basename(input.circos_baf_conf))
-        shell('sed s/SAMPLE/{wildcards.batch}/ {input.circos_baf_conf} > ' + out_conf)
+        shell('sed -e s/SAMPLE/{wildcards.batch}/ -e s/HG_ASSEMBLY/{params.genome_build}/ {input.circos_baf_conf} > ' + out_conf)
         shell('cp {input.baf} {params.out_dir}')
         shell('cp {input.cnv} {params.out_dir}')
         shell('cp {input.map} {params.out_dir}')
@@ -221,8 +223,8 @@ rule purple_circos_baf:
 
 rule purple_symlink:
     input:
-        rules.purple_run.output.cnv,
-        rules.purple_run.output.gene_cnv,
+        rules.purple_run.output.som_cnv,
+        rules.purple_run.output.som_gene_cnv,
         rules.purple_run.output.circos_png,
         rules.purple_circos_baf.output.png,
     output:

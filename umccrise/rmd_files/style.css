@@ -4,13 +4,19 @@
 
 /* https://stackoverflow.com/questions/42183672/how-to-implement-a-navbar-dropdown-hover-in-bootstrap-v4/48224232#48224232 */
 .dropdown:hover > .dropdown-menu {
-    display: block;
+  display: block;
 }
 .dropdown > .dropdown-toggle:active {
-    /*Without this, clicking will make it sticky*/
-    pointer-events: none;
+  /*Without this, clicking will make it sticky*/
+  pointer-events: none;
 }
 
 table.dataTable tbody td {
   vertical-align: top;
+}
+
+.main-container {
+  max-width: 1400px !important;
+  margin-left: auto;
+  margin-right: auto;
 }

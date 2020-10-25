@@ -11,12 +11,16 @@ dependencies:
   # R libraries:
   - pandoc
   - r-devtools
+  - r-details
   - r-dplyr
   - r-dt
   - r-ggplot2
   - r-gpgr
+  - r-gt
   - r-htmlwidgets
+  - r-jsonlite
   - r-kableextra
+  - r-patchwork
   - r-purrr
   - r-readr
   - r-rmarkdown

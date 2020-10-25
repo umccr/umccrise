@@ -1,8 +1,7 @@
 """
 Structural variants
-------------------
-Re-do the CNV plots. This will need lots of love (drop gene names, make the scatterplot viable again, etc.).
 """
+
 import glob
 from os.path import join, dirname, basename, isfile
 from cyvcf2 import VCF
@@ -350,7 +349,7 @@ rule prep_sv_tsv:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
                       "split_read_support", "paired_support_PE", "paired_support_PR", "AF_BPI", "somaticscore",
                       "tier", "annotation",
-                      'AF_PURPLE', 'CN_PURPLE', 'CN_change_PURPLE', 'Ploidy_PURPLE', 'PURPLE_status', 'START_BPI', 'END_BPI', 'ID', 'MATEID']
+                      "AF_PURPLE", "CN_PURPLE", "CN_change_PURPLE", "Ploidy_PURPLE", "PURPLE_status", "START_BPI", "END_BPI", "ID", "MATEID", "ALT"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 tier = parse_info_field(rec, 'SV_TOP_TIER')
@@ -366,7 +365,11 @@ rule prep_sv_tsv:
                 elif rec.INFO.get('RECOVERED'):
                     PURPLE_status = 'RECOVERED'
 
-                data = ['manta', sample_name, rec.CHROM, rec.POS, rec.INFO.get('END', ''),
+                data = ['manta',
+                        sample_name,
+                        rec.CHROM,
+                        rec.POS,
+                        rec.INFO.get('END', ''),
                         rec.INFO['SVTYPE'],
                         ','.join(map(str, rec.format('SR')[tumor_id])) if 'SR' in rec.FORMAT else '',
                         ','.join(map(str, rec.format('PE')[tumor_id])) if 'PE' in rec.FORMAT else '',
@@ -383,7 +386,8 @@ rule prep_sv_tsv:
                         parse_info_field(rec, 'BPI_START'),
                         parse_info_field(rec, 'BPI_END'),
                         rec.ID,
-                        parse_info_field(rec, 'MATEID')
+                        parse_info_field(rec, 'MATEID'),
+                        rec.ALT[0]
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 

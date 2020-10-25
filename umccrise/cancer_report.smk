@@ -1,4 +1,5 @@
-from os.path import join, abspath
+import shutil
+from os.path import join, abspath, dirname
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
@@ -87,8 +88,10 @@ rule run_cancer_report:
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
         somatic_sv_vcf       = lambda wc: '{batch}/structural/{batch}-manta.vcf.gz'
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
-        purple_cnv           = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
-        purple_gene_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
+        purple_som_snv_vcf   = 'work/{batch}/purple/{batch}.purple.somatic.vcf.gz',
+        purple_som_cnv       = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
+        purple_som_gene_cnv  = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
+        purple_germ_cnv      = 'work/{batch}/purple/{batch}.purple.cnv.germline.tsv',
         purple_purity        = 'work/{batch}/purple/{batch}.purple.purity.tsv',
         purple_qc            = 'work/{batch}/purple/{batch}.purple.qc',
 
@@ -114,15 +117,18 @@ rule run_cancer_report:
         report_rmd = 'cancer_report.Rmd',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
         work_dir = os.getcwd(),
-        output_file = lambda wc, output: join(os.getcwd(), output[0]),
+        result_outdir   = lambda wc, output: join(os.getcwd(), dirname(output[0]), 'cancer_report_tables'),
+        output_file     = lambda wc, output: join(os.getcwd(), output[0]),
         rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
         af_global       = lambda wc, input: abspath(input.af_global),
         af_keygenes     = lambda wc, input: abspath(input.af_keygenes),
         somatic_snv     = lambda wc, input: abspath(input.somatic_snv),
         somatic_sv      = lambda wc, input: abspath(input.somatic_sv) if input.somatic_sv else 'NA',
         somatic_sv_vcf  = lambda wc, input: abspath(input.somatic_sv_vcf) if input.somatic_sv_vcf else 'NA',
-        purple_gene_cnv = lambda wc, input: abspath(input.purple_gene_cnv),
-        purple_cnv      = lambda wc, input: abspath(input.purple_cnv),
+        purple_som_snv_vcf = lambda wc, input: abspath(input.purple_som_snv_vcf),
+        purple_som_cnv  = lambda wc, input: abspath(input.purple_som_cnv),
+        purple_som_gene_cnv = lambda wc, input: abspath(input.purple_som_gene_cnv),
+        purple_germ_cnv = lambda wc, input: abspath(input.purple_germ_cnv),
         purple_purity   = lambda wc, input: abspath(input.purple_purity),
         purple_qc       = lambda wc, input: abspath(input.purple_qc),
         conda_list      = lambda wc, input: abspath(input.conda_list),
@@ -166,6 +172,7 @@ cd {output.rmd_tmp_dir} && \
 Rscript -e "rmarkdown::render('{params.report_rmd}', \
 output_file='{params.output_file}', \
 params=list( \
+result_outdir='{params.result_outdir}', \
 tumor_name='{params.tumor_name}', \
 batch_name='{wildcards.batch}', \
 genome_build='{params.rmd_genome_build}', \
@@ -175,15 +182,23 @@ af_keygenes='{params.af_keygenes}', \
 somatic_snv='{params.somatic_snv}', \
 somatic_sv='{params.somatic_sv}', \
 somatic_sv_vcf='{params.somatic_sv_vcf}', \
-purple_gene_cnv='{params.purple_gene_cnv}', \
-purple_cnv='{params.purple_cnv}', \
+purple_som_snv_vcf='{params.purple_som_snv_vcf}', \
+purple_som_gene_cnv='{params.purple_som_gene_cnv}', \
+purple_som_cnv='{params.purple_som_cnv}', \
+purple_germ_cnv='{params.purple_germ_cnv}', \
 purple_purity='{params.purple_purity}', \
 purple_qc='{params.purple_qc}', \
 {ov_cmdl} \
 conda_list='{params.conda_list}' \
 ))" ; \
 cd {params.work_dir} ; \
+rm {output.rmd_tmp_dir}/vccc_small.jpg
+rm {output.rmd_tmp_dir}/style.css
+rm {output.rmd_tmp_dir}/_navbar.html
 """)
+
+        shutil.rmtree(f"{output.rmd_tmp_dir}/img")
+        shutil.rmtree(f"{output.rmd_tmp_dir}/misc")
 
 
 #############

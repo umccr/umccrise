@@ -5,6 +5,7 @@ from os.path import isfile, join, dirname
 import toml
 import cyvcf2
 import yaml
+import shutil
 from ngs_utils.file_utils import get_ungz_gz
 from ngs_utils.reference_data import get_predispose_genes_bed
 from ngs_utils.logger import critical
@@ -13,7 +14,7 @@ from reference_data import api as refdata
 from umccrise import package_path, cnt_vars
 
 
-localrules: somatic, germline, germline_batch
+localrules: somatic, germline, germline_batch, pierian
 
 
 # rule somatic_vcf_reheader  # change RGIDs to tumor and normal names?
@@ -287,6 +288,32 @@ rule somatic_vcf2maf:
         '&& rm {params.uncompressed_tmp_vcf}'
 
 
+rule pierian:
+    input:
+        snv = rules.somatic_vcf_filter_pass.output.vcf,
+        sv = '{batch}/structural/{batch}-manta.vcf.gz',
+        svtbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
+        cnv = '{batch}/purple/{batch}.purple.cnv.somatic.tsv',
+    output:
+        snv_renamed = '{batch}/pierian/{batch}.somatic-PASS-single.grch38.vcf.gz',
+        sv_renamed = '{batch}/pierian/{batch}-manta.single.vcf.gz',
+        cnv_renamed = '{batch}/pierian/{batch}.purple.cnv',
+    run:
+        # copy sv + cnv since no processing required
+        shutil.copy(f'{input.cnv}', f'{output.cnv_renamed}')
+        shutil.copy(f'{input.sv}', f'{output.sv_renamed}')
+        shutil.copy(f'{input.svtbi}', f'{output.sv_renamed}.tbi')
+        #shutil.copy(f'{input.snv}', f'{output.snv_renamed}')
+        # grab tumor column from snv vcf
+        t_name = batch_by_name[wildcards.batch].tumors[0].rgid
+        vcf_samples = cyvcf2.VCF(input.snv).samples
+        assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.snv}, available: {vcf_samples}"
+        shell('''
+bcftools view {input.snv} -s {t_name} -Oz -o {output.snv_renamed} && tabix -p vcf {output.snv_renamed}
+
+''')
+
+
 #############
 
 rule somatic:
@@ -294,6 +321,7 @@ rule somatic:
         somatic_vcfs = expand(rules.somatic_vcf_filter.output.vcf, batch=batch_by_name.keys()),
         somatic_mafs = expand(rules.somatic_vcf2maf.output.maf, batch=batch_by_name.keys()),
         somatic_pass_vcfs = expand(rules.somatic_vcf_filter_pass.output.vcf, batch=batch_by_name.keys()),
+        pierian = expand(rules.pierian.output, batch=batch_by_name.keys()),
     output:
         temp(touch('log/somatic.done'))
 
