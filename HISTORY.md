@@ -1,3 +1,41 @@
+1.1.3 (25 Oct 2020)
+
+Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr):
+
+- `cancer_report.Rmd`:
+  - change title to have sample name first (shows up in the browser tab so becomes easier to distinguish)
+  - include more inputs as mentioned below
+  - include kataegis regions from PURPLE (taken from reannotated PURPLE SNV VCF)
+  - include SV BND plots for SR/PR counts
+  - split SR/PR column into two for easier sorting for curators
+  - use knitr's `eval` parameter for cleaner chunk evaluation based on presence/absence of SVs
+  - move lonely css to css file
+  - move AF functionality to gpgr
+  - move SV functionality to gpgr
+  - move PURPLE functionality to gpgr
+  - use gt for summary tables
+  - fix yucky HRD tables with gt
+  - cnv summary includes germline calls
+  - use `blank_lines()` function for nicer vertical spacing
+
+- include following R pkgs in the report:
+  - `details` (for writing collapsible description chunks)
+  - `gt` (for tables)
+  - `jsonlite` (for writing tables to json)
+  - `patchwork` (for rearranging plots)
+
+- file cleanup: delete umccrise `.snakemake/metadata` directory onsuccess;
+  delete tmp files from rmd report; tar indexcov png + html files. This
+  should save in excess of 200-300 file objects from getting stored on S3.
+
+- `structural.smk`: including ALT so that we can grab the mate chromosome when it's been filtered out
+- `somatic.smk`: include pierian rule, which simply renames SNV/SV/CNV files and subsets SNVs to tumor sample
+- `circos_baf.conf`/`purple.smk`: this fixes a long-standing bug (which has already been fixed in PURPLE)
+  where the hg19 karyotype was being used instead of hg38, causing SVs in telomeric regions to get dropped from our custom 'BAF' circos plot.
+- `purple.smk`: rename variables, bring in germline cnvs, bring in somatic VCF for HRD
+- `cancer_report.smk`: rename and add variables, most importantly `result_outdir` which is used for writing the final report tables.
+
+
 1.1.2 (9 Oct 2020)
 
 - Added [GPGR dependency](https://umccr.github.io/gpgr/) to handle R-related enhancements more efficiently
