@@ -6,27 +6,26 @@ channels:
   - defaults
 
 dependencies:
+  - bwa
+  - r-base
   - python ==3.7.3
-  - r-base  # do not pin to avoid conflicts
-  - hmftools-amber ==3.3
-  - hmftools-cobalt ==1.8
-  - hmftools-purple ==2.43
-  - hmftools-linx ==1.7
+  - hmftools-amber ==3.5
+  - hmftools-cobalt ==1.9
+  - hmftools-linx ==1.12
+  - hmftools-purple ==2.51
   - hmftools-sage ==1.0
   - gridss
-  - r-tidyverse
-  - r-testthat
-  - r-assertthat
-  - r-nmf
-  - r-stringdist
-  - r-stringr
   - r-argparser
-  - r-r.cache
+  - r-assertthat
   - r-devtools
-  - bioconductor-variantannotation
-  - bioconductor-structuralvariantannotation
-  - bioconductor-rtracklayer
+  - r-magick
+  - r-nmf
+  - r-r.cache
+  - r-stringdist
+  - r-testthat
+  - r-tidyverse
   - bioconductor-bsgenome
   - bioconductor-org.hs.eg.db
-  - r-magick
-  - bwa
+  - bioconductor-rtracklayer
+  - bioconductor-structuralvariantannotation
+  - bioconductor-variantannotation
