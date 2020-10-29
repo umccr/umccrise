@@ -47,6 +47,8 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 
 1.1.0 (8 Oct 2020)
 
+- Use HMF PoN for annotating/filtering small variants
+  (see [vcf_stuff](https://github.com/umccr/vcf_stuff) changes).
 - Use [DVC](https://dvc.org/) for managing the reference data. Add `umccrise_refdata_pull` script to pull genomes as long as you are signed in under an UMCCR AWS account
 - Support TSV input (if input file ends with `.tsv`, assumes it's a TSV file with a header and any of the following columns in arbitrary order:
   - `sample`
