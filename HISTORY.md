@@ -64,7 +64,7 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 - Integrate [neoantigens](https://github.com/umccr/neoantigens), trigger with `-S neoantigens`
 - Integrate Optitype HLA calling (used for neoantigen calling, `-S neoantigens`)
 - Support RNAseq input (currently a part of the TSV input support; used for the neoantigen calling)
-
+- Oncoviruses: removed alt chromosomes from the reference build used for the integration site calling, which allows for a higher sensitivity in some edge cases
 
 1.0.9 (16 Jul 2020)
 
