@@ -29,7 +29,9 @@ dependencies:
   - pandas
   - sambamba
   - pandoc
+  - pip
   - pip:
+    - tensorflow<2.0.0,>=1.1.0
     - pvactools
     - vatools
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
