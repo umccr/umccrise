@@ -15,7 +15,7 @@ dependencies:
   - r-dplyr
   - r-dt
   - r-ggplot2
-  - r-gpgr
+  - r-gpgr ==0.0.13
   - r-gt
   - r-htmlwidgets
   - r-jsonlite
