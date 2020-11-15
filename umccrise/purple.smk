@@ -85,7 +85,7 @@ rule purple_cobalt:
     output:
         'work/{batch}/purple/cobalt/{batch}.chr.len',
         'work/{batch}/purple/cobalt/{batch}.cobalt.ratio.tsv',
-        'work/{batch}/purple/cobalt/{batch}.cobalt.gc.median',
+        'work/{batch}/purple/cobalt/{batch}.cobalt.gc.median.tsv',
     params:
         outdir = 'work/{batch}/purple/cobalt',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
