@@ -1,4 +1,4 @@
-1.1.3 (25 Oct 2020)
+1.1.3 (17 Nov 2020)
 
 Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr):
 
@@ -35,6 +35,12 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 - `purple.smk`: rename variables, bring in germline cnvs, bring in somatic VCF for HRD
 - `cancer_report.smk`: rename and add variables, most importantly `result_outdir` which is used for writing the final report tables.
 
+- Update of `vcf2maf.pl` [conda package recipe](https://github.com/bioconda/bioconda-recipes/pull/25376)
+  - this solves the `WARNING: Unrecognized biotype "lncRNA". Assigning lowest priority!` message which spammed the logs. There will still be spam
+    from `vcf2mafpl` (`Use of uninitialized value in list assignment`) due to it not liking something in the input VCF.
+- Replace corrupted `HG001_GRCh38_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel_noCENorHET7.bed.gz.tbi` in reference data
+  - this solves an issue where we were getting fewer filtered somatic SNVs due to them not hitting the HMF GIAB BED regions.
+- Pinning gpgr to v0.0.13
 
 1.1.2 (9 Oct 2020)
 
