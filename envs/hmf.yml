@@ -10,7 +10,7 @@ dependencies:
   - r-base
   - python ==3.7.3
   - hmftools-amber ==3.5
-  - hmftools-cobalt ==1.10
+  - hmftools-cobalt ==1.11
   - hmftools-linx ==1.12
   - hmftools-purple ==2.51
   - hmftools-sage ==1.0
