@@ -130,6 +130,7 @@ library(gpgr)
 ```
 
 ```{r funcs}
+bnm <- params$batch_name
 img_dir <- file.path("img") # created when copying purple files to tmp dir
 result_outdir <- params$result_outdir # directory to write tables to
 blank_lines <- function(n = 10){cat(rep("&nbsp;  ",n), sep="\n")}
@@ -224,10 +225,10 @@ sigs_indel <-
   MutationalPatterns::get_known_signatures(muttype = "indel") %>%
   gpgr::sig_contribution(mut_mat = mp_indel, signatures = .)
 
-gpgr::write_tsvjsongz(sigs_snv_2015, "sigs/snv_2015", result_outdir)
-gpgr::write_tsvjsongz(sigs_snv_2020, "sigs/snv_2020", result_outdir)
-gpgr::write_tsvjsongz(sigs_dbs, "sigs/dbs", result_outdir)
-gpgr::write_tsvjsongz(sigs_indel, "sigs/indel", result_outdir)
+gpgr::write_tsvjsongz(sigs_snv_2015, glue("sigs/{bnm}-snv_2015"), result_outdir)
+gpgr::write_tsvjsongz(sigs_snv_2020, glue("sigs/{bnm}-snv_2020"), result_outdir)
+gpgr::write_tsvjsongz(sigs_dbs, glue("sigs/{bnm}-dbs"), result_outdir)
+gpgr::write_tsvjsongz(sigs_indel, glue("sigs/{bnm}-indel"), result_outdir)
 ```
 
 ```{r sv_prep}
@@ -258,8 +259,8 @@ if (sv_path == "NA") {
   }
 }
 
-gpgr::write_tsvjsongz(sv_unmelted, "sv/01_sv_unmelted", result_outdir)
-gpgr::write_tsvjsongz(sv_all, "sv/02_sv_melted", result_outdir)
+gpgr::write_tsvjsongz(sv_unmelted, glue("sv/{bnm}-01_sv_unmelted"), result_outdir)
+gpgr::write_tsvjsongz(sv_all, glue("sv/{bnm}-02_sv_melted"), result_outdir)
 ```
 
 ```{r purple_prep}
@@ -275,9 +276,9 @@ purple_cnv_som <- gpgr::purple_cnv_som_process(params$purple_som_cnv)
 purple_cnv_som_gene <- gpgr::purple_cnv_som_gene_process(params$purple_som_gene_cnv, params$key_genes)
 purple_cnv_germ <- gpgr::purple_cnv_germ_process(params$purple_germ_cnv)
 
-gpgr::write_tsvjsongz(purple_cnv_som$tab, "purple/purple_cnv_som", result_outdir)
-gpgr::write_tsvjsongz(purple_cnv_som_gene$tab, "purple/purple_cnv_som_gene", result_outdir)
-gpgr::write_tsvjsongz(purple_cnv_germ$tab, "purple/purple_cnv_germ", result_outdir)
+gpgr::write_tsvjsongz(purple_cnv_som$tab, glue("purple/{bnm}-purple_cnv_som"), result_outdir)
+gpgr::write_tsvjsongz(purple_cnv_som_gene$tab, glue("purple/{bnm}-purple_cnv_som_gene"), result_outdir)
+gpgr::write_tsvjsongz(purple_cnv_germ$tab, glue("purple/{bnm}-purple_cnv_germ"), result_outdir)
 ```
 
 ```{r, results='asis'}
@@ -407,7 +408,7 @@ qc_summary_all %>%
   gt::opt_row_striping() %>%
   gt::tab_options(table.align = "left")
 
-gpgr::write_tsvjsongz(qc_summary_all, "qc_summary", result_outdir)
+gpgr::write_tsvjsongz(qc_summary_all, glue("{bnm}-qc_summary"), result_outdir)
 ```
 
 ```{r, results='asis'}
@@ -699,7 +700,7 @@ if (nrow(kat) > 0) {
 ```
 
 ```{r purple_plot_somaticrainfall, out.width="70%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.rainfall.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, '.somatic.rainfall.png')))
 ```
 
 ```{r, results='asis'}
@@ -757,7 +758,7 @@ that includes HRDetect.
 
 ```{r chord_hrdetect_res}
 hrd_results <- gpgr::hrd_results_tabs(hrdetect_res, chord_res)
-gpgr::write_tsvjsongz(hrd_results$hrd_results_tab, "hrd/chord_hrdetect", result_outdir)
+gpgr::write_tsvjsongz(hrd_results$hrd_results_tab, glue("hrd/{bnm}-chord_hrdetect"), result_outdir)
 hrd_results$hrd_results_gt
 ```
 
@@ -799,7 +800,7 @@ The first BAF plot is based on PURPLE data and configuration files.
 </details>
 
 ```{r circos_baf_plot, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_baf.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, '.circos_baf.png')))
 ```
 
 
@@ -835,7 +836,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos_ba
 </details>
 
 ```{r circos_default1, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, '.circos.png')))
 ```
 
 ### Allele Ratios, BAF
@@ -853,7 +854,7 @@ knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.circos.pn
 </details>
 
 ```{r circos_default2, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.input.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, '.input.png')))
 ```
 
 ## __Structural Variants__ {#sv-summary}
@@ -1003,9 +1004,9 @@ DEL    | intergenic_region       | TXNIP-HFE2 | ENSG00000265972-ENSG00000168509 
 - The Map is sorted by `TierTop` then `vcfnum`:
   - `TierTop` is the top tier of all annotations for a given variant.
   - `vcfnum` is the variant row number in the umccrised VCF.
-  
+
 </details>
-  
+
 
 
 ### Summary {.tabset .tabset-fade}
@@ -1015,7 +1016,7 @@ DEL    | intergenic_region       | TXNIP-HFE2 | ENSG00000265972-ENSG00000168509 
 ```{r plot_bnd_sr_pr_tot_lines, fig.width=12, fig.height=12, out.width="90%"}
 p1 <- gpgr:::plot_bnd_sr_pr_tot_lines(sv_unmelted)
 p2 <- gpgr::plot_bnd_sr_pr_tot_hist(sv_unmelted) + ggplot2::theme(legend.position = "none")
-((p1$p_all / p1$p_tier) | p2) + patchwork::plot_layout(widths = c(3, 2))
+((p1$p_all | p2) / p1$p_tier)
 ```
 
 #### Counts
@@ -1109,8 +1110,8 @@ sv_BND_purple <- sv_all %>%
 
 gpgr::write_tsvjsongz(
   dplyr::bind_cols(sv_BND_main, sv_BND_other %>% dplyr::select(-nrow)),
-  "sv/03_sv_BND_main", result_outdir)
-gpgr::write_tsvjsongz(sv_BND_purple, "sv/04_sv_BND_purpleinf", result_outdir)
+  glue("sv/{bnm}-03_sv_BND_main"), result_outdir)
+gpgr::write_tsvjsongz(sv_BND_purple, glue("sv/{bnm}-04_sv_BND_purpleinf"), result_outdir)
 
 sv_BND_maindt <- sv_BND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1187,27 +1188,27 @@ sv_noBND_main <- sv_noBND %>%
   dplyr::select(nrow, vcfnum, TierTop, Tier, Type, Start, End, Effect,
                 Genes, Transcript, Detail, SR_alt, PR_alt, AF_PURPLE)
 
-gpgr::write_tsvjsongz(sv_noBND_main, "sv/05_sv_noBND_main", result_outdir)
+gpgr::write_tsvjsongz(sv_noBND_main, glue("sv/{bnm}-05_sv_noBND_main"), result_outdir)
 
 sv_noBND_other <- sv_noBND %>%
   dplyr::select(vcfnum, Ploidy, AF_BPI, CNC, CN, SR_PR_ref, SScore) %>%
   dplyr::distinct()
 
-gpgr::write_tsvjsongz(sv_noBND_other, "sv/06_sv_noBND_other", result_outdir)
+gpgr::write_tsvjsongz(sv_noBND_other, glue("sv/{bnm}-06_sv_noBND_other"), result_outdir)
 
 sv_noBND_manygenes <- sv_noBND %>%
   dplyr::filter(ngen > max_genes) %>%
   dplyr::select(nrow, vcfnum, Tier, Type, Start, End,
                 Effect, ngen, Genes = Genes_original)
 
-gpgr::write_tsvjsongz(sv_noBND_manygenes, "sv/07_sv_noBND_manygenes", result_outdir)
+gpgr::write_tsvjsongz(sv_noBND_manygenes, glue("sv/{bnm}-07_sv_noBND_manygenes"), result_outdir)
 
 sv_noBND_manytx <- sv_noBND %>%
   dplyr::filter(ntrx > max_transcripts) %>%
   dplyr::select(nrow, vcfnum, Tier, Type, Start, End,
                 Effect, ntrx, Transcript = Transcript_original)
 
-gpgr::write_tsvjsongz(sv_noBND_manytx, "sv/08_sv_noBND_manytranscripts", result_outdir)
+gpgr::write_tsvjsongz(sv_noBND_manytx, glue("sv/{bnm}-08_sv_noBND_manytranscripts"), result_outdir)
 
 sv_noBND_maindt <- sv_noBND_main %>%
   DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
@@ -1386,7 +1387,7 @@ The following 'sunrise' chart shows the range of scores of all examined solution
 purity and ploidy. Crosshairs identify the best purity / ploidy solution.
 
 ```{r purple_plot_purityrange, out.width="40%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.purity.range.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, '.purity.range.png')))
 ```
 
 ```{r, results='asis'}
@@ -1401,8 +1402,8 @@ allele ploidy (MAP) while the minor allele ploidy figure is broken
 down by copy number.
 
 ```{r purple_plot_copynumber, out.width="40%"}
-knitr::include_graphics(c(file.path(img_dir, paste0(params$batch_name, '.copynumber.png')),
-                        file.path(img_dir, paste0(params$batch_name, '.map.png'))))
+knitr::include_graphics(c(file.path(img_dir, paste0(bnm, '.copynumber.png')),
+                        file.path(img_dir, paste0(bnm, '.map.png'))))
 ```
 
 #### Rainfall
@@ -1410,7 +1411,7 @@ If a somatic variant VCF has been supplied, a figure will be produced
 showing the somatic variant ploidy broken down by copy number.
 
 ```{r purple_plot_somatic, out.width="40%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, '.somatic.png')))
 ```
 
 #### Clonality
@@ -1425,7 +1426,7 @@ We can determine the likelihood of a variant being subclonal at
 any given ploidy as shown in the bottom half of the figure.
 
 ```{r purple_plot_somaticclonality, out.width="50%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.somatic.clonality.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, '.somatic.clonality.png')))
 ```
 
 #### Segment
@@ -1434,7 +1435,7 @@ the following figure. Each segment is divided into its major and minor allele pl
 The area of each circle shows the weight (AMBER baf count) of each segment.
 
 ```{r purple_plot_segment, out.width="40%"}
-knitr::include_graphics(file.path(img_dir, paste0(params$batch_name, '.segment.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, '.segment.png')))
 ```
 
 ## __Oncoviruses__ {.tabset .tabset-fade #oncoviruses}
@@ -1521,7 +1522,7 @@ tibble::tibble(
 
 ```{r report_inputs}
 report_inputs <- dplyr::tibble(key = names(params), value = unlist(params))
-gpgr::write_tsvjsongz(report_inputs, "report_inputs", result_outdir)
+gpgr::write_tsvjsongz(report_inputs, glue("{bnm}-report_inputs"), result_outdir)
 
 report_inputs %>%
   knitr::kable(format = "html") %>%
