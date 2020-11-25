@@ -758,7 +758,8 @@ that includes HRDetect.
 
 ```{r chord_hrdetect_res}
 hrd_results <- gpgr::hrd_results_tabs(hrdetect_res, chord_res)
-gpgr::write_tsvjsongz(hrd_results$hrd_results_tab, glue("hrd/{bnm}-chord_hrdetect"), result_outdir)
+gpgr::write_tsvjsongz(chord_res[["prediction"]], glue("hrd/{bnm}-chord"), result_outdir)
+gpgr::write_tsvjsongz(hrdetect_res, glue("hrd/{bnm}-hrdetect"), result_outdir)
 hrd_results$hrd_results_gt
 ```
 
