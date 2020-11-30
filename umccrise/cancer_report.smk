@@ -68,9 +68,10 @@ rule afs_keygenes:
 
 rule conda_list:
     output:
-        txt = 'work/conda_pkg_list.txt'
+        txt = 'work/{batch}/conda_pkg_list.txt'
     params:
         env = ['""', '_pcgr', '_hmf', '_cancer_report'],
+    group: "rmd_prep"
     shell:
         "for e in {params.env}; do conda list -p {env_path}$e "
         "| grep -v ^# "
