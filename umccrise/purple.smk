@@ -1,6 +1,3 @@
-localrules: purple
-
-
 import glob
 import shutil
 import platform
@@ -8,11 +5,9 @@ from os.path import basename, join
 from umccrise import package_path
 from reference_data import api as refdata
 
-
-# localrules: purple
 localrules: purple
 
-
+# hack to get circos working on MacOS
 circos_macos_patch = ('export PERL5LIB=' +
     env_path + '_hmf/lib/site_perl/5.26.2/darwin-thread-multi-2level:' +
     env_path + '_hmf/lib/perl5/site_perl/5.22.0; ') \
@@ -32,6 +27,7 @@ purple_mem = max(min(31000, 4000+2000*threads_per_batch), 8000)
 amber_mem  = max(min(31000, 4000+3000*threads_per_batch), 8000)
 
 
+# run AMBER using heterozygous SNPs provided by HMF
 rule purple_amber:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
@@ -74,6 +70,7 @@ rule purple_amber:
             f'-output_dir {params.outdir} 2>&1 | tee {log} '
         )
 
+# run COBALT
 rule purple_cobalt:
     input:
         tumor_bam  = lambda wc: batch_by_name[wc.batch].tumors[0].bam,
@@ -113,6 +110,7 @@ rule purple_cobalt:
             f'-output_dir {params.outdir} 2>&1 | tee {log} '
         )
 
+# grab tumor sample from SNVs and reheader for input to PURPLE
 rule purple_somatic_vcf:
     input:
         '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
@@ -125,6 +123,7 @@ rule purple_somatic_vcf:
         'bcftools view -s {params.tumor_sname} {input} | '
         'bcftools reheader --samples <(echo {wildcards.batch}) > {output}'
 
+# run PURPLE with prioritised Manta SVs and prioritised SNVs
 rule purple_run:
     input:
         amber_dummy       = 'work/{batch}/purple/amber/{batch}.amber.baf.tsv',
@@ -192,6 +191,7 @@ rule purple_run:
             f'-circos circos 2>&1 | tee {log} '
         )
 
+# generate custom circos from PURPLE templates (BAF points on outside, CNVs/SVs inside)
 rule purple_circos_baf:
     input:
         baf  = 'work/{batch}/purple/circos/{batch}.baf.circos',
@@ -221,6 +221,7 @@ rule purple_circos_baf:
               circos_macos_patch +
               'circos -nosvg -conf ' + out_conf + ' -outputdir {params.out_dir} -outputfile {out_file}')
 
+# copy PURPLE files from <um>/work/<batch>/purple into <um>/<batch>/purple/
 rule purple_symlink:
     input:
         rules.purple_run.output.som_cnv,
@@ -237,14 +238,17 @@ rule purple_symlink:
         tumor_sname = lambda wc: wc.batch,
         purple_outdir = 'work/{batch}/purple',
     run:
+        # <um>/work/<batch>/purple/plot/*.png files into <um>/<batch>/purple/
         for img_fpath in glob.glob(f'{params.purple_outdir}/plot/*.png'):
             new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')
             shutil.copy(img_fpath, join(f'{wildcards.batch}/purple', new_name))
 
+        # <um>/work/<batch>/purple/circos_baf/*.png files into <um>/<batch>/purple/
         for img_fpath in glob.glob(f'{params.purple_outdir}/circos_baf/*.png'):
             new_name = basename(img_fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}.purple')
             shutil.copy(img_fpath, join(f'{wildcards.batch}/purple', new_name))
 
+        # <um>/work/<batch>/purple/*purple* files into <um>/<batch>/purple/
         for fpath in glob.glob(f'{params.purple_outdir}/*.purple.*'):
             new_name = basename(fpath).replace(f'{params.tumor_sname}', f'{wildcards.batch}')
             shutil.copy(fpath, join(f'{wildcards.batch}/purple', new_name))
