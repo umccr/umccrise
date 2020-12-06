@@ -1098,16 +1098,16 @@ sv_BND <- sv_all %>%
 
 
 sv_BND_main <- sv_BND %>%
-  dplyr::select(nrow, vcfnum, Tier, Start, End,
+  dplyr::select(nrow, vcfnum, `Tier (Top)`, Start, End,
                 BND_ID, BND_mate,
-                Genes, Effect, Detail, SR_alt, PR_alt, Ploidy, AF_PURPLE)
+                Genes, Effect, Detail, SR_alt, PR_alt, SR_PR_sum, Ploidy, AF_PURPLE)
 
 sv_BND_other <- sv_BND %>%
   dplyr::select(nrow, AF_BPI, CNC, CN, SR_PR_ref, SScore, ntrx, Transcript)
 
 sv_BND_purple <- sv_all %>%
   dplyr::filter(Type %in% c("PURPLE_inf")) %>%
-  dplyr::select(Tier, Start, Effect, Detail, Ploidy, CN, CNC)
+  dplyr::select(`Tier (Top)`, Start, Effect, Detail, Ploidy, CN, CNC)
 
 gpgr::write_tsvjsongz(
   dplyr::bind_cols(sv_BND_main, sv_BND_other %>% dplyr::select(-nrow)),
@@ -1185,8 +1185,8 @@ sv_noBND_main <- sv_noBND %>%
                 Transcript = ifelse(ntrx > max_transcripts,
                                     glue::glue("Many Transcripts ({ntrx})"),
                                     Transcript)) %>%
-  dplyr::select(nrow, vcfnum, TierTop, Tier, Type, Start, End, Effect,
-                Genes, Transcript, Detail, SR_alt, PR_alt, AF_PURPLE)
+  dplyr::select(nrow, vcfnum, `Tier (Top)`, Type, Start, End, Effect,
+                Genes, Transcript, Detail, SR_alt, PR_alt, SR_PR_sum, AF_PURPLE)
 
 gpgr::write_tsvjsongz(sv_noBND_main, glue("sv/{bnm}-05_sv_noBND_main"), result_outdir)
 
@@ -1198,14 +1198,14 @@ gpgr::write_tsvjsongz(sv_noBND_other, glue("sv/{bnm}-06_sv_noBND_other"), result
 
 sv_noBND_manygenes <- sv_noBND %>%
   dplyr::filter(ngen > max_genes) %>%
-  dplyr::select(nrow, vcfnum, Tier, Type, Start, End,
+  dplyr::select(nrow, vcfnum, `Tier (Top)`, Type, Start, End,
                 Effect, ngen, Genes = Genes_original)
 
 gpgr::write_tsvjsongz(sv_noBND_manygenes, glue("sv/{bnm}-07_sv_noBND_manygenes"), result_outdir)
 
 sv_noBND_manytx <- sv_noBND %>%
   dplyr::filter(ntrx > max_transcripts) %>%
-  dplyr::select(nrow, vcfnum, Tier, Type, Start, End,
+  dplyr::select(nrow, vcfnum, `Tier (Top)`, Type, Start, End,
                 Effect, ntrx, Transcript = Transcript_original)
 
 gpgr::write_tsvjsongz(sv_noBND_manytx, glue("sv/{bnm}-08_sv_noBND_manytranscripts"), result_outdir)
