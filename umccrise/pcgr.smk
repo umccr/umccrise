@@ -13,6 +13,7 @@ from reference_data import api as refdata
 from umccrise import get_purity, get_ploidy
 
 
+# run PCGR given final prioritised SNVs. Use the PURPLE-inferred purity & ploidy if run.
 rule run_pcgr:
     input:
         vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
@@ -42,6 +43,7 @@ rule run_pcgr:
             cmd += ' --puriry {purity} --ploidy {ploidy}'
         shell(cmd)
 
+# copy PCGR html and tsv outputs to <um>/<batch>/ directory
 rule pcgr_copy_report:
     input:
         html = rules.run_pcgr.output.html,
@@ -53,7 +55,8 @@ rule pcgr_copy_report:
     shell:
         'cp {input.html} {output.html}; cp {input.tsv} {output.tsv}'
 
-
+# run CPSR using merged germline/somatic leakage predisposed VCF and
+# predisposed genes txt file
 rule run_cpsr:
     input:
         vcf = rules.germline_merge_with_leakage.output.vcf \
@@ -77,6 +80,7 @@ rule run_cpsr:
             '--germline {params.opt} --pcgr-data {input.pcgr_data} '
             '--predispose-genes {input.predispose_genes_txt}')
 
+# copy CPSR html report to <um>/<batch>/
 rule cpsr_copy_report:
     input:
         rules.run_cpsr.output[0]
