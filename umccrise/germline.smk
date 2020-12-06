@@ -16,6 +16,7 @@ from umccrise import package_path, cnt_vars
 localrules: germline, germline_batch
 
 
+# call variants in predisposed genes using HaplotypCaller
 rule haplotype_caller:
     input:
         normal_bam = lambda wc: [s.bam for s in batch_by_name[wc.batch].normals][0],
@@ -44,6 +45,7 @@ rule haplotype_caller:
         '--intervals {input.predispose_genes_bed} '
         '--tmp-dir {params.tmp_dir} ' 
 
+# keep PASS variants from bcbio germline VCF or the HaplotypeCaller VCF
 rule germline_vcf_pass:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].germline_vcf or \
@@ -55,7 +57,7 @@ rule germline_vcf_pass:
     shell:
         'bcftools view {input.vcf} -f.,PASS -Oz -o {output.vcf} && tabix -f -p vcf {output.vcf}'
 
-# Subset to ~200 cancer predisposition gene set.
+# Subset (germline variants) to ~200 cancer predisposition gene set.
 rule germline_predispose_subset:
     input:
         vcf = rules.germline_vcf_pass.output.vcf,
@@ -90,6 +92,9 @@ rule germline_predispose_subset:
 # #  2. PoN, normal ok       - low freq (< 1/3 of purity) - remove; any normal support - add; otherwise remove
 # #  3. gnomAD, normal fail  - add to germline
 # #  4. gnomAD, normal ok    - add to germline if has any normal support
+
+# grab the pre-PASSed somatic SNVs, keep those with INFO/Germline flag, remove FILTER, several
+# INFO + FORMAT fields, keep just tumor sample, replace column name with germline sample.
 rule germline_leakage:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf
@@ -107,7 +112,7 @@ rule germline_leakage:
         'sed \'s/{params.tumor_sample}/{params.normal_sample}/\' | ' 
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
-# Subset to ~200 cancer predisposition gene set.
+# Subset (somatic 'leaked' variants) to ~200 cancer predisposition gene set.
 rule germline_leakage_predispose_subset:
     input:
         vcf = rules.germline_leakage.output.vcf,
@@ -122,6 +127,7 @@ rule germline_leakage_predispose_subset:
         'bcftools view -T {input.predispose_genes_bed} {input.vcf} -Oz -o {output.vcf}'
         ' && tabix -p vcf {output.vcf}'
 
+# merge germline + somatic leaked predisposed
 rule germline_merge_with_leakage:
     input:
         vcfs = [
@@ -134,6 +140,7 @@ rule germline_merge_with_leakage:
     shell:
         'bcftools concat -a {input.vcfs} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
 
+# report germline PASS and germline predispose counts
 rule germline_stats_report:
     input:
         pass_vcf = rules.germline_vcf_pass.output.vcf,
@@ -179,8 +186,7 @@ rule bcftools_stats_germline:
         'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
 
 
-#############
-
+# copy final merged predisposed into <um>/<batch>/small_variants/
 rule germline_batch:
     input:
         lambda wc: [] if (not batch_by_name[wc.batch].germline_vcf and \
@@ -200,28 +206,11 @@ rule germline_batch:
             shell(f'cp {germline_vcf} {renamed_germline_vcf}')
             shell(f'tabix -p vcf {renamed_germline_vcf}')
 
-# rule copy_germline:
-#     input:
-#         germline_vcfs = expand(rules.germline_merge_with_leakage.output.vcf
-#                                if 'somatic' in stages else \
-#                                rules.germline_predispose_subset.output.vcf, batch=batch_by_name.keys())
-#     output:
-#         temp(touch('log/germline.done'))
-#     run:
-#         for bn, batch, germline_vcf in zip(batch_by_name.keys(), batch_by_name.values(), input.germline_vcfs):
-#             assert batch.name in germline_vcf
-#             shell(f'mkdir -p {join(bn, "small_variants")}')
-#             renamed_germline_vcf = join(bn, 'small_variants',
-#                      f'{batch}__{batch.normal.name}-germline.predispose_genes.vcf.gz')
-#             shell(f'cp {germline_vcf} {renamed_germline_vcf}')
-#             shell(f'tabix -p vcf {renamed_germline_vcf}')
 
 rule germline:
     input:
         germline = expand(rules.germline_batch.output, batch=batch_by_name.keys())
     output:
         temp(touch('log/germline.done'))
-
-
 
 
