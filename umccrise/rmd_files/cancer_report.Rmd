@@ -689,11 +689,14 @@ along with an ID that is shared by grouped variants.
 
 ```{r purple_kataegis_table}
 kat <- gpgr::purple_kataegis(params$purple_som_snv_vcf)
-if (nrow(kat) > 0) {
-  knitr::kable(kat, escape = FALSE, caption = "Kataegis Regions.",
-               format = "html", format.args = list(big.mark = ",")) %>%
-    kableExtra::kable_minimal("hover", full_width = FALSE, position = "left") %>%
-    kableExtra::scroll_box(height = "150px")
+details::details(knitr::kable(kat$description), lang = NULL, summary = "Column Description")
+if (nrow(kat$data) > 0) {
+  DT::datatable(kat$data, filter = list(position = "top", clear = FALSE, plain = TRUE),
+                class = "cell-border display compact",
+                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+                options = list(
+                  scroller = TRUE, scrollY = 200, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
+                  buttons = c('csv', 'excel'), dom = 'Blfrtip'))
 } else {
   cat("No kataegis regions detected.")
 }
