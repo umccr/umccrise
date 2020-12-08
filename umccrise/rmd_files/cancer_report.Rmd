@@ -311,7 +311,7 @@ A 'FAIL' or 'WARN' QC status can be attributed to several factors:
   in depth of >= 10x between high and low GC regions. GC normalisation is
   unreliable when the corrections are so extreme so it is recommended to fail
   the sample (concerns with miscalled deletions or amplifications or have
-  poor sensitivity in high GC regions.
+  poor sensitivity in high GC regions).
 * `WARN_GENDER_MISMATCH`: if the AMBER and COBALT inferred genders are
   inconsistent then the COBALT one is used but the sample is failed.
 * `WARN_LOW_PURITY`: fitted purity < 20%
@@ -369,8 +369,10 @@ qc_summary_all <- dplyr::tribble(
   21, "CNVs (Germline)", glue::glue("Min: {cnv_summary[['germ']]$Min}; ",
                                    "Max: {cnv_summary[['germ']]$Max}; ",
                                    "N: {cnv_summary[['germ']]$N} "), "",
-  18, "SVs (unmelted)", paste(rev(sv_summary$unmelted), collapse = ", "), "",
-  19, "SVs (melted)", paste(rev(sv_summary$melted), collapse = ", "), "",
+  18, "SVs (unmelted)", paste(rev(sv_summary$unmelted), collapse = ", "),
+  "Summary of SVs as presented in raw VCF.",
+  19, "SVs (melted)", paste(rev(sv_summary$melted), collapse = ", "),
+  "Summary of SVs after splitting annotations for each event into a separate variant row.",
   22, "Genome", params$genome_build, "Human genome assembly used."
 ) %>%
   dplyr::bind_rows(
