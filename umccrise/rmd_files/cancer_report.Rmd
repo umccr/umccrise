@@ -216,7 +216,7 @@ sigs_snv_2015 <-
   gpgr::cosmic_signatures_2015 %>%
   gpgr::sig_contribution(mut_mat = mp_snv$snv_counts, signatures = .)
 sigs_snv_2020 <-
-  MutationalPatterns::get_known_signatures(muttype = "snv", incl_poss_artifacts = TRUE) %>%
+  MutationalPatterns::get_known_signatures(muttype = "snv", incl_poss_artifacts = FALSE) %>%
   gpgr::sig_contribution(mut_mat = mp_snv$snv_counts, signatures = .)
 sigs_dbs <-
   MutationalPatterns::get_known_signatures(muttype = "dbs") %>%
