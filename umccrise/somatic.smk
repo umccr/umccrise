@@ -299,19 +299,18 @@ rule pierian:
         sv_renamed = '{batch}/pierian/{batch}-manta.single.vcf.gz',
         cnv_renamed = '{batch}/pierian/{batch}.purple.cnv',
     run:
-        # copy sv + cnv since no processing required
-        shutil.copy(f'{input.cnv}', f'{output.cnv_renamed}')
+        # SV: copy sv since no processing required
         shutil.copy(f'{input.sv}', f'{output.sv_renamed}')
         shutil.copy(f'{input.svtbi}', f'{output.sv_renamed}.tbi')
-        #shutil.copy(f'{input.snv}', f'{output.snv_renamed}')
-        # grab tumor column from snv vcf
+
+        # CNV: handle PURPLE renamed column
+        shell("sed 's/AlleleCopyNumber/AllelePloidy/g' {input.cnv} > {output.cnv_renamed}")
+
+        # SNV: grab tumor column from snv vcf
         t_name = batch_by_name[wildcards.batch].tumors[0].rgid
         vcf_samples = cyvcf2.VCF(input.snv).samples
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.snv}, available: {vcf_samples}"
-        shell('''
-bcftools view {input.snv} -s {t_name} -Oz -o {output.snv_renamed} && tabix -p vcf {output.snv_renamed}
-
-''')
+        shell("bcftools view {input.snv} -s {t_name} -Oz -o {output.snv_renamed} && tabix -p vcf {output.snv_renamed}")
 
 
 #############
