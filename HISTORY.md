@@ -1,3 +1,38 @@
+1.2.1 (16 Dec 2020)
+
+- Decrease number of predisposition genes to 78 (see https://github.com/vladsaveliev/NGS_Utils/issues/3)
+  - Should see a ~60-70% decrease in CPSR variants
+- Disable MutationalPatterns DBS section (see https://github.com/umccr/umccrise/issues/59)
+- Pierian: revert PURPLE CNV column names to `*AllelePloidy` (instead of `*AlleleCopyNumber`) (see https://github.com/umccr/umccrise/issues/58)
+- Update Hartwig hmftools
+  - PURPLE: from 2.43 to 2.51
+  - COBALT: from 1.8 to 1.11
+  - AMBER: from 3.3 to 3.5
+- DVC: pin to v1.9.1 (see `arteria-dev` Slack channel 2020-Nov-25)
+- Cancer report updates:
+  - update to MutationalPatterns v3
+  - use MutationalPatterns gpgr wrappers
+  - show MutationalPatterns DBS/INDEL signatures & contributions
+  - merge MutationalPatterns Strand Bias plots
+  - signatures: exclude artefact SBS sigs (#57)
+  - delete sig png files (handled via gpgr)
+  - simplify GenomicFeatures::genes call
+  - add kataegis table description + more cols
+  - add export to excel button for tables
+  - fix qc summary table
+  - update PURPLE QC metric descriptions
+  - bolden h2/h3 report headers
+  - add SV BND plot faceted by tier
+  - include more conda pkgs in main addendum table
+  - navbar expansion
+  - export HRD tables nicely
+  - add SV 'Map' table description + example
+  - SV tables: paste tier/toptier together
+  - fix SV column description tables
+  - add SV summary description
+  - Disable MutationalPatterns DBS section (see https://github.com/umccr/umccrise/issues/59)
+  
+
 1.1.3 (17 Nov 2020)
 
 Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr):
