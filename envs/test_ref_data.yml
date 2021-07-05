@@ -1,6 +1,7 @@
 name: umccrise_cancer_report
 
 channels:
+  - scwatts
   - vladsaveliev
   - conda-forge
   - bioconda
@@ -14,7 +15,7 @@ dependencies:
   - bcftools
   - samtools
   - bedtools
-  - ngs_utils
+  - ngs_utils ==2.8.8_dev
   - natsort  # for bcbio.py in ngs_utils
   - pip:
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"

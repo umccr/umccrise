@@ -3,6 +3,7 @@
 name: umccrise
 
 channels:
+  - scwatts
   - vladsaveliev
   - conda-forge
   - bioconda
@@ -11,5 +12,5 @@ channels:
 dependencies:
   - python >=3.7
   - click
-  - ngs_utils >=2.0.4
+  - ngs_utils ==2.8.8_dev
   - nose

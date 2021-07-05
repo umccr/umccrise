@@ -1,6 +1,7 @@
 name: umccrise
 
 channels:
+  - scwatts
   - vladsaveliev
   - conda-forge
   - bioconda
@@ -43,7 +44,7 @@ dependencies:
   - peddy
   #
   - tsvtools
-  - ngs_utils
+  - ngs_utils ==2.8.8_dev
   - versionpy
   - bed_annotation
   - natsort      # for bcbio.py in ngs_utils
@@ -51,6 +52,7 @@ dependencies:
   - openjdk >=11 # for igvtools
   - vcf2maf
   - dvc
+  - dvc-s3
   - pip:
     - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"

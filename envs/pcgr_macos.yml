@@ -2,6 +2,7 @@ name: pcgr
 
 channels:
   - pcgr
+  - scwatts
   - vladsaveliev
   - conda-forge
   - bioconda
@@ -14,7 +15,7 @@ dependencies:
   - samtools
   - bcftools
   - click
-  - ngs_utils
+  - ngs_utils ==2.8.8_dev
   - pcgr_dockerized
   - cpsr_dockerized
   - cacao_dockerized
