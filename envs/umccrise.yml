@@ -12,47 +12,45 @@ dependencies:
   - pip
   - git
   - cython
-  - bcftools >=1.9
+  - bcftools ==1.10.2
   - openssl >=1.1
-  - bedtools
-  - samtools >=1.10
-  - vcfanno
-  - vcflib  # for VCF normalisation
-  - bedops
-  - mosdepth
+  - bedtools ==2.29.2
+  - samtools ==1.10
+  - vcfanno ==0.3.2
+  - vcflib ==1.0.1  # for VCF normalisation
+  - bedops ==2.4.39
+  - mosdepth ==0.2.9
   - pythonpy
   - click
-  - cyvcf2 >=0.10.0
-  - numpy >=1.15.0
-  - pandas
-  - curl >=7.59     # to make sure libcurl.4.dylib>=10.0.0 is installed
+  - cyvcf2 ==cyvcf2=0.30.1
+  - numpy ==1.19.4
+  - pandas ==1.1.5
+  - curl >=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake-minimal
-  - pyyaml >=4  # for multiqc
-  - multiqc
+  - pyyaml ==5.3.1   # for multiqc
+  - multiqc ==1.10.dev0
   - nose
-  - pyensembl
-  - break-point-inspector
-  - tabix
-  - goleft
-  - parallel    # for general use
-  - pygraphviz  # for snakemake report
-  - pygments    # for snakemake report
-  - gsort       # sort vcfs and beds - https://github.com/brentp/gsort
-  # - tibanna
+  - pyensembl ==1.9.0
+  - break-point-inspector ==1.5
+  - tabix ==0.2.6
+  - goleft ==0.2.4
+  - parallel  # for general use
+  - pygraphviz ==1.6  # for snakemake report
+  - pygments ==2.7.3  # for snakemake report
+  - gsort ==0.1.4  # sort vcfs and beds - https://github.com/brentp/gsort
   - snpeff ==4.3.1t  # pre 4.5covid19 release
-  - optitype
-  - peddy
-  #
-  - tsvtools
+  - optitype ==1.3.5
+  - peddy ==0.4.7
+  - tsvtools ==0.1.0
   - ngs_utils ==2.8.8_dev
-  - versionpy
-  - bed_annotation
-  - natsort      # for bcbio.py in ngs_utils
-  - igvtools
-  - openjdk >=11 # for igvtools
-  - vcf2maf
-  - dvc
-  - dvc-s3
+  - versionpy ==0.4.11
+  - bed_annotation ==1.1.6
+  - natsort ==7.1.0  # for bcbio.py in ngs_utils
+  - igvtools ==2.5.3
+  - openjdk ==11.0.8  # for igvtools
+  - vcf2maf ==1.6.19
+  - dvc ==1.11.6
+  - dvc-s3 ==1.11.6
   - pip:
     - "git+https://github.com/vladsaveliev/vcf_stuff#egg=vcf_stuff"
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"

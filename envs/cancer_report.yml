@@ -7,34 +7,34 @@ channels:
   - defaults
 
 dependencies:
-  - r-base >=4.0
+  - r-base ==4.0.3
   # R libraries:
-  - pandoc
-  - r-devtools
-  - r-details
-  - r-dplyr
-  - r-dt
-  - r-ggplot2
+  - pandoc ==2.11.2
+  - r-devtools ==2.3.2
+  - r-details ==0.2.1
+  - r-dplyr ==1.0.2
+  - r-dt ==0.16
+  - r-ggplot2 ==3.3.2
   - r-gpgr ==0.1.5
-  - r-gt
-  - r-htmlwidgets
-  - r-jsonlite
-  - r-kableextra
-  - r-patchwork
-  - r-purrr
-  - r-readr
-  - r-rmarkdown
-  - r-cairo  # fixes "address (nil), cause 'memory not mapped'"
-  - r-stringr
-  - r-stringi
-  - r-tidyr
-  - bioconductor-delayedarray
-  - bioconductor-summarizedexperiment
-  - bioconductor-mutationalpatterns
-  - bioconductor-bsgenome.hsapiens.ucsc.hg19
-  - bioconductor-bsgenome.hsapiens.ucsc.hg38
-  - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene
-  - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene
-  - bioconductor-genomeinfodb
-  - bioconductor-genomeinfodbdata
-  - pyyaml # for multiqc
+  - r-gt ==0.2.2
+  - r-htmlwidgets ==1.5.3
+  - r-jsonlite ==1.7.2
+  - r-kableextra ==1.3.1
+  - r-patchwork ==1.1.0
+  - r-purrr ==0.3.4
+  - r-readr ==1.4.0
+  - r-rmarkdown ==2.6
+  - r-cairo ==1.5_12.2  # fixes "address (nil), cause 'memory not mapped'"
+  - r-stringr ==1.4.0
+  - r-stringi ==1.5.3
+  - r-tidyr ==1.1.2
+  - bioconductor-delayedarray ==0.16.0
+  - bioconductor-summarizedexperiment ==1.20.0
+  - bioconductor-mutationalpatterns ==3.0.0
+  - bioconductor-bsgenome.hsapiens.ucsc.hg19 ==1.4.3
+  - bioconductor-bsgenome.hsapiens.ucsc.hg38 ==1.4.3
+  - bioconductor-txdb.hsapiens.ucsc.hg19.knowngene ==3.2.2
+  - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene ==3.10.0
+  - bioconductor-genomeinfodb ==1.26.0
+  - bioconductor-genomeinfodbdata ==1.2.4
+  - pyyaml ==5.3.1  # for multiqc
