@@ -15,7 +15,7 @@ dependencies:
   - samtools
   - bcftools
   - click
-  - ngs_utils ==2.8.8_dev
+  - ngs_utils ==2.8.9
   - pcgr_dockerized
   - cpsr_dockerized
   - cacao_dockerized
