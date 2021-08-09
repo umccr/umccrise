@@ -3,7 +3,7 @@
 name: umccrise
 
 channels:
-  - scwatts
+  - umccr
   - vladsaveliev
   - conda-forge
   - bioconda

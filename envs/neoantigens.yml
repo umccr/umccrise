@@ -1,7 +1,7 @@
 name: umccrise_neoantigens
 
 channels:
-  - scwatts
+  - umccr
   - vladsaveliev
   - bioconda
   - conda-forge

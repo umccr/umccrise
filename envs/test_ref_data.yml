@@ -1,7 +1,7 @@
 name: umccrise_cancer_report
 
 channels:
-  - scwatts
+  - umccr
   - vladsaveliev
   - conda-forge
   - bioconda
