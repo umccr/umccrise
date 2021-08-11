@@ -13,6 +13,8 @@ dependencies:
   - r-devtools ==2.3.2
   - r-details ==0.2.1
   - r-dplyr ==1.0.2
+  # dbplyr version must be explicilty set otherwise a non-valid env may be created
+  - r-dbplyr ==2.0.0
   - r-dt ==0.16
   - r-ggplot2 ==3.3.2
   - r-gpgr ==0.1.5
