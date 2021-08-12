@@ -2,7 +2,6 @@ name: umccrise_cancer_report
 
 channels:
   - umccr
-  - vladsaveliev
   - conda-forge
   - bioconda
   - defaults

@@ -4,7 +4,6 @@ name: umccrise
 
 channels:
   - umccr
-  - vladsaveliev
   - conda-forge
   - bioconda
   - defaults

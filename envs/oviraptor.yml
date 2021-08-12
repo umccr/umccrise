@@ -1,7 +1,7 @@
 name: umccrise_oviraptor
 
 channels:
-  - vladsaveliev
+  - umccr
   - bioconda
   - conda-forge
   - defaults
