@@ -1,4 +1,4 @@
-FROM 843407916570.dkr.ecr.ap-southeast-2.amazonaws.com/ubuntu:16.04
+FROM ubuntu:16.04
 MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 ENV HOSTNAME umccrise_docker

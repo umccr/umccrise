@@ -1,7 +1,7 @@
 name: umccrise_cancer_report
 
 channels:
-  - vladsaveliev
+  - umccr
   - conda-forge
   - bioconda
   - defaults
@@ -14,7 +14,7 @@ dependencies:
   - bcftools
   - samtools
   - bedtools
-  - ngs_utils
+  - ngs_utils ==2.8.9
   - natsort  # for bcbio.py in ngs_utils
   - pip:
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"

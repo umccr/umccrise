@@ -1,3 +1,12 @@
+1.2.2 (16 Aug 2021)
+
+- Update NGS\_utils to allow custom TSV input (see https://github.com/umccr/NGS_Utils/commit/07e72b4)
+- Pin version of all appropriate Conda packages
+- Explicitly set r-dbplyr version in cancer report Conda env to resolve package conflicts and install issues
+- Use the UMCCR Anaconda channel
+- Replace ECR Ubuntu Docker image base with equivalent from Docker Hub
+- Update (tsvtools)[https://github.com/vladsaveliev/tsvtools] to 0.2.0; Conda package for 0.1.0 no longer exists
+
 1.2.1 (16 Dec 2020)
 
 - Decrease number of predisposition genes to 78 (see https://github.com/vladsaveliev/NGS_Utils/issues/3)
