@@ -50,5 +50,5 @@ WORKDIR "/home/${USER}"
 # Set environment variables
 ENV ENV_NAME=umccrise
 ENV HOME="/home/${USER}"
-ENV PATH="/miniconda/envs/${ENV_NAME}/bin:${HOME}/miniconda/bin:/home/${USER}/.local/bin:${PATH}"
+ENV PATH="/miniconda/envs/${ENV_NAME}/bin:/miniconda/bin:/home/${USER}/.local/bin:${PATH}"
 ENV CONDA_PREFIX="/miniconda/envs/${ENV_NAME}"
