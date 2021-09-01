@@ -1,3 +1,8 @@
+1.2.3 (31 Aug 2021)
+
+- Update Dockerfile and install.sh to resolve Snakemake warnings regarding input filepaths containing double slashes '//'
+- Replace root user in Docker container with non-root user
+
 1.2.2 (16 Aug 2021)
 
 - Update NGS\_utils to allow custom TSV input (see https://github.com/umccr/NGS_Utils/commit/07e72b4)
