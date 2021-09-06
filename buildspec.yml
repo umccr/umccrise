@@ -32,10 +32,7 @@ phases:
       - df -h
   post_build:
     commands:
-      # Clone test data
-      - git clone --depth 1 https://github.com/umccr/umccrise_test_data umccrise_test_data
-      - $(aws ecr get-login --no-include-email --region ap-southeast-2)
-      # Pull refdata
+      # Pull Umccrise reference data
       - git clone https://github.com/umccr/reference_data reference_data &&
         cd reference_data &&
         dvc config cache.type reflink,hardlink,copy &&
@@ -46,7 +43,15 @@ phases:
       - du -sh reference_data/genomes
       - tree -L 1 reference_data/genomes
       - df -h
-      # Run minimal test with downsized sample data - dragen
+      # Run minimal test with downsized sample data
+      # Clone sample data repo
+      - git clone --depth 1 https://github.com/umccr/umccrise_test_data umccrise_test_data
+      # Create output directory and set permissions for Docker container user
+      - mkdir -p umccrise_test_data/results/dragen_test_project_docker/ &&
+        mkdir -p umccrise_test_data/results/bcbio_test_project_docker/ &&
+        chgrp -R 1000 umccrise_test_data/results/ &&
+        chmod -R g+w umccrise_test_data/results/
+      # DRAGEN test run
       - tree -L 1 umccrise_test_data/data/dragen_test_project
       - docker run -t --cpus 1
         -v=$PWD/umccrise_test_data/results/dragen_test_project_docker:/output_dir
@@ -54,7 +59,7 @@ phases:
         -v=$PWD/reference_data/genomes:/work/genomes
         $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
         umccrise /dragen_project -o /output_dir --genomes /work/genomes -j1
-      # Run minimal test with downsized sample data - bcbio
+      # bcbio test run
       - tree -L 1 $PWD/umccrise_test_data/data/bcbio_test_project
       - docker run -t --cpus 1
         -v=$PWD/umccrise_test_data/results/bcbio_test_project_docker:/output_dir
@@ -62,4 +67,6 @@ phases:
         -v=$PWD/reference_data/genomes:/work/genomes
         $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
         umccrise /bcbio_project -o /output_dir --genomes /work/genomes -j1
+      # Push Docker image to ECR
+      - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       - docker push $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
