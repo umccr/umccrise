@@ -36,19 +36,19 @@ Below the examples of the reports for a HCC1395/HCC1395BL cell line tumor/normal
 
 <br>
 
-[2. Cancer report (mutational signatures, circos plots, CNV, SV, oncoviruses) ![Cancer report](docs/cancer_report.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc_cancer_report.html)
+[2. Cancer report (mutational signatures, circos plots, CNV, SV, oncoviruses) ![Cancer report](docs/cancer_report.png)](https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc_cancer_report.html)
 
 <br>
 
-[3. CPSR (germline variants) ![CPSR](docs/cpsr.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cpsr.html)
+[3. CPSR (germline variants) ![CPSR](docs/cpsr.png)](https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cpsr.html)
 
 <br>
 
-[4. PCGR (somatic variants) ![PCGR](docs/pcgr.png)](https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html)
+[4. PCGR (somatic variants) ![PCGR](docs/pcgr.png)](https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html)
 
 5. CACAO (coverage reports)
 
-<a href="https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html"><img src="docs/cacao_tumor.png" alt="cacao_tumor" width="400"/> <a href="https://umccrise.s3-ap-southeast-2.amazonaws.com/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html"><img src="docs/cacao_normal.png" alt="cacao_normal" width="400"/>
+<a href="https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html"><img src="docs/cacao_tumor.png" alt="cacao_tumor" width="400"/> <a href="https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html"><img src="docs/cacao_normal.png" alt="cacao_normal" width="400"/>
 
 <br>
 
