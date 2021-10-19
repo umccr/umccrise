@@ -41,7 +41,7 @@ dependencies:
   - optitype ==1.3.5
   - peddy ==0.4.7
   - tsvtools ==0.2.0
-  - ngs_utils ==2.8.10
+  - ngs_utils ==2.9.0
   - versionpy ==0.4.11
   - bed_annotation ==1.1.6
   - natsort ==7.1.0  # for bcbio.py in ngs_utils
