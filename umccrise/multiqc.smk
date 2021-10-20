@@ -5,7 +5,7 @@ import yaml
 from os.path import abspath, join, dirname, basename
 from ngs_utils.file_utils import verify_file
 from ngs_utils.bcbio import BcbioProject, BcbioBatch
-from ngs_utils.dragen import DragenProject
+from ngs_utils.dragen import DragenProject, DragenBatch
 from umccrise import package_path
 
 
@@ -117,7 +117,7 @@ rule prep_multiqc_data:
         # Gold standard QC files
         if isinstance(batch, BcbioBatch):
             qc_files.extend(load_background_samples(params.genome_build, project_type='bcbio'))
-        if isinstance(batch, DragenProject):
+        if isinstance(batch, DragenBatch):
             qc_files.extend(load_background_samples(params.genome_build, project_type='dragen'))
 
         # Umccrise QC files
