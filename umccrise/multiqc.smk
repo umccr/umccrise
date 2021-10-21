@@ -5,7 +5,7 @@ import yaml
 from os.path import abspath, join, dirname, basename
 from ngs_utils.file_utils import verify_file
 from ngs_utils.bcbio import BcbioProject, BcbioBatch
-from ngs_utils.dragen import DragenProject, DragenBatch
+from ngs_utils.dragen import DragenBatch
 from umccrise import package_path
 
 
@@ -175,7 +175,7 @@ rule prep_multiqc_data:
 
         if isinstance(batch, BcbioBatch):
             qc_files.extend(find_bcbio_qc_files(batch, params.data_dir))
-        elif isinstance(run, DragenProject):
+        elif isinstance(batch, DragenBatch):
             qc_files.extend(batch.all_qc_files()),
 
         multiqc_prep_data(
