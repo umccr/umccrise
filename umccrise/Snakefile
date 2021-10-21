@@ -96,7 +96,7 @@ rule umccrise:
     # (rules without output defined in the end of each Snakemake.* file)
     input:
         rules.copy_config.output      if isinstance(run, BcbioProject) else [],
-        rules.copy_tsv_inputs.output  if isinstance(run, CustomProject) else [],
+        rules.copy_tsv_inputs.output  if getattr(run, 'input_tsv_fpaths', None) else [],
         rules.conpair.output          if 'conpair'          in stages else [],
         rules.structural.output       if 'structural'       in stages else [],
         rules.somatic.output          if 'somatic'          in stages else [],
