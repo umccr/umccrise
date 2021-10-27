@@ -256,6 +256,7 @@ rule somatic_stats_report:
 
         with open(output[0], 'w') as out:
             data = {
+                'id': 'umccrise',
                 'data': {
                     params.sample: data
                 }

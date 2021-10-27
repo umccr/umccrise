@@ -160,6 +160,7 @@ rule germline_stats_report:
 
         with open(output[0], 'w') as out:
             data = {
+                'id': 'umccrise',
                 'data': {
                     params.sample: dict(
                         germline = pass_cnt,
