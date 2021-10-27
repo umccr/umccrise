@@ -10,6 +10,7 @@ base_count_prefix: 'Gb'
 base_count_desc: 'gigabases'
 make_data_dir: True
 # Increase file size threshold to 100MB, files which are larger in size are ignored
+# This was specifically affecting mosdepth output
 log_filesize_limit: 100000000
 
 # For hg38 we want to ignore Alt contigs, relevant to DRAGEN
