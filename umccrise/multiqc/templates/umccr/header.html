@@ -11,27 +11,24 @@ was generated and the button that launches the welcome tour.
 <style type="text/css">{{ include_file('assets/css/multiqc_umccr.css') }}</style>
 
 <script>
-    let regex_mode = true;
+    const red = "rgb(228, 26, 28)";
+    const blue = "rgb(55, 126, 184)"
+    const gray = "rgb(203, 203, 203)"
 
-    let f_texts = [];
-    let f_cols = [];
-    var red = "rgb(228, 26, 28)",
-        blue = "rgb(55, 126, 184)",
-        gray = "rgb(203, 203, 203)";
-
+    const samples_hl = new Map();
     {% if config.umccr.batch %}
-    f_texts.push("^{{ config.umccr.tumor_name }}$");
-    f_texts.push("^{{ config.umccr.tumor_rgid }}$");
-    f_texts.push("^{{ config.umccr.tumor_rgid }} \\({{ config.umccr.batch }}\\)$");
-    f_texts.push("^{{ config.umccr.normal_name }}$");
-    f_texts.push("^{{ config.umccr.normal_rgid }}$");
-    f_texts.push("^{{ config.umccr.normal_rgid }} \\({{ config.umccr.batch }}\\)$");
-    f_cols.push(red);
-    f_cols.push(red);
-    f_cols.push(red);
-    f_cols.push(blue);
-    f_cols.push(blue);
-    f_cols.push(blue);
+    // Sample name highlight
+    samples_hl.set("^{{ config.umccr.tumor_name }}$", red);
+    samples_hl.set("^{{ config.umccr.tumor_rgid }}$", red);
+    samples_hl.set("^{{ config.umccr.tumor_rgid }} \\({{ config.umccr.batch }}\\)$", red);
+    samples_hl.set("^{{ config.umccr.normal_name }}$", blue);
+    samples_hl.set("^{{ config.umccr.normal_rgid }}$", blue);
+    samples_hl.set("^{{ config.umccr.normal_rgid }} \\({{ config.umccr.batch }}\\)$", blue);
+    // DRAGEN FastQC plots
+    samples_hl.set("^{{ config.umccr.tumor_name }}_Read1$", red);
+    samples_hl.set("^{{ config.umccr.tumor_name }}_Read2$", red);
+    samples_hl.set("^{{ config.umccr.normal_name }}_Read1$", blue);
+    samples_hl.set("^{{ config.umccr.normal_name }}_Read2$", blue);
     {% endif %}
 
     let bg_texts = [];
@@ -39,28 +36,33 @@ was generated and the button that launches the welcome tour.
     {% for ref_sample in config.umccr.reference_samples %}
     bg_texts.push("^{{ ref_sample }}$");
     bg_cols.push(gray);
+    bg_texts.push("^{{ ref_sample }}_Read1$");
+    bg_cols.push(gray);
+    bg_texts.push("^{{ ref_sample }}_Read2$");
+    bg_cols.push(gray);
     {% endfor %}
 
-    window.mqc_highlight_f_texts = f_texts.concat(bg_texts);
-    window.mqc_highlight_f_cols = f_cols.concat(bg_cols);
+    window.mqc_highlight_f_texts = Array.from(samples_hl.keys()).concat(bg_texts);
+    window.mqc_highlight_f_cols = Array.from(samples_hl.values()).concat(bg_cols);
     window.mqc_highlight_regex_mode = true;
 
-    $(function(e, regex_mode){
+    // Apply sample highlight
+    $(function() {
       $('.mqc_table_sortHighlight').hide();
       $('.mqc_table tbody th')
-          .removeClass('highlighted')
-          .removeData('highlight')
-          .each(function(i) {
-        var th = $(this);
-        var thtext = $(this).text();
-        var thiscolor = gray;
-        $.each(window.mqc_highlight_f_texts, function(idx, f_text){
-          if (thtext.match(f_text)) {
-            thiscolor = window.mqc_highlight_f_cols[idx];
-   	      }
-          th.addClass('highlighted').data('highlight', idx);
-          $('.mqc_table_sortHighlight').show();
-          th.css('color', thiscolor);
+        .removeClass('highlighted')
+        .removeData('highlight')
+        .each(function(i) {
+          var th = $(this);
+          var thtext = $(this).text();
+          var thiscolor = gray;
+          $.each(window.mqc_highlight_f_texts, function(idx, f_text){
+            if (thtext.match(f_text)) {
+              thiscolor = window.mqc_highlight_f_cols[idx];
+            }
+            th.addClass('highlighted').data('highlight', idx);
+            $('.mqc_table_sortHighlight').show();
+            th.css('color', thiscolor);
         });
       });
     });
