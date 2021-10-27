@@ -180,7 +180,6 @@ custom_data:
 #        section_name: 'Variant analysis'
 #        description: 'Variant analysis in Umccrise'
         pconfig:
-
         - subset_genes:
             title: 'Subset to key genes'
             description: 'Percentage of variants removed by subsetting to cancer genes. This happens when there are more than 500k calls to avoid choking the reporting'
@@ -197,7 +196,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
-            hidden: False
+            hidden: True
         - filt_snps:
             title: 'SNP-filt'
             description: '% SNPs filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
@@ -206,7 +205,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
-            hidden: True
+            hidden: False
         - filt_indels:
             title: 'Indel-filt'
             description: '% Indels filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
@@ -215,7 +214,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
-            hidden: True
+            hidden: False
         - filt_other:
             title: 'Other-filt'
             description: '% Other variants (MNP) filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
