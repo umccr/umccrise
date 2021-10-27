@@ -51,6 +51,10 @@ table_columns_visible:
         Ontarget_padded_pct: False
         Average_insert_size: False
         RiP_pct: False
+    DRAGEN mapping:
+        Estimated sample contamination: False
+    DRAGEN coverage:
+        "PCT of genome with coverage [ 20x: inf)": False
     SnpEff:
         Change_rate: False                        # is also set in bcbio/__init__.py
         Ts_Tv_ratio: False                        # is also set in bcbio/__init__.py
