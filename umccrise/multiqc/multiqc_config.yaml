@@ -12,6 +12,19 @@ make_data_dir: True
 # Increase file size threshold to 100MB, files which are larger in size are ignored
 log_filesize_limit: 100000000
 
+# For hg38 we want to ignore Alt contigs, relevant to DRAGEN
+mosdepth_config:
+    include_contigs:
+    - "chr*"
+    exclude_contigs:
+    - "*_alt"
+    - "*_decoy"
+    - "*_random"
+    - "chrUn*"
+    - "HLA*"
+    - "chrM"
+    - "chrEBV"
+
 
 # Overwrite the defaults of which table columns are visible by default
 table_columns_visible:
