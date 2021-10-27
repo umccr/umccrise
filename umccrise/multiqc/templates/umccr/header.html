@@ -15,6 +15,7 @@ was generated and the button that launches the welcome tour.
     const blue = "rgb(55, 126, 184)"
     const gray = "rgb(203, 203, 203)"
 
+    const samples_order = [];
     const samples_hl = new Map();
     {% if config.umccr.batch %}
     // Sample name highlight
@@ -29,6 +30,11 @@ was generated and the button that launches the welcome tour.
     samples_hl.set("^{{ config.umccr.tumor_name }}_Read2$", red);
     samples_hl.set("^{{ config.umccr.normal_name }}_Read1$", blue);
     samples_hl.set("^{{ config.umccr.normal_name }}_Read2$", blue);
+    // Sample order
+    samples_order.push("{{ config.umccr.tumor_name }}");
+    samples_order.push("{{ config.umccr.tumor_rgid }}");
+    samples_order.push("{{ config.umccr.normal_name }}");
+    samples_order.push("{{ config.umccr.normal_rgid }}");
     {% endif %}
 
     let bg_texts = [];
@@ -40,6 +46,7 @@ was generated and the button that launches the welcome tour.
     bg_cols.push(gray);
     bg_texts.push("^{{ ref_sample }}_Read2$");
     bg_cols.push(gray);
+    samples_order.push("{{ ref_sample }}")
     {% endfor %}
 
     window.mqc_highlight_f_texts = Array.from(samples_hl.keys()).concat(bg_texts);
@@ -64,6 +71,37 @@ was generated and the button that launches the welcome tour.
             $('.mqc_table_sortHighlight').show();
             th.css('color', thiscolor);
         });
+      });
+    });
+
+    // Order table rows with order:
+    //   - patient tumour
+    //   - patient normal
+    //   - <reference sample as provided in multiqc_config.yaml>
+    $(function() {
+      $('.mqc_table').not('.mqc_configModal_table').each(function() {
+        var header = $(this).find('thead tr')[0].children
+        var hrows = $(this).find('tbody tr')
+        // Determine sample name column index
+        var sample_name_column = -1;
+        for (var i = 0; i < header.length; i++) {
+            if (header[i].innerText === "Sample Name") {
+              sample_name_column = i;
+              break;
+            }
+        }
+        if (sample_name_column === -1) {
+          throw 'Could not find sample name column';
+        }
+        // Sort according to predefined list
+        var result = hrows.sort(function(a, b) {
+            var a_name = a.cells[sample_name_column].innerText;
+            var b_name = b.cells[sample_name_column].innerText
+            return samples_order.indexOf(a_name) - samples_order.indexOf(b_name)
+          });
+        // Apply new ordering
+        $(this).find('tbody').append(result);
+        $(this).data("direction", "desc");
       });
     });
 
