@@ -252,11 +252,3 @@ custom_data:
 sp:
     umccrise:
         fn_re: '.*(somatic_stats|germline_stats).yml'
-
-
-extra_fn_clean_trim:
-    - '-coverage.mosdepth.region.dist'
-    - '-coverage.mosdepth.global.dist'
-
-
-
