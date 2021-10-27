@@ -261,7 +261,8 @@ def prep_inputs(smconfig, silent=False):
     custom_run = CustomProject(
         input_dir=adjust_path(os.getcwd()),
         include_samples=include_names,
-        exclude_samples=exclude_names)
+        exclude_samples=exclude_names
+    )
 
     log.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
 
@@ -363,27 +364,30 @@ def prep_inputs(smconfig, silent=False):
             continue
         found_bcbio_or_dragen_runs.append(run)
 
+    # NOTE(SW): previously if multiple Batches were supplied, a CustomProject was initialised to
+    # combine them into a single project. However, the CustomProject class is not compatible with
+    # the MultiQC stage; the process of collecting QC files is input-type specific and implemented
+    # in corresponding Project/Batch classes (e.g. DragenProject, BcbioBatch) but the
+    # CustomProject/CustomBatch only implements a generalised QC files collection function.
+    #
+    # Consequently, CustomProject and DragenProject cause issues with the MultiQC report, and so
+    # multiple Batches have been disallowed so that well-formed MultiQC reports can be generated.
+    # This limitation will likely be lifted in the future.
+    #
+    # Currently umccrise accepts either one DRAGEN run, one bcbio batch, or one 'custom' run
     if len(custom_run.samples) == 0 and len(found_bcbio_or_dragen_runs) == 1:
-        # only one dragen or bcbio project - can return it directly
-        combined_run = found_bcbio_or_dragen_runs[0]
-
+        run = found_bcbio_or_dragen_runs[0]
+    elif len(custom_run.samples) == 1 and len(found_bcbio_or_dragen_runs) == 0:
+        run = custom_run
     else:
-        # multiple bcbio or dragen projects - combining them into a CustomProject
-        combined_run = custom_run or CustomProject()
-        for run in found_bcbio_or_dragen_runs:
-            combined_run.batch_by_name.update(run.batch_by_name)
-            combined_run.samples.extend(run.samples)
-            if combined_run.project_name is None:
-                combined_run.project_name = run.project_name
-            if combined_run.genome_build is None:
-                combined_run.genome_build = run.genome_build
-            else:
-                assert combined_run.genome_build == run.genome_build
+        runs_count = len([*custom_run.samples, *found_bcbio_or_dragen_runs])
+        msg = f'discovered {runs_count} batches but umccrise currently only accepts a single batch'
+        critical(msg)
 
-    if combined_run.genome_build is None:
-        combined_run.genome_build = 'hg38'
-    if combined_run.project_name is None:
-        combined_run.project_name = 'umccrise_' + datetime.now().strftime("%Y_%m_%d")
+    if run.genome_build is None:
+        run.genome_build = 'hg38'
+    if run.project_name is None:
+        run.project_name = 'umccrise_' + datetime.now().strftime("%Y_%m_%d")
 
     # Reference files
     if smconfig.get('genomes_dir'):
@@ -392,7 +396,7 @@ def prep_inputs(smconfig, silent=False):
     log.is_silent = False
 
     # Ensure at least one batch has been discovered
-    batches = [b for b in combined_run.batch_by_name.values()
+    batches = [b for b in run.batch_by_name.values()
                if not b.is_germline() and b.tumors
                and b.normals]
     if not batches:
@@ -411,7 +415,7 @@ def prep_inputs(smconfig, silent=False):
                    b.name + '__' + b.tumors[0].name
         batch_by_name[new_name] = b
 
-    return combined_run, batch_by_name
+    return run, batch_by_name
 
 
 def prep_stages(run, include_stages=None, exclude_stages=None):
