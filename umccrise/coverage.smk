@@ -137,7 +137,7 @@ rule run_samtools_stats:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
         bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam + '.bai',
     output:
-        stats = '{batch}/coverage/{batch}-{phenotype}.stats.txt'
+        stats = '{batch}/coverage/{batch}-{phenotype}.samtools_stats.txt'
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000
     shell:
