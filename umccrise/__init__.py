@@ -444,6 +444,10 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
     # if not all(b.sv_vcf for b in run.batch_by_name.values()):
     #     default_disabled |= {'structural'}
 
+    # For non-bcbio runs we want to run BCFtools and SAMtools stats on input BAMs by default
+    if not isinstance(run, BcbioProject):
+        default_enabled |= {'samtools_stats', 'bcftools_stats'}
+
     debug(f'include_stages: {include_stages}')
     debug(f'exclude_stages: {exclude_stages}')
     def _rename_input_stages(stages):
@@ -457,7 +461,7 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
                 fixed_stages |= {'structural', 'purple'}
             elif s in {'coverage'}:
                 fixed_stages |= {'mosdepth', 'goleft', 'cacao'}
-                if not (isinstance(run, BcbioProject) or isinstance(run, DragenProject)):
+                if not isinstance(run, BcbioProject):
                     fixed_stages |= {'samtools_stats'}
             elif s == 'small_variants':
                 fixed_stages |= {'somatic', 'germline'}
@@ -472,8 +476,8 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
             elif s == 'multiqc':
                 fixed_stages |= {'multiqc', 'purple', 'conpair', 'somatic', 'germline',
                                  'oncoviruses', 'mosdepth'}
-                if not (isinstance(run, BcbioProject) or isinstance(run, DragenProject)):
-                    fixed_stages |= {'samtools_stats'}
+                if not isinstance(run, BcbioProject):
+                    fixed_stages |= {'samtools_stats', 'bcftools_stats'}
             elif s == 'default':
                 fixed_stages |= default_enabled
             elif s not in default_enabled | default_disabled:
