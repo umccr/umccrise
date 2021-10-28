@@ -72,7 +72,9 @@ rule prep_multiqc_data:
         bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0] if 'somatic' in stages else [],
         germline_stats          = rules.germline_stats_report.output[0] \
             if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
-        bcftools_germline_stats = rules.bcftools_stats_germline.output[0] \
+        #bcftools_germline_filtered_stats = rules.bcftools_stats_germline.output.stats_filtered
+        #    if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
+        bcftools_germline_unfiltered_stats = rules.bcftools_stats_germline.output.stats_unfiltered
             if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
         oncoviruses_data        = rules.oncoviral_multiqc.output.data_yml   if 'oncoviruses' in stages else [],
         oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml if 'oncoviruses' in stages else [],
@@ -140,8 +142,16 @@ rule prep_multiqc_data:
         if 'germline' in stages:
             qc_files.extend([
                 input.germline_stats,
-                input.bcftools_germline_stats,
+                # NOTE(SW): when running with bcbio data, this file was never presented in the
+                # MultiQC report as it is superseded by the bcbio BCFtools germline stats file
+                # added below in find_bcbio_qc_files()
+                #input.bcftools_germline_filtered_stats,
             ])
+            # Add BCFtools germline stats for input/unfiltered VCF to replicate behaviour of
+            # bcbio/umccrise runs
+            if isinstance(run, DragenProject):
+                qc_files.append(input.bcftools_germline_unfiltered_stats)
+
         if 'oncoviruses' in stages:
             qc_files.extend([
                 input.oncoviruses_data,

@@ -9,6 +9,7 @@ from ngs_utils.file_utils import get_ungz_gz
 from ngs_utils.reference_data import get_predispose_genes_bed
 from ngs_utils.logger import critical
 from ngs_utils.vcf_utils import iter_vcf
+from ngs_utils.dragen import DragenProject
 from reference_data import api as refdata
 from umccrise import package_path, cnt_vars
 
@@ -170,21 +171,27 @@ rule germline_stats_report:
             }
             yaml.dump(data, out, default_flow_style=False)
 
-# Produces the same stats as bcbio file in QC, but have to rerun because of CWL version,
+# NOTE(VS): Produces the same stats as bcbio file in QC, but have to rerun because of CWL version,
 # which doesn't suffix the file with _germline, so MultiQC can't relate it to the germline
 # stats section.
+
+# NOTE(SW): the filtered_vcf statistics are not used anywhere as far as I can tell. The were
+# previously provided to the umccrise/multiqc.smk:prep_multiqc_data rule but was subsequently
+# superseded by the bcbio equivalent. Leaving here to clearly document changes.
 rule bcftools_stats_germline:
     input:
-        rules.germline_merge_with_leakage.output.vcf \
-        if 'somatic' in stages else \
-        rules.germline_predispose_subset.output.vcf,
+        filtered_vcf = rules.germline_merge_with_leakage.output.vcf if 'somatic' in stages else rules.germline_predispose_subset.output.vcf,
+        unfiltered_vcf = lambda wc: batch_by_name[wc.batch].germline_vcf if isinstance(run, DragenProject) else []
     output:
-        '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
+        stats_filtered = '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt',
+        stats_unfiltered = '{batch}/small_variants/stats/{batch}_unfiltered_bcftools_stats_germline.txt' if isinstance(run, DragenProject) else []
     group: "germline_snv"
     params:
         sname = lambda wc: batch_by_name[wc.batch].normals[0].rgid,
-    shell:
-        'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
+    run:
+        shell('bcftools stats -s {params.sname} {input.filtered_vcf} | sed s#{input.filtered_vcf}#{params.sname}# > {output.stats_filtered}')
+        if isinstance(run, DragenProject):
+            shell('bcftools stats -s {params.sname} {input.unfiltered_vcf} | sed s#{input.unfiltered_vcf}#{params.sname}# > {output.stats_unfiltered}')
 
 
 # copy final merged predisposed into <um>/<batch>/small_variants/
