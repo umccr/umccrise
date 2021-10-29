@@ -89,6 +89,7 @@ rule prep_multiqc_data:
     output:
         filelist                = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
+        renamed_file_dir        = directory('work/{batch}/multiqc_data/relabelled_qc_files/'),
     params:
         data_dir                = 'work/{batch}/multiqc_data',
         genome_build            = run.genome_build,
@@ -189,10 +190,12 @@ rule prep_multiqc_data:
             qc_files.extend(batch.all_qc_files()),
 
         multiqc_prep_data(
+            batch,
             generated_conf=generated_conf,
             out_filelist_file=output.filelist,
             out_conf_yaml=output.generated_conf_yaml,
-            qc_files=qc_files
+            qc_files=qc_files,
+            qc_files_renamed_dir=output.renamed_file_dir,
         )
 
 

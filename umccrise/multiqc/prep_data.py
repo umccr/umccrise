@@ -1,4 +1,6 @@
+import contextlib
 import os
+import pathlib
 import shutil
 import subprocess
 import tarfile
@@ -56,20 +58,105 @@ def make_report_metadata(proj: BaseProject, batch: BaseBatch=None, base_dirpath=
     return conf, additional_files
 
 
-def multiqc_prep_data(generated_conf, out_filelist_file, out_conf_yaml, qc_files):
+def multiqc_prep_data(batch, generated_conf, out_filelist_file, out_conf_yaml, qc_files, qc_files_renamed_dir):
     if generated_conf:
         with file_transaction(None, out_conf_yaml) as tx:
             with open(tx, 'w') as f:
                 yaml.dump(generated_conf, f, default_flow_style=False, width=float("inf"))
 
+    # Rename sample QC files for consistent display in MultiQC reports
+    qc_files_renamed = relabel_sample_qc_identifiers(
+        batch.tumors[0].name,
+        batch.normals[0].name,
+        qc_files,
+        qc_files_renamed_dir,
+    )
+
     with file_transaction(None, out_filelist_file) as tx:
         try:
             with open(tx, 'w') as out:
-                for fp in qc_files:
+                for fp in qc_files_renamed:
                     if fp:
-                        out.write(fp + '\n')
+                        print(fp, file=out)
         except OSError as e:
             err(str(e))
+
+
+def relabel_sample_qc_identifiers(tumour_name, normal_name, qc_files, output_dir_str):
+    qc_files_renamed = list()
+    output_dir = pathlib.Path(output_dir_str)
+    for fp_in in (pathlib.Path(fp) for fp in qc_files):
+        # Do not attempt to rename reference QC files
+        if 'umccrise/multiqc/gold_standard/' in str(fp_in):
+            qc_files_renamed.append(fp_in)
+            continue
+        # Rename QC files as necessary
+        if fp_in.name.endswith('mapping_metrics.csv'):
+            fp_out = rename_mapping_metrics(fp_in, output_dir, tumour_name, normal_name)
+        elif fp_in.name.endswith('.mosdepth.global.dist.txt'):
+            fp_out = rename_mosdepth_global(fp_in, output_dir, tumour_name, normal_name)
+        elif fp_in.name.endswith('.samtools_stats.txt'):
+            fp_out = rename_samtools_stats(fp_in, output_dir, tumour_name, normal_name)
+        else:
+            fp_out = fp_in
+        assert fp_out
+        qc_files_renamed.append(fp_out)
+    return qc_files_renamed
+
+
+def rename_mapping_metrics(fp_in, output_dir, tumour_name, normal_name):
+    lines = list()
+    fp_out = output_dir / fp_in.name
+    assert not fp_out.exists()
+    with contextlib.ExitStack() as stack:
+        fh_in = stack.enter_context(fp_in.open('r'))
+        fh_out = stack.enter_context(fp_out.open('w'))
+        for line in fh_in:
+            if 'MAPPING/ALIGNING PER RG' in line:
+                section, rg_name, *other = line.rstrip().split(',')
+                if line.startswith('TUMOR'):
+                    name_new = tumour_name
+                elif line.startswith('NORMAL'):
+                    name_new = normal_name
+                else:
+                    assert False
+                print(section, name_new, *other, sep=',', file=fh_out)
+            else:
+                print(line, end='', file=fh_out)
+    return fp_out
+
+
+def rename_mosdepth_global(fp_in, output_dir, tumour_name, normal_name):
+    if '-tumor' in fp_in.name:
+        fp_out = output_dir / f'{tumour_name}.mosdepth.global.dist.txt'
+    elif '-normal' in fp_in.name:
+        fp_out = output_dir / f'{normal_name}.mosdepth.global.dist.txt'
+    else:
+        assert False
+    assert not fp_out.exists()
+    shutil.copy(fp_in, fp_out)
+    return fp_out
+
+
+def rename_samtools_stats(fp_in, output_dir, tumour_name, normal_name):
+    if '-tumor' in fp_in.name:
+        fp_out = output_dir / f'{tumour_name}.samtools_stats.txt'
+    elif '-normal' in fp_in.name:
+        fp_out = output_dir / f'{normal_name}.samtools_stats.txt'
+    else:
+        assert False
+    assert not fp_out.exists()
+    shutil.copy(fp_in, fp_out)
+    return fp_out
+
+
+def rename_purple(fp_in, output_dir, tumour_name):
+    re_result = re.match('^.+(\.purple\..+)$', fp_in.name)
+    assert re_result
+    fp_out = output_dir / f'{tumour_name}{re_result.group(1)}'
+    assert not fp_out.exists()
+    shutil.copy(fp_in, fp_out)
+    return fp_out
 
 
 def make_multiqc_report(conf_yamls, filelist, multiqc_fpath, extra_params=''):
