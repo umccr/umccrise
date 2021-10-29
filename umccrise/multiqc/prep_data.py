@@ -107,7 +107,7 @@ def relabel_sample_qc_identifiers(tumour_name, normal_name, qc_files, output_dir
 def rename_mapping_metrics(fp_in, output_dir, tumour_name, normal_name):
     lines = list()
     fp_out = output_dir / fp_in.name
-    assert not fp_out.exists()
+    #assert not fp_out.exists()
     with contextlib.ExitStack() as stack:
         fh_in = stack.enter_context(fp_in.open('r'))
         fh_out = stack.enter_context(fp_out.open('w'))
@@ -133,7 +133,7 @@ def rename_mosdepth_global(fp_in, output_dir, tumour_name, normal_name):
         fp_out = output_dir / f'{normal_name}.mosdepth.global.dist.txt'
     else:
         assert False
-    assert not fp_out.exists()
+    #assert not fp_out.exists()
     shutil.copy(fp_in, fp_out)
     return fp_out
 
@@ -145,7 +145,7 @@ def rename_samtools_stats(fp_in, output_dir, tumour_name, normal_name):
         fp_out = output_dir / f'{normal_name}.samtools_stats.txt'
     else:
         assert False
-    assert not fp_out.exists()
+    #assert not fp_out.exists()
     shutil.copy(fp_in, fp_out)
     return fp_out
 
@@ -154,7 +154,7 @@ def rename_purple(fp_in, output_dir, tumour_name):
     re_result = re.match('^.+(\.purple\..+)$', fp_in.name)
     assert re_result
     fp_out = output_dir / f'{tumour_name}{re_result.group(1)}'
-    assert not fp_out.exists()
+    #assert not fp_out.exists()
     shutil.copy(fp_in, fp_out)
     return fp_out
 
