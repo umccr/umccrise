@@ -175,23 +175,25 @@ rule germline_stats_report:
 # which doesn't suffix the file with _germline, so MultiQC can't relate it to the germline
 # stats section.
 
-# NOTE(SW): the filtered_vcf statistics are not used anywhere as far as I can tell. The were
+# NOTE(SW): the stats_predispose statistics are not used anywhere as far as I can tell. The were
 # previously provided to the umccrise/multiqc.smk:prep_multiqc_data rule but was subsequently
 # superseded by the bcbio equivalent. Leaving here to clearly document changes.
 rule bcftools_stats_germline:
     input:
-        filtered_vcf = rules.germline_merge_with_leakage.output.vcf if 'somatic' in stages else rules.germline_predispose_subset.output.vcf,
-        unfiltered_vcf = lambda wc: batch_by_name[wc.batch].germline_vcf if isinstance(run, DragenProject) else []
+        pass_vcf = rules.germline_vcf_pass.output.vcf,
+        pass_predispose_vcf = rules.germline_merge_with_leakage.output.vcf \
+                              if 'somatic' in stages \
+                              else rules.germline_predispose_subset.output.vcf,
     output:
-        stats_filtered = '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt',
-        stats_unfiltered = '{batch}/small_variants/stats/{batch}_unfiltered_bcftools_stats_germline.txt' if isinstance(run, DragenProject) else []
+        stats_pass = '{batch}/small_variants/stats/{batch}_pass_bcftools_stats_germline.txt' if isinstance(run, DragenProject) else [],
+        stats_pass_predispose = '{batch}/small_variants/stats/{batch}_pass_predispose_bcftools_stats_germline.txt',
     group: "germline_snv"
     params:
         sname = lambda wc: batch_by_name[wc.batch].normals[0].rgid,
     run:
-        shell('bcftools stats -s {params.sname} {input.filtered_vcf} | sed s#{input.filtered_vcf}#{params.sname}# > {output.stats_filtered}')
+        shell('bcftools stats -s {params.sname} {input.pass_predispose_vcf} | sed s#{input.pass_predispose_vcf}#{params.sname}# > {output.stats_pass_predispose}')
         if isinstance(run, DragenProject):
-            shell('bcftools stats -s {params.sname} {input.unfiltered_vcf} | sed s#{input.unfiltered_vcf}#{params.sname}# > {output.stats_unfiltered}')
+            shell('bcftools stats -s {params.sname} {input.pass_vcf} | sed s#{input.pass_vcf}#{params.sname}# > {output.stats_pass}')
 
 
 # copy final merged predisposed into <um>/<batch>/small_variants/
