@@ -183,13 +183,13 @@ mutpat_gr <- MutationalPatterns::read_vcfs_as_granges(
   type = "all")
 
 mp_snv <- gpgr::sig_count_snv(vcf_gr = mutpat_gr, ref_genome = ref_genome)
-#mp_dbs <- gpgr::sig_count_dbs(vcf_gr = mutpat_gr)
+mp_dbs <- gpgr::sig_count_dbs(vcf_gr = mutpat_gr)
 mp_indel <- gpgr::sig_count_indel(vcf_gr = mutpat_gr, ref_genome = ref_genome)
 
 mp_snv_plots <- gpgr::sig_plot_snv(gr_snv = mp_snv$gr_snv,
                                    snv_counts = mp_snv$snv_counts,
                                    ref_genome = ref_genome)
-#mp_dbs_plots <- gpgr::sig_plot_dbs(dbs_counts = mp_dbs)
+mp_dbs_plots <- gpgr::sig_plot_dbs(dbs_counts = mp_dbs)
 mp_indel_plots <- gpgr::sig_plot_indel(indel_counts = mp_indel)
 
 sigs_snv_2015 <-
@@ -198,16 +198,16 @@ sigs_snv_2015 <-
 sigs_snv_2020 <-
   MutationalPatterns::get_known_signatures(muttype = "snv", incl_poss_artifacts = FALSE) %>%
   gpgr::sig_contribution(mut_mat = mp_snv$snv_counts, signatures = .)
-#sigs_dbs <-
-#  MutationalPatterns::get_known_signatures(muttype = "dbs") %>%
-#  gpgr::sig_contribution(mut_mat = mp_dbs, signatures = .)
+sigs_dbs <-
+  MutationalPatterns::get_known_signatures(muttype = "dbs") %>%
+  gpgr::sig_contribution(mut_mat = mp_dbs, signatures = .)
 sigs_indel <-
   MutationalPatterns::get_known_signatures(muttype = "indel") %>%
   gpgr::sig_contribution(mut_mat = mp_indel, signatures = .)
 
 gpgr::write_tsvjsongz(sigs_snv_2015, glue("sigs/{bnm}-snv_2015"), result_outdir)
 gpgr::write_tsvjsongz(sigs_snv_2020, glue("sigs/{bnm}-snv_2020"), result_outdir)
-#gpgr::write_tsvjsongz(sigs_dbs, glue("sigs/{bnm}-dbs"), result_outdir)
+gpgr::write_tsvjsongz(sigs_dbs, glue("sigs/{bnm}-dbs"), result_outdir)
 gpgr::write_tsvjsongz(sigs_indel, glue("sigs/{bnm}-indel"), result_outdir)
 ```
 
@@ -619,8 +619,6 @@ blank_lines(1)
 ```
 
 #### DBS
-
-**DISABLED UNTIL https://github.com/umccr/umccrise/issues/59 IS RESOLVED**
 
 ```{r mp_dbs_plots_contr, out.width="90%", fig.width=14, eval=FALSE}
 mp_dbs_plots$p_dbs_main | mp_dbs_plots$p_dbs_cont
