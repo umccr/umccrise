@@ -284,7 +284,7 @@ rule somatic_vcf2maf:
         '--filter-vcf 0 '
         '--tumor-id {params.tname} '
         '--normal-id {params.nname} '
-        '--ncbi-build {params.ncbi_build} '
+        '--ncbi-build {params.ncbi_build} 2> >(grep -v "Use of uninitialized value" >&2)'
         '&& rm {params.uncompressed_tmp_vcf}'
 
 
