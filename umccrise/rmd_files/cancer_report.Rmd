@@ -13,7 +13,7 @@ params:
   title: "UMCCR Cancer Report"
   tumor_name: 'x'
   batch_name: 'x'
-  genome_build: 'hg38' # 'hg19'
+  genome_build: 'hg38'
   key_genes: 'x'
   af_global: 'x'
   af_keygenes: 'x'
@@ -36,60 +36,40 @@ title: "`r paste(params$batch_name, params$title)`"
 
 ```{r knitr_opts, include=F}
 knitr::opts_chunk$set(collapse = TRUE, echo = FALSE,
-                      warning = FALSE, message = FALSE)
+                      warning = FALSE, message = FALSE,
+                      error = TRUE) # continue running report even after chunk errors
 ```
 
 ```{r render_report_interactively, echo=F, eval=FALSE}
-batch_name <- "SEQCII_50pc__T_SRR7890936_50pc"
-# tumor_name <- strsplit(batch_name, "__")[[1]][2]
-tumor_name <- "T_SRR7890936_50pc"
-dd <- "/Users/pdiakumis/Desktop/projects/umccr/umccrise_dev/umccrise/umccrise/rmd_files"
+genome_build <- "hg38"
+batch_name <- "SBJ01025__SBJ01025_MDX210323_L2101149"
+tumor_name <- "SBJ01025_MDX210323_L2101149"
+# umccrised_dir <- "/g/data/gx8/projects/diakumis/umccrise/umccrise_dev/umccrised_SBJ01025"
+# key_genes <- "/g/data/gx8/projects/diakumis/conda-dev/envs/umccrise/lib/python3.7/site-packages/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv"
+umccrised_dir <- "./nogit/umccrised_data"
+key_genes <- "./nogit/umccrised_data/umccr_cancer_genes.latest.tsv"
 
-params_tmp <- list(
-  gadi = list(
-    tumor_name='T_SRR7890936_50pc',
-    batch_name='SEQCII_50pc__T_SRR7890936_50pc',
-    genome_build='hg38',
-    key_genes='/g/data/gx8/projects/diakumis/conda/envs/umccrise/lib/python3.7/site-packages/ngs_utils/reference_data/key_genes/umccr_cancer_genes.latest.tsv',
-    af_global='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/rmd/afs/af_tumor.txt',
-    af_keygenes='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/rmd/afs/af_tumor_keygenes.txt',
-    somatic_snv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/small_variants/SEQCII_50pc__T_SRR7890936_50pc-somatic-PASS.vcf.gz',
-    somatic_sv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/structural/SEQCII_50pc__T_SRR7890936_50pc-manta.tsv',
-    somatic_sv_vcf='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/structural/SEQCII_50pc__T_SRR7890936_50pc-manta.vcf.gz',
-    purple_som_gene_cnv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.cnv.gene.tsv',
-    purple_som_cnv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.cnv.somatic.tsv',
-    purple_germ_cnv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.cnv.germline.tsv',
-    purple_purity='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.purity.tsv',
-    purple_qc='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.qc',
-    purple_som_snv_vcf='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/purple/SEQCII_50pc__T_SRR7890936_50pc.purple.somatic.vcf.gz',
-    oncoviral_present_viruses='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/oncoviruses/present_viruses.txt',
-    oncoviral_breakpoints_tsv='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/SEQCII_50pc__T_SRR7890936_50pc/oncoviruses/oncoviral_breakpoints.tsv',
-    conda_list='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/work/conda_pkg_list.txt',
-    result_outdir='/g/data/gx8/projects/diakumis/umccrise/test_umccrise/umccrised/SEQCII_50pc__T_SRR7890936_50pc/cancer_report_results'),
-  local = list(
-    genome_build='hg38',
-    key_genes=glue::glue('{dd}/data/ref/umccr_cancer_genes.latest.tsv'),
-    af_global=glue::glue('{dd}/data/umccrised/work/{batch_name}/cancer_report/afs/af_tumor.txt'),
-    af_keygenes=glue::glue('{dd}/data/umccrised/work/{batch_name}/cancer_report/afs/af_tumor_keygenes.txt'),
-    somatic_snv=glue::glue('{dd}/data/umccrised/{batch_name}/small_variants/{batch_name}-somatic-PASS.vcf.gz'),
-    somatic_sv=glue::glue('{dd}/data/umccrised/{batch_name}/structural/{batch_name}-manta.tsv'),
-    somatic_sv_vcf=glue::glue('{dd}/data/umccrised/{batch_name}/structural/{batch_name}-manta.vcf.gz'),
-    purple_som_gene_cnv=glue::glue('{dd}/data/umccrised/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv'),
-    purple_som_cnv=glue::glue('{dd}/data/umccrised/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv'),
-    purple_germ_cnv=glue::glue('{dd}/data/umccrised/work/{batch_name}/purple/{batch_name}.purple.cnv.germline.tsv'),
-    purple_purity=glue::glue('{dd}/data/umccrised/work/{batch_name}/purple/{batch_name}.purple.purity.tsv'),
-    purple_qc=glue::glue('{dd}/data/umccrised/work/{batch_name}/purple/{batch_name}.purple.qc'),
-    purple_som_snv_vcf=glue::glue('{dd}/data/umccrised/work/{batch_name}/purple/{batch_name}.purple.somatic.vcf.gz'),
-    oncoviral_present_viruses=glue::glue('{dd}/data/umccrised/work/{batch_name}/oncoviruses/present_viruses.txt'),
-    oncoviral_breakpoints_tsv=glue::glue('{dd}/data/umccrised/work/{batch_name}/oncoviruses/oncoviral_breakpoints.tsv'),
-    conda_list=glue::glue('{dd}/data/umccrised/work/conda_pkg_list.txt'),
-    result_outdir=glue::glue('{dd}/data/umccrised/{batch_name}/cancer_report_results')
-  )
+params <- list(
+    tumor_name=                tumor_name,
+    batch_name=                batch_name,
+    genome_build=              genome_build,
+    key_genes=                 key_genes,
+    af_global=                 glue::glue("{umccrised_dir}/work/{batch_name}/cancer_report/afs/af_tumor.txt"),
+    af_keygenes=               glue::glue("{umccrised_dir}/work/{batch_name}/cancer_report/afs/af_tumor_keygenes.txt"),
+    somatic_snv=               glue::glue("{umccrised_dir}/{batch_name}/small_variants/{batch_name}-somatic-PASS.vcf.gz"),
+    somatic_sv=                glue::glue("{umccrised_dir}/{batch_name}/structural/{batch_name}-manta.tsv"),
+    somatic_sv_vcf=            glue::glue("{umccrised_dir}/{batch_name}/structural/{batch_name}-manta.vcf.gz"),
+    purple_som_gene_cnv=       glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv"),
+    purple_som_cnv=            glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv"),
+    purple_germ_cnv=           glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.germline.tsv"),
+    purple_purity=             glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.purity.tsv"),
+    purple_qc=                 glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.qc"),
+    purple_som_snv_vcf=        glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.somatic.vcf.gz"),
+    oncoviral_present_viruses= glue::glue("{umccrised_dir}/work/{batch_name}/oncoviruses/present_viruses.txt"),
+    oncoviral_breakpoints_tsv= glue::glue("{umccrised_dir}/work/{batch_name}/oncoviruses/oncoviral_breakpoints.tsv"),
+    conda_list=                glue::glue("{umccrised_dir}/work/{batch_name}/conda_pkg_list.txt"),
+    result_outdir=             glue::glue("{umccrised_dir}/{batch_name}/cancer_report_tables2")
 )
-
-params <- params_tmp[["local"]]
-params$batch_name <- batch_name
-params$tumor_name <- tumor_name
 
 render_me <- function() {
   rmarkdown::render(
