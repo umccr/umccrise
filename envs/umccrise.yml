@@ -19,6 +19,7 @@ dependencies:
   - vcflib ==1.0.1  # for VCF normalisation
   - bedops ==2.4.39
   - mosdepth ==0.2.9
+  - kiwisolver ==1.2.0  # specific version required by multiqc
   - pythonpy
   - click
   - cyvcf2 ==0.30.1
