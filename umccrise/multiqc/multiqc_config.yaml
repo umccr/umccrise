@@ -99,31 +99,31 @@ bcl2fastq:
 
 umccr:
     reference_samples:
-    - Alice
-    - Bob
-    - Chen
-    - Dakota
-    - Elon
     - Alice_T
-    - Bob_T
-    - Chen_T
-    - Dakota_T
-    - Elon_T
     - Alice_B
-    - Bob_B
-    - Chen_B
-    - Dakota_B
-    - Elon_B
-    - Alice_normal
-    - Bob_normal
-    - Chen_normal
-    - Dakota_normal
-    - Elon_normal
     - Alice_N
+    - Alice
+    - Alice_normal
+    - Bob_T
     - Bob_N
+    - Bob_B
+    - Bob
+    - Bob_normal
+    - Chen_T
     - Chen_N
+    - Chen_B
+    - Chen
+    - Chen_normal
+    - Dakota_T
     - Dakota_N
+    - Dakota_B
+    - Dakota
+    - Dakota_normal
+    - Elon_T
     - Elon_N
+    - Elon_B
+    - Elon
+    - Elon_normal
 
 highlight_regex: true
 
