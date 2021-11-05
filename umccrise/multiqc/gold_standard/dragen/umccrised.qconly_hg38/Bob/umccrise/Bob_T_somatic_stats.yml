@@ -1,0 +1,10 @@
+data:
+  Bob_T:
+    filt_indels: 80.96118299445472
+    filt_others: null
+    filt_snps: 54.686431014823256
+    filt_vars: 57.572066585464874
+    indels: 103
+    others: null
+    snps: 1987
+id: umccrise

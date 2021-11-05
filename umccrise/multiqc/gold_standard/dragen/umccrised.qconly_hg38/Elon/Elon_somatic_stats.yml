@@ -1,8 +1,0 @@
-data:
-  Elon:
-    filt_indels: 99.76525821596243
-    filt_others: null
-    filt_snps: 99.93838570548367
-    indels: 1
-    others: null
-    snps: 1

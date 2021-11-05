@@ -1,0 +1,10 @@
+data:
+  Chen_T:
+    filt_indels: 84.5360824742268
+    filt_others: null
+    filt_snps: 72.86340394448503
+    filt_vars: 74.31222008957134
+    indels: 60
+    others: null
+    snps: 743
+id: umccrise

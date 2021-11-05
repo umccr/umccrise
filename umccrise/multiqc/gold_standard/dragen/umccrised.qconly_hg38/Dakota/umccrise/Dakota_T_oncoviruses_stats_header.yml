@@ -1,0 +1,13 @@
+custom_data:
+  oncoviruses:
+    pconfig:
+    - viral_content:
+        description: 'Detected viral sequences associated with cancer, per GDC database.
+          Format: x depth; 1x completeness (% of sequence covered at >1x), 5x length
+          (base pairs covered at >5x). Showing significant hits with 1x completeness
+          at least 0%, or 5x length at least 0bp.'
+        title: Viruses
+    plot_type: generalstats
+sp:
+  oncoviruses:
+    fn_re: .*_oncoviruses_stats_data.yml
