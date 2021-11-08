@@ -685,7 +685,11 @@ if (nrow(kat$data) > 0) {
 ```
 
 ```{r purple_plot_somaticrainfall, out.width="70%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.somatic.rainfall.png')))
+purple_plot_somaticrainfall <- file.path(img_dir, paste0(bnm, '.somatic.rainfall.png'))
+if (file.exists(purple_plot_somaticrainfall)) {
+  knitr::include_graphics(purple_plot_somaticrainfall)
+} else {
+  cat("No PURPLE rainfall plot was output (probably because there are > 100,000 SNVs)")
 ```
 
 ```{r, results='asis'}

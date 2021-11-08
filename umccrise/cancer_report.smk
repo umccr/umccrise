@@ -104,7 +104,7 @@ rule run_cancer_report:
         purple_segment_png   = 'work/{batch}/purple/plot/{batch}.segment.png',
         purple_clonality_png = 'work/{batch}/purple/plot/{batch}.somatic.clonality.png',
         purple_ploidy_png    = 'work/{batch}/purple/plot/{batch}.somatic.png',
-        purple_rainfall_png  = 'work/{batch}/purple/plot/{batch}.somatic.rainfall.png',
+        #purple_rainfall_png  = 'work/{batch}/purple/plot/{batch}.somatic.rainfall.png',
         purple_baf_png       = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png',
 
         wait_for_integration_sites = get_integration_sites_tsv_fn
@@ -155,19 +155,20 @@ rule run_cancer_report:
 
         shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
         shell('mkdir -p {output.rmd_tmp_dir}/img')
-        for img_path in [
-            input.purple_circos_png,
-            input.purple_input_png,
-            input.purple_cn_png,
-            input.purple_ma_png,
-            input.purple_purity_png,
-            input.purple_segment_png,
-            input.purple_clonality_png,
-            input.purple_ploidy_png,
-            input.purple_rainfall_png,
-            input.purple_baf_png,
-        ]:
-            shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
+#        for img_path in [
+#            input.purple_circos_png,
+#            input.purple_input_png,
+#            input.purple_cn_png,
+#            input.purple_ma_png,
+#            input.purple_purity_png,
+#            input.purple_segment_png,
+#            input.purple_clonality_png,
+#            input.purple_ploidy_png,
+#            input.purple_rainfall_png,
+#            input.purple_baf_png,
+#        ]:
+#            shell('cp ' + img_path + ' {output.rmd_tmp_dir}/img/')
+        shell('cp -r $(dirname {input.purple_circos_png}) {output.rmd_tmp_dir}/img/')
         shell(conda_cmd.format('cancer_report') + """
 cd {output.rmd_tmp_dir} && \
 Rscript -e "rmarkdown::render('{params.report_rmd}', \
@@ -198,8 +199,8 @@ rm {output.rmd_tmp_dir}/style.css
 rm {output.rmd_tmp_dir}/_navbar.html
 """)
 
-        shutil.rmtree(f"{output.rmd_tmp_dir}/img")
-        shutil.rmtree(f"{output.rmd_tmp_dir}/misc")
+        #shutil.rmtree(f"{output.rmd_tmp_dir}/img")
+        #shutil.rmtree(f"{output.rmd_tmp_dir}/misc")
 
 
 #############

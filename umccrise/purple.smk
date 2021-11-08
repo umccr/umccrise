@@ -151,7 +151,6 @@ rule purple_run:
         segment_png   = 'work/{batch}/purple/plot/{batch}.segment.png',
         clonality_png = 'work/{batch}/purple/plot/{batch}.somatic.clonality.png',
         ploidy_png    = 'work/{batch}/purple/plot/{batch}.somatic.png',
-        rainfall_png  = 'work/{batch}/purple/plot/{batch}.somatic.rainfall.png',
 
         baf           = 'work/{batch}/purple/circos/{batch}.baf.circos',
         cnv_circos    = 'work/{batch}/purple/circos/{batch}.cnv.circos',
