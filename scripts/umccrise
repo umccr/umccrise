@@ -203,14 +203,16 @@ def main(
                 input_paths = list(input_paths)
         elif name == 'DRAGEN':
             for arg in mutex_args[name]:
-                conf[arg] = ctx.params[arg]
+                conf[arg] = ctx.params[arg].resolve()
             conf['dragen_subject_id'] = dragen_subject_id
             conf['dragen_tumour_id'] = dragen_tumour_id
             conf['dragen_normal_id'] = dragen_normal_id
         elif name == 'bcbio':
-            conf['bcbio_dirs'] = [ctx.params[mutex_args[name]]]
+            bcbio_dir = ctx.params[mutex_args[name]].resolve()
+            conf['bcbio_dirs'] = [bcbio_dir]
         elif name == 'Input TSV':
-            conf['custom_tsv_fps'] = [ctx.params[mutex_args[name]]]
+            custom_tsv_fp = ctx.params[mutex_args[name]].resolve()
+            conf['custom_tsv_fps'] = [custom_tsv_fp]
         else:
             assert False
 
