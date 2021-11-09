@@ -620,7 +620,7 @@ blank_lines(1)
 
 #### DBS
 
-```{r mp_dbs_plots_contr, out.width="90%", fig.width=14, eval=FALSE}
+```{r mp_dbs_plots_contr, out.width="90%", fig.width=14}
 mp_dbs_plots$p_dbs_main | mp_dbs_plots$p_dbs_cont
 sigs_dbs %>%
   gpgr::sig_contribution_table(type = "DBS", outdir = img_dir) %>%
@@ -690,6 +690,7 @@ if (file.exists(purple_plot_somaticrainfall)) {
   knitr::include_graphics(purple_plot_somaticrainfall)
 } else {
   cat("No PURPLE rainfall plot was output (probably because there are > 100,000 SNVs)")
+}
 ```
 
 ```{r, results='asis'}
