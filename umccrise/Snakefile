@@ -37,7 +37,7 @@ rule all:
 
 rule index_bam:
     input:
-        bam = '{path}.bam'
+        bam = ancient('{path}.bam')
     output:
         bam = '{path}.bam.bai'
     threads: threads_per_sample
