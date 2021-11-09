@@ -188,8 +188,8 @@ rm {output.rmd_tmp_dir}/style.css
 rm {output.rmd_tmp_dir}/_navbar.html
 """)
 
-        #shutil.rmtree(f"{output.rmd_tmp_dir}/img")
-        #shutil.rmtree(f"{output.rmd_tmp_dir}/misc")
+        shutil.rmtree(f"{output.rmd_tmp_dir}/img")
+        shutil.rmtree(f"{output.rmd_tmp_dir}/misc")
 
 
 #############
