@@ -390,6 +390,13 @@ def prep_inputs(smconfig, silent=False):
                 'a single batch'
             )
 
+    # NOTE(SW): we are not currently supporting backwards compatibility for bcbio data and hence
+    # reject bcbio input. Known required changes to achieve bcbio backwards compatibility are:
+    #   - updating MultiQC mosdepth module to display sample names consistently with other modules
+    #   - regenerating QC reference bcbio data to propogate changes
+    if bcbio_directories:
+        critical('the current version of umccrise does not support bcbio input')
+
     if run.genome_build is None:
         run.genome_build = 'hg38'
     if run.project_name is None:
