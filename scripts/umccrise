@@ -7,6 +7,9 @@ import pathlib
 import subprocess
 import tempfile
 
+
+from reference_data import api as refdata
+
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
 from ngs_utils import logger
@@ -14,17 +17,14 @@ from ngs_utils.logger import warn, info, critical
 from ngs_utils.snakemake_utils import run_snakemake, make_cluster_cmdl, prep_resources
 from ngs_utils.utils import set_locale; set_locale()
 from ngs_utils import snakemake_utils
-from umccrise import package_path
-from umccrise import _version as version
-from umccrise import prep_inputs
-from reference_data import api as refdata
 
 import umccrise
+import umccrise._version
 
 
 @click.command()
 @click.pass_context
-@click.version_option(version.__version__)
+@click.version_option(umccrise._version.__version__)
 
 # Primary input data
 @click.argument('input_paths', type=click.Path(exists=True), nargs=-1)
@@ -132,7 +132,7 @@ def main(
     output_dir = safe_mkdir(abspath(output_dir))
     log_dir = safe_mkdir(join(output_dir, 'log'))
     logger.init(log_fpath_=join(log_dir, 'command.txt'), save_previous=True)
-    logger.info(f'umccrise {version.__version__}')
+    logger.info(f'umccrise {umccrise._version.__version__}')
 
     if isfile(join(output_dir, 'all.done')):
         run_simple('rm ' + join(output_dir, 'all.done'))
@@ -266,7 +266,7 @@ def main(
     if min_af is not None:
         conf['min_af'] = min_af
 
-    run, batch_by_name = prep_inputs(conf, silent=True)
+    run, batch_by_name = umccrise.prep_inputs(conf, silent=True)
 
     cpu_resources = prep_resources(
         num_batches=len(batch_by_name),
@@ -282,7 +282,7 @@ def main(
         cluster_log_dir = join(log_dir, 'cluster')
         cluster_param = make_cluster_cmdl(cluster_log_dir, refdata, 'umccrise', cluster_submit_cmd)
 
-    snakefile = join(package_path(), 'Snakefile')
+    snakefile = join(umccrise.package_path(), 'Snakefile')
     run_snakemake(
         snakefile, conf,
         output_dir=output_dir,
