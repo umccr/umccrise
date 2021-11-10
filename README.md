@@ -64,6 +64,7 @@ Contents:
 - [AWS](#aws)
 - [HPC (NCI Gadi)](#hpc-nci-gadi)
 - [Advanced usage](#advanced-usage)
+    + [Inputs with named arguments](#inputs-with-named-arguments)
     + [Controlling the number of CPUs](#controlling-the-number-of-cpus)
     + [Running selected stages](#running-selected-stages)
     + [Custom input](#custom-input)
