@@ -1396,7 +1396,7 @@ knitr::include_graphics(c(file.path(img_dir, paste0(bnm, '.copynumber.png')),
                         file.path(img_dir, paste0(bnm, '.map.png'))))
 ```
 
-#### Rainfall
+#### Ploidy by CN
 If a somatic variant VCF has been supplied, a figure will be produced
 showing the somatic variant ploidy broken down by copy number.
 
