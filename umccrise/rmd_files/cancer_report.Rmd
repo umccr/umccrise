@@ -620,7 +620,7 @@ blank_lines(1)
 
 #### DBS
 
-```{r mp_dbs_plots_contr, out.width="90%", fig.width=14, eval=FALSE}
+```{r mp_dbs_plots_contr, out.width="90%", fig.width=14}
 mp_dbs_plots$p_dbs_main | mp_dbs_plots$p_dbs_cont
 sigs_dbs %>%
   gpgr::sig_contribution_table(type = "DBS", outdir = img_dir) %>%
@@ -685,7 +685,12 @@ if (nrow(kat$data) > 0) {
 ```
 
 ```{r purple_plot_somaticrainfall, out.width="70%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.somatic.rainfall.png')))
+purple_plot_somaticrainfall <- file.path(img_dir, paste0(bnm, '.somatic.rainfall.png'))
+if (file.exists(purple_plot_somaticrainfall)) {
+  knitr::include_graphics(purple_plot_somaticrainfall)
+} else {
+  cat("No PURPLE rainfall plot was output (probably because there are > 100,000 SNVs)")
+}
 ```
 
 ```{r, results='asis'}
@@ -1391,7 +1396,7 @@ knitr::include_graphics(c(file.path(img_dir, paste0(bnm, '.copynumber.png')),
                         file.path(img_dir, paste0(bnm, '.map.png'))))
 ```
 
-#### Rainfall
+#### Ploidy by CN
 If a somatic variant VCF has been supplied, a figure will be produced
 showing the somatic variant ploidy broken down by copy number.
 
