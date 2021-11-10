@@ -19,6 +19,8 @@ from umccrise import _version as version
 from umccrise import prep_inputs
 from reference_data import api as refdata
 
+import umccrise
+
 
 @click.command()
 @click.pass_context
@@ -196,19 +198,24 @@ def main(
     #### Setting paths ####
     #######################
 
-    # Add arguments to config; done separately here for clarity
+    # Check that input directories are of valid input type and add arguments to config
     for name in input_types:
         if name == 'Input paths':
             if not isinstance(input_paths, list):
                 input_paths = list(input_paths)
         elif name == 'DRAGEN':
             for arg in mutex_args[name]:
-                conf[arg] = ctx.params[arg].resolve()
+                dragen_dir = ctx.params[arg].resolve()
+                if not umccrise.is_dragen_directory(dragen_dir):
+                    critical(f'input directory {dragen_dir} does not contain compatible DRAGEN data')
+                conf[arg] = dragen_dir
             conf['dragen_subject_id'] = dragen_subject_id
             conf['dragen_tumour_id'] = dragen_tumour_id
             conf['dragen_normal_id'] = dragen_normal_id
         elif name == 'bcbio':
             bcbio_dir = ctx.params[mutex_args[name]].resolve()
+            if not umccrise.is_bcbio_directory(bcbio_dir):
+                critical(f'input directory {bcbio_dir} does not contain compatible bcbio data')
             conf['bcbio_dirs'] = [bcbio_dir]
         elif name == 'Input TSV':
             custom_tsv_fp = ctx.params[mutex_args[name]].resolve()
