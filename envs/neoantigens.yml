@@ -10,7 +10,7 @@ channels:
 dependencies:
   - python ==3.7.3
   - versionpy ==0.4.11
-  - ngs_utils ==2.8.9
+  - ngs_utils ==2.8.10
   - vcf_stuff ==0.5.12
   - reference_data ==1.0.10
   - natsort ==7.1.0
