@@ -15,7 +15,7 @@ class config_loaded:
         log.debug('Running config_loaded hook. Loading specific settings and metadata')
 
         with open(join(dirname(__file__), 'multiqc_config.yaml')) as f:
-            cfg = yaml.load(f)
+            cfg = yaml.safe_load(f)
         config.update_dict(config.__dict__, cfg)
 
 

@@ -227,7 +227,7 @@ rule somatic_stats_report:
         subset_genes = None
 
         with open(input.subset_highly_mutated_stats) as inp:
-            stats = yaml.load(inp)
+            stats = yaml.safe_load(inp)
             total_vars = stats['total_vars']
             vars_no_gnomad = stats.get('vars_no_gnomad')
             vars_cancer_genes = stats.get('vars_cancer_genes')

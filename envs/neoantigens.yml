@@ -10,13 +10,13 @@ channels:
 dependencies:
   - python ==3.7.3
   - versionpy ==0.4.11
-  - ngs_utils ==2.8.9
+  - ngs_utils ==2.8.10
   - vcf_stuff ==0.5.12
   - reference_data ==1.0.10
   - natsort ==7.1.0
   - snakemake-minimal
   - click
-  - pyyaml ==5.3.1
+  - pyyaml ==5.4.1
   - pysam ==0.16.0.1
   - numpy ==1.18.5
   - bcftools ==1.10.2

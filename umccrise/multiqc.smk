@@ -147,7 +147,7 @@ rule prep_multiqc_data:
                 input.oncoviruses_data,
             ])
             with open(input.oncoviruses_header) as f:
-                generated_conf.update(yaml.load(f))
+                generated_conf.update(yaml.safe_load(f))
         if 'conpair' in stages:
             qc_files.extend([
                 join(input.conpair_concord, batch.tumors[0].name + '.concordance.txt'),
@@ -225,7 +225,7 @@ if len(batch_by_name) > 1:
             )
             for sample_conf_yaml in input.generated_conf_yamls:
                 with open(sample_conf_yaml) as f:
-                    sample_conf = yaml.load(f)
+                    sample_conf = yaml.safe_load(f)
                     del sample_conf['umccr']
                     generated_conf = update_dict(generated_conf, sample_conf)
 
