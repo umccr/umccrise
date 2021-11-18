@@ -82,7 +82,7 @@ def multiqc_prep_data(batch, generated_conf, out_filelist_file, out_conf_yaml, q
             err(str(e))
 
 
-def relabel_sample_qc_identifiers(tumour_name, normal_name, qc_files, output_dir_str):
+def relabel_sample_qc_identifiers(tumor_name, normal_name, qc_files, output_dir_str):
     qc_files_renamed = list()
     output_dir = pathlib.Path(output_dir_str)
     for fp_in in (pathlib.Path(fp) for fp in qc_files):
@@ -92,11 +92,11 @@ def relabel_sample_qc_identifiers(tumour_name, normal_name, qc_files, output_dir
             continue
         # Rename QC files as necessary
         if fp_in.name.endswith('mapping_metrics.csv'):
-            fp_out = rename_mapping_metrics(fp_in, output_dir, tumour_name, normal_name)
+            fp_out = rename_mapping_metrics(fp_in, output_dir, tumor_name, normal_name)
         elif fp_in.name.endswith('.mosdepth.global.dist.txt'):
-            fp_out = rename_mosdepth_global(fp_in, output_dir, tumour_name, normal_name)
+            fp_out = rename_mosdepth_global(fp_in, output_dir, tumor_name, normal_name)
         elif fp_in.name.endswith('.samtools_stats.txt'):
-            fp_out = rename_samtools_stats(fp_in, output_dir, tumour_name, normal_name)
+            fp_out = rename_samtools_stats(fp_in, output_dir, tumor_name, normal_name)
         else:
             fp_out = fp_in
         assert fp_out
@@ -104,7 +104,7 @@ def relabel_sample_qc_identifiers(tumour_name, normal_name, qc_files, output_dir
     return qc_files_renamed
 
 
-def rename_mapping_metrics(fp_in, output_dir, tumour_name, normal_name):
+def rename_mapping_metrics(fp_in, output_dir, tumor_name, normal_name):
     lines = list()
     fp_out = output_dir / fp_in.name
     #assert not fp_out.exists()
@@ -115,7 +115,7 @@ def rename_mapping_metrics(fp_in, output_dir, tumour_name, normal_name):
             if 'MAPPING/ALIGNING PER RG' in line:
                 section, rg_name, *other = line.rstrip().split(',')
                 if line.startswith('TUMOR'):
-                    name_new = tumour_name
+                    name_new = tumor_name
                 elif line.startswith('NORMAL'):
                     name_new = normal_name
                 else:
@@ -126,9 +126,9 @@ def rename_mapping_metrics(fp_in, output_dir, tumour_name, normal_name):
     return fp_out
 
 
-def rename_mosdepth_global(fp_in, output_dir, tumour_name, normal_name):
+def rename_mosdepth_global(fp_in, output_dir, tumor_name, normal_name):
     if '-tumor' in fp_in.name:
-        fp_out = output_dir / f'{tumour_name}.mosdepth.global.dist.txt'
+        fp_out = output_dir / f'{tumor_name}.mosdepth.global.dist.txt'
     elif '-normal' in fp_in.name:
         fp_out = output_dir / f'{normal_name}.mosdepth.global.dist.txt'
     else:
@@ -138,9 +138,9 @@ def rename_mosdepth_global(fp_in, output_dir, tumour_name, normal_name):
     return fp_out
 
 
-def rename_samtools_stats(fp_in, output_dir, tumour_name, normal_name):
+def rename_samtools_stats(fp_in, output_dir, tumor_name, normal_name):
     if '-tumor' in fp_in.name:
-        fp_out = output_dir / f'{tumour_name}.samtools_stats.txt'
+        fp_out = output_dir / f'{tumor_name}.samtools_stats.txt'
     elif '-normal' in fp_in.name:
         fp_out = output_dir / f'{normal_name}.samtools_stats.txt'
     else:
@@ -150,10 +150,10 @@ def rename_samtools_stats(fp_in, output_dir, tumour_name, normal_name):
     return fp_out
 
 
-def rename_purple(fp_in, output_dir, tumour_name):
+def rename_purple(fp_in, output_dir, tumor_name):
     re_result = re.match('^.+(\.purple\..+)$', fp_in.name)
     assert re_result
-    fp_out = output_dir / f'{tumour_name}{re_result.group(1)}'
+    fp_out = output_dir / f'{tumor_name}{re_result.group(1)}'
     #assert not fp_out.exists()
     shutil.copy(fp_in, fp_out)
     return fp_out

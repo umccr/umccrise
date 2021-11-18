@@ -36,7 +36,7 @@ import umccrise._version
     help='DRAGEN germline run directory path')
 
 @click.option('--dragen_subject_id', help='Subject identifier of input DRAGEN data')
-@click.option('--dragen_tumour_id', help='Tumour sample identifier of input DRAGEN data')
+@click.option('--dragen_tumor_id', help='Tumor sample identifier of input DRAGEN data')
 @click.option('--dragen_normal_id', help='Normal sample identifier of input DRAGEN data')
 @click.option('--custom_tsv_fp', type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
     help='Filepath for custom TSV input')
@@ -95,7 +95,7 @@ def main(
     dragen_somatic_dir=None,
     dragen_germline_dir=None,
     dragen_subject_id=None,
-    dragen_tumour_id=None,
+    dragen_tumor_id=None,
     dragen_normal_id=None,
     output_dir=None,
     sample=None,
@@ -210,7 +210,7 @@ def main(
                     critical(f'input directory {dragen_dir} does not contain compatible DRAGEN data')
                 conf[arg] = dragen_dir
             conf['dragen_subject_id'] = dragen_subject_id
-            conf['dragen_tumour_id'] = dragen_tumour_id
+            conf['dragen_tumor_id'] = dragen_tumor_id
             conf['dragen_normal_id'] = dragen_normal_id
         elif name == 'bcbio':
             bcbio_dir = ctx.params[mutex_args[name]].resolve()
