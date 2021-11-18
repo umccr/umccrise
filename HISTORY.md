@@ -1,14 +1,14 @@
 ## 1.2.4 (18 Nov 2021)
 
-- Simplify MultiQC installation (https://github.com/umccr/umccrise/pull/75)
+- Simplify MultiQC installation ([pr75](https://github.com/umccr/umccrise/pull/75))
     - install `MultiQC` as conda package
     - install `MultiQC_bcbio` from umccr org
-- Handle missing PURPLE rainfall plot when >100K variants (https://github.com/umccr/umccrise/issues/72)
-- Remove vcf2maf warnings (https://github.com/umccr/umccrise/issues/61)
-- Enable MutationalPatterns DBS module (https://github.com/umccr/umccrise/issues/59)
-- Render cancer report even with errors (https://github.com/umccr/umccrise/pull/69)
-- Adapt unsafe YAML loader (https://github.com/umccr/umccrise/issues/63,
-  https://github.com/umccr/NGS_Utils/pull/2):
+- Handle missing PURPLE rainfall plot when >100K variants ([iss72](https://github.com/umccr/umccrise/issues/72))
+- Remove vcf2maf warnings ([iss61](https://github.com/umccr/umccrise/issues/61))
+- Enable MutationalPatterns DBS module ([iss59](https://github.com/umccr/umccrise/issues/59))
+- Render cancer report even with errors ([pr69](https://github.com/umccr/umccrise/pull/69))
+- Adapt unsafe YAML loader ([iss63](https://github.com/umccr/umccrise/issues/63),
+  [ext. pr2](https://github.com/umccr/NGS_Utils/pull/2)):
     - bump `pyyaml` to 5.4.1
     - bump `ngs_utils` to 2.8.10
 
