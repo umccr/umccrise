@@ -1,9 +1,23 @@
-1.2.3 (31 Aug 2021)
+## 1.2.4 (18 Nov 2021)
+
+- Simplify MultiQC installation (https://github.com/umccr/umccrise/pull/75)
+    - install `MultiQC` as conda package
+    - install `MultiQC_bcbio` from umccr org
+- Handle missing PURPLE rainfall plot when >100K variants (https://github.com/umccr/umccrise/issues/72)
+- Remove vcf2maf warnings (https://github.com/umccr/umccrise/issues/61)
+- Enable MutationalPatterns DBS module (https://github.com/umccr/umccrise/issues/59)
+- Render cancer report even with errors (https://github.com/umccr/umccrise/pull/69)
+- Adapt unsafe YAML loader (https://github.com/umccr/umccrise/issues/63,
+  https://github.com/umccr/NGS_Utils/pull/2):
+    - bump `pyyaml` to 5.4.1
+    - bump `ngs_utils` to 2.8.10
+
+## 1.2.3 (31 Aug 2021)
 
 - Update Dockerfile and install.sh to resolve Snakemake warnings regarding input filepaths containing double slashes '//'
 - Replace root user in Docker container with non-root user
 
-1.2.2 (16 Aug 2021)
+## 1.2.2 (16 Aug 2021)
 
 - Update NGS\_utils to allow custom TSV input (see https://github.com/umccr/NGS_Utils/commit/07e72b4)
 - Pin version of all appropriate Conda packages
@@ -12,7 +26,7 @@
 - Replace ECR Ubuntu Docker image base with equivalent from Docker Hub
 - Update (tsvtools)[https://github.com/vladsaveliev/tsvtools] to 0.2.0; Conda package for 0.1.0 no longer exists
 
-1.2.1 (16 Dec 2020)
+## 1.2.1 (16 Dec 2020)
 
 - Decrease number of predisposition genes to 78 (see https://github.com/vladsaveliev/NGS_Utils/issues/3)
   - Should see a ~60-70% decrease in CPSR variants
@@ -45,9 +59,9 @@
   - fix SV column description tables
   - add SV summary description
   - Disable MutationalPatterns DBS section (see https://github.com/umccr/umccrise/issues/59)
-  
 
-1.1.3 (17 Nov 2020)
+
+## 1.1.3 (17 Nov 2020)
 
 Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr):
 
@@ -91,16 +105,16 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
   - this solves an issue where we were getting fewer filtered somatic SNVs due to them not hitting the HMF GIAB BED regions.
 - Pinning gpgr to v0.0.13
 
-1.1.2 (9 Oct 2020)
+## 1.1.2 (9 Oct 2020)
 
 - Added [GPGR dependency](https://umccr.github.io/gpgr/) to handle R-related enhancements more efficiently
 - Include HRD results from HRDetect and CHORD into the cancer report
 
-1.1.1 (9 Oct 2020)
+## 1.1.1 (9 Oct 2020)
 
 - Update PCGR to 0.9.0, CPSR to 0.6.0. Includes cosmetic changes and database updates. CPSR counts intronic variants in the "Other variants" summary, as the number there will be high compared to the previous version, however they don't go into any TIER down the report.
 
-1.1.0 (8 Oct 2020)
+## 1.1.0 (8 Oct 2020)
 
 - Use HMF PoN for annotating/filtering small variants
   (see [vcf_stuff](https://github.com/umccr/vcf_stuff) changes).
@@ -123,13 +137,13 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 - Support RNAseq input (currently a part of the TSV input support; used for the neoantigen calling)
 - Oncoviruses: removed alt chromosomes from the reference build used for the integration site calling, which allows for a higher sensitivity in some edge cases
 
-1.0.9 (16 Jul 2020)
+## 1.0.9 (16 Jul 2020)
 
 - Oncoviruses: decreased the significance threshold to report candidate viruses
 - MultiQC: fix missing variant substitutions plots
 - PCGR: copy the PCGR TSV file into small_variants
 
-1.0.4 (1 Jul 2020)
+## 1.0.4 (1 Jul 2020)
 
 - Minor fixes:
     - Fix showing conda package versions
@@ -142,7 +156,7 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 - Coverage stage works for MacOS without docker (mosdepth available for MacOS)
 - Codebuild: revert back the versioned reference data
 
-1.0.0 (14 Jun 2020):
+## 1.0.0 (14 Jun 2020):
 
 - Integrated [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported viral strains in MultiQC and integration sites and affected genes in the cancer report.
 - More DRAGEN input options:
@@ -208,54 +222,54 @@ Downloads the reference data locally into a `~/umccrise_genomes`.
 
 --------------------
 
-0.17.12, 0.17.11 (4 May 2020)
+## 0.17.12, 0.17.11 (4 May 2020)
 
 - Dropping sv-prioritize filters from bcbio, rescuing SVs wrongly marked as "intergenic"
 - CPSR: hiding the genes pane which causes random bugs
 
-0.17.10, 0.17.9 (26 Mar 2020)
+## 0.17.10, 0.17.9 (26 Mar 2020)
 
 - Fix SV processing for FFPE
 
-0.17.8 (23 Mar 2020)
+## 0.17.8 (23 Mar 2020)
 
 - Fix the core usage inside of a Docker image, so COBALT and AMBER will benefit from multiple cores and AWS runs will get much faster now (thanks Peter for spotting the issue)
 
-0.17.7 (14 Mar 2020)
+## 0.17.7 (14 Mar 2020)
 
 - CPSR: when prioritizing a mutation effects, always pick the transcripts where the mutations affects the protein.
 
-0.17.6 (12 Mar 2020)
+## 0.17.6 (12 Mar 2020)
 
 - To make sure CodeBuild builds code from branches, modify install.sh so it
 doesn't clone the repo, and move Dockerfile to the root to enable copying
 the source.
 
-0.17.5 (12 Mar 2020)
+## 0.17.5 (12 Mar 2020)
 
 - Fix germline variants count in MultiQC
 
-0.17.4 (11 Mar 2020)
+## 0.17.4 (11 Mar 2020)
 
 - Pin PCGR and CPSR and show their correct versions.
 - Pin MultiQC to vladsaveliev/MultiQC rather than umccr-illumina/MultiQC
 
-0.17.3 (9 Mar 2020)
+## 0.17.3 (9 Mar 2020)
 
 - Fix https://github.com/umccr/umccrise/issues/41
 
-0.17.2 (6 Mar 2020)
+## 0.17.2 (6 Mar 2020)
 
 Fixes
 - Fix PURPLE memory requirements for single-core runs
 - Remove entrypoint from the Dockerfile
 
-0.17.1 (27 Feb 2020)
+## 0.17.1 (27 Feb 2020)
 
 - Fix PCGR and CPSR transcript prioritization issues https://github.com/sigven/cpsr/issues/26
 - Output SAGE results into {batch}/small_variants/sage/{batch}-sage.vcf.gz
 
-0.17.0 (1 Feb 202)
+## 0.17.0 (1 Feb 202)
 
 - Massive cancer report updates by Peter Diakumis:
     - Added new somatic signatures
@@ -264,7 +278,7 @@ Fixes
 
 --------------------
 
-0.16.0 (31 Dec 2019)
+## 0.16.0 (31 Dec 2019)
 
 - Add CodeBuild CI support (thanks @brainstorm for the great work!)
 - Add hg38 MultiQC background samples
@@ -289,7 +303,7 @@ Fixes
 
 --------------------
 
-0.15.6 (28 Aug 2019)
+## 0.15.6 (28 Aug 2019)
 
 - SV prioritization: 
     - prioritize CN=0 events in tumor suppressors genes
@@ -303,7 +317,7 @@ Fixes
 - SV VCF: split samples, keep tumor (for Pierian)
 - Add MultiQC Docker container for bcl2fastq and interop
 
-0.15 (21 May 2019)
+## 0.15 (21 May 2019)
 
 - Update PCGR to 0.8.1 and CPSR to 0.4.1 (with a new scheme for germline filtering)
 - Pass tumor purity and ploidy into PCGR
@@ -312,7 +326,7 @@ Fixes
 
 --------------------
 
-0.14 (1 Apr 2019)
+## 0.14 (1 Apr 2019)
 
 - Update SV prioritization method
 - New SV table in the rmd report
@@ -324,7 +338,7 @@ Fixes
 
 --------------------
 
-0.13 (15 Feb 2019)
+## 0.13 (15 Feb 2019)
 
 - Re-enable [CACAO](https://github.com/vladsaveliev/cacao)
 - Support Cromwell runs
@@ -351,7 +365,7 @@ Fixes
 
 --------------------
 
-0.12 (23 Jan 2019)
+## 0.12 (23 Jan 2019)
 
 - Somatic annotation/filtering:
     - Filter VarDict strand bias and HP indels
@@ -369,7 +383,7 @@ Fixes
 
 --------------------
 
-0.11 (6 Dec 2018)
+## 0.11 (6 Dec 2018)
 
 - Add Per-sample MultiQC reports with reference samples
 - Add Sig.rmd Purple table
@@ -377,7 +391,7 @@ Fixes
 
 --------------------
 
-0.10 (30 Nov 2018)
+## 0.10 (30 Nov 2018)
 
 - SNV filtering improvements: 
     - Assuming calling with 1%
@@ -392,7 +406,7 @@ Fixes
 
 --------------------
 
-0.9 (15 Nov 2018)
+## 0.9 (15 Nov 2018)
 
 - Integrate Purple
 - Integrate CPSR (PCGR reports for germline variants)
@@ -403,7 +417,7 @@ Fixes
 
 --------------------
 
-0.8 (7 Aug 2018)
+## 0.8 (7 Aug 2018)
 
 - SV filtering: require all of FILTER fields to be PASS or rejected by sv-prioritizer
 - SV filtering: always keep SR or PR above 10x regardless of BPI_AF (but above 5x only if BPI_AF>10%)
@@ -416,14 +430,14 @@ Fixes
 
 --------------------
 
-0.7 (26 Jun 2018)
+## 0.7 (26 Jun 2018)
 
 - Dockerized version with --docker
 - Custom reference data with --pon, --ref-fasta, --truth-regions, or --bcbio-genomes
 
 --------------------
 
-0.6 (15 May 2018)
+## 0.6 (15 May 2018)
 
 - Use snakemake groups to optimize execution on cluster
 - Use submission wrapper to automate cluster resources
@@ -434,7 +448,7 @@ Fixes
 
 --------------------
 
-0.5 (7 May 2018)
+## 0.5 (7 May 2018)
 
 - PCGR is deployed directly on Spartan, so no AWS dependency.
 - Add PCGR wrapper: `pcgr variants.vcf.gz cnv.tsv -o results [-g hg38]`
@@ -443,7 +457,7 @@ Fixes
 
 --------------------
 
-0.4 (17 Apr 2018)
+## 0.4 (17 Apr 2018)
 
 - Propagate snakemake's cluster options to the wrapper
 - Propagate snakemake's `--rerun-incomplete` and to the wrapper
@@ -454,7 +468,7 @@ Fixes
 
 --------------------
 
-0.3 (17 Jan 2018)
+## 0.3 (17 Jan 2018)
 
 - Refactor output folder structure (see docs)
 - `pcgr_download` taget to automatically pull results
