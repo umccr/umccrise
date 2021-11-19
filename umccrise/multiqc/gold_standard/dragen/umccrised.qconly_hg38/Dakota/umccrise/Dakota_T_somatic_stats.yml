@@ -1,0 +1,10 @@
+data:
+  Dakota_T:
+    filt_indels: 81.19658119658119
+    filt_others: null
+    filt_snps: 52.2279792746114
+    filt_vars: 55.36044362292052
+    indels: 44
+    others: null
+    snps: 922
+id: umccrise

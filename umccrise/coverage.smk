@@ -105,7 +105,6 @@ rule run_cacao:
     params:
         cacao_data = refdata.get_ref_file(genome=run.genome_build, key='cacao_data'),
         output_dir = lambda wc, input, output: dirname(output.html),
-        docker_opt = '--no-docker' if not which('docker') else '',
         sample_id = '{batch}',
         mode = lambda wc: 'hereditary' if wc.phenotype == 'normal' else 'somatic',
         levels = lambda wc: 'germline' if wc.phenotype == 'normal' else 'somatic',
@@ -118,7 +117,7 @@ rule run_cacao:
         shell(
             conda_cmd.format('pcgr') +
             f'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' +
-            f' {params.mode} {params.sample_id} {params.docker_opt} --threads {threads}'
+            f' {params.mode} {params.sample_id} --no-docker --threads {threads}'
             f' --callability_levels_{params.levels} {cutoffs} --ref-fasta {input.ref_fa}'
         )
 
@@ -138,7 +137,7 @@ rule run_samtools_stats:
         bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
         bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam + '.bai',
     output:
-        stats = '{batch}/coverage/{batch}-{phenotype}.stats.txt'
+        stats = '{batch}/coverage/{batch}-{phenotype}.samtools_stats.txt'
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 4000
     shell:

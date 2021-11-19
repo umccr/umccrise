@@ -257,7 +257,8 @@ rule oncoviral_multiqc:
 
         with open(output.data_yml, 'w') as out:
             yaml.dump(dict(
-                data = data
+                id = 'oncoviruses',
+                data = data,
             ), out, default_flow_style=False)
 
         # Using json instead of yaml because a long header wraps and breaks MultiQC

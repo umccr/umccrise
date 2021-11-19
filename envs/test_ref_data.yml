@@ -14,7 +14,7 @@ dependencies:
   - bcftools
   - samtools
   - bedtools
-  - ngs_utils ==2.8.10
+  - ngs_utils ==2.9.0
   - natsort  # for bcbio.py in ngs_utils
   - pip:
     - "git+https://github.com/vladsaveliev/NGS_Utils#egg=ngs_utils"

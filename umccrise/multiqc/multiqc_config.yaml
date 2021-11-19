@@ -9,6 +9,22 @@ base_count_multiplier: 0.000000001
 base_count_prefix: 'Gb'
 base_count_desc: 'gigabases'
 make_data_dir: True
+# Increase file size threshold to 100MB, files which are larger in size are ignored
+# This was specifically affecting mosdepth output
+log_filesize_limit: 100000000
+
+# For hg38 we want to ignore Alt contigs, relevant to DRAGEN
+mosdepth_config:
+    include_contigs:
+    - "chr*"
+    exclude_contigs:
+    - "*_alt"
+    - "*_decoy"
+    - "*_random"
+    - "chrUn*"
+    - "HLA*"
+    - "chrM"
+    - "chrEBV"
 
 
 # Overwrite the defaults of which table columns are visible by default
@@ -36,6 +52,10 @@ table_columns_visible:
         Ontarget_padded_pct: False
         Average_insert_size: False
         RiP_pct: False
+    DRAGEN mapping:
+        Estimated sample contamination: False
+    DRAGEN coverage:
+        "PCT of genome with coverage [ 20x: inf)": False
     SnpEff:
         Change_rate: False                        # is also set in bcbio/__init__.py
         Ts_Tv_ratio: False                        # is also set in bcbio/__init__.py
@@ -79,37 +99,38 @@ bcl2fastq:
 
 umccr:
     reference_samples:
-    - Alice
-    - Bob
-    - Chen
-    - Dakota
-    - Elon
     - Alice_T
-    - Bob_T
-    - Chen_T
-    - Dakota_T
-    - Elon_T
     - Alice_B
-    - Bob_B
-    - Chen_B
-    - Dakota_B
-    - Elon_B
-    - Alice_normal
-    - Bob_normal
-    - Chen_normal
-    - Dakota_normal
-    - Elon_normal
     - Alice_N
+    - Alice
+    - Alice_normal
+    - Bob_T
     - Bob_N
+    - Bob_B
+    - Bob
+    - Bob_normal
+    - Chen_T
     - Chen_N
+    - Chen_B
+    - Chen
+    - Chen_normal
+    - Dakota_T
     - Dakota_N
+    - Dakota_B
+    - Dakota
+    - Dakota_normal
+    - Elon_T
     - Elon_N
+    - Elon_B
+    - Elon
+    - Elon_normal
 
 highlight_regex: true
 
 module_order:
-    - purple
+    - DRAGEN
     - mosdepth
+    - PURPLE
     - bcbio
     - samtools
     - goleft_indexcov
@@ -131,6 +152,7 @@ module_order:
     - qualimap
     - snpeff
     - fastqc
+    - dragen_fastqc
     - preseq
 
 custom_data:
@@ -159,7 +181,6 @@ custom_data:
 #        section_name: 'Variant analysis'
 #        description: 'Variant analysis in Umccrise'
         pconfig:
-
         - subset_genes:
             title: 'Subset to key genes'
             description: 'Percentage of variants removed by subsetting to cancer genes. This happens when there are more than 500k calls to avoid choking the reporting'
@@ -176,7 +197,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
-            hidden: False
+            hidden: True
         - filt_snps:
             title: 'SNP-filt'
             description: '% SNPs filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
@@ -185,7 +206,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
-            hidden: True
+            hidden: False
         - filt_indels:
             title: 'Indel-filt'
             description: '% Indels filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
@@ -194,7 +215,7 @@ custom_data:
             format: '{:,.2f}'
             scale: 'Reds'
             suffix: '%'
-            hidden: True
+            hidden: False
         - filt_other:
             title: 'Other-filt'
             description: '% Other variants (MNP) filtered out by somatic filters (panel of normals, gnomAD common, homopolymers/LCR with low depth and AF)'
@@ -231,11 +252,3 @@ custom_data:
 sp:
     umccrise:
         fn_re: '.*(somatic_stats|germline_stats).yml'
-
-
-extra_fn_clean_trim:
-    - '-coverage.mosdepth.region.dist'
-    - '-coverage.mosdepth.global.dist'
-
-
-

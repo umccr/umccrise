@@ -1,0 +1,10 @@
+data:
+  Alice_T:
+    filt_indels: 93.8388625592417
+    filt_others: null
+    filt_snps: 70.24253731343283
+    filt_vars: 74.12314886983631
+    indels: 13
+    others: null
+    snps: 319
+id: umccrise

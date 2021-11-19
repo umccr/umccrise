@@ -5,7 +5,7 @@ import yaml
 from os.path import abspath, join, dirname, basename
 from ngs_utils.file_utils import verify_file
 from ngs_utils.bcbio import BcbioProject, BcbioBatch
-from ngs_utils.dragen import DragenProject
+from ngs_utils.dragen import DragenBatch
 from umccrise import package_path
 
 
@@ -72,14 +72,16 @@ rule prep_multiqc_data:
         bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0] if 'somatic' in stages else [],
         germline_stats          = rules.germline_stats_report.output[0] \
             if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
-        bcftools_germline_stats = rules.bcftools_stats_germline.output[0] \
+        #bcftools_germline_pass_predispose = rules.bcftools_stats_germline.output.stats_pass_predispose
+        #    if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
+        bcftools_germline_pass = rules.bcftools_stats_germline.output.stats_pass
             if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
         oncoviruses_data        = rules.oncoviral_multiqc.output.data_yml   if 'oncoviruses' in stages else [],
         oncoviruses_header      = rules.oncoviral_multiqc.output.header_yml if 'oncoviruses' in stages else [],
         purple_stats            = 'work/{batch}/purple/{batch}.purple.purity.tsv' if 'purple' in stages else [],
         purple_qc               = 'work/{batch}/purple/{batch}.purple.qc'         if 'purple' in stages else [],
-        samtools_stats_t        = '{batch}/coverage/{batch}-tumor.stats.txt'  if 'samtools_stats' in stages else [],
-        samtools_stats_n        = '{batch}/coverage/{batch}-normal.stats.txt' if 'samtools_stats' in stages else [],
+        samtools_stats_t        = '{batch}/coverage/{batch}-tumor.samtools_stats.txt'  if 'samtools_stats' in stages else [],
+        samtools_stats_n        = '{batch}/coverage/{batch}-normal.samtools_stats.txt' if 'samtools_stats' in stages else [],
         mosdepth_t              = '{batch}/coverage/{batch}-tumor.mosdepth.global.dist.txt'  if 'mosdepth' in stages else [],
         mosdepth_n              = '{batch}/coverage/{batch}-normal.mosdepth.global.dist.txt' if 'mosdepth' in stages else [],
         peddy_dirs              = expand(rules.run_peddy.output.dir.replace('{batch}', '{{batch}}'),
@@ -87,6 +89,7 @@ rule prep_multiqc_data:
     output:
         filelist                = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
+        renamed_file_dir        = directory('work/{batch}/multiqc_data/relabelled_qc_files/'),
     params:
         data_dir                = 'work/{batch}/multiqc_data',
         genome_build            = run.genome_build,
@@ -117,7 +120,7 @@ rule prep_multiqc_data:
         # Gold standard QC files
         if isinstance(batch, BcbioBatch):
             qc_files.extend(load_background_samples(params.genome_build, project_type='bcbio'))
-        if isinstance(batch, DragenProject):
+        if isinstance(batch, DragenBatch):
             qc_files.extend(load_background_samples(params.genome_build, project_type='dragen'))
 
         # Umccrise QC files
@@ -140,8 +143,16 @@ rule prep_multiqc_data:
         if 'germline' in stages:
             qc_files.extend([
                 input.germline_stats,
-                input.bcftools_germline_stats,
+                # NOTE(SW): when running with bcbio data, this file was never presented in the
+                # MultiQC report as it is superseded by the bcbio BCFtools germline stats file
+                # added below in find_bcbio_qc_files()
+                #input.bcftools_germline_pass_predispose,
             ])
+            # Add BCFtools germline stats for input/unfiltered VCF to replicate behaviour of
+            # bcbio/umccrise runs
+            if isinstance(run, DragenProject):
+                qc_files.append(input.bcftools_germline_pass)
+
         if 'oncoviruses' in stages:
             qc_files.extend([
                 input.oncoviruses_data,
@@ -175,14 +186,16 @@ rule prep_multiqc_data:
 
         if isinstance(batch, BcbioBatch):
             qc_files.extend(find_bcbio_qc_files(batch, params.data_dir))
-        elif isinstance(run, DragenProject):
+        elif isinstance(batch, DragenBatch):
             qc_files.extend(batch.all_qc_files()),
 
         multiqc_prep_data(
+            batch,
             generated_conf=generated_conf,
             out_filelist_file=output.filelist,
             out_conf_yaml=output.generated_conf_yaml,
-            qc_files=qc_files
+            qc_files=qc_files,
+            qc_files_renamed_dir=output.renamed_file_dir,
         )
 
 

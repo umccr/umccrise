@@ -1,0 +1,10 @@
+data:
+  Elon_T:
+    filt_indels: 85.82375478927203
+    filt_others: null
+    filt_snps: 71.48313176320815
+    filt_vars: 73.52620087336244
+    indels: 37
+    others: null
+    snps: 448
+id: umccrise

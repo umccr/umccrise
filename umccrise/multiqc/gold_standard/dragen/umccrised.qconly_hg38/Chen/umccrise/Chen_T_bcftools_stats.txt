@@ -1,0 +1,256 @@
+# This file was produced by bcftools stats (1.10.2+htslib-1.10.2) and can be plotted using plot-vcfstats.
+# The command line was:	bcftools stats  -s Chen_T Chen_T
+#
+# Definition of sets:
+# ID	[2]id	[3]tab-separated file names
+ID	0	Chen_T
+# SN, Summary numbers:
+#   number of records   .. number of data rows in the VCF
+#   number of no-ALTs   .. reference-only sites, ALT is either "." or identical to REF
+#   number of SNPs      .. number of rows with a SNP
+#   number of MNPs      .. number of rows with a MNP, such as CC>TT
+#   number of indels    .. number of rows with an indel
+#   number of others    .. number of rows with other type, for example a symbolic allele or
+#                          a complex substitution, such as ACT>TCGA
+#   number of multiallelic sites     .. number of rows with multiple alternate alleles
+#   number of multiallelic SNP sites .. number of rows with multiple alternate alleles, all SNPs
+# 
+#   Note that rows containing multiple types will be counted multiple times, in each
+#   counter. For example, a row with a SNP and an indel increments both the SNP and
+#   the indel counter.
+# 
+# SN	[2]id	[3]key	[4]value
+SN	0	number of samples:	2
+SN	0	number of records:	803
+SN	0	number of no-ALTs:	0
+SN	0	number of SNPs:	743
+SN	0	number of MNPs:	0
+SN	0	number of indels:	60
+SN	0	number of others:	0
+SN	0	number of multiallelic sites:	0
+SN	0	number of multiallelic SNP sites:	0
+# TSTV, transitions/transversions:
+# TSTV	[2]id	[3]ts	[4]tv	[5]ts/tv	[6]ts (1st ALT)	[7]tv (1st ALT)	[8]ts/tv (1st ALT)
+TSTV	0	451	292	1.54	451	292	1.54
+# SiS, Singleton stats:
+# SiS	[2]id	[3]allele count	[4]number of SNPs	[5]number of transitions	[6]number of transversions	[7]number of indels	[8]repeat-consistent	[9]repeat-inconsistent	[10]not applicable
+SiS	0	1	743	451	292	60	0	0	60
+# AF, Stats by non-reference allele frequency:
+# AF	[2]id	[3]allele frequency	[4]number of SNPs	[5]number of transitions	[6]number of transversions	[7]number of indels	[8]repeat-consistent	[9]repeat-inconsistent	[10]not applicable
+AF	0	0.000000	743	451	292	60	0	0	60
+# QUAL, Stats by quality:
+# QUAL	[2]id	[3]Quality	[4]number of SNPs	[5]number of transitions (1st ALT)	[6]number of transversions (1st ALT)	[7]number of indels
+QUAL	0	998	743	451	292	60
+# IDD, InDel distribution:
+# IDD	[2]id	[3]length (deletions negative)	[4]number of sites	[5]number of genotypes	[6]mean VAF
+IDD	0	-60	1	1	0.03
+IDD	0	-42	1	1	0.00
+IDD	0	-35	1	1	0.00
+IDD	0	-25	1	1	0.00
+IDD	0	-23	1	1	0.00
+IDD	0	-20	1	1	0.00
+IDD	0	-13	2	2	0.00
+IDD	0	-10	1	1	0.00
+IDD	0	-9	1	1	0.00
+IDD	0	-8	1	1	0.00
+IDD	0	-5	2	2	0.00
+IDD	0	-4	2	2	0.00
+IDD	0	-3	4	4	0.00
+IDD	0	-2	4	4	0.01
+IDD	0	-1	14	14	0.00
+IDD	0	1	11	11	0.00
+IDD	0	2	4	4	0.01
+IDD	0	4	2	2	0.00
+IDD	0	8	1	1	0.00
+IDD	0	10	1	1	0.11
+IDD	0	12	1	1	0.00
+IDD	0	18	1	1	0.00
+IDD	0	19	1	1	0.00
+IDD	0	26	1	1	0.00
+# ST, Substitution types:
+# ST	[2]id	[3]type	[4]count
+ST	0	A>C	26
+ST	0	A>G	72
+ST	0	A>T	44
+ST	0	C>A	48
+ST	0	C>G	35
+ST	0	C>T	156
+ST	0	G>A	138
+ST	0	G>C	28
+ST	0	G>T	43
+ST	0	T>A	38
+ST	0	T>C	85
+ST	0	T>G	30
+# DP, Depth distribution
+# DP	[2]id	[3]bin	[4]number of genotypes	[5]fraction of genotypes (%)	[6]number of sites	[7]fraction of sites (%)
+DP	0	6	1	0.124533	0	0.000000
+DP	0	7	1	0.124533	0	0.000000
+DP	0	10	4	0.498132	0	0.000000
+DP	0	11	2	0.249066	0	0.000000
+DP	0	12	4	0.498132	0	0.000000
+DP	0	13	1	0.124533	0	0.000000
+DP	0	14	3	0.373599	0	0.000000
+DP	0	15	6	0.747198	0	0.000000
+DP	0	16	8	0.996264	0	0.000000
+DP	0	17	6	0.747198	0	0.000000
+DP	0	18	7	0.871731	1	0.124533
+DP	0	19	9	1.120797	0	0.000000
+DP	0	20	13	1.618929	0	0.000000
+DP	0	21	8	0.996264	0	0.000000
+DP	0	22	13	1.618929	0	0.000000
+DP	0	23	8	0.996264	0	0.000000
+DP	0	24	9	1.120797	0	0.000000
+DP	0	25	9	1.120797	0	0.000000
+DP	0	26	9	1.120797	0	0.000000
+DP	0	27	9	1.120797	0	0.000000
+DP	0	28	13	1.618929	1	0.124533
+DP	0	29	20	2.490660	0	0.000000
+DP	0	30	17	2.117061	0	0.000000
+DP	0	31	26	3.237858	0	0.000000
+DP	0	32	35	4.358655	0	0.000000
+DP	0	33	24	2.988792	0	0.000000
+DP	0	34	19	2.366127	2	0.249066
+DP	0	35	22	2.739726	0	0.000000
+DP	0	36	36	4.483188	1	0.124533
+DP	0	37	24	2.988792	1	0.124533
+DP	0	38	37	4.607721	2	0.249066
+DP	0	39	24	2.988792	0	0.000000
+DP	0	40	33	4.109589	0	0.000000
+DP	0	41	31	3.860523	1	0.124533
+DP	0	42	32	3.985056	0	0.000000
+DP	0	43	40	4.981320	0	0.000000
+DP	0	44	25	3.113325	4	0.498132
+DP	0	45	26	3.237858	2	0.249066
+DP	0	46	31	3.860523	0	0.000000
+DP	0	47	27	3.362391	0	0.000000
+DP	0	48	18	2.241594	2	0.249066
+DP	0	49	23	2.864259	3	0.373599
+DP	0	50	19	2.366127	1	0.124533
+DP	0	51	16	1.992528	1	0.124533
+DP	0	52	13	1.618929	3	0.373599
+DP	0	53	7	0.871731	3	0.373599
+DP	0	54	4	0.498132	3	0.373599
+DP	0	55	5	0.622665	4	0.498132
+DP	0	56	5	0.622665	2	0.249066
+DP	0	57	7	0.871731	5	0.622665
+DP	0	58	1	0.124533	2	0.249066
+DP	0	59	2	0.249066	4	0.498132
+DP	0	60	1	0.124533	1	0.124533
+DP	0	61	1	0.124533	5	0.622665
+DP	0	62	0	0.000000	3	0.373599
+DP	0	63	1	0.124533	1	0.124533
+DP	0	64	1	0.124533	5	0.622665
+DP	0	65	1	0.124533	1	0.124533
+DP	0	66	1	0.124533	3	0.373599
+DP	0	67	0	0.000000	2	0.249066
+DP	0	68	0	0.000000	1	0.124533
+DP	0	69	0	0.000000	3	0.373599
+DP	0	70	1	0.124533	2	0.249066
+DP	0	71	0	0.000000	4	0.498132
+DP	0	72	0	0.000000	7	0.871731
+DP	0	73	1	0.124533	5	0.622665
+DP	0	74	0	0.000000	3	0.373599
+DP	0	75	0	0.000000	4	0.498132
+DP	0	76	0	0.000000	4	0.498132
+DP	0	77	0	0.000000	2	0.249066
+DP	0	78	0	0.000000	1	0.124533
+DP	0	79	0	0.000000	3	0.373599
+DP	0	80	0	0.000000	3	0.373599
+DP	0	81	0	0.000000	3	0.373599
+DP	0	83	0	0.000000	7	0.871731
+DP	0	84	0	0.000000	1	0.124533
+DP	0	86	0	0.000000	3	0.373599
+DP	0	87	0	0.000000	6	0.747198
+DP	0	88	0	0.000000	2	0.249066
+DP	0	89	0	0.000000	2	0.249066
+DP	0	90	0	0.000000	7	0.871731
+DP	0	91	0	0.000000	6	0.747198
+DP	0	92	0	0.000000	9	1.120797
+DP	0	93	0	0.000000	10	1.245330
+DP	0	94	0	0.000000	3	0.373599
+DP	0	95	0	0.000000	7	0.871731
+DP	0	96	1	0.124533	4	0.498132
+DP	0	97	0	0.000000	5	0.622665
+DP	0	98	0	0.000000	5	0.622665
+DP	0	99	0	0.000000	11	1.369863
+DP	0	100	0	0.000000	6	0.747198
+DP	0	101	1	0.124533	7	0.871731
+DP	0	102	0	0.000000	8	0.996264
+DP	0	103	0	0.000000	3	0.373599
+DP	0	104	0	0.000000	10	1.245330
+DP	0	105	0	0.000000	9	1.120797
+DP	0	106	0	0.000000	7	0.871731
+DP	0	107	0	0.000000	5	0.622665
+DP	0	108	1	0.124533	13	1.618929
+DP	0	109	0	0.000000	15	1.867995
+DP	0	110	0	0.000000	12	1.494396
+DP	0	111	0	0.000000	10	1.245330
+DP	0	112	0	0.000000	10	1.245330
+DP	0	113	0	0.000000	12	1.494396
+DP	0	114	0	0.000000	9	1.120797
+DP	0	115	0	0.000000	16	1.992528
+DP	0	116	0	0.000000	16	1.992528
+DP	0	117	0	0.000000	8	0.996264
+DP	0	118	0	0.000000	18	2.241594
+DP	0	119	0	0.000000	12	1.494396
+DP	0	120	0	0.000000	13	1.618929
+DP	0	121	0	0.000000	12	1.494396
+DP	0	122	0	0.000000	16	1.992528
+DP	0	123	0	0.000000	7	0.871731
+DP	0	124	0	0.000000	12	1.494396
+DP	0	125	0	0.000000	20	2.490660
+DP	0	126	0	0.000000	19	2.366127
+DP	0	127	0	0.000000	15	1.867995
+DP	0	128	0	0.000000	21	2.615193
+DP	0	129	0	0.000000	17	2.117061
+DP	0	130	0	0.000000	16	1.992528
+DP	0	131	0	0.000000	15	1.867995
+DP	0	132	0	0.000000	14	1.743462
+DP	0	133	0	0.000000	11	1.369863
+DP	0	134	0	0.000000	11	1.369863
+DP	0	135	0	0.000000	17	2.117061
+DP	0	136	0	0.000000	14	1.743462
+DP	0	137	0	0.000000	16	1.992528
+DP	0	138	0	0.000000	11	1.369863
+DP	0	139	0	0.000000	3	0.373599
+DP	0	140	0	0.000000	3	0.373599
+DP	0	141	0	0.000000	9	1.120797
+DP	0	142	0	0.000000	16	1.992528
+DP	0	143	0	0.000000	10	1.245330
+DP	0	144	0	0.000000	7	0.871731
+DP	0	145	0	0.000000	4	0.498132
+DP	0	146	0	0.000000	6	0.747198
+DP	0	147	0	0.000000	3	0.373599
+DP	0	148	0	0.000000	7	0.871731
+DP	0	149	0	0.000000	7	0.871731
+DP	0	150	0	0.000000	2	0.249066
+DP	0	151	0	0.000000	7	0.871731
+DP	0	152	0	0.000000	3	0.373599
+DP	0	154	0	0.000000	2	0.249066
+DP	0	155	0	0.000000	6	0.747198
+DP	0	157	0	0.000000	5	0.622665
+DP	0	159	0	0.000000	1	0.124533
+DP	0	160	0	0.000000	1	0.124533
+DP	0	161	0	0.000000	1	0.124533
+DP	0	162	0	0.000000	3	0.373599
+DP	0	163	0	0.000000	1	0.124533
+DP	0	165	0	0.000000	1	0.124533
+DP	0	176	0	0.000000	1	0.124533
+DP	0	181	0	0.000000	1	0.124533
+DP	0	188	0	0.000000	1	0.124533
+DP	0	193	0	0.000000	1	0.124533
+DP	0	194	0	0.000000	1	0.124533
+DP	0	199	0	0.000000	1	0.124533
+DP	0	209	0	0.000000	1	0.124533
+DP	0	312	0	0.000000	1	0.124533
+DP	0	345	0	0.000000	1	0.124533
+DP	0	347	0	0.000000	1	0.124533
+# PSC, Per-sample counts. Note that the ref/het/hom counts include only SNPs, for indels see PSI. The rest include both SNPs and indels.
+# PSC	[2]id	[3]sample	[4]nRefHom	[5]nNonRefHom	[6]nHets	[7]nTransitions	[8]nTransversions	[9]nIndels	[10]average depth	[11]nSingletons	[12]nHapRef	[13]nHapAlt	[14]nMissing
+PSC	0	Chen_T	0	0	743	451	292	60	37.8	803	0	0	0
+# PSI, Per-Sample Indels. Note that alt-het genotypes with both ins and del allele are counted twice, in both nInsHets and nDelHets.
+# PSI	[2]id	[3]sample	[4]in-frame	[5]out-frame	[6]not applicable	[7]out/(in+out) ratio	[8]nInsHets	[9]nDelHets	[10]nInsAltHoms	[11]nDelAltHoms
+PSI	0	Chen_T	0	0	0	0.00	23	37	0	0
+# HWE
+# HWE	[2]id	[3]1st ALT allele frequency	[4]Number of observations	[5]25th percentile	[6]median	[7]75th percentile
+HWE	0	0.000000	803	0.990000	0.990000	0.990000

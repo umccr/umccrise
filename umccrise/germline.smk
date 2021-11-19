@@ -9,6 +9,7 @@ from ngs_utils.file_utils import get_ungz_gz
 from ngs_utils.reference_data import get_predispose_genes_bed
 from ngs_utils.logger import critical
 from ngs_utils.vcf_utils import iter_vcf
+from ngs_utils.dragen import DragenProject
 from reference_data import api as refdata
 from umccrise import package_path, cnt_vars
 
@@ -160,6 +161,7 @@ rule germline_stats_report:
 
         with open(output[0], 'w') as out:
             data = {
+                'id': 'umccrise',
                 'data': {
                     params.sample: dict(
                         germline = pass_cnt,
@@ -169,21 +171,29 @@ rule germline_stats_report:
             }
             yaml.dump(data, out, default_flow_style=False)
 
-# Produces the same stats as bcbio file in QC, but have to rerun because of CWL version,
+# NOTE(VS): Produces the same stats as bcbio file in QC, but have to rerun because of CWL version,
 # which doesn't suffix the file with _germline, so MultiQC can't relate it to the germline
 # stats section.
+
+# NOTE(SW): the stats_predispose statistics are not used anywhere as far as I can tell. The were
+# previously provided to the umccrise/multiqc.smk:prep_multiqc_data rule but was subsequently
+# superseded by the bcbio equivalent. Leaving here to clearly document changes.
 rule bcftools_stats_germline:
     input:
-        rules.germline_merge_with_leakage.output.vcf \
-        if 'somatic' in stages else \
-        rules.germline_predispose_subset.output.vcf,
+        pass_vcf = rules.germline_vcf_pass.output.vcf,
+        pass_predispose_vcf = rules.germline_merge_with_leakage.output.vcf \
+                              if 'somatic' in stages \
+                              else rules.germline_predispose_subset.output.vcf,
     output:
-        '{batch}/small_variants/stats/{batch}_bcftools_stats_germline.txt'
+        stats_pass = '{batch}/small_variants/stats/{batch}_pass_bcftools_stats_germline.txt' if isinstance(run, DragenProject) else [],
+        stats_pass_predispose = '{batch}/small_variants/stats/{batch}_pass_predispose_bcftools_stats_germline.txt',
     group: "germline_snv"
     params:
         sname = lambda wc: batch_by_name[wc.batch].normals[0].rgid,
-    shell:
-        'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
+    run:
+        shell('bcftools stats -s {params.sname} {input.pass_predispose_vcf} | sed s#{input.pass_predispose_vcf}#{params.sname}# > {output.stats_pass_predispose}')
+        if isinstance(run, DragenProject):
+            shell('bcftools stats -s {params.sname} {input.pass_vcf} | sed s#{input.pass_vcf}#{params.sname}# > {output.stats_pass}')
 
 
 # copy final merged predisposed into <um>/<batch>/small_variants/

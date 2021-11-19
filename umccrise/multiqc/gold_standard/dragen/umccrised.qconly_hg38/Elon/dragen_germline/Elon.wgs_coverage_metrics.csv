@@ -1,0 +1,27 @@
+COVERAGE SUMMARY,,Aligned bases,113772699386
+COVERAGE SUMMARY,,Aligned bases in genome,113772699386,100.00
+COVERAGE SUMMARY,,Average alignment coverage over genome,37.41
+COVERAGE SUMMARY,,Uniformity of coverage (PCT > 0.2*mean) over genome,96.73
+COVERAGE SUMMARY,,PCT of genome with coverage [100x: inf),0.19
+COVERAGE SUMMARY,,PCT of genome with coverage [ 50x: inf),8.57
+COVERAGE SUMMARY,,PCT of genome with coverage [ 20x: inf),92.28
+COVERAGE SUMMARY,,PCT of genome with coverage [ 15x: inf),95.12
+COVERAGE SUMMARY,,PCT of genome with coverage [ 10x: inf),96.43
+COVERAGE SUMMARY,,PCT of genome with coverage [  3x: inf),97.50
+COVERAGE SUMMARY,,PCT of genome with coverage [  1x: inf),98.10
+COVERAGE SUMMARY,,PCT of genome with coverage [  0x: inf),100.00
+COVERAGE SUMMARY,,PCT of genome with coverage [ 50x:100x),8.38
+COVERAGE SUMMARY,,PCT of genome with coverage [ 20x: 50x),83.71
+COVERAGE SUMMARY,,PCT of genome with coverage [ 15x: 20x),2.83
+COVERAGE SUMMARY,,PCT of genome with coverage [ 10x: 15x),1.32
+COVERAGE SUMMARY,,PCT of genome with coverage [  3x: 10x),1.07
+COVERAGE SUMMARY,,PCT of genome with coverage [  1x:  3x),0.60
+COVERAGE SUMMARY,,PCT of genome with coverage [  0x:  1x),1.90
+COVERAGE SUMMARY,,Average chr X coverage over genome,19.30
+COVERAGE SUMMARY,,Average chr Y coverage over genome,17.23
+COVERAGE SUMMARY,,Average mitochondrial coverage over genome,4881.99
+COVERAGE SUMMARY,,Average autosomal coverage over genome,38.76
+COVERAGE SUMMARY,,Median autosomal coverage over genome,40.00
+COVERAGE SUMMARY,,Mean/Median autosomal coverage ratio over genome,0.97
+COVERAGE SUMMARY,,Aligned reads,743400021
+COVERAGE SUMMARY,,Aligned reads in genome,743400021,100.00

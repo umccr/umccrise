@@ -3,8 +3,12 @@ import os
 import sys
 from os.path import isfile, join, dirname, abspath, isdir
 import click
+import pathlib
 import subprocess
 import tempfile
+
+
+from reference_data import api as refdata
 
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, verify_dir
@@ -13,15 +17,31 @@ from ngs_utils.logger import warn, info, critical
 from ngs_utils.snakemake_utils import run_snakemake, make_cluster_cmdl, prep_resources
 from ngs_utils.utils import set_locale; set_locale()
 from ngs_utils import snakemake_utils
-from umccrise import package_path
-from umccrise import _version as version
-from umccrise import prep_inputs
-from reference_data import api as refdata
+
+import umccrise
+import umccrise._version
 
 
 @click.command()
-@click.version_option(version.__version__)
+@click.pass_context
+@click.version_option(umccrise._version.__version__)
+
+# Primary input data
 @click.argument('input_paths', type=click.Path(exists=True), nargs=-1)
+@click.option('--bcbio_dir', type=click.Path(exists=True, file_okay=False, path_type=pathlib.Path),
+    help='bcbio run directory path')
+@click.option('--dragen_somatic_dir', type=click.Path(exists=True, file_okay=False, path_type=pathlib.Path),
+    help='DRAGEN somatic run directory path')
+@click.option('--dragen_germline_dir', type=click.Path(exists=True, file_okay=False, path_type=pathlib.Path),
+    help='DRAGEN germline run directory path')
+
+@click.option('--dragen_subject_id', help='Subject identifier of input DRAGEN data')
+@click.option('--dragen_tumor_id', help='Tumor sample identifier of input DRAGEN data')
+@click.option('--dragen_normal_id', help='Normal sample identifier of input DRAGEN data')
+@click.option('--custom_tsv_fp', type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+    help='Filepath for custom TSV input')
+
+# Execution options
 @click.option('-o', 'output_dir', type=click.Path(), help='Output directory [def: umccrised]')
 @click.option('-s', '--sample', 'sample', multiple=True,
               help='Optionally, specific sample or batch to process, e.g.: -s SAMPLE1 -s BATCH2')
@@ -67,37 +87,144 @@ from reference_data import api as refdata
               help='Can be used to limit the amount of memory allowed to be used, e.g.: --resources mem_mb=1000.'
                    'Propagated to snakemake.')
 
-def main(input_paths, output_dir=None, sample=None, exclude=None, input_genomes_url=None, genome_build=None,
-         include_stages:list = None, exclude_stages:list = None, min_af=None,
-         cores=None, cluster=False, cluster_submit_cmd=None, debug=False,
-         unlock=False, restart_times=None, dryrun=False, report=None, dag=False, hpc_resources=None):
+def main(
+    ctx,
+    input_paths,
+    bcbio_dir=None,
+    custom_tsv_fp=None,
+    dragen_somatic_dir=None,
+    dragen_germline_dir=None,
+    dragen_subject_id=None,
+    dragen_tumor_id=None,
+    dragen_normal_id=None,
+    output_dir=None,
+    sample=None,
+    exclude=None,
+    input_genomes_url=None,
+    genome_build=None,
+    include_stages:list = None,
+    exclude_stages:list = None,
+    min_af=None,
+    cores=None,
+    cluster=False,
+    cluster_submit_cmd=None,
+    debug=False,
+    unlock=False,
+    restart_times=None,
+    dryrun=False,
+    report=None,
+    dag=False,
+    hpc_resources=None
+):
+    """Umccrise (post-process) a bcbio or Dragen project.\n
+
+    Inputs for umccrise can be provided via the [INPUT_PATHS] argument or with
+    the appropriate options e.g. --bcbio_run_dir PATH.
+
+    \b
+    The [INPUT_PATHS] argument must be one of the following:
+        - bcbio output directory path
+        - DRAGEN somatic and germline output directory paths
+        - VCFs and BAMs filepaths
+        - input TSV filepath
     """
-Umccrise (post-process) a bcbio or Dragen project.\n
-input_paths: a path to inputs:\n
-    * if a dir, treated as a bcbio run folder (a "final" or a "datestamp" directory), or a Dragen run folder\n
-    * if files, BAMs and VCF are supported
-"""
     output_dir = output_dir or 'umccrised'
     output_dir = safe_mkdir(abspath(output_dir))
     log_dir = safe_mkdir(join(output_dir, 'log'))
     logger.init(log_fpath_=join(log_dir, 'command.txt'), save_previous=True)
-    logger.info(f'umccrise {version.__version__}')
+    logger.info(f'umccrise {umccrise._version.__version__}')
 
     if isfile(join(output_dir, 'all.done')):
         run_simple('rm ' + join(output_dir, 'all.done'))
 
     conf = dict()
 
+    # Check input path arguments
+    # Ensure both or neither DRAGEN input args are provided
+    if (dragen_somatic_dir == None) ^ (dragen_germline_dir == None):
+        arg_set = '--dragen_somatic_dir' if dragen_germline_dir == None else '--dragen_germline_dir'
+        print(
+            'Error: DRAGEN input requires both --dragen_somatic_dir and'
+            f' --dragen_germline_dir but only {arg_set} was provided',
+            file=sys.stderr
+        )
+        sys.exit(1)
+    # Require exactly one input type
+    mutex_args = {
+        'Input paths': 'input_paths',
+        'bcbio': 'bcbio_dir',
+        'DRAGEN': ['dragen_somatic_dir', 'dragen_germline_dir'],
+        'Input TSV': 'custom_tsv_fp',
+    }
+    input_types = set()
+    for name, data in mutex_args.items():
+        args = [data] if isinstance(data, str) else data
+        for arg in args:
+            value = ctx.params[arg]
+            if isinstance(value, pathlib.Path) and value != None:
+                input_types.add(name)
+            elif isinstance(value, (list, tuple)) and len(value) > 0:
+                input_types.add(name)
+    # Emit error and info where more than one input has been provided
+    if len(input_types) > 1:
+        input_types_strs = list()
+        for name in sorted(input_types):
+            result_str = list()
+            data = mutex_args[name]
+            args = [data] if isinstance(data, str) else data
+            for arg in args:
+                if name == 'Input paths':
+                    arg_str = f'{arg}: {", ".join(ctx.params[arg])}'
+                else:
+                    arg_str = f'--{arg}: {ctx.params[arg]}'
+                result_str.append(arg_str)
+            input_types_strs.append(f'{name} -> {", ".join(result_str)}')
+        input_types_str = '\n\t'.join(input_types_strs)
+        print(
+            f'Error: only a single input type can be provided but got {len(input_types)}'
+            f' input types:\n\t{input_types_str}',
+            file=sys.stderr
+        )
+        sys.exit(1)
+    elif len(input_types) == 0:
+        print(
+            'Error: no input paths provided - you must provide a run input path e.g. '
+            'umccrise /path/to/my/run',
+            file=sys.stderr
+        )
+        sys.exit(1)
+
     #######################
     #### Setting paths ####
     #######################
 
-    tmp_dirs = []
+    # Check that input directories are of valid input type and add arguments to config
+    for name in input_types:
+        if name == 'Input paths':
+            if not isinstance(input_paths, list):
+                input_paths = list(input_paths)
+        elif name == 'DRAGEN':
+            for arg in mutex_args[name]:
+                dragen_dir = ctx.params[arg].resolve()
+                if not umccrise.is_dragen_directory(dragen_dir):
+                    critical(f'input directory {dragen_dir} does not contain compatible DRAGEN data')
+                conf[arg] = dragen_dir
+            conf['dragen_subject_id'] = dragen_subject_id
+            conf['dragen_tumor_id'] = dragen_tumor_id
+            conf['dragen_normal_id'] = dragen_normal_id
+        elif name == 'bcbio':
+            bcbio_dir = ctx.params[mutex_args[name]].resolve()
+            if not umccrise.is_bcbio_directory(bcbio_dir):
+                critical(f'input directory {bcbio_dir} does not contain compatible bcbio data')
+            conf['bcbio_dirs'] = [bcbio_dir]
+        elif name == 'Input TSV':
+            custom_tsv_fp = ctx.params[mutex_args[name]].resolve()
+            conf['custom_tsv_fps'] = [custom_tsv_fp]
+        else:
+            assert False
 
-    # Input paths
-    if not isinstance(input_paths, list):
-        input_paths = list(input_paths)
     # if a project is passed as a tarball, uncompressing
+    tmp_dirs = []
     clean_input_paths = []
     for input_path in input_paths:
         if isfile(input_path):
@@ -139,7 +266,7 @@ input_paths: a path to inputs:\n
     if min_af is not None:
         conf['min_af'] = min_af
 
-    run, batch_by_name = prep_inputs(conf, silent=True)
+    run, batch_by_name = umccrise.prep_inputs(conf, silent=True)
 
     cpu_resources = prep_resources(
         num_batches=len(batch_by_name),
@@ -155,7 +282,7 @@ input_paths: a path to inputs:\n
         cluster_log_dir = join(log_dir, 'cluster')
         cluster_param = make_cluster_cmdl(cluster_log_dir, refdata, 'umccrise', cluster_submit_cmd)
 
-    snakefile = join(package_path(), 'Snakefile')
+    snakefile = join(umccrise.package_path(), 'Snakefile')
     run_snakemake(
         snakefile, conf,
         output_dir=output_dir,

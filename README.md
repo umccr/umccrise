@@ -19,7 +19,7 @@ In summary, umccrise can:
 - Filter, annotate, prioritize and report structural variants (SVs) from [Manta](https://github.com/Illumina/manta);
 - Run [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) to call copy number variants (CNVs),
   recover SVs, and infer tumor purity & ploidy;
-- Generate a [MultiQC](https://github.com/ewels/MultiQC) report that summarizes quality control statistics in context of background "gold standard" samples;
+- Generate a [MultiQC](https://github.com/umccr/MultiQC) report that summarizes quality control statistics in context of background "gold standard" samples;
 - Generate a cancer report with mutational signatures, circos plots, prioritized copy number and structural variant calls;
 - Run [CACAO](https://github.com/sigven/cacao) to calculate coverage in common hotspots, as well as [goleft indexcov](https://github.com/brentp/goleft/tree/master/indexcov)
   to estimate coverage problems;
@@ -59,13 +59,12 @@ Contents:
 - [Reference data](#reference-data)
     + [Versioning](#versioning)
     + [Syncing with Spartan](#syncing-with-spartan)
-    + [Syncing with s3](#syncing-with-s3)
+    + [Syncing with s3](#syncing-with-aws-s3)
 - [Testing](#testing)
 - [AWS](#aws)
-- [HPC (NCI Gadi)](#hpc--nci-gadi-)
-    + [Run selected steps](#run-selected-steps)
-    + [Run on selected samples](#run-on-selected-samples)
+- [HPC (NCI Gadi)](#hpc-nci-gadi)
 - [Advanced usage](#advanced-usage)
+    + [Inputs with named arguments](#inputs-with-named-arguments)
     + [Controlling the number of CPUs](#controlling-the-number-of-cpus)
     + [Running selected stages](#running-selected-stages)
     + [Custom input](#custom-input)
@@ -78,7 +77,7 @@ Contents:
     + [GNOMAD](#gnomad)
     + [PCGR](#pcgr)
     + [Problem regions](#problem-regions)
-    + [Coding regions (SAGE)](#coding-regions--sage-)
+    + [Coding regions (SAGE)](#coding-regions-sage)
     + [Ensembl annotation](#ensembl-annotation)
     + [Hotspots](#hotspots)
     + [Other HMF files](#other-hmf-files)
@@ -90,8 +89,8 @@ Contents:
 
 ## Usage
 
-Given input data from bcbio-nextgen (`final` folder), DRAGEN (`output-directory` folder), or a custom set of BAM or VCF files,
-umccrise can be run with:
+Given input data from bcbio-nextgen (`final` folder), DRAGEN (`somatic` and `germline` output folders), or a custom set of
+BAM or VCF files, umccrise can be run with:
 
 ```
 umccrise <input-data ...> -o umccrised
@@ -219,6 +218,22 @@ umccrise <input-folder> -j30 -c
 ```
 
 ## Advanced usage
+### Inputs with named arguments
+Inputs can be provided to umccrise as a positional argument (see [Usage](#usage)) or alternatively as named arguments (see
+examples below). This is useful when dealing with DRAGEN input, which have two paired input directories (somatic and
+germline). The patient and sample identifiers can also be explicitly set for DRAGEN data - in some instances this is
+required as these identifiers cannot be automatically inferred.
+
+```bash
+# bcbio input with named arguments
+umccrise --bcbio_dir PATH -o umccrised/
+
+# DRAGEN input with named arguments
+umccrise --dragen_somatic_dir PATH --dragen_germline_dir PATH -o umccrised/
+
+# Explicitly setting subject identifier for provided DRAGEN input
+umccrise --dragen_somatic_dir PATH --dragen_germline_dir PATH --dragen_subject_id IDENTIFIER -o umccrised/
+```
 
 ### Controlling the number of CPUs
 

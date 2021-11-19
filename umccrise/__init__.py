@@ -1,11 +1,15 @@
 import glob
 import math
 import os
+import pathlib
+import re
 import sys
 from os.path import join, abspath, dirname, isfile, basename, splitext
 from os.path import isfile, join, dirname, abspath, isdir
 from datetime import datetime
 import csv
+
+import pysam
 
 from ngs_utils.Sample import BaseBatch, BaseProject, BaseSample
 from ngs_utils.file_utils import splitext_plus, verify_file, verify_dir, adjust_path
@@ -234,85 +238,169 @@ def prep_inputs(smconfig, silent=False):
     if smconfig.get('debug', 'no') == 'yes':
         log.is_debug = True
 
-    input_paths = smconfig.get('input_paths', [abspath(os.getcwd())])
-    if isinstance(input_paths, str):
-        input_paths = input_paths.split(',')
+    # Handle inputs provided by positional arguments
+    input_paths_raw = smconfig.get('input_paths')
+    if input_paths_raw:
+        if isinstance(input_paths_raw, list):
+            input_paths_strs = input_paths_raw
+        elif isinstance(input_paths_raw, str):
+            input_paths_strs = input_paths_raw.split(',')
+        else:
+            assert False
+        input_paths = [pathlib.Path(p) for p in input_paths_strs]
+    else:
+        input_paths = list()
+
+    # Handle inputs provided by named arguments. DRAGEN directories are handled separately below.
+    dragen_directories = list()
+    bcbio_directories = smconfig.get('bcbio_dirs', list())
+    custom_tsvs = smconfig.get('custom_tsv_fps', list())
 
     found_bcbio_or_dragen_runs = []
     custom_run = CustomProject(
         input_dir=adjust_path(os.getcwd()),
         include_samples=include_names,
-        exclude_samples=exclude_names)
+        exclude_samples=exclude_names
+    )
 
     log.is_silent = silent  # to avoid redundant logging in cluster sub-executions of the Snakefile
 
-    for input_path in input_paths:
-        # parsing a tsv file with an input sample on each line
-        if isfile(input_path) and input_path.endswith('.tsv'):
-            custom_run.input_tsv_fpaths.append(input_path)
-            with open(input_path) as f:
-                for entry in csv.DictReader(f, delimiter='\t'):
-                    b = custom_run.add_batch(entry, dirname(input_path))
-                    if b:
-                        include_samples_map[b.name] = b.name
+    # Recursively search for bcbio and DRAGEN output directories. We do *not* recurse into
+    # bcbio/DRAGEN output directories i.e. nested outputs are ignored
+    #
+    # A recursive search is used to simplify and generalise DRAGEN output discovery by not relying
+    # on file name patterns, which are subject to change. See DRAGEN output structuring (20211108):
+    #   * DRAGEN tumor/normal:
+    #       - <root_output_dir>/<subject_id>_dragen_somatic/<output_files>
+    #   * DRAGEN normal:
+    #       - <root_output_dir>/<subject_id>_dragen_germline/<output_files>
+    # The DRAGEN tumor/normal and normal output directories may be staged under a single root
+    # directory.
+    #
+    # Input custom TSVs must be explicitly provided on the command line.
+    #
+    # Currently to generate DRAGEN tumor/normal data, two DRAGEN runs are done: (1) tumor/normal,
+    # and (2) normal. Hence there the two DRAGEN output directories must be paired prior to
+    # launching the main umccrise Snakemake workflow.
+    #
+    # Initialisation of SampleProject deriviative instances is done below to allow pairing of
+    # DRAGEN output directories.
 
-        # custom file
-        elif isfile(input_path):
-            custom_run.add_file(input_path)
-
-        # dragen
-        elif isdir(input_path) and glob.glob(join(input_path, '*-replay.json')):
-            run = DragenProject(input_path,
-                                include_samples=include_names,
-                                exclude_samples=exclude_names)
-            found_bcbio_or_dragen_runs.append(run)
-        # bcbio
-        elif isdir(input_path) and detect_bcbio_dir(input_path, silent=True):
-            run = BcbioProject(input_path,
-                               include_samples=include_names,
-                               exclude_samples=exclude_names,
-                               silent=True)
-            run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
-
-            if len(run.batch_by_name) == 0:
-                if exclude_names:
-                    critical(f'Error: no samples left with the exclusion of batch/sample name(s): '
-                             f'{", ".join(exclude_names)}.'
-                             f'Check yaml file for available options: {run.bcbio_yaml_fpath}.')
-                if include_names:
-                    critical(f'Error: could not find a batch or a sample with the name(s): '
-                             f'{", ".join(include_names)}. '
-                             f'Check yaml file for available options: {run.bcbio_yaml_fpath}')
-                critical(f'Error: could not parse any batch or samples in the bcbio project. '
-                         f'Please check the bcbio yaml file: {run.bcbio_yaml_fpath}')
-
-            found_bcbio_or_dragen_runs.append(run)
-
+    # First take all explicitly set *files* from the input. These will be custom TSVs, BAMs, and/or
+    # VCFs.
+    provided_files = list()
+    directories = list()
+    invalid_inputs = list()
+    for path in input_paths:
+        if path.name.endswith('.tsv'):
+            custom_tsvs.append(path)
+        elif any(path.name.endswith(fext) for fext in ('.bam', '.vcf.gz')):
+            provided_files.append(path)
+        elif path.is_dir():
+            directories.append(path)
         else:
-            error(f'Cannot recognize file or dir {input_path}. '
-                  f'Expected: a bcbio or Dragen output folder, or a TSV file, or a BAM or a VCF file.')
+            invalid_inputs.append(path)
+    if invalid_inputs:
+        critical(f'received bad command line inputs: {", ".join(invalid_inputs)}')
 
-    if len(custom_run.samples) == 0 and len(found_bcbio_or_dragen_runs) == 1:
-        # only one dragen or bcbio project - can return it directly
-        combined_run = found_bcbio_or_dragen_runs[0]
+    # Discover bcbio and DRAGEN directories
+    for directory in directories:
+        discovered_directories = recursively_search_input(directory)
+        if not any(dl for dl in discovered_directories.values()):
+            critical(f'did not find any valid inputs in {directory}')
+        bcbio_directories.extend(discovered_directories['bcbio'])
+        dragen_directories.extend(discovered_directories['dragen'])
 
+    # Pair DRAGEN directories if given by input_paths otherwise manually create and collect
+    # required information to initialise a DragenProject from the provided paired DRAGEN input
+    # directories (i.e. from --dragen_somatic_dir and --dragen_germline_dir)
+    if any(arg in smconfig for arg in ('dragen_somatic_dir', 'dragen_germline_dir')):
+        assert len(dragen_directories) == 0
+        dragen_run_sets = create_dragen_paired_directories_from_config(smconfig)
     else:
-        # multiple bcbio or dragen projects - combining them into a CustomProject
-        combined_run = custom_run or CustomProject()
-        for run in found_bcbio_or_dragen_runs:
-            combined_run.batch_by_name.update(run.batch_by_name)
-            combined_run.samples.extend(run.samples)
-            if combined_run.project_name is None:
-                combined_run.project_name = run.project_name
-            if combined_run.genome_build is None:
-                combined_run.genome_build = run.genome_build
-            else:
-                assert combined_run.genome_build == run.genome_build
+        dragen_run_sets = pair_dragen_directories(dragen_directories)
 
-    if combined_run.genome_build is None:
-        combined_run.genome_build = 'hg38'
-    if combined_run.project_name is None:
-        combined_run.project_name = 'umccrise_' + datetime.now().strftime("%Y_%m_%d")
+    # Create input project classes
+    # Custom TSVs
+    for custom_tsv in custom_tsvs:
+        custom_run.input_tsv_fpaths.append(custom_tsv)
+        with open(custom_tsv) as f:
+            for entry in csv.DictReader(f, delimiter='\t'):
+                b = custom_run.add_batch(entry, dirname(custom_tsv))
+                if b:
+                    include_samples_map[b.name] = b.name
+    # BAMs/VCFs provided directly on command line
+    for provided_file in provided_files:
+        custom_run.add_file(provided_file)
+    # Paired DRAGEN directories
+    for dragen_run_set in dragen_run_sets:
+        # Include or exclude run based on available identifiers
+        identifiers = [
+            dragen_run_set['subject_id'],
+            dragen_run_set['normal_run']['normal'],
+            dragen_run_set['tumor_normal_run']['tumor'],
+            dragen_run_set['tumor_normal_run']['normal'],
+        ]
+        if include_names and all(ident not in include_names for ident in identifiers):
+            continue
+        if exclude_names and any(ident in exclude_names for ident in identifiers):
+            continue
+        # Initialise project
+        run = DragenProject(
+            dragen_run_set,
+            include_samples=include_names,
+            exclude_samples=exclude_names
+        )
+        found_bcbio_or_dragen_runs.append(run)
+    # bcbio directories
+    for bcbio_directory in bcbio_directories:
+        run = BcbioProject(
+            bcbio_directory,
+            include_samples=include_names,
+            exclude_samples=exclude_names,
+            silent=True
+        )
+        run.project_name = splitext(basename(run.bcbio_yaml_fpath))[0]
+        if not run.batch_by_name:
+            continue
+        found_bcbio_or_dragen_runs.append(run)
+
+    # NOTE(SW): previously if multiple Batches were supplied, a CustomProject was initialised to
+    # combine them into a single project. However, the CustomProject class is not compatible with
+    # the MultiQC stage; the process of collecting QC files is input-type specific and implemented
+    # in corresponding Project/Batch classes (e.g. DragenProject, BcbioBatch) but the
+    # CustomProject/CustomBatch only implements a generalised QC files collection function.
+    #
+    # Consequently, CustomProject and DragenProject cause issues with the MultiQC report, and so
+    # multiple Batches have been disallowed so that well-formed MultiQC reports can be generated.
+    # This limitation will likely be lifted in the future.
+    #
+    # Currently umccrise accepts either one DRAGEN run, one bcbio batch, or one 'custom' run
+    if len(custom_run.samples) == 0 and len(found_bcbio_or_dragen_runs) == 1:
+        run = found_bcbio_or_dragen_runs[0]
+    elif len(custom_run.samples) == 1 and len(found_bcbio_or_dragen_runs) == 0:
+        run = custom_run
+    else:
+        runs_count = len([*custom_run.samples, *found_bcbio_or_dragen_runs])
+        if runs_count == 0:
+            critical('no batches found')
+        else:
+            critical(
+                f'discovered {runs_count} batches but umccrise currently only accepts '
+                'a single batch'
+            )
+
+    # NOTE(SW): we are not currently supporting backwards compatibility for bcbio data and hence
+    # reject bcbio input. Known required changes to achieve bcbio backwards compatibility are:
+    #   - updating MultiQC mosdepth module to display sample names consistently with other modules
+    #   - regenerating QC reference bcbio data to propogate changes
+    if bcbio_directories:
+        critical('the current version of umccrise does not support bcbio input')
+
+    if run.genome_build is None:
+        run.genome_build = 'hg38'
+    if run.project_name is None:
+        run.project_name = 'umccrise_' + datetime.now().strftime("%Y_%m_%d")
 
     # Reference files
     if smconfig.get('genomes_dir'):
@@ -320,11 +408,19 @@ def prep_inputs(smconfig, silent=False):
 
     log.is_silent = False
 
-    # Batch objects index by tumor sample names
-    batches = [b for b in combined_run.batch_by_name.values()
+    # Ensure at least one batch has been discovered
+    batches = [b for b in run.batch_by_name.values()
                if not b.is_germline() and b.tumors
                and b.normals]
-    assert batches
+    if not batches:
+        msgs = list()
+        msgs.append('No batches discovered')
+        if include_names:
+            msgs.append(f'Include batch/sample name list: {", ".join(include_names)}')
+        if exclude_names:
+            msgs.append(f'Exclude batch/sample name list: {", ".join(exclude_names)}')
+        critical('. '.join(msgs))
+    # Batch objects index by tumor sample names
     batch_by_name = dict()
     for b in batches:
         new_name = include_samples_map.get(b.name) or \
@@ -332,7 +428,7 @@ def prep_inputs(smconfig, silent=False):
                    b.name + '__' + b.tumors[0].name
         batch_by_name[new_name] = b
 
-    return combined_run, batch_by_name
+    return run, batch_by_name
 
 
 def prep_stages(run, include_stages=None, exclude_stages=None):
@@ -361,6 +457,10 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
     # if not all(b.sv_vcf for b in run.batch_by_name.values()):
     #     default_disabled |= {'structural'}
 
+    # For non-bcbio runs we want to run BCFtools and SAMtools stats on input BAMs by default
+    if not isinstance(run, BcbioProject):
+        default_enabled |= {'samtools_stats', 'bcftools_stats'}
+
     debug(f'include_stages: {include_stages}')
     debug(f'exclude_stages: {exclude_stages}')
     def _rename_input_stages(stages):
@@ -374,7 +474,7 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
                 fixed_stages |= {'structural', 'purple'}
             elif s in {'coverage'}:
                 fixed_stages |= {'mosdepth', 'goleft', 'cacao'}
-                if not (isinstance(run, BcbioProject) or isinstance(run, DragenProject)):
+                if not isinstance(run, BcbioProject):
                     fixed_stages |= {'samtools_stats'}
             elif s == 'small_variants':
                 fixed_stages |= {'somatic', 'germline'}
@@ -389,8 +489,8 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
             elif s == 'multiqc':
                 fixed_stages |= {'multiqc', 'purple', 'conpair', 'somatic', 'germline',
                                  'oncoviruses', 'mosdepth'}
-                if not (isinstance(run, BcbioProject) or isinstance(run, DragenProject)):
-                    fixed_stages |= {'samtools_stats'}
+                if not isinstance(run, BcbioProject):
+                    fixed_stages |= {'samtools_stats', 'bcftools_stats'}
             elif s == 'default':
                 fixed_stages |= default_enabled
             elif s not in default_enabled | default_disabled:
@@ -405,6 +505,188 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
     selected_stages = (include_stages or default_enabled) - exclude_stages
     debug(f'Selected_stages: {selected_stages}')
     return selected_stages
+
+
+def recursively_search_input(input_directory):
+    result = {'bcbio': list(), 'dragen': list()}
+    directories = [input_directory]
+    i = 0
+    while directories:
+        i += 1
+        if i > 1000:
+            msg_p1 = f'reached maximum allowed iterations for {input_directory} while'
+            msg_p2 = 'searching for input, check that input directories are correct'
+            critical(f'ERROR: {msg_p1} {msg_p2}')
+        directory = directories.pop()
+        if is_bcbio_directory(directory):
+            result['bcbio'].append(directory)
+        elif is_dragen_directory(directory):
+            result['dragen'].append(directory)
+        elif directory.is_dir():
+            directories.extend(p for p in directory.iterdir() if p.is_dir())
+        else:
+            assert False
+    return result
+
+
+def is_dragen_directory(path):
+    # DRAGEN output directories are identified by the presence of a *-replay.json file
+    replay_fps = list(path.glob('*replay.json'))
+    return bool(replay_fps)
+
+
+def is_dragen_tumor_normal_directory(path):
+    # DRAGEN tumor/normal directories are differentiated from normal directories by presence of a
+    # tumor BAM file with the filename pattern '*_tumor.bam'
+    tumor_bam = list(path.glob('*_tumor.bam'))
+    return bool(tumor_bam)
+
+
+def is_bcbio_directory(path):
+    # bcbio output directories are identified by the presence of both a 'final' and 'config'
+    # directory
+    final_dir = path / 'final'
+    config_dir = path / 'config'
+    return final_dir.is_dir() and config_dir.is_dir()
+
+
+def create_dragen_paired_directories_from_config(smconfig):
+    # Set subject identifier
+    tumor_subject_id_inferred = get_subject_id_from_dragen_dir(smconfig['dragen_somatic_dir'])
+    normal_subject_id_inferred = get_subject_id_from_dragen_dir(smconfig['dragen_germline_dir'])
+    if smconfig.get('dragen_subject_id'):
+        subject_id = smconfig.get('dragen_subject_id')
+    elif tumor_subject_id_inferred == None:
+        critical('could not infer subject id from somatic dir, please specify with --dragen_subject_id')
+    elif normal_subject_id_inferred == None:
+        critical('could not infer subject id from germline dir, please specify with --dragen_subject_id')
+    elif tumor_subject_id_inferred != normal_subject_id_inferred:
+        critical(
+            f'got different subject ids from somatic ({tumor_subject_id_inferred}) and germline'
+            f' ({normal_subject_id_inferred}) dirs, please specify with --dragen_subject_id'
+        )
+    else:
+        subject_id = tumor_subject_id_inferred
+    # Set tumor identifier
+    tumor_samples_inferred = get_samples_from_dragen_dir_bams(smconfig['dragen_somatic_dir'])
+    if smconfig.get('dragen_tumor_id'):
+        tumor_id = smconfig.get('dragen_tumor_id')
+        if tumor_id != tumor_samples_inferred['tumor']:
+            warn(
+                f'provided DRAGEN tumor id ({tumor_id}) doesn\'t match id collected'
+                f' from discovered BAM file ({tumor_samples_inferred["tumor"]})'
+            )
+    else:
+        tumor_id = tumor_samples_inferred['tumor']
+    # Set normal identifier
+    normal_samples_inferred = get_samples_from_dragen_dir_bams(smconfig['dragen_germline_dir'])
+    if smconfig.get('dragen_normal_id'):
+        normal_id = smconfig.get('dragen_normal_id')
+        if normal_id != normal_samples_inferred['normal']:
+            warn(
+                f'provided DRAGEN normal id ({normal_id}) doesn\'t match id collected'
+                f' from discovered BAM file ({normal_samples_inferred["normal"]})'
+            )
+        if normal_id != tumor_samples_inferred['normal']:
+            warn(
+                f'provided DRAGEN normal id ({normal_id}) doesn\'t match id collected'
+                f' from discovered BAM file ({tumor_samples_inferred["normal"]})'
+            )
+    else:
+        normal_id = normal_samples_inferred['normal']
+    # Create datastructure used for DragenProject init
+    return [
+        {
+            'subject_id': subject_id,
+            'tumor_normal_run': {
+                'normal': normal_id,
+                'tumor': tumor_id,
+                'path': smconfig['dragen_somatic_dir'],
+            },
+            'normal_run': {
+                'normal': normal_id,
+                'path': smconfig['dragen_germline_dir'],
+            },
+        }
+    ]
+
+
+def pair_dragen_directories(paths):
+    # DRAGEN tumor/normal and normal directories are paired on the basis of the normal sample
+    # name.
+    #
+    # Tumor and normal sample names are extracted from the BAM header. Specifically, the BAM
+    # sample name is retrieved from the 'SM' (sample) field of the '@RG' (read group) header line.
+    #
+    # Tumor or normal identity of a sample is inferred from the BAM filename: if a BAM filename
+    # contains the '_tumor.bam' suffix then it and the sample name is set as the tumor, otherwise
+    # set as the normal sample.
+    #
+    # The subject identifier is from the DRAGEN output directory name.
+    #
+    # Assumes a one-to-one pairing for DRAGEN tumor/normal and normal output directories i.e. no
+    # multiple tumor/normal runs to a single normal run.
+
+    # Sort paths by normal sample name so that normal and tumor/normal are placed together
+    paths_sorted = dict()
+    for path in paths:
+        dir_type = 'tumor_normal_run' if is_dragen_tumor_normal_directory(path) else 'normal_run'
+        samples = get_samples_from_dragen_dir_bams(path)
+        # Ensure we have found normal names
+        if 'normal' not in samples:
+            critical(f'Could not find normal sample name for DRAGEN directory {path}')
+        # Sort by normal sample name, add path, subject ID to stored data
+        sample_normal = samples['normal']
+        if sample_normal not in paths_sorted:
+            paths_sorted[sample_normal] = dict()
+        assert dir_type not in paths_sorted[sample_normal]
+        paths_sorted[sample_normal][dir_type] = samples
+        paths_sorted[sample_normal][dir_type]['path'] = path
+        paths_sorted[sample_normal][dir_type]['subject_id'] = get_subject_id_from_dragen_dir(path)
+
+    # Differentiated paired and unpaired paths
+    paths_unpaired = list()
+    paths_paired = list()
+    for paths in paths_sorted.values():
+        if 'normal_run' in paths and 'tumor_normal_run' in paths:
+            # Ensure we have collected only one subject id for this set of inputs
+            assert len({d['subject_id'] for d in paths.values()}) == 1
+            paths['subject_id'] = paths['normal_run']['subject_id']
+            paths_paired.append(paths)
+        else:
+            for dir_type, data in paths.items():
+                paths_unpaired.append((dir_type, data['path']))
+    # Emit warning for unpaired paths
+    if paths_unpaired:
+        paths_unpaired_strs = list()
+        for dir_type, path in paths_unpaired:
+            paths_unpaired_strs.append(f'{dir_type}: {path}')
+        paths_unpaired_str = '\n\t'.join(paths_unpaired_strs)
+        warn(f'could not pair DRAGEN directories:\n\t{paths_unpaired_str}')
+    return paths_paired
+
+
+def get_samples_from_dragen_dir_bams(dir_fp):
+    samples = dict()
+    for bam_fp in dir_fp.glob('*bam'):
+        # Set BAM type on basis of suffix
+        bam_type = 'tumor' if bam_fp.name.endswith('_tumor.bam') else 'normal'
+        assert bam_type not in samples
+        samples[bam_type] = get_read_group_sample_name(bam_fp)
+    return samples
+
+
+def get_read_group_sample_name(bam_fp):
+    bam = pysam.AlignmentFile(bam_fp)
+    header = bam.header.to_dict()
+    [sample] = [rg['SM'] for rg in header['RG']]
+    return sample
+
+
+def get_subject_id_from_dragen_dir(dir_fp):
+    # NOTE(SW): this is extremely fragile and will only work with the current naming system. This
+    # should be a focus for improvement to increase stability.
+    return re.sub('_.+$', '', dir_fp.name)
 
 
 def get_purple_metric(purple_file, metric='purity'):
@@ -449,8 +731,3 @@ def cnt_vars(vcf_path, passed=False):
         else:
             others += 1
     return snps, indels, others
-
-
-
-
-
