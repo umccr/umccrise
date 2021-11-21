@@ -1,4 +1,4 @@
-FROM ubuntu:21.04
+FROM public.ecr.aws/lts/ubuntu:20.04
 MAINTAINER Vlad Saveliev "https://github.com/vladsaveliev"
 
 # Create a non-root user and group
