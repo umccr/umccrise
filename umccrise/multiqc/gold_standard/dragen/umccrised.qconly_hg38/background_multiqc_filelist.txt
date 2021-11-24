@@ -1,4 +1,5 @@
 Alice/dragen_germline/Alice.fastqc_metrics.csv
+Alice/dragen_germline/Alice.fragment_length_hist.csv
 Alice/dragen_germline/Alice.ploidy_estimation_metrics.csv
 Alice/dragen_germline/Alice.vc_metrics.csv
 Alice/dragen_germline/Alice.wgs_contig_mean_cov.csv
@@ -28,6 +29,7 @@ Alice/umccrise/Alice_T_oncoviruses_stats_header.yml
 Alice/umccrise/Alice_T_pass_bcftools_stats_germline.txt
 Alice/umccrise/Alice_T_somatic_stats.yml
 Bob/dragen_germline/Bob.fastqc_metrics.csv
+Bob/dragen_germline/Bob.fragment_length_hist.csv
 Bob/dragen_germline/Bob.ploidy_estimation_metrics.csv
 Bob/dragen_germline/Bob.vc_metrics.csv
 Bob/dragen_germline/Bob.wgs_contig_mean_cov.csv
@@ -57,6 +59,7 @@ Bob/umccrise/Bob_T_oncoviruses_stats_header.yml
 Bob/umccrise/Bob_T_pass_bcftools_stats_germline.txt
 Bob/umccrise/Bob_T_somatic_stats.yml
 Chen/dragen_germline/Chen.fastqc_metrics.csv
+Chen/dragen_germline/Chen.fragment_length_hist.csv
 Chen/dragen_germline/Chen.ploidy_estimation_metrics.csv
 Chen/dragen_germline/Chen.vc_metrics.csv
 Chen/dragen_germline/Chen.wgs_contig_mean_cov.csv
@@ -86,6 +89,7 @@ Chen/umccrise/Chen_T_oncoviruses_stats_header.yml
 Chen/umccrise/Chen_T_pass_bcftools_stats_germline.txt
 Chen/umccrise/Chen_T_somatic_stats.yml
 Dakota/dragen_germline/Dakota.fastqc_metrics.csv
+Dakota/dragen_germline/Dakota.fragment_length_hist.csv
 Dakota/dragen_germline/Dakota.ploidy_estimation_metrics.csv
 Dakota/dragen_germline/Dakota.vc_metrics.csv
 Dakota/dragen_germline/Dakota.wgs_contig_mean_cov.csv
@@ -115,6 +119,7 @@ Dakota/umccrise/Dakota_T_oncoviruses_stats_header.yml
 Dakota/umccrise/Dakota_T_pass_bcftools_stats_germline.txt
 Dakota/umccrise/Dakota_T_somatic_stats.yml
 Elon/dragen_germline/Elon.fastqc_metrics.csv
+Elon/dragen_germline/Elon.fragment_length_hist.csv
 Elon/dragen_germline/Elon.ploidy_estimation_metrics.csv
 Elon/dragen_germline/Elon.vc_metrics.csv
 Elon/dragen_germline/Elon.wgs_contig_mean_cov.csv
