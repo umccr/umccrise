@@ -11,6 +11,7 @@ import yaml
 import re
 
 from ngs_utils import logger
+from ngs_utils.dragen import DragenBatch
 from ngs_utils.Sample import BaseProject, BaseBatch
 from ngs_utils.call_process import run_simple
 from ngs_utils.file_utils import verify_file, safe_mkdir, can_reuse, file_transaction
@@ -58,31 +59,51 @@ def make_report_metadata(proj: BaseProject, batch: BaseBatch=None, base_dirpath=
     return conf, additional_files
 
 
-def multiqc_prep_data(batch, generated_conf, out_filelist_file, out_conf_yaml, qc_files, qc_files_renamed_dir):
+def multiqc_prep_data(batch, generated_conf, out_filelist_file, out_conf_yaml, qc_files_input, qc_files_renamed_dir):
     if generated_conf:
         with file_transaction(None, out_conf_yaml) as tx:
             with open(tx, 'w') as f:
                 yaml.dump(generated_conf, f, default_flow_style=False, width=float("inf"))
 
     # Rename sample QC files for consistent display in MultiQC reports
-    qc_files_renamed = relabel_sample_qc_identifiers(
-        batch.tumors[0].name,
-        batch.normals[0].name,
-        qc_files,
-        qc_files_renamed_dir,
-    )
+    # NOTE(SW): as QC files are provided as a flat list of filepaths, we must re-infer source using
+    # input directories. Ideally, renaming would be performed at a different point during execution
+    # and with context information that would negate the need to re-infer source. However, we're
+    # trying minimise modifications to umccrise and so this is a non-optimal solution.
+    if isinstance(batch, DragenBatch):
+        qc_files = relabel_sample_qc_identifiers(
+            batch.tumors[0].name,
+            batch.normals[0].name,
+            batch.tumor_normal_base_dir,
+            batch.normal_base_dir,
+            batch.tumor_normal_prefix,
+            batch.normal_prefix,
+            qc_files_input,
+            qc_files_renamed_dir,
+        )
+    else:
+        qc_files = qc_files_input
 
     with file_transaction(None, out_filelist_file) as tx:
         try:
             with open(tx, 'w') as out:
-                for fp in qc_files_renamed:
+                for fp in qc_files:
                     if fp:
                         print(fp, file=out)
         except OSError as e:
             err(str(e))
 
 
-def relabel_sample_qc_identifiers(tumor_name, normal_name, qc_files, output_dir_str):
+def relabel_sample_qc_identifiers(
+    tumor_name,
+    normal_name,
+    tumor_dir,
+    normal_dir,
+    tumor_prefix,
+    normal_prefix,
+    qc_files,
+    output_dir_str
+):
     qc_files_renamed = list()
     output_dir = pathlib.Path(output_dir_str)
     for fp_in in (pathlib.Path(fp) for fp in qc_files):
@@ -90,8 +111,33 @@ def relabel_sample_qc_identifiers(tumor_name, normal_name, qc_files, output_dir_
         if 'umccrise/multiqc/gold_standard/' in str(fp_in):
             qc_files_renamed.append(fp_in)
             continue
-        # Rename QC files as necessary
-        if fp_in.name.endswith('mapping_metrics.csv'):
+        # Set DRAGEN QC files for simple rename
+        dragen_qc_files_rename = [
+            '.vc_metrics.csv',
+            '.wgs_contig_mean_cov.csv',
+            '.wgs_contig_mean_cov_tumor.csv',
+            '.wgs_coverage_metrics.csv',
+            '.wgs_coverage_metrics_tumor.csv',
+            '.wgs_fine_hist.csv',
+            '.wgs_fine_hist_tumor.csv',
+            '.ploidy_estimation_metrics.csv',
+            '.fragment_length_hist.csv',
+            '.fastqc_metrics.csv',
+        ]
+        # Get QC file source
+        if str(fp_in).startswith(str(tumor_dir)):
+            target_name = tumor_name
+            suffix = fp_in.name.replace(tumor_prefix, '')
+        elif str(fp_in).startswith(str(normal_dir)):
+            target_name = normal_name
+            suffix = fp_in.name.replace(normal_prefix, '')
+        else:
+            suffix = None
+            print(fp_in)
+        # Perform rename
+        if suffix in dragen_qc_files_rename:
+            fp_out = rename_dragen_qc_files_simple(fp_in, output_dir, target_name, suffix)
+        elif fp_in.name.endswith('mapping_metrics.csv'):
             fp_out = rename_mapping_metrics(fp_in, output_dir, tumor_name, normal_name)
         elif fp_in.name.endswith('.mosdepth.global.dist.txt'):
             fp_out = rename_mosdepth_global(fp_in, output_dir, tumor_name, normal_name)
@@ -102,6 +148,13 @@ def relabel_sample_qc_identifiers(tumor_name, normal_name, qc_files, output_dir_
         assert fp_out
         qc_files_renamed.append(fp_out)
     return qc_files_renamed
+
+
+def rename_dragen_qc_files_simple(fp_in, output_dir, target_name, suffix):
+    fp_out = output_dir / f'{target_name}{suffix}'
+    #assert not fp_out.exists()
+    shutil.copy(fp_in, fp_out)
+    return fp_out
 
 
 def rename_mapping_metrics(fp_in, output_dir, tumor_name, normal_name):
@@ -275,5 +328,3 @@ def get_run_info(proj: BaseProject, base_dirpath=None,
             run_info_dict['data_versions'] = f'<a href="{data_versions_url}">data versions</a>'
 
     return run_info_dict
-
-

@@ -550,6 +550,15 @@ def is_bcbio_directory(path):
     return final_dir.is_dir() and config_dir.is_dir()
 
 
+def get_dragen_output_prefix(dirpath):
+    for fp in dirpath.iterdir():
+        if not fp.match('*replay.json'):
+            continue
+        return fp.name.replace('-replay.json', '')
+    else:
+        critical('could not determine output prefix for DRAGEN directory \'{dirpath}\'')
+
+
 def create_dragen_paired_directories_from_config(smconfig):
     # Set subject identifier
     tumor_subject_id_inferred = get_subject_id_from_dragen_dir(smconfig['dragen_somatic_dir'])
@@ -602,10 +611,12 @@ def create_dragen_paired_directories_from_config(smconfig):
                 'normal': normal_id,
                 'tumor': tumor_id,
                 'path': smconfig['dragen_somatic_dir'],
+                'prefix': get_dragen_output_prefix(smconfig['dragen_somatic_dir'])
             },
             'normal_run': {
                 'normal': normal_id,
                 'path': smconfig['dragen_germline_dir'],
+                'prefix': get_dragen_output_prefix(smconfig['dragen_germline_dir'])
             },
         }
     ]
@@ -642,6 +653,7 @@ def pair_dragen_directories(paths):
         assert dir_type not in paths_sorted[sample_normal]
         paths_sorted[sample_normal][dir_type] = samples
         paths_sorted[sample_normal][dir_type]['path'] = path
+        paths_sorted[sample_normal][dir_type]['prefix'] = get_dragen_output_prefix(path)
         paths_sorted[sample_normal][dir_type]['subject_id'] = get_subject_id_from_dragen_dir(path)
 
     # Differentiated paired and unpaired paths
