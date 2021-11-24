@@ -13,7 +13,8 @@ dependencies:
   - samtools ==1.10
   - bcftools ==1.10.2
   - click
-  - ngs_utils ==2.9.0
+  - ngs_utils ==2.9.1
   - pcgr ==0.9.0.1
   - cpsr ==0.6.0.1
   - cacao ==0.2.1.3
+  - pandoc ==2.16.1
