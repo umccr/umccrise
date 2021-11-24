@@ -194,7 +194,7 @@ rule prep_multiqc_data:
             generated_conf=generated_conf,
             out_filelist_file=output.filelist,
             out_conf_yaml=output.generated_conf_yaml,
-            qc_files=qc_files,
+            qc_files_input=qc_files,
             qc_files_renamed_dir=output.renamed_file_dir,
         )
 
