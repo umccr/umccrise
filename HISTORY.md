@@ -1,3 +1,19 @@
+## 2.0.0 (30 Nov 2021)
+
+- Overhaul automatic detection for DRAGEN inputs
+- Allow inputs to be provided via named arguments
+- Ignore timestamp for input BAMs and associated indexes
+- Enforce restriction of single bcbio batch or DRAGEN run
+- Prevent execution with bcbio data as input
+- Remove downsampled bcbio test from `buildspec.yml`
+- Run BCFtools, SAMtools stats appropriately for non-bcbio input
+- Update DRAGEN reference QC files
+- Upgrade to NGS Utils 2.9.1 (includes updated DRAGEN support)
+- Upgrade to MultQC 1.12dev+umccrise.0.0.2 (includes umccrise-specific patches)
+- Relabel QC files names and identifiers for the MultiQC report to improve display
+- Implement custom sample ordering for MultiQC report
+- Use Ubuntu 20.04 from public ECR as base Docker image
+
 ## 1.2.4 (18 Nov 2021)
 
 - Simplify MultiQC installation ([pr75](https://github.com/umccr/umccrise/pull/75))
