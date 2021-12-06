@@ -12,7 +12,4 @@ if (length(args)==0) {
 }
 
 df = load_multiqc(args[1])
-
-# TODO: serialize to destination .parquet file instead of tempfile. Set it to args[2]
-parquet = tempfile(fileext = ".parquet")
-write_parquet(df, sink = parquet)
+write_parquet(df, args[2])
