@@ -221,6 +221,16 @@ rule batch_multiqc:
               f' -c {input.umccrise_conf_yaml} -c {input.generated_conf_yaml} --filename {output.html_file}')
 
 
+rule tidy_multiqc_data:
+    input:
+        multiqc_data_json          = 'work/{batch}/multiqc_data/multiqc_data.json'
+    output:
+        tidy_multiqc_data          = '{batch}/{batch}-multiqc_data.parquet'  
+    group: 'multiqc'
+    run:
+        shell('Rscript multiqc/tidy_data.r input.multiqc_data_json output.tidy_multiqc_data')
+
+
 if len(batch_by_name) > 1:
     rule combined_multiqc_prep_multiqc_data:
         input:
@@ -275,6 +285,7 @@ rule multiqc:
     input:
         expand(rules.batch_multiqc.output, batch=batch_by_name.keys()),
         rules.combined_multiqc.output if len(batch_by_name) > 1 else [],
+        rules.tidy_multiqc_data,
     output:
         temp(touch('log/multiqc.done'))
 

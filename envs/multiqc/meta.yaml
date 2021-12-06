@@ -27,6 +27,8 @@ requirements:
     - requests
     - simplejson
     - spectra >=0.0.10
+    - r-tidymultiqc
+    - r-arrow
 
   run:
     - python
