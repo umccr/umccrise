@@ -1,3 +1,7 @@
+## 2.0.1 (15 Feb 2022)
+
+- Handle multiple '@RG SM' BAM header fields ([#83](https://github.com/umccr/umccrise/pull/83))
+
 ## 2.0.0 (30 Nov 2021)
 
 - Overhaul automatic detection for DRAGEN inputs
