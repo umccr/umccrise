@@ -691,8 +691,15 @@ def get_samples_from_dragen_dir_bams(dir_fp):
 def get_read_group_sample_name(bam_fp):
     bam = pysam.AlignmentFile(bam_fp)
     header = bam.header.to_dict()
-    [sample] = [rg['SM'] for rg in header['RG']]
-    return sample
+    samples = {rg['SM'] for rg in header.get('RG', list())}
+    if len(samples) == 0:
+        critical(f'could not retrieve sample name from the @RG SM field in {bam_fp}')
+    elif len(samples) > 1:
+        critical(
+            'found more than one sample name in the @RG SM fields for '
+            f'{bam_fp}: {", ".join(samples)}'
+        )
+    return samples.pop()
 
 
 def get_subject_id_from_dragen_dir(dir_fp):
