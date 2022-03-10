@@ -17,3 +17,4 @@ dependencies:
   - pcgr ==0.9.0.1
   - cpsr ==0.6.0.1
   - cacao ==0.2.1.3
+  - pandoc ==2.16.1
