@@ -19,6 +19,7 @@ dependencies:
   - vcflib ==1.0.1  # for VCF normalisation
   - bedops ==2.4.39
   - mosdepth ==0.2.9
+  - kiwisolver ==1.2.0
   - pythonpy
   - click
   - cyvcf2 ==0.30.1
@@ -27,7 +28,7 @@ dependencies:
   - curl >=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake-minimal
   - pyyaml ==5.4.1  # for multiqc
-  - multiqc ==1.10dev+umccrise_bcbio_aws.0.0.1
+  - multiqc ==1.10dev+umccrise_bcbio_aws.0.0.2
   - nose
   - pyensembl ==1.9.0
   - break-point-inspector ==1.5
