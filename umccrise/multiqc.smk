@@ -69,7 +69,7 @@ rule prep_multiqc_data:
         conpair_concord         = rules.run_conpair.output.concord if 'conpair' in stages else [],
         conpair_contam          = rules.run_conpair.output.contam  if 'conpair' in stages else [],
         somatic_stats           = rules.somatic_stats_report.output[0]   if 'somatic' in stages else [],
-        bcftools_somatic_stats  = rules.bcftools_stats_somatic.output[0] if 'somatic' in stages else [],
+        bcftools_somatic_stats  = rules.bcftools_stats_somatic.output.stats if 'somatic' in stages else [],
         germline_stats          = rules.germline_stats_report.output[0] \
             if all(b.germline_vcf for b in batch_by_name.values()) and 'germline' in stages else [],
         #bcftools_germline_pass_predispose = rules.bcftools_stats_germline.output.stats_pass_predispose
