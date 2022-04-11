@@ -160,19 +160,21 @@ def rename_dragen_qc_files_simple(fp_in, output_dir, target_name, suffix):
 def rename_mapping_metrics(fp_in, output_dir, tumor_name, normal_name):
     lines = list()
     fp_out = output_dir / fp_in.name
-    #assert not fp_out.exists()
     with contextlib.ExitStack() as stack:
         fh_in = stack.enter_context(fp_in.open('r'))
         fh_out = stack.enter_context(fp_out.open('w'))
+        read_groups = dict()
         for line in fh_in:
             if 'MAPPING/ALIGNING PER RG' in line:
-                section, rg_name, *other = line.rstrip().split(',')
-                if line.startswith('TUMOR'):
-                    name_new = tumor_name
-                elif line.startswith('NORMAL'):
-                    name_new = normal_name
+                section, rg, *other = line.rstrip().split(',')
+                section_tokens = section.split(' ')
+                phenotype = section_tokens[0].lower()
+                if phenotype == 'tumor':
+                    name_new = f'sample:{tumor_name};readgroup:{rg}'
+                elif phenotype == 'normal':
+                    name_new = f'sample:{normal_name};readgroup:{rg}'
                 else:
-                    assert False
+                    raise ValueError(f'got bad phenotype ({phenotype}) from {line}')
                 print(section, name_new, *other, sep=',', file=fh_out)
             else:
                 print(line, end='', file=fh_out)
