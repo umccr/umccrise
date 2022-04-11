@@ -18,23 +18,35 @@ was generated and the button that launches the welcome tour.
     const samples_order = [];
     const samples_hl = new Map();
     {% if config.umccr.batch %}
-    // Sample name highlight
-    samples_hl.set("^{{ config.umccr.tumor_name }}$", red);
-    samples_hl.set("^{{ config.umccr.tumor_rgid }}$", red);
-    samples_hl.set("^{{ config.umccr.tumor_rgid }} \\({{ config.umccr.batch }}\\)$", red);
-    samples_hl.set("^{{ config.umccr.normal_name }}$", blue);
-    samples_hl.set("^{{ config.umccr.normal_rgid }}$", blue);
-    samples_hl.set("^{{ config.umccr.normal_rgid }} \\({{ config.umccr.batch }}\\)$", blue);
-    // DRAGEN FastQC plots
-    samples_hl.set("^{{ config.umccr.tumor_name }}_Read1$", red);
-    samples_hl.set("^{{ config.umccr.tumor_name }}_Read2$", red);
-    samples_hl.set("^{{ config.umccr.normal_name }}_Read1$", blue);
-    samples_hl.set("^{{ config.umccr.normal_name }}_Read2$", blue);
-    // Sample order
-    samples_order.push("{{ config.umccr.tumor_name }}");
-    samples_order.push("{{ config.umccr.tumor_rgid }}");
-    samples_order.push("{{ config.umccr.normal_name }}");
-    samples_order.push("{{ config.umccr.normal_rgid }}");
+    const tumor_regex = [
+      // Standard
+      "^{{ config.umccr.tumor_name }}$",
+      // For backwards compatibility
+      "^{{ config.umccr.tumor_rgid }}$",
+      "^{{ config.umccr.tumor_rgid }} \\({{ config.umccr.batch }}\\)$",
+      // DRAGEN mapping metrics
+      "^{{ config.umccr.tumor_name }} \\(.+\\)$",
+      // DRAGEN FastQC plots
+      "^{{ config.umccr.tumor_name }}_Read1$",
+      "^{{ config.umccr.tumor_name }}_Read2$",
+    ];
+    const normal_regex = [
+      // Standard
+      "^{{ config.umccr.normal_name }}$",
+      // For backwards compatibility
+      "^{{ config.umccr.normal_rgid }}$",
+      "^{{ config.umccr.normal_rgid }} \\({{ config.umccr.batch }}\\)$",
+      // DRAGEN mapping metrics (bnbowman/MultiQC only); tumor name is used with '_normal' appended
+      "^{{ config.umccr.tumor_name }}_normal$",
+      // DRAGEN mapping metrics
+      "^{{ config.umccr.normal_name }} \\(.+\\)$",
+      // DRAGEN FastQC plots
+      "^{{ config.umccr.normal_name }}_Read1$",
+      "^{{ config.umccr.normal_name }}_Read2$",
+    ];
+    tumor_regex.forEach(d => samples_hl.set(d, red));
+    normal_regex.forEach(d => samples_hl.set(d, blue));
+    samples_order.push(...tumor_regex, ...normal_regex);
     {% endif %}
 
     let bg_texts = [];
@@ -78,6 +90,15 @@ was generated and the button that launches the welcome tour.
     //   - patient tumor
     //   - patient normal
     //   - <reference sample as provided in multiqc_config.yaml>
+    function get_regex_index(s, samples_order) {
+      for (var i = 0; i < samples_order.length; i++) {
+        const re_result = s.search(samples_order[i]);
+        if (re_result > -1) {
+          return i;
+        }
+      }
+      return Infinity;
+    }
     $(function() {
       $('.mqc_table').not('.mqc_configModal_table').each(function() {
         var header = $(this).find('thead tr')[0].children
@@ -85,20 +106,20 @@ was generated and the button that launches the welcome tour.
         // Determine sample name column index
         var sample_name_column = -1;
         for (var i = 0; i < header.length; i++) {
-            if (header[i].innerText === "Sample Name") {
-              sample_name_column = i;
-              break;
-            }
+          if (header[i].innerText === "Sample Name") {
+            sample_name_column = i;
+            break;
+          }
         }
         if (sample_name_column === -1) {
           throw 'Could not find sample name column';
         }
         // Sort according to predefined list
         var result = hrows.sort(function(a, b) {
-            var a_name = a.cells[sample_name_column].innerText;
-            var b_name = b.cells[sample_name_column].innerText
-            return samples_order.indexOf(a_name) - samples_order.indexOf(b_name)
-          });
+          const a_name = a.cells[sample_name_column].innerText;
+          const b_name = b.cells[sample_name_column].innerText;
+          return get_regex_index(a_name, samples_order) - get_regex_index(b_name, samples_order);
+        });
         // Apply new ordering
         $(this).find('tbody').append(result);
         $(this).data("direction", "desc");
@@ -149,8 +170,6 @@ was generated and the button that launches the welcome tour.
 
 {% if config.umccr %}
 <div style="margin-left: 5px; margin-bottom: 5px;">
-    <!-- {{ '<b>Mutations:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(report.umccr.mutations_links) + '</br>'
-        if report.umccr.mutations_links }} -->
     {{ '<b>Expression:</b>&nbsp;&nbsp;' + '&nbsp;&nbsp;|&nbsp;&nbsp;'.join(config.umccr.expression_links) + '</br>'
         if config.umccr.expression_links }}
 </div>
