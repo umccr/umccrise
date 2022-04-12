@@ -18,8 +18,8 @@ fi
 bash miniconda.sh -b -p ${INSTALL_BASE_DIR} && rm miniconda.sh
 export PATH=${INSTALL_BASE_DIR}/bin:$PATH
 conda config --set always_yes yes --set changeps1 no
-conda install -c conda-forge mamba
-mamba update conda
+conda install -c conda-forge 'mamba==0.15.3'
+mamba install 'conda==4.11.0'
 
 ### Install environments
 ENV_NAME=umccrise
