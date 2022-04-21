@@ -112,107 +112,107 @@ NORMAL MAPPING/ALIGNING SUMMARY,,Insert length: standard deviation,146.22
 NORMAL MAPPING/ALIGNING SUMMARY,,Provided sex chromosome ploidy,NA
 NORMAL MAPPING/ALIGNING SUMMARY,,Estimated sample contamination,NA
 NORMAL MAPPING/ALIGNING SUMMARY,,DRAGEN mapping rate [mil. reads/second],0.56
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Total reads in RG,1770304688,100.00
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Number of duplicate marked reads,190503193,10.76
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Number of duplicate marked and mate reads removed,NA
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Number of unique reads (excl. duplicate marked reads),1579801495,89.24
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with mate sequenced,1770304688,100.00
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads without mate sequenced,0,0.00
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,QC-failed reads,0,0.00
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mapped reads,1763755966,99.63
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mapped reads adjusted for filtered mapping,1763755966,99.63
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mapped reads R1,884863087,99.97
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mapped reads R2,878892879,99.29
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Number of unique & mapped reads (excl. duplicate marked reads),1573252773,88.87
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Unmapped reads,6548722,0.37
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Unmapped reads adjusted for filtered mapping,6548722,0.37
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Adjustment of reads matching non-reference decoys,0,0.00
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Singleton reads (itself mapped; mate unmapped),6287128,0.36
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Paired reads (itself & mate mapped),1757468838,99.27
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Properly paired reads,1718221906,97.06
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Not properly paired reads (discordant),39246932,2.22
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Paired reads mapped to different chromosomes,26745942,1.52
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Paired reads mapped to different chromosomes (MAPQ>=10),11510922,0.65
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with MAPQ [40:inf),1600744318,90.42
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with MAPQ [30:40),6347162,0.36
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with MAPQ [20:30),13930890,0.79
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with MAPQ [10:20),21864742,1.24
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with MAPQ [ 0:10),120868854,6.83
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with MAPQ NA (Unmapped reads),6548722,0.37
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with indel R1,28502696,3.22
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Reads with indel R2,27403533,3.12
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Total bases,265962476894
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Total bases R1,133013539280
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Total bases R2,132948937614
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mapped bases R1,132976821140
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mapped bases R2,132012361841
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Soft-clipped bases R1,1388174828,1.04
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Soft-clipped bases R2,2758188453,2.09
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mismatched bases R1,642567808,0.48
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mismatched bases R2,851169188,0.64
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mismatched bases R1 (excl. indels),558036201,0.42
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Mismatched bases R2 (excl. indels),770410968,0.58
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Q30 bases,243889415286,91.70
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Q30 bases R1,123840469671,93.10
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Q30 bases R2,120048945615,90.30
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Q30 bases (excl. dups & clipped bases),222169302580
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Total alignments,1813397023
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Secondary alignments,0
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Supplementary (chimeric) alignments,49641057
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Estimated read length,150.24
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Average sequenced coverage over genome,82.67
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Insert length: mean,590.36
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Insert length: median,583.00
-TUMOR MAPPING/ALIGNING PER RG,Bob_T,Insert length: standard deviation,144.76
-NORMAL MAPPING/ALIGNING PER RG,Bob,Total reads in RG,987095020,100.00
-NORMAL MAPPING/ALIGNING PER RG,Bob,Number of duplicate marked reads,91397325,9.26
-NORMAL MAPPING/ALIGNING PER RG,Bob,Number of duplicate marked and mate reads removed,NA
-NORMAL MAPPING/ALIGNING PER RG,Bob,Number of unique reads (excl. duplicate marked reads),895697695,90.74
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with mate sequenced,987095020,100.00
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads without mate sequenced,0,0.00
-NORMAL MAPPING/ALIGNING PER RG,Bob,QC-failed reads,0,0.00
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mapped reads,982230725,99.51
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mapped reads adjusted for filtered mapping,982230725,99.51
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mapped reads R1,493427717,99.98
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mapped reads R2,488803008,99.04
-NORMAL MAPPING/ALIGNING PER RG,Bob,Number of unique & mapped reads (excl. duplicate marked reads),890833400,90.25
-NORMAL MAPPING/ALIGNING PER RG,Bob,Unmapped reads,4864295,0.49
-NORMAL MAPPING/ALIGNING PER RG,Bob,Unmapped reads adjusted for filtered mapping,4864295,0.49
-NORMAL MAPPING/ALIGNING PER RG,Bob,Adjustment of reads matching non-reference decoys,0,0.00
-NORMAL MAPPING/ALIGNING PER RG,Bob,Singleton reads (itself mapped; mate unmapped),4752039,0.48
-NORMAL MAPPING/ALIGNING PER RG,Bob,Paired reads (itself & mate mapped),977478686,99.03
-NORMAL MAPPING/ALIGNING PER RG,Bob,Properly paired reads,954973796,96.75
-NORMAL MAPPING/ALIGNING PER RG,Bob,Not properly paired reads (discordant),22504890,2.28
-NORMAL MAPPING/ALIGNING PER RG,Bob,Paired reads mapped to different chromosomes,15914454,1.63
-NORMAL MAPPING/ALIGNING PER RG,Bob,Paired reads mapped to different chromosomes (MAPQ>=10),6823544,0.70
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with MAPQ [40:inf),888927100,90.05
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with MAPQ [30:40),3608508,0.37
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with MAPQ [20:30),7757525,0.79
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with MAPQ [10:20),12273931,1.24
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with MAPQ [ 0:10),69663661,7.06
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with MAPQ NA (Unmapped reads),4864295,0.49
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with indel R1,15974193,3.24
-NORMAL MAPPING/ALIGNING PER RG,Bob,Reads with indel R2,15276144,3.13
-NORMAL MAPPING/ALIGNING PER RG,Bob,Total bases,148317788346
-NORMAL MAPPING/ALIGNING PER RG,Bob,Total bases R1,74173796167
-NORMAL MAPPING/ALIGNING PER RG,Bob,Total bases R2,74143992179
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mapped bases R1,74159513083
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mapped bases R2,73432195119
-NORMAL MAPPING/ALIGNING PER RG,Bob,Soft-clipped bases R1,748593944,1.01
-NORMAL MAPPING/ALIGNING PER RG,Bob,Soft-clipped bases R2,1624305624,2.21
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mismatched bases R1,363779114,0.49
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mismatched bases R2,511942112,0.70
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mismatched bases R1 (excl. indels),315584035,0.43
-NORMAL MAPPING/ALIGNING PER RG,Bob,Mismatched bases R2 (excl. indels),466267709,0.63
-NORMAL MAPPING/ALIGNING PER RG,Bob,Q30 bases,135258560080,91.20
-NORMAL MAPPING/ALIGNING PER RG,Bob,Q30 bases R1,69023701290,93.06
-NORMAL MAPPING/ALIGNING PER RG,Bob,Q30 bases R2,66234858790,89.33
-NORMAL MAPPING/ALIGNING PER RG,Bob,Q30 bases (excl. dups & clipped bases),125183981917
-NORMAL MAPPING/ALIGNING PER RG,Bob,Total alignments,1009646675
-NORMAL MAPPING/ALIGNING PER RG,Bob,Secondary alignments,0
-NORMAL MAPPING/ALIGNING PER RG,Bob,Supplementary (chimeric) alignments,27415950
-NORMAL MAPPING/ALIGNING PER RG,Bob,Estimated read length,150.26
-NORMAL MAPPING/ALIGNING PER RG,Bob,Average sequenced coverage over genome,46.10
-NORMAL MAPPING/ALIGNING PER RG,Bob,Insert length: mean,591.94
-NORMAL MAPPING/ALIGNING PER RG,Bob,Insert length: median,585.00
-NORMAL MAPPING/ALIGNING PER RG,Bob,Insert length: standard deviation,146.22
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Total reads in RG,1770304688,100.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Number of duplicate marked reads,190503193,10.76
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Number of duplicate marked and mate reads removed,NA
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Number of unique reads (excl. duplicate marked reads),1579801495,89.24
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with mate sequenced,1770304688,100.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads without mate sequenced,0,0.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,QC-failed reads,0,0.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mapped reads,1763755966,99.63
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mapped reads adjusted for filtered mapping,1763755966,99.63
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mapped reads R1,884863087,99.97
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mapped reads R2,878892879,99.29
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Number of unique & mapped reads (excl. duplicate marked reads),1573252773,88.87
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Unmapped reads,6548722,0.37
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Unmapped reads adjusted for filtered mapping,6548722,0.37
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Adjustment of reads matching non-reference decoys,0,0.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Singleton reads (itself mapped; mate unmapped),6287128,0.36
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Paired reads (itself & mate mapped),1757468838,99.27
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Properly paired reads,1718221906,97.06
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Not properly paired reads (discordant),39246932,2.22
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Paired reads mapped to different chromosomes,26745942,1.52
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Paired reads mapped to different chromosomes (MAPQ>=10),11510922,0.65
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with MAPQ [40:inf),1600744318,90.42
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with MAPQ [30:40),6347162,0.36
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with MAPQ [20:30),13930890,0.79
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with MAPQ [10:20),21864742,1.24
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with MAPQ [ 0:10),120868854,6.83
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with MAPQ NA (Unmapped reads),6548722,0.37
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with indel R1,28502696,3.22
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Reads with indel R2,27403533,3.12
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Total bases,265962476894
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Total bases R1,133013539280
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Total bases R2,132948937614
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mapped bases R1,132976821140
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mapped bases R2,132012361841
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Soft-clipped bases R1,1388174828,1.04
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Soft-clipped bases R2,2758188453,2.09
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mismatched bases R1,642567808,0.48
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mismatched bases R2,851169188,0.64
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mismatched bases R1 (excl. indels),558036201,0.42
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Mismatched bases R2 (excl. indels),770410968,0.58
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Q30 bases,243889415286,91.70
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Q30 bases R1,123840469671,93.10
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Q30 bases R2,120048945615,90.30
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Q30 bases (excl. dups & clipped bases),222169302580
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Total alignments,1813397023
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Secondary alignments,0
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Supplementary (chimeric) alignments,49641057
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Estimated read length,150.24
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Average sequenced coverage over genome,82.67
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Insert length: mean,590.36
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Insert length: median,583.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Bob_T,Insert length: standard deviation,144.76
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Total reads in RG,987095020,100.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Number of duplicate marked reads,91397325,9.26
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Number of duplicate marked and mate reads removed,NA
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Number of unique reads (excl. duplicate marked reads),895697695,90.74
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with mate sequenced,987095020,100.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads without mate sequenced,0,0.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,QC-failed reads,0,0.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mapped reads,982230725,99.51
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mapped reads adjusted for filtered mapping,982230725,99.51
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mapped reads R1,493427717,99.98
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mapped reads R2,488803008,99.04
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Number of unique & mapped reads (excl. duplicate marked reads),890833400,90.25
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Unmapped reads,4864295,0.49
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Unmapped reads adjusted for filtered mapping,4864295,0.49
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Adjustment of reads matching non-reference decoys,0,0.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Singleton reads (itself mapped; mate unmapped),4752039,0.48
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Paired reads (itself & mate mapped),977478686,99.03
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Properly paired reads,954973796,96.75
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Not properly paired reads (discordant),22504890,2.28
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Paired reads mapped to different chromosomes,15914454,1.63
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Paired reads mapped to different chromosomes (MAPQ>=10),6823544,0.70
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with MAPQ [40:inf),888927100,90.05
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with MAPQ [30:40),3608508,0.37
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with MAPQ [20:30),7757525,0.79
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with MAPQ [10:20),12273931,1.24
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with MAPQ [ 0:10),69663661,7.06
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with MAPQ NA (Unmapped reads),4864295,0.49
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with indel R1,15974193,3.24
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Reads with indel R2,15276144,3.13
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Total bases,148317788346
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Total bases R1,74173796167
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Total bases R2,74143992179
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mapped bases R1,74159513083
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mapped bases R2,73432195119
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Soft-clipped bases R1,748593944,1.01
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Soft-clipped bases R2,1624305624,2.21
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mismatched bases R1,363779114,0.49
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mismatched bases R2,511942112,0.70
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mismatched bases R1 (excl. indels),315584035,0.43
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Mismatched bases R2 (excl. indels),466267709,0.63
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Q30 bases,135258560080,91.20
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Q30 bases R1,69023701290,93.06
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Q30 bases R2,66234858790,89.33
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Q30 bases (excl. dups & clipped bases),125183981917
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Total alignments,1009646675
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Secondary alignments,0
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Supplementary (chimeric) alignments,27415950
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Estimated read length,150.26
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Average sequenced coverage over genome,46.10
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Insert length: mean,591.94
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Insert length: median,585.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Bob,Insert length: standard deviation,146.22

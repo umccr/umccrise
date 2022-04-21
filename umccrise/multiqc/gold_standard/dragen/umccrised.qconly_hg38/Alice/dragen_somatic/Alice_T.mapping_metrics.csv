@@ -112,107 +112,107 @@ NORMAL MAPPING/ALIGNING SUMMARY,,Insert length: standard deviation,152.43
 NORMAL MAPPING/ALIGNING SUMMARY,,Provided sex chromosome ploidy,NA
 NORMAL MAPPING/ALIGNING SUMMARY,,Estimated sample contamination,NA
 NORMAL MAPPING/ALIGNING SUMMARY,,DRAGEN mapping rate [mil. reads/second],0.51
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Total reads in RG,1572643728,100.00
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Number of duplicate marked reads,128762395,8.19
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Number of duplicate marked and mate reads removed,NA
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Number of unique reads (excl. duplicate marked reads),1443881333,91.81
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with mate sequenced,1572643728,100.00
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads without mate sequenced,0,0.00
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,QC-failed reads,0,0.00
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mapped reads,1566647280,99.62
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mapped reads adjusted for filtered mapping,1566647280,99.62
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mapped reads R1,786183319,99.98
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mapped reads R2,780463961,99.26
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Number of unique & mapped reads (excl. duplicate marked reads),1437884885,91.43
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Unmapped reads,5996448,0.38
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Unmapped reads adjusted for filtered mapping,5996448,0.38
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Adjustment of reads matching non-reference decoys,0,0.00
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Singleton reads (itself mapped; mate unmapped),5859738,0.37
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Paired reads (itself & mate mapped),1560787542,99.25
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Properly paired reads,1527052398,97.10
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Not properly paired reads (discordant),33735144,2.15
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Paired reads mapped to different chromosomes,26042156,1.67
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Paired reads mapped to different chromosomes (MAPQ>=10),12339195,0.79
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with MAPQ [40:inf),1433693809,91.16
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with MAPQ [30:40),5147391,0.33
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with MAPQ [20:30),11620015,0.74
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with MAPQ [10:20),18456122,1.17
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with MAPQ [ 0:10),97729943,6.21
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with MAPQ NA (Unmapped reads),5996448,0.38
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with indel R1,25521091,3.25
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Reads with indel R2,24602707,3.15
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Total bases,236490021229
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Total bases R1,118256749900
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Total bases R2,118233271329
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mapped bases R1,118240576564
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mapped bases R2,117353446252
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Soft-clipped bases R1,878142286,0.74
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Soft-clipped bases R2,2114424238,1.80
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mismatched bases R1,509368163,0.43
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mismatched bases R2,654738061,0.56
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mismatched bases R1 (excl. indels),432158072,0.37
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Mismatched bases R2 (excl. indels),580801625,0.49
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Q30 bases,218010055132,92.19
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Q30 bases R1,110820774715,93.71
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Q30 bases R2,107189280417,90.66
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Q30 bases (excl. dups & clipped bases),204600377245
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Total alignments,1611089991
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Secondary alignments,0
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Supplementary (chimeric) alignments,44442711
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Estimated read length,150.38
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Average sequenced coverage over genome,73.50
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Insert length: mean,598.69
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Insert length: median,591.00
-TUMOR MAPPING/ALIGNING PER RG,Alice_T,Insert length: standard deviation,152.34
-NORMAL MAPPING/ALIGNING PER RG,Alice,Total reads in RG,724046530,100.00
-NORMAL MAPPING/ALIGNING PER RG,Alice,Number of duplicate marked reads,47380223,6.54
-NORMAL MAPPING/ALIGNING PER RG,Alice,Number of duplicate marked and mate reads removed,NA
-NORMAL MAPPING/ALIGNING PER RG,Alice,Number of unique reads (excl. duplicate marked reads),676666307,93.46
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with mate sequenced,724046530,100.00
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads without mate sequenced,0,0.00
-NORMAL MAPPING/ALIGNING PER RG,Alice,QC-failed reads,0,0.00
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mapped reads,720861124,99.56
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mapped reads adjusted for filtered mapping,720861124,99.56
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mapped reads R1,361950979,99.98
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mapped reads R2,358910145,99.14
-NORMAL MAPPING/ALIGNING PER RG,Alice,Number of unique & mapped reads (excl. duplicate marked reads),673480901,93.02
-NORMAL MAPPING/ALIGNING PER RG,Alice,Unmapped reads,3185406,0.44
-NORMAL MAPPING/ALIGNING PER RG,Alice,Unmapped reads adjusted for filtered mapping,3185406,0.44
-NORMAL MAPPING/ALIGNING PER RG,Alice,Adjustment of reads matching non-reference decoys,0,0.00
-NORMAL MAPPING/ALIGNING PER RG,Alice,Singleton reads (itself mapped; mate unmapped),3108656,0.43
-NORMAL MAPPING/ALIGNING PER RG,Alice,Paired reads (itself & mate mapped),717752468,99.13
-NORMAL MAPPING/ALIGNING PER RG,Alice,Properly paired reads,702053056,96.96
-NORMAL MAPPING/ALIGNING PER RG,Alice,Not properly paired reads (discordant),15699412,2.17
-NORMAL MAPPING/ALIGNING PER RG,Alice,Paired reads mapped to different chromosomes,11526084,1.61
-NORMAL MAPPING/ALIGNING PER RG,Alice,Paired reads mapped to different chromosomes (MAPQ>=10),5316342,0.74
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with MAPQ [40:inf),659766592,91.12
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with MAPQ [30:40),2401430,0.33
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with MAPQ [20:30),5256163,0.73
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with MAPQ [10:20),8256365,1.14
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with MAPQ [ 0:10),45180574,6.24
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with MAPQ NA (Unmapped reads),3185406,0.44
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with indel R1,11765639,3.25
-NORMAL MAPPING/ALIGNING PER RG,Alice,Reads with indel R2,11249284,3.13
-NORMAL MAPPING/ALIGNING PER RG,Alice,Total bases,108871724292
-NORMAL MAPPING/ALIGNING PER RG,Alice,Total bases R1,54441227180
-NORMAL MAPPING/ALIGNING PER RG,Alice,Total bases R2,54430497112
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mapped bases R1,54433531915
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mapped bases R2,53962819725
-NORMAL MAPPING/ALIGNING PER RG,Alice,Soft-clipped bases R1,418279048,0.77
-NORMAL MAPPING/ALIGNING PER RG,Alice,Soft-clipped bases R2,1001246657,1.86
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mismatched bases R1,238189754,0.44
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mismatched bases R2,325323242,0.60
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mismatched bases R1 (excl. indels),202514606,0.37
-NORMAL MAPPING/ALIGNING PER RG,Alice,Mismatched bases R2 (excl. indels),291510867,0.54
-NORMAL MAPPING/ALIGNING PER RG,Alice,Q30 bases,99920439759,91.78
-NORMAL MAPPING/ALIGNING PER RG,Alice,Q30 bases R1,50989126889,93.66
-NORMAL MAPPING/ALIGNING PER RG,Alice,Q30 bases R2,48931312870,89.90
-NORMAL MAPPING/ALIGNING PER RG,Alice,Q30 bases (excl. dups & clipped bases),95345726859
-NORMAL MAPPING/ALIGNING PER RG,Alice,Total alignments,740717803
-NORMAL MAPPING/ALIGNING PER RG,Alice,Secondary alignments,0
-NORMAL MAPPING/ALIGNING PER RG,Alice,Supplementary (chimeric) alignments,19856679
-NORMAL MAPPING/ALIGNING PER RG,Alice,Estimated read length,150.37
-NORMAL MAPPING/ALIGNING PER RG,Alice,Average sequenced coverage over genome,33.84
-NORMAL MAPPING/ALIGNING PER RG,Alice,Insert length: mean,602.15
-NORMAL MAPPING/ALIGNING PER RG,Alice,Insert length: median,595.00
-NORMAL MAPPING/ALIGNING PER RG,Alice,Insert length: standard deviation,152.43
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Total reads in RG,1572643728,100.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Number of duplicate marked reads,128762395,8.19
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Number of duplicate marked and mate reads removed,NA
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Number of unique reads (excl. duplicate marked reads),1443881333,91.81
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with mate sequenced,1572643728,100.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads without mate sequenced,0,0.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,QC-failed reads,0,0.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mapped reads,1566647280,99.62
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mapped reads adjusted for filtered mapping,1566647280,99.62
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mapped reads R1,786183319,99.98
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mapped reads R2,780463961,99.26
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Number of unique & mapped reads (excl. duplicate marked reads),1437884885,91.43
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Unmapped reads,5996448,0.38
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Unmapped reads adjusted for filtered mapping,5996448,0.38
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Adjustment of reads matching non-reference decoys,0,0.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Singleton reads (itself mapped; mate unmapped),5859738,0.37
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Paired reads (itself & mate mapped),1560787542,99.25
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Properly paired reads,1527052398,97.10
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Not properly paired reads (discordant),33735144,2.15
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Paired reads mapped to different chromosomes,26042156,1.67
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Paired reads mapped to different chromosomes (MAPQ>=10),12339195,0.79
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with MAPQ [40:inf),1433693809,91.16
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with MAPQ [30:40),5147391,0.33
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with MAPQ [20:30),11620015,0.74
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with MAPQ [10:20),18456122,1.17
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with MAPQ [ 0:10),97729943,6.21
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with MAPQ NA (Unmapped reads),5996448,0.38
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with indel R1,25521091,3.25
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Reads with indel R2,24602707,3.15
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Total bases,236490021229
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Total bases R1,118256749900
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Total bases R2,118233271329
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mapped bases R1,118240576564
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mapped bases R2,117353446252
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Soft-clipped bases R1,878142286,0.74
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Soft-clipped bases R2,2114424238,1.80
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mismatched bases R1,509368163,0.43
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mismatched bases R2,654738061,0.56
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mismatched bases R1 (excl. indels),432158072,0.37
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Mismatched bases R2 (excl. indels),580801625,0.49
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Q30 bases,218010055132,92.19
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Q30 bases R1,110820774715,93.71
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Q30 bases R2,107189280417,90.66
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Q30 bases (excl. dups & clipped bases),204600377245
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Total alignments,1611089991
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Secondary alignments,0
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Supplementary (chimeric) alignments,44442711
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Estimated read length,150.38
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Average sequenced coverage over genome,73.50
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Insert length: mean,598.69
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Insert length: median,591.00
+TUMOR MAPPING/ALIGNING PER RG,sample:Alice_T,Insert length: standard deviation,152.34
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Total reads in RG,724046530,100.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Number of duplicate marked reads,47380223,6.54
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Number of duplicate marked and mate reads removed,NA
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Number of unique reads (excl. duplicate marked reads),676666307,93.46
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with mate sequenced,724046530,100.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads without mate sequenced,0,0.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,QC-failed reads,0,0.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mapped reads,720861124,99.56
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mapped reads adjusted for filtered mapping,720861124,99.56
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mapped reads R1,361950979,99.98
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mapped reads R2,358910145,99.14
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Number of unique & mapped reads (excl. duplicate marked reads),673480901,93.02
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Unmapped reads,3185406,0.44
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Unmapped reads adjusted for filtered mapping,3185406,0.44
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Adjustment of reads matching non-reference decoys,0,0.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Singleton reads (itself mapped; mate unmapped),3108656,0.43
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Paired reads (itself & mate mapped),717752468,99.13
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Properly paired reads,702053056,96.96
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Not properly paired reads (discordant),15699412,2.17
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Paired reads mapped to different chromosomes,11526084,1.61
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Paired reads mapped to different chromosomes (MAPQ>=10),5316342,0.74
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with MAPQ [40:inf),659766592,91.12
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with MAPQ [30:40),2401430,0.33
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with MAPQ [20:30),5256163,0.73
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with MAPQ [10:20),8256365,1.14
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with MAPQ [ 0:10),45180574,6.24
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with MAPQ NA (Unmapped reads),3185406,0.44
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with indel R1,11765639,3.25
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Reads with indel R2,11249284,3.13
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Total bases,108871724292
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Total bases R1,54441227180
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Total bases R2,54430497112
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mapped bases R1,54433531915
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mapped bases R2,53962819725
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Soft-clipped bases R1,418279048,0.77
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Soft-clipped bases R2,1001246657,1.86
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mismatched bases R1,238189754,0.44
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mismatched bases R2,325323242,0.60
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mismatched bases R1 (excl. indels),202514606,0.37
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Mismatched bases R2 (excl. indels),291510867,0.54
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Q30 bases,99920439759,91.78
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Q30 bases R1,50989126889,93.66
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Q30 bases R2,48931312870,89.90
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Q30 bases (excl. dups & clipped bases),95345726859
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Total alignments,740717803
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Secondary alignments,0
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Supplementary (chimeric) alignments,19856679
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Estimated read length,150.37
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Average sequenced coverage over genome,33.84
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Insert length: mean,602.15
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Insert length: median,595.00
+NORMAL MAPPING/ALIGNING PER RG,sample:Alice,Insert length: standard deviation,152.43

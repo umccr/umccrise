@@ -204,12 +204,19 @@ rule bcftools_stats_somatic:
     input:
         rules.somatic_vcf_filter_pass.output.vcf
     output:
-        '{batch}/small_variants/stats/{batch}_bcftools_stats.txt'
+        stats = '{batch}/small_variants/stats/{batch}_bcftools_stats.txt',
+        quality_tsv = temp('{batch}/small_variants/stats/quality.tsv.gz'),
+        quality_tsv_index = temp('{batch}/small_variants/stats/quality.tsv.gz.tbi')
     group: "somatic_filt"
     params:
         sname = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
     shell:
-        'bcftools stats -s {params.sname} {input} | sed s#{input}#{params.sname}# > {output}'
+        '''
+        bcftools query -s {params.sname} -f '%CHROM\t%POS\t[%SQ\n]' {input} | bgzip -c > {output.quality_tsv} && tabix -s1 -b2 -e2 {output.quality_tsv}
+        bcftools annotate -a {output.quality_tsv} -c CHROM,POS,QUAL {input} | \
+          bcftools stats -s {params.sname} | \
+          sed 's#<STDIN>#{params.sname}#' > {output.stats}
+        '''
 
 rule somatic_stats_report:
     input:

@@ -596,7 +596,7 @@ def create_dragen_paired_directories_from_config(smconfig):
                 f'provided DRAGEN normal id ({normal_id}) doesn\'t match id collected'
                 f' from discovered BAM file ({normal_samples_inferred["normal"]})'
             )
-        if normal_id != tumor_samples_inferred['normal']:
+        if 'normal' in tumor_samples_inferred and normal_id != tumor_samples_inferred['normal']:
             warn(
                 f'provided DRAGEN normal id ({normal_id}) doesn\'t match id collected'
                 f' from discovered BAM file ({tumor_samples_inferred["normal"]})'
