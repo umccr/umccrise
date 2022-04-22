@@ -1,3 +1,14 @@
+## 2.0.2 (22 Apr 2022)
+
+- Use `FORMAT/SQ` value as `QUAL` for DRAGEN somatic variants when generating BCFtools stats
+- Update MultiQC reference data to align with above change
+- Remove DRAGEN germline fragment length histogram file from MultiQC reference set
+- Expand MultiQC template sample ordering and highlighting
+- Explicitly provide sample name and read group to MultiQC DRAGEN mapping metrics processor
+- Use NGS Utils 2.9.2 and umccr/MultiQC 1.13dev+umccrise.0.0.1 in conda environments
+- Improve DRAGEN sample identifier checks
+- Pin conda and mamba versions to avoid issues creating conda environments with newer versions
+
 ## 2.0.1 (15 Feb 2022)
 
 - Handle multiple '@RG SM' BAM header fields ([#83](https://github.com/umccr/umccrise/pull/83))
