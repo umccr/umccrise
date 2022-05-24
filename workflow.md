@@ -1,11 +1,12 @@
 # umccrise workflow
 
 - [umccrise workflow](#umccrise-workflow)
-  - [SNPs and small indels](#snps-and-small-indels)
-    - [Somatic](#somatic)
-    - [Germline](#germline)
+  - [SNPs and small indels (Somatic)](#snps-and-small-indels-somatic)
+    - [Summary](#summary)
+    - [Details](#details)
+  - [SNPs and small indels (Germline)](#snps-and-small-indels-germline)
   - [Structural variants](#structural-variants)
-  - [Somatic CNV](#somatic-cnv)
+  - [Copy Number Variants](#copy-number-variants)
   - [MultiQC](#multiqc)
   - [Coverage](#coverage)
   - [Reports](#reports)
@@ -23,56 +24,60 @@ It takes as input results from a Tumor/Normal (T/N) variant calling workflow:
 - BAM files from both samples
 - somatic small variant calls
 - germline small variant calls
-- somatic structural variant calls performed by Manta.
+- somatic structural variant calls performed by Manta
 
-## SNPs and small indels
+## SNPs and small indels (Somatic)
 
-### Somatic
+This part of the workflow filters and prioritises small somatic variant calls.
+The idea of filtering is to remove most of the artefacts and germline leakage,
+but at the same time to be permissive towards known clinically important sites
+even if the variants are of low quality.
 
-This part of the workflow filters and prioritises somatic variant calls. The
-idea of filtering is to remove most of the artefacts and germline leakage, but
-at the same time to be permissive towards known clinically important sites even
-if the variants are of low quality.
-
-To outline the filtering routine, there are 3 basic steps:
+### Summary
 
 1. Call candidate variants (2/3 mutect2/strelka2/vardict) with a cut-off AF>=1%.
 2. Keep a candidate variant if either:
    1. AF>=10%, it's not in PoN and not common in gnomAD
    2. The variant is potentially known, where one of the following applies:
-   - PCGR TIER 1 or 2
-   - IntOGen driver mutation
-   - cancerhotspots.org hotspot
-   - ClinVar pathogenic or uncertain (to include mixed evidence)
-   - COSMIC count >=10
-   - TCGA pancancer count >=5
-   - ICGC PCAWG count >= 3.
+      - PCGR TIER 1 or 2
+      - IntOGen driver mutation
+      - cancerhotspots.org hotspot
+      - ClinVar pathogenic or uncertain (to include mixed evidence)
+      - COSMIC count >=10
+      - TCGA pancancer count >=5
+      - ICGC PCAWG count >= 3.
 3. Additionally, we run SAGE on a list of hotspot sites (from CGI, CIViC,
    OncoKB - curated by HMF). The difference between the above point 2.2 is that
    we are not restricted to the candidate variants from
    mutect2/strelka2/vardict, but rather to the hotspot sites.
 
-In detail:
+### Details
 
-_Input_: for [bcbio](https://github.com/umccr/workflows/tree/master/bcbio), it's
-a somatic variant call output from a `variant2` tumor/normal (T/N) variant
-calling workflow. It can be either an "ensemble" somatic VCF
-`<batch>-ensemble-annotated.vcf.gz` (e.g. build from variants supported by at
-least 2 of 3 callers - at UMCCR, we use
-[Strelka2](https://github.com/Illumina/strelka),
-[VarDict](https://github.com/AstraZeneca-NGS/VarDict), and
-[Mutect2](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)),
-or Strelka2 somatic VCF `<batch>-strelka2-annotated.vcf.gz` (at UMCCR, we
-process WGS FFPE samples with the Strelka2-only workflow to avoid performance
-issues with other callers). We also call variants at AF>1%
-(`min_allele_fraction: 1` setting in bcbio config), however that's not
-essential.
+The [bcbio](https://github.com/umccr/workflows/tree/master/bcbio) `variant2` T/N
+variant calling workflow is used in either of two modes, depending on the type
+of sample (Fresh Frozen or FFPE):
+
+1. "ensemble" mode, where the final VCF `<batch>-ensemble-annotated.vcf.gz`
+   contains variants supported by at least 2 of the 3 following callers:
+
+   - [Strelka2](https://github.com/Illumina/strelka)
+   - [VarDict](https://github.com/AstraZeneca-NGS/VarDict)
+   - [Mutect2](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)
+
+2. "strelka2" mode, where the final VCF `<batch>-strelka2-annotated.vcf.gz`
+   contains variants called by Strelka2. We use this mode at UMCCR to process
+   WGS FFPE samples to avoid performance issues with other callers. We also call
+   variants at AF>1% (`min_allele_fraction: 1` setting in bcbio config), however
+   that's not essential.
+
+Steps are:
 
 1. Extract passing calls (with `PASS` in FILTER)
 2. Extract calls on main chromosomes (chr1-chr22, chrX, chrY)
-3. Run [SAGE](https://github.com/hartwigmedical/hmftools/tree/master/sage) and
-   add the result to the VCF. SAGE is a low-frequency variant caller with a high
-   precision, created by Hartwig Medical Foundation. Instead of the whole
+3. Run
+   [SAGE v1.0](https://github.com/hartwigmedical/hmftools/tree/sage-v1.0/sage)
+   and add the result to the VCF. SAGE is a low-frequency variant caller with a
+   high precision, created by Hartwig Medical Foundation. Instead of the whole
    genome, it targets only coding regions for inframe indels, and
    [known hotspot sites](https://raw.githubusercontent.com/umccr/workflows/master/genes/hotspots/hotspots.tsv)
    from the following list:
@@ -179,7 +184,7 @@ essential.
 9. Report passing variants using [PCGR](https://github.com/sigven/pcgr),
    classified by the ACMG tier system.
 
-### Germline
+## SNPs and small indels (Germline)
 
 The idea is to simply bring germline variants in cancer predisposition genes:
 
@@ -284,7 +289,7 @@ in tumor suppressors, and prioritize events in cancer genes.
     transitions
 11. Report tiered variants in the UMCCR cancer report.
 
-## Somatic CNV
+## Copy Number Variants
 
 The idea is to report significant CNV changes in key cancer genes and
 disruptions in tumor suppressors. And also calculate sample purity and ploidy
@@ -325,8 +330,8 @@ From the PURPLE output, we report in the cancer report:
 
 MultiQC aggregates QC from different tools. We report the following:
 
-- Sample contamination level (for both tumor and normal) and tumor/normal
-  concordance (by [Conpair](https://github.com/nygenome/Conpair)),
+- Sample contamination level (for both tumor and normal) and T/N concordance (by
+  [Conpair](https://github.com/nygenome/Conpair)),
 - Ancestry and sex (by [Peddy](https://github.com/brentp/peddy)),
 - Mapping QC: the number of mapped reads, paired reads, secondary or duplicated
   alignments, average coverage (using samtools stats and mosdepth in bcbio),
@@ -420,7 +425,8 @@ The result is a list of 1248 genes.
 
 1. `run_sage`
 
-   - Runs `sage-2.2.jar` (jar included)
+   - Runs `sage-2.2.jar` (jar included). Don't actually think this gets run by
+     default, probably was used in a project-specific context.
    - input: BAMs (T/N), `hotspots_vcf`, `coding_bed`, `high_conf_bed`
    - output: `work/{batch}/small_variants/sage2/{batch}.vcf.gz`
 
@@ -432,13 +438,15 @@ The result is a list of 1248 genes.
 
 3. `somatic_vcf_select_noalt`
 
-   - Filters to variants within noalt regions
+   - Filters to variants within noalt regions (chr1-chr22, chrX, chrY, chrM)
    - input: above output, `noalts_bed`
    - output: `work/{batch}/small_variants/noalt/{batch}-somatic.vcf.gz`
 
 4. `somatic_vcf_sage1`
 
-   - Runs `sage` (v1.0 from hmf conda env - note that the jar is also in
+   - Runs `sage v1.0` (see
+     <https://github.com/umccr/vcf_stuff/blob/master/scripts/sage>) - jar is
+     included in
      <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage-1.0.jar>)
    - input: above output, BAMs (T/N)
    - output:
@@ -448,12 +456,39 @@ The result is a list of 1248 genes.
 5. `somatic_vcf_annotate`
 
    - Runs `anno_somatic_vcf` from `vcf_stuff`
+
      - <https://github.com/umccr/vcf_stuff/blob/master/scripts/anno_somatic_vcf>)
      - <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk>
-   - input: above output **if** `batch_by_name[wc.batch].somatic_vcf`, **else**
-     the `noalt`
+     - Snakemake subworkflow:
+       - `prep_hmf_hotspots`
+         - Filters HMF hotspots file from 17,875 in total down to 10,209 HMF
+           variants
+         - input: `hotspots` reference file
+         - output: `somatic_anno/hmf_hotspot.vcf.gz`
+       - `prep_anno_toml`
+         - Prepares TOML file for use with vcfanno
+         - input: lots of reference files
+         - output: `somatic_anno/tricky_vcfanno.toml`
+       - `somatic_vcf_regions_anno`
+         - Runs vcfanno
+         - input: TOML from above and the original input VCF
+         - output: `somatic_anno/vcfanno/{SAMPLE}-somatic.vcf.gz`
+       - `maybe_subset_highly_mutated`
+         - First count total vars in vcfanno'd file
+           - If that's <= 500K, all good, just copy that to the next step
+           - If that's > 500K:
+             - grab the INFO/gnomad_AF field
+               - if that exists, is >= 0.01, and is not a HMF/SAGE HOTSPOT,
+                 discard it
+               - now count the remaining vars, and if < 500K, copy those to the
+                 next step
+               - if >= 500K though, let's go back to the start and try to
+                 discard only variants that overlap the cancer gene list
+
+   - input: above (work) output file **if**
+     `batch_by_name[wc.batch].somatic_vcf`, **else** the `noalt`
    - output:
-     - `work/{batch}/small_variants/pass_sort/{batch}-somatic.vcf.gz`
+     - `work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz`
      - `work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml`
 
 6. `somatic_vcf_filter`
