@@ -433,13 +433,13 @@ The result is a list of 1248 genes.
 2. `somatic_vcf_pass_sort`
 
    - Filters to only PASS and sorts
-   - input: `batch_by_name[wc.batch].somatic_vcf` **or** above output
+   - input: `batch_by_name[wc.batch].somatic_vcf` **or** above output VCF
    - output: `work/{batch}/small_variants/pass_sort/{batch}-somatic.vcf.gz`
 
 3. `somatic_vcf_select_noalt`
 
    - Filters to variants within noalt regions (chr1-chr22, chrX, chrY, chrM)
-   - input: above output, `noalts_bed`
+   - input: above output VCF, `noalts_bed`
    - output: `work/{batch}/small_variants/noalt/{batch}-somatic.vcf.gz`
 
 4. `somatic_vcf_sage1`
@@ -448,16 +448,23 @@ The result is a list of 1248 genes.
      <https://github.com/umccr/vcf_stuff/blob/master/scripts/sage>) - jar is
      included in
      <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage-1.0.jar>)
-   - input: above output, BAMs (T/N)
+   - input: above output VCF, BAMs (T/N)
    - output:
      - `work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz`
      - `{batch}/small_variants/sage1/{batch}-sage.vcf.gz`
 
 5. `somatic_vcf_annotate`
 
+   - input: above (work) output file **if**
+     `batch_by_name[wc.batch].somatic_vcf`, **else** the `noalt`
+   - output:
+
+     - `work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz`
+     - `work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml`
+
    - Runs `anno_somatic_vcf` from `vcf_stuff`
 
-     - <https://github.com/umccr/vcf_stuff/blob/master/scripts/anno_somatic_vcf>)
+     - <https://github.com/umccr/vcf_stuff/blob/master/scripts/anno_somatic_vcf>
      - <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk>
      - Snakemake subworkflow:
        - `prep_hmf_hotspots`
@@ -474,7 +481,9 @@ The result is a list of 1248 genes.
          - input: TOML from above and the original input VCF
          - output: `somatic_anno/vcfanno/{SAMPLE}-somatic.vcf.gz`
        - `maybe_subset_highly_mutated`
-         - First count total vars in vcfanno'd file
+         - input: above output vcfanno'd VCF
+         - output: `somatic_anno/subset/{SAMPLE}-somatic.vcf.gz`, `stats.yaml`
+         - Count total vars
            - If that's <= 500K, all good, just copy that to the next step
            - If that's > 500K:
              - grab the INFO/gnomad_AF field
@@ -484,12 +493,52 @@ The result is a list of 1248 genes.
                  next step
                - if >= 500K though, let's go back to the start and try to
                  discard only variants that overlap the cancer gene list
-
-   - input: above (work) output file **if**
-     `batch_by_name[wc.batch].somatic_vcf`, **else** the `noalt`
-   - output:
-     - `work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz`
-     - `work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml`
+         - Write the count stats into the yaml output
+       - `somatic_vcf_clean_info`
+         - input: above output subset VCF
+         - output: `somatic_anno/clean_info/{SAMPLE}-somatic.vcf.gz`
+         - Add a 'TRICKY' INFO field in the VCF _metadata_ (`proc_hdr` func)
+         - Remove 'TRICKY*\*' and 'ANN' fields from VCF \_metadata*
+           (`postproc_hdr` func)
+         - Remove `ANN` and `TRICKY_*` INFO fields from variants, but join the
+           `TRICKY_*` fields into a single pipe separate field under
+           `INFO/TRICKY`.
+       - `somatic_vcf_prep`
+         - input: above output cleaned VCF
+         - output: `somatic_anno/prep/{SAMPLE}-somatic.vcf.gz`
+         - annotate `TUMOR/NORMAL_`-`AF/DP/VD` fields for PCGR
+           - <https://github.com/umccr/vcf_stuff/blob/master/scripts/pcgr_prep>
+       - `sage_pon`
+         - input: above output VCF, `hmf_pon` VCF with
+           `PON_COUNT`/`PON_MAX`/`PON_TOTAL` columns for annotation
+         - output: `somatic_anno/sage_pon/{SAMPLE}-somatic.vcf.gz`
+         - annotates VCF with `SageGermlinePon.hg38.98x.vcf.gz` HMF PoN counts
+       - `somatic_vcf_pon_anno`
+         - input: above output VCF, and `panel_of_normals_dir` (with
+           `pon.snps.vcf.gz` and `pon.indels.vcf.gz`)
+         - output: `somatic_anno/pon/{SAMPLE}-somatic.vcf.gz`
+         - annotates with `INFO/PoN_CNT`, optionally
+           `INFO/PoN_CNT>=filter_hits with FILTER=PoN`
+           - <https://github.com/umccr/vcf_stuff/blob/master/scripts/pon_anno>
+       - `somatic_vcf_pcgr_round1`
+         - input: above output VCF, and `pcgr_data` directory
+         - output:
+           - `somatic_anno/pcgr_run/{SAMPLE}-somatic.pcgr_ready.vep.vcf.gz`
+           - `somatic_anno/pcgr_run/{SAMPLE}-somatic.pcgr.snvs_indels.tiers.tsv`
+         - Runs PCGR (first time) via
+           <https://github.com/umccr/umccrise/blob/master/scripts/pcgr>
+       - `somatic_vcf_pcgr_anno`
+         - input:
+           - above output VCF + tiers files
+           - annotated VCF from `somatic_vcf_pon_anno` step
+         - output: `somatic_anno/pcgr_ann/{SAMPLE}-somatic.vcf.gz`
+         - annotate with
+           `PCGR_SYMBOL/TIER/CONSEQUENCE/MUTATION_HOTSPOT/PUTATIVE_DRIVER_MUTATIONTCGA_PANCANCER_COUNT/CLINVAR_CLNSIG`,
+           `COSMIC_CNT`, `ICGC_PCAWG_HITS`, `CSQ`
+       - `annotate`
+         - input: above output VCF
+         - output: `work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz`
+         - simply copies input to output
 
 6. `somatic_vcf_filter`
 
