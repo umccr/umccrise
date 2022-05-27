@@ -11,8 +11,9 @@
   - [Coverage](#coverage)
   - [Reports](#reports)
   - [Key cancer genes](#key-cancer-genes)
-  - [Rules](#rules)
+  - [Snakemake Rules](#snakemake-rules)
     - [`somatic.smk`](#somaticsmk)
+    - [`pcgr.smk`](#pcgrsmk)
 
 umccrise post-processess outputs of cancer variant calling analysis pipelines
 from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) or
@@ -419,7 +420,7 @@ It has been built off several sources:
 
 The result is a list of 1248 genes.
 
-## Rules
+## Snakemake Rules
 
 ### `somatic.smk`
 
@@ -521,7 +522,7 @@ The result is a list of 1248 genes.
            `INFO/PoN_CNT>=filter_hits with FILTER=PoN`
            - <https://github.com/umccr/vcf_stuff/blob/master/scripts/pon_anno>
        - `somatic_vcf_pcgr_round1`
-         - input: above output VCF, and `pcgr_data` directory
+         - input: above output VCF, and PCGR reference data (`pcgr_data`)
          - output:
            - `somatic_anno/pcgr_run/{SAMPLE}-somatic.pcgr_ready.vep.vcf.gz`
            - `somatic_anno/pcgr_run/{SAMPLE}-somatic.pcgr.snvs_indels.tiers.tsv`
@@ -532,8 +533,9 @@ The result is a list of 1248 genes.
            - above output VCF + tiers files
            - annotated VCF from `somatic_vcf_pon_anno` step
          - output: `somatic_anno/pcgr_ann/{SAMPLE}-somatic.vcf.gz`
-         - annotate with `PCGR_` - `SYMBOL`,`TIER`,`CONSEQUENCE`,`MUTATION_HOTSPOT`,`PUTATIVE_DRIVER_MUTATION`,`TCGA_PANCANCER_COUNT`,`CLINVAR_CLNSIG`, and
-           `COSMIC_CNT`, `ICGC_PCAWG_HITS`, `CSQ`
+         - annotate with `PCGR_` -
+           `SYMBOL`,`TIER`,`CONSEQUENCE`,`MUTATION_HOTSPOT`,`PUTATIVE_DRIVER_MUTATION`,`TCGA_PANCANCER_COUNT`,`CLINVAR_CLNSIG`,
+           and `COSMIC_CNT`, `ICGC_PCAWG_HITS`, `CSQ`
        - `annotate`
          - input: above output VCF
          - output: `work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz`
@@ -552,6 +554,7 @@ The result is a list of 1248 genes.
      - Dump where `INFO/TUMOR_VD < 4` (too few reads support variant)
      - Dump where `INFO/PoN_CNT >= 5` (in PoN, likely germline or artefact)
        - Report as Germline if is otherwise PASSed and `INFO/TUMOR_AF >= 0.2`
+         - See the `germline_leakage` rule in `germline.smk`
      - Keep potential hotspots:
        - `HMF_HOTSPOT`
        - `PCGR_INTOGEN_DRIVER_MUT`
@@ -572,9 +575,39 @@ The result is a list of 1248 genes.
      - (DRAGEN) Dump where `INFO/TLOD < 15`
      - Dump where `INFO/gnomAD_AF >= 0.01`
        - Report as Germline if is otherwise PASSed
+         - See the `germline_leakage` rule in `germline.smk`
 
 7. `somatic_vcf_filter_pass`
 
-   - Filters to only PASS
-   - input: above output
+   - Keep only PASS from above filtered VCF
+   - input: above output VCF
    - output: `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz`
+
+- The `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz` VCF is also passed as
+  input to:
+  - `Pierian`
+  - `vcf2maf.pl`
+  - `bcftools stats`
+  - `PCGR`
+
+### `pcgr.smk`
+
+1. `run_pcgr`
+
+- run PCGR with purity and ploidy as inferred by PURPLE
+- input:
+  - `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz`
+  - PCGR reference data (`pcgr_data`)
+  - `work/{batch}/purple/{batch}.purple.purity.tsv`
+- output:
+  - HTML: `work/{batch}/pcgr/{batch}-somatic.pcgr.html`
+  - VCF: `work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz`
+  - TSV: `work/{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
+
+2. `pcgr_copy_report`
+
+- copy HTML and TSV (not VCF) into final `umccrised/{batch}/` directory
+- input: above HTML and TSV outputs
+- output:
+  - `{batch}/{batch}-somatic.pcgr.html`
+  - `{batch}/small_variants/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
