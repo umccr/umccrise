@@ -532,8 +532,7 @@ The result is a list of 1248 genes.
            - above output VCF + tiers files
            - annotated VCF from `somatic_vcf_pon_anno` step
          - output: `somatic_anno/pcgr_ann/{SAMPLE}-somatic.vcf.gz`
-         - annotate with
-           `PCGR_SYMBOL/TIER/CONSEQUENCE/MUTATION_HOTSPOT/PUTATIVE_DRIVER_MUTATIONTCGA_PANCANCER_COUNT/CLINVAR_CLNSIG`,
+         - annotate with `PCGR_` - `SYMBOL`,`TIER`,`CONSEQUENCE`,`MUTATION_HOTSPOT`,`PUTATIVE_DRIVER_MUTATION`,`TCGA_PANCANCER_COUNT`,`CLINVAR_CLNSIG`, and
            `COSMIC_CNT`, `ICGC_PCAWG_HITS`, `CSQ`
        - `annotate`
          - input: above output VCF
@@ -544,8 +543,35 @@ The result is a list of 1248 genes.
 
    - Runs `filter_somatic_vcf` from `vcf_stuff`
      - <https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf>
-   - input: above output VCF
+   - input: above final output VCF
    - output: `{batch}/small_variants/{batch}-somatic.vcf.gz`
+   - steps:
+     - Keep where `INFO/PCGR_TIER in [1, 2]`
+     - Keep where `INFO/SAGE_HOTSPOT == 'known'`
+     - Keep where `INFO/TIER == 'HOTSPOT'`
+     - Dump where `INFO/TUMOR_VD < 4` (too few reads support variant)
+     - Dump where `INFO/PoN_CNT >= 5` (in PoN, likely germline or artefact)
+       - Report as Germline if is otherwise PASSed and `INFO/TUMOR_AF >= 0.2`
+     - Keep potential hotspots:
+       - `HMF_HOTSPOT`
+       - `PCGR_INTOGEN_DRIVER_MUT`
+       - `PCGR_MUTATION_HOTSPOT`
+       - `PCGR_CLINVAR_CLNSIG` is 'pathogenic' or 'uncertain'
+       - `COSMIC_CNT >= 10`
+       - `PCGR_TCGA_PANCANCER_COUNT >= 5`
+       - `ICGC_PCAWG_HITS >= 5`
+     - Dump where `INFO/TUMOR_AF < 0.1`
+     - Dump where has `INFO/ENCODE` flag (hits ENCODE blocklist)
+     - Dump indels in homopolymers (`INFO/MSILEN` and `INFO/MSI` plus formula)
+     - Dump where `INFO/TUMOR_VD < 6` and:
+       - variant in low complexity region (LCR)
+       - no `INFO/HMF_GIAB_CONF` flag
+       - `INFO/HMF_MAPPABILITY < 0.9`
+     - Dump indels in bad promoters
+     - Dump strand biased variants based on Vardict
+     - (DRAGEN) Dump where `INFO/TLOD < 15`
+     - Dump where `INFO/gnomAD_AF >= 0.01`
+       - Report as Germline if is otherwise PASSed
 
 7. `somatic_vcf_filter_pass`
 
