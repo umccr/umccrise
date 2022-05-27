@@ -164,8 +164,8 @@ Steps are:
      other evidence;
    - For all other variants, apply the following LCR, PoN, depth and AF filters.
      Remove variants for which one or more of the following conditions apply:
-     - `AF`<10%,
-     - Common variant in GnomAD (max `population AF`>=1%), add into the germline
+     - `AF<10%`,
+     - Common variant in GnomAD (max `population AF>=1%`), add into the germline
        set (see below);
      - Present in >=5 samples of the Panel of Normal set;
      - InDel in a "bad promoter" regions (GA4GH: "Anecdotal results suggested
@@ -176,8 +176,8 @@ Steps are:
        promoters are, like many exons, GC-rich, averaging 79% GC composition);
      - Overlapping the
        [ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist),
-     - Variant depth `VD`<4;
-     - Variant depth `VD`<6, and the variant overlaps a low complexity region
+     - Variant depth `VD<4`;
+     - Variant depth `VD<6`, and the variant overlaps a low complexity region
        (see step 4 above);
      - VarDict strand-biased variants (single strand support for ALT, while REF
        has both; or REF and ALT have opposite supporting strands), unless
@@ -446,7 +446,7 @@ The result is a list of 1248 genes.
 4. `somatic_vcf_sage1`
 
    - Runs `sage v1.0` (see
-     <https://github.com/umccr/vcf_stuff/blob/master/scripts/sage>) - jar is
+     <https://github.com/umccr/vcf_stuff/blob/master/scripts/sage> - jar is
      included in
      <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage-1.0.jar>)
    - input: above output VCF, BAMs (T/N)
@@ -479,31 +479,32 @@ The result is a list of 1248 genes.
          - output: `somatic_anno/tricky_vcfanno.toml`
        - `somatic_vcf_regions_anno`
          - Runs vcfanno
-         - input: TOML from above and the original input VCF
+         - input: TOML from above and the original (`sage1`) input VCF
          - output: `somatic_anno/vcfanno/{SAMPLE}-somatic.vcf.gz`
        - `maybe_subset_highly_mutated`
          - input: above output vcfanno'd VCF
          - output: `somatic_anno/subset/{SAMPLE}-somatic.vcf.gz`, `stats.yaml`
          - Count total vars
-           - If that's <= 500K, all good, just copy that to the next step
-           - If that's > 500K:
-             - grab the INFO/gnomad_AF field
-               - if that exists, is >= 0.01, and is not a HMF/SAGE HOTSPOT,
+           - If that's `<= 500K`, all good, just copy that to the next step
+           - If that's `> 500K`:
+             - grab the `INFO/gnomad_AF` field
+               - if that exists, is `>= 0.01`, and is not a HMF/SAGE HOTSPOT,
                  discard it
-               - now count the remaining vars, and if < 500K, copy those to the
-                 next step
-               - if >= 500K though, let's go back to the start and try to
+               - now count the remaining vars, and if `< 500K`, copy those to
+                 the next step
+               - if `>= 500K` though, let's go back to the start and try to
                  discard only variants that overlap the cancer gene list
          - Write the count stats into the yaml output
        - `somatic_vcf_clean_info`
          - input: above output subset VCF
          - output: `somatic_anno/clean_info/{SAMPLE}-somatic.vcf.gz`
-         - Add a 'TRICKY' INFO field in the VCF _metadata_ (`proc_hdr` func)
-         - Remove 'TRICKY*\*' and 'ANN' fields from VCF \_metadata*
-           (`postproc_hdr` func)
-         - Remove `ANN` and `TRICKY_*` INFO fields from variants, but join the
-           `TRICKY_*` fields into a single pipe separate field under
-           `INFO/TRICKY`.
+         - process:
+           - Add a `TRICKY` INFO field in the VCF metadata (`proc_hdr` func)
+           - Remove `TRICKY_*` and `ANN` fields from VCF metadata
+             (`postproc_hdr` func)
+           - Remove `ANN` and `TRICKY_*` INFO fields from variants, but join the
+             `TRICKY_*` fields into a single pipe separated field under
+             `INFO/TRICKY`.
        - `somatic_vcf_prep`
          - input: above output cleaned VCF
          - output: `somatic_anno/prep/{SAMPLE}-somatic.vcf.gz`
@@ -546,6 +547,7 @@ The result is a list of 1248 genes.
    - Runs `filter_somatic_vcf` from `vcf_stuff`
      - <https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf>
    - input: above final output VCF
+     (`work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz`)
    - output: `{batch}/small_variants/{batch}-somatic.vcf.gz`
    - steps:
      - Keep where `INFO/PCGR_TIER in [1, 2]`
