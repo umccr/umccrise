@@ -19,6 +19,8 @@ localrules: somatic, germline, germline_batch, pierian
 
 # rule somatic_vcf_reheader  # change RGIDs to tumor and normal names?
 
+# Runs `sage-2.2.jar` (jar included). Doesn't get run by default, probably was
+# used in a project-specific context.
 rule run_sage:
     input:
         tumor_bams  = lambda wc: [s.bam          for s in batch_by_name[wc.batch].tumors],
@@ -75,6 +77,7 @@ rule run_sage:
         )
         verify_file(output.vcf)
 
+# Filters to only PASS and sorts
 rule somatic_vcf_pass_sort:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].somatic_vcf or
@@ -89,6 +92,7 @@ rule somatic_vcf_pass_sort:
         'bcftools view -H -f.,PASS {input.vcf} | sort -k1,1V -k2,2n) | '
         'bgzip -c > {output.vcf} && tabix -f -p vcf {output.vcf}'
 
+# Filters to within noalt regions (chr1-chr22, chrX, chrY, chrM)
 rule somatic_vcf_select_noalt:
     input:
         vcf = rules.somatic_vcf_pass_sort.output.vcf,
@@ -101,6 +105,7 @@ rule somatic_vcf_select_noalt:
         'bcftools view -R {input.noalts_bed} {input.vcf} -Oz -o {output.vcf} '
         '&& tabix -p vcf {output.vcf}'
 
+# Runs sage v1.0 - see https://github.com/umccr/vcf_stuff/blob/master/scripts/sage
 rule somatic_vcf_sage1:
     input:
         vcf = rules.somatic_vcf_select_noalt.output.vcf,
@@ -135,6 +140,9 @@ rule somatic_vcf_sage1:
         '--genomes-dir {params.genomes_dir} '
         '{params.unlock_opt}'
 
+# Runs anno_somatic_vcf from vcf_stuff
+# https://github.com/umccr/vcf_stuff/blob/master/scripts/anno_somatic_vcf
+# https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/annotate_somatic_vcf.smk
 rule somatic_vcf_annotate:
     input:
         vcf = lambda wc: f'work/{wc.batch}/small_variants/sage1/{wc.batch}-somatic.vcf.gz' \
@@ -168,6 +176,8 @@ rule somatic_vcf_annotate:
             f'{params.unlock_opt}'
         )
 
+# Runs filter_somatic_vcf from vcf_stuff
+# https://github.com/umccr/vcf_stuff/blob/master/scripts/filter_somatic_vcf
 rule somatic_vcf_filter:
     input:
         vcf = rules.somatic_vcf_annotate.output.vcf,
@@ -189,6 +199,7 @@ rule somatic_vcf_filter:
             f'--min-af {params.min_af}'
         )
 
+# Keep only PASS
 rule somatic_vcf_filter_pass:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf
@@ -200,6 +211,7 @@ rule somatic_vcf_filter_pass:
         'bcftools view -f.,PASS {input.vcf} -Oz -o {output.vcf} '
         '&& tabix -f -p vcf {output.vcf}'
 
+# Use tumor SQ to annotate QUAL and calculate stats on final prioritised VCF
 rule bcftools_stats_somatic:
     input:
         rules.somatic_vcf_filter_pass.output.vcf
@@ -218,6 +230,7 @@ rule bcftools_stats_somatic:
           sed 's#<STDIN>#{params.sname}#' > {output.stats}
         '''
 
+# Report var counts into yaml
 rule somatic_stats_report:
     input:
         vcf = rules.somatic_vcf_filter.output.vcf,
@@ -236,7 +249,7 @@ rule somatic_stats_report:
         with open(input.subset_highly_mutated_stats) as inp:
             stats = yaml.safe_load(inp)
             total_vars = stats['total_vars']
-            vars_no_gnomad = stats.get('vars_no_gnomad')
+            vars_no_gnomad = stats.get('vars_no_gnomad') # unused...
             vars_cancer_genes = stats.get('vars_cancer_genes')
             if vars_cancer_genes is not None:
                 # In this case, "all_snps", "all_indels", "all_others" correspond to pre-cancer-gene subset variants
@@ -270,6 +283,7 @@ rule somatic_stats_report:
             }
             yaml.dump(data, out, default_flow_style=False)
 
+# Run vcf2maf on final prioritised VCF
 rule somatic_vcf2maf:
     input:
         vcf = rules.somatic_vcf_filter_pass.output.vcf,
@@ -285,7 +299,7 @@ rule somatic_vcf2maf:
         uncompressed_tmp_vcf = 'work/{batch}/small_variants/{batch}-somatic.vcf.tmp',
     shell:
         'gunzip -c {input.vcf} > {params.uncompressed_tmp_vcf} '
-        '&& vcf2maf.pl --inhibit-vep ' 
+        '&& vcf2maf.pl --inhibit-vep '
         '--input-vcf {params.uncompressed_tmp_vcf} '
         '--output-maf {output.maf} '
         '--ref-fasta {input.fa} '
@@ -296,6 +310,7 @@ rule somatic_vcf2maf:
         '&& rm {params.uncompressed_tmp_vcf}'
 
 
+# Prepare variant files for Pierian
 rule pierian:
     input:
         snv = rules.somatic_vcf_filter_pass.output.vcf,

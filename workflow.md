@@ -445,14 +445,44 @@ The result is a list of 1248 genes.
 
 4. `somatic_vcf_sage1`
 
-   - Runs `sage v1.0` (see
-     <https://github.com/umccr/vcf_stuff/blob/master/scripts/sage> - jar is
-     included in
-     <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage-1.0.jar>)
-   - input: above output VCF, BAMs (T/N)
+   - Runs `sage v1.0`
+     - sage script: <https://github.com/umccr/vcf_stuff/blob/master/scripts/sage>
+     - sage Snakemake subworkflow: <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage.smk>
+     - jar: <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage-1.0.jar>)
+   - input: above output (noalt) VCF, BAMs (T/N)
    - output:
      - `work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz`
      - `{batch}/small_variants/sage1/{batch}-sage.vcf.gz`
+     - Snakemake subworkflow:
+       - `run_sage`
+         - sage v1.0 with T/N BAMs, hotspots, coding regions,
+         - output: `work/call/{SAMPLE}-sage.vcf.gz`
+       - `sage_rename_anno`
+         - sed `HOTSPOT -> SAGE_HOTSPOT`
+         - output: `work/rename_anno/{SAMPLE}-sage.vcf.gz`
+       - `sage_reorder_samples`
+         - reorder samples, tumor first
+         - output: `work/sage_reorder_samples/{SAMPLE}-sage.vcf.gz` (**final Sage VCF**)
+       - `sage_pass`
+         - keep PASS
+         - output: `work/sage_pass/{SAMPLE}-sage.vcf.gz`
+       - `sage_pass_novel`
+         - intersect Sage PASS VCF with noalt VCF, keep only those 'novel' variants found in Sage
+         - output: `work/sage_pass_novel/{SAMPLE}-sage.vcf.gz`
+       - `add_novel_sage_calls`
+         - concatenate above 'novel' with noalt VCF
+         - output: `work/add_novel_sage_calls/{SAMPLE}.vcf.gz`
+       - `sort_saged`
+         - sort above
+         - output: `work/sort_saged/{SAMPLE}.vcf.gz`
+       - `annotate_from_sage`
+         - input: above output VCF 'vcf' and final Sage VCF ('sage')
+         - output: `work/annotate_from_sage/{SAMPLE}.vcf.gz`
+         - iterate through 'sage' variants and create a `sage_calls` dict with chr/pos/ref/alt keys and the cyvcf2 record as values, then for 'vcf' variants that are PASSed, annotate 'SAGE\_HOTSPOT' and use a 'PASS' FILTER, else use the 'SAGE\_lowconf' FILTER tag. Then set the `FORMAT/DP` and `FORMAT/AD` based on the 'sage' call. Something like that.
+       - `copy_result`
+         - copy above output VCF to `work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz`
+       - `sage`
+         - copy `work/call/{SAMPLE}-sage.vcf.gz` to `{batch}/small_variants/sage1/{batch}-sage.vcf.gz`
 
 5. `somatic_vcf_annotate`
 
