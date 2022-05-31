@@ -35,9 +35,11 @@ title: "`r paste(params$batch_name, params$title)`"
 ---
 
 ```{r knitr_opts, include=F}
-knitr::opts_chunk$set(collapse = TRUE, echo = FALSE,
-                      warning = FALSE, message = FALSE,
-                      error = TRUE) # continue running report even after chunk errors
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE,
+  warning = FALSE, message = FALSE,
+  error = TRUE
+) # continue running report even after chunk errors
 ```
 
 ```{r render_report_interactively, echo=F, eval=FALSE}
@@ -50,31 +52,32 @@ umccrised_dir <- "./nogit/umccrised_data"
 key_genes <- "./nogit/umccrised_data/umccr_cancer_genes.latest.tsv"
 
 params <- list(
-    tumor_name=                tumor_name,
-    batch_name=                batch_name,
-    genome_build=              genome_build,
-    key_genes=                 key_genes,
-    af_global=                 glue::glue("{umccrised_dir}/work/{batch_name}/cancer_report/afs/af_tumor.txt"),
-    af_keygenes=               glue::glue("{umccrised_dir}/work/{batch_name}/cancer_report/afs/af_tumor_keygenes.txt"),
-    somatic_snv=               glue::glue("{umccrised_dir}/{batch_name}/small_variants/{batch_name}-somatic-PASS.vcf.gz"),
-    somatic_sv=                glue::glue("{umccrised_dir}/{batch_name}/structural/{batch_name}-manta.tsv"),
-    somatic_sv_vcf=            glue::glue("{umccrised_dir}/{batch_name}/structural/{batch_name}-manta.vcf.gz"),
-    purple_som_gene_cnv=       glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv"),
-    purple_som_cnv=            glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv"),
-    purple_germ_cnv=           glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.germline.tsv"),
-    purple_purity=             glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.purity.tsv"),
-    purple_qc=                 glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.qc"),
-    purple_som_snv_vcf=        glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.somatic.vcf.gz"),
-    oncoviral_present_viruses= glue::glue("{umccrised_dir}/work/{batch_name}/oncoviruses/present_viruses.txt"),
-    oncoviral_breakpoints_tsv= glue::glue("{umccrised_dir}/work/{batch_name}/oncoviruses/oncoviral_breakpoints.tsv"),
-    conda_list=                glue::glue("{umccrised_dir}/work/{batch_name}/conda_pkg_list.txt"),
-    result_outdir=             glue::glue("{umccrised_dir}/{batch_name}/cancer_report_tables2")
+  tumor_name = tumor_name,
+  batch_name = batch_name,
+  genome_build = genome_build,
+  key_genes = key_genes,
+  af_global = glue::glue("{umccrised_dir}/work/{batch_name}/cancer_report/afs/af_tumor.txt"),
+  af_keygenes = glue::glue("{umccrised_dir}/work/{batch_name}/cancer_report/afs/af_tumor_keygenes.txt"),
+  somatic_snv = glue::glue("{umccrised_dir}/{batch_name}/small_variants/{batch_name}-somatic-PASS.vcf.gz"),
+  somatic_sv = glue::glue("{umccrised_dir}/{batch_name}/structural/{batch_name}-manta.tsv"),
+  somatic_sv_vcf = glue::glue("{umccrised_dir}/{batch_name}/structural/{batch_name}-manta.vcf.gz"),
+  purple_som_gene_cnv = glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.gene.tsv"),
+  purple_som_cnv = glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.somatic.tsv"),
+  purple_germ_cnv = glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.cnv.germline.tsv"),
+  purple_purity = glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.purity.tsv"),
+  purple_qc = glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.qc"),
+  purple_som_snv_vcf = glue::glue("{umccrised_dir}/work/{batch_name}/purple/{batch_name}.purple.somatic.vcf.gz"),
+  oncoviral_present_viruses = glue::glue("{umccrised_dir}/work/{batch_name}/oncoviruses/present_viruses.txt"),
+  oncoviral_breakpoints_tsv = glue::glue("{umccrised_dir}/work/{batch_name}/oncoviruses/oncoviral_breakpoints.tsv"),
+  conda_list = glue::glue("{umccrised_dir}/work/{batch_name}/conda_pkg_list.txt"),
+  result_outdir = glue::glue("{umccrised_dir}/{batch_name}/cancer_report_tables2")
 )
 
 render_me <- function() {
   rmarkdown::render(
     "cancer_report.Rmd",
-    params = params)
+    params = params
+  )
 }
 render_me()
 ```
@@ -113,7 +116,9 @@ library(gpgr)
 bnm <- params$batch_name
 img_dir <- file.path("img") # created when copying purple files to tmp dir
 result_outdir <- params$result_outdir # directory to write tables to
-blank_lines <- function(n = 10){cat(rep("&nbsp;  ",n), sep="\n")}
+blank_lines <- function(n = 10) {
+  cat(rep("&nbsp;  ", n), sep = "\n")
+}
 
 # get js indices when using in DT options
 col_ind_js <- function(dt, col) {
@@ -153,12 +158,13 @@ chord_res <- gpgr::chord_run(
   sv.caller = "manta",
   sample.name = params$tumor_name,
   ref.genome = params$genome_build,
-  verbose = TRUE)
+  verbose = TRUE
+)
 
 hrdetect_res <- NULL
 # HRDetect doesn't handle empty files
 if (gpgr::vcf_is_empty(params$somatic_sv_vcf) |
-    gpgr::vcf_is_empty(params$somatic_snv)) {
+  gpgr::vcf_is_empty(params$somatic_snv)) {
   hrdetect_res <- tibble::tribble(
     ~sample, ~Probability, ~intercept, ~del.mh.prop, ~SNV3, ~SV3, ~SV5, ~hrd, ~SNV8,
     params$tumor_name, NA, NA, NA, NA, NA, NA, NA, NA
@@ -170,7 +176,8 @@ if (gpgr::vcf_is_empty(params$somatic_sv_vcf) |
     sv_vcf = params$somatic_sv_vcf,
     cnv_tsv = params$purple_som_cnv,
     genome = params$genome_build,
-    snvoutdir = tempdir())
+    snvoutdir = tempdir()
+  )
 }
 ```
 
@@ -180,15 +187,18 @@ mutpat_gr <- MutationalPatterns::read_vcfs_as_granges(
   sample_names = params$tumor_name,
   genome = ref_genome,
   group = "auto+sex",
-  type = "all")
+  type = "all"
+)
 
 mp_snv <- gpgr::sig_count_snv(vcf_gr = mutpat_gr, ref_genome = ref_genome)
 mp_dbs <- gpgr::sig_count_dbs(vcf_gr = mutpat_gr)
 mp_indel <- gpgr::sig_count_indel(vcf_gr = mutpat_gr, ref_genome = ref_genome)
 
-mp_snv_plots <- gpgr::sig_plot_snv(gr_snv = mp_snv$gr_snv,
-                                   snv_counts = mp_snv$snv_counts,
-                                   ref_genome = ref_genome)
+mp_snv_plots <- gpgr::sig_plot_snv(
+  gr_snv = mp_snv$gr_snv,
+  snv_counts = mp_snv$snv_counts,
+  ref_genome = ref_genome
+)
 mp_dbs_plots <- gpgr::sig_plot_dbs(dbs_counts = mp_dbs)
 mp_indel_plots <- gpgr::sig_plot_indel(indel_counts = mp_indel)
 
@@ -308,8 +318,10 @@ summarise_sigs <- function(mut_sig_contr) {
     paste(collapse = ", ")
 }
 
-hrd_summary <- list(chord = chord_res[["prediction"]][, "p_hrd", drop = TRUE],
-                    hrdetect = hrdetect_res[, "Probability", drop = TRUE])
+hrd_summary <- list(
+  chord = chord_res[["prediction"]][, "p_hrd", drop = TRUE],
+  hrdetect = hrdetect_res[, "Probability", drop = TRUE]
+)
 
 cnv_summary <-
   list(som = purple_cnv_som$tab, germ = purple_cnv_germ$tab) %>%
@@ -317,15 +329,18 @@ cnv_summary <-
     .x,
     Min = round(min(CN), 2),
     Max = round(max(CN), 2),
-    N = dplyr::n(), .groups = "drop_last"))
+    N = dplyr::n(), .groups = "drop_last"
+  ))
 
 if (no_sv_found) {
   sv_summary <- tibble(unmelted = c(0), melted = c(0))
 } else {
   sv_summary <-
-    list(unmelted = sv_unmelted %>% dplyr::select(Type),
-         melted = sv_all %>% dplyr::select(Type)) %>%
-    purrr::map(function(x) addmargins(table(x, useNA = 'ifany'))) %>%
+    list(
+      unmelted = sv_unmelted %>% dplyr::select(Type),
+      melted = sv_all %>% dplyr::select(Type)
+    ) %>%
+    purrr::map(function(x) addmargins(table(x, useNA = "ifany"))) %>%
     do.call("rbind", .) %>%
     as.data.frame() %>%
     tibble::rownames_to_column(var = "group") %>%
@@ -343,12 +358,16 @@ qc_summary_all <- dplyr::tribble(
   "2020 COSMIC (https://cancer.sanger.ac.uk/cosmic/signatures)",
   6, "HRD", glue::glue("CHORD: {hrd_summary$chord}; HRDetect: {hrd_summary$hrdetect}"),
   "Homologous recombination deficiency probability.",
-  20, "CNVs (Somatic)", glue::glue("Min: {cnv_summary[['som']]$Min}; ",
-                                   "Max: {cnv_summary[['som']]$Max}; ",
-                                   "N: {cnv_summary[['som']]$N} "), "",
-  21, "CNVs (Germline)", glue::glue("Min: {cnv_summary[['germ']]$Min}; ",
-                                   "Max: {cnv_summary[['germ']]$Max}; ",
-                                   "N: {cnv_summary[['germ']]$N} "), "",
+  20, "CNVs (Somatic)", glue::glue(
+    "Min: {cnv_summary[['som']]$Min}; ",
+    "Max: {cnv_summary[['som']]$Max}; ",
+    "N: {cnv_summary[['som']]$N} "
+  ), "",
+  21, "CNVs (Germline)", glue::glue(
+    "Min: {cnv_summary[['germ']]$Min}; ",
+    "Max: {cnv_summary[['germ']]$Max}; ",
+    "N: {cnv_summary[['germ']]$N} "
+  ), "",
   18, "SVs (unmelted)", paste(rev(sv_summary$unmelted), collapse = ", "),
   "Summary of SVs as presented in raw VCF.",
   19, "SVs (melted)", paste(rev(sv_summary$melted), collapse = ", "),
@@ -370,7 +389,9 @@ qc_summary_all %>%
     ),
     locations = cells_body(
       columns = vars(value),
-      rows = grepl("FAIL", value) & variable == "QC_Status")) %>%
+      rows = grepl("FAIL", value) & variable == "QC_Status"
+    )
+  ) %>%
   gt::tab_style(
     style = list(
       cell_fill(color = "#FED8B1"),
@@ -378,13 +399,17 @@ qc_summary_all %>%
     ),
     locations = cells_body(
       columns = vars(value),
-      rows = grepl("WARN_", value) & variable == "QC_Status")) %>%
+      rows = grepl("WARN_", value) & variable == "QC_Status"
+    )
+  ) %>%
   gt::tab_style(
     style = list(
       cell_text(weight = "bold")
     ),
-    locations = list(cells_stub(rows = TRUE),
-                     cells_body(columns = vars(value)))
+    locations = list(
+      cells_stub(rows = TRUE),
+      cells_body(columns = vars(value))
+    )
   ) %>%
   gt::cols_align("left") %>%
   gt::opt_row_striping() %>%
@@ -487,10 +512,12 @@ genes_list <- GenomicFeatures::genes(base::get(tx_ref_genome))
 
 # Mutation count matrix with strand info (4*6*4=96 -> 96*2=192)
 mutpat_gr_snv <- MutationalPatterns::get_mut_type(mutpat_gr, type = "snv")
-mut_mat_s <- MutationalPatterns::mut_matrix_stranded(vcf_list = mutpat_gr_snv,
-                                                     ref_genome = ref_genome,
-                                                     ranges = genes_list,
-                                                     mode = "transcription")
+mut_mat_s <- MutationalPatterns::mut_matrix_stranded(
+  vcf_list = mutpat_gr_snv,
+  ref_genome = ref_genome,
+  ranges = genes_list,
+  mode = "transcription"
+)
 
 # Mutation count per type and strand
 strand_counts <- MutationalPatterns::strand_occurrences(mut_mat_s, by = "all")
@@ -507,16 +534,20 @@ mp_plot_bias2 <- MutationalPatterns::plot_strand_bias(strand_bias)
 ## ---- Replicative ---- ##
 
 repli_file <- system.file("extdata/ReplicationDirectionRegions.bed",
-                          package = "MutationalPatterns")
+  package = "MutationalPatterns"
+)
 # start/stop contain scientific notation, so need to be doubles
 repli_strand <-
   readr::read_tsv(repli_file, col_names = TRUE, col_types = "cddcc") %>%
   dplyr::mutate_if(is.character, as.factor)
 repli_strand_granges <- GenomicRanges::GRanges(
   seqnames = repli_strand$Chr,
-  ranges = IRanges::IRanges(start = repli_strand$Start + 1,
-                   end = repli_strand$Stop),
-  strand_info = repli_strand$Class)
+  ranges = IRanges::IRanges(
+    start = repli_strand$Start + 1,
+    end = repli_strand$Stop
+  ),
+  strand_info = repli_strand$Class
+)
 
 GenomeInfoDb::seqlevelsStyle(repli_strand_granges) <- GenomeInfoDb::seqlevelsStyle(base::get(ref_genome))
 
@@ -525,7 +556,8 @@ mut_mat_s_rep <-
     vcf_list = mutpat_gr_snv,
     ref_genome = ref_genome,
     ranges = repli_strand_granges,
-    mode = "replication")
+    mode = "replication"
+  )
 # Mutation count per type and strand
 strand_counts_rep <- MutationalPatterns::strand_occurrences(mut_mat_s_rep, by = "all")
 # Poisson test for strand asymmetry significance testing
@@ -656,8 +688,9 @@ for (i in 1:length(chromosomes)) {
 }
 if (will_work) {
   MutationalPatterns::plot_rainfall(vcf,
-                                    chromosomes = GenomeInfoDb::seqnames(base::get(ref_genome))[1:22],
-                                    cex = 1.2, ylim = 1e+09)
+    chromosomes = GenomeInfoDb::seqnames(base::get(ref_genome))[1:22],
+    cex = 1.2, ylim = 1e+09
+  )
 }
 ```
 
@@ -673,19 +706,22 @@ along with an ID that is shared by grouped variants.
 kat <- gpgr::purple_kataegis(params$purple_som_snv_vcf)
 details::details(knitr::kable(kat$description), lang = NULL, summary = "Column Description")
 if (nrow(kat$data) > 0) {
-  DT::datatable(kat$data, filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                options = list(
-                  scroller = TRUE, scrollY = 200, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
-                  buttons = c('csv', 'excel'), dom = 'Blfrtip'))
+  DT::datatable(kat$data,
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+    options = list(
+      scroller = TRUE, scrollY = 200, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
+      buttons = c("csv", "excel"), dom = "Blfrtip"
+    )
+  )
 } else {
   cat("No kataegis regions detected.")
 }
 ```
 
 ```{r purple_plot_somaticrainfall, out.width="70%"}
-purple_plot_somaticrainfall <- file.path(img_dir, paste0(bnm, '.somatic.rainfall.png'))
+purple_plot_somaticrainfall <- file.path(img_dir, paste0(bnm, ".somatic.rainfall.png"))
 if (file.exists(purple_plot_somaticrainfall)) {
   knitr::include_graphics(purple_plot_somaticrainfall)
 } else {
@@ -791,7 +827,7 @@ The first BAF plot is based on PURPLE data and configuration files.
 </details>
 
 ```{r circos_baf_plot, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.circos_baf.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, ".circos_baf.png")))
 ```
 
 
@@ -827,7 +863,7 @@ knitr::include_graphics(file.path(img_dir, paste0(bnm, '.circos_baf.png')))
 </details>
 
 ```{r circos_default1, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.circos.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, ".circos.png")))
 ```
 
 ### Allele Ratios, BAF
@@ -845,7 +881,7 @@ knitr::include_graphics(file.path(img_dir, paste0(bnm, '.circos.png')))
 </details>
 
 ```{r circos_default2, out.width="80%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.input.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, ".input.png")))
 ```
 
 ## __Structural Variants__ {#sv-summary}
@@ -1014,8 +1050,10 @@ p2 <- gpgr::plot_bnd_sr_pr_tot_hist(sv_unmelted) + ggplot2::theme(legend.positio
 
 ```{r sv_summary, eval=!no_sv_found}
 d <-
-  list(unmelted = sv_unmelted %>% dplyr::select(Tier = TierTop, Type),
-       melted = sv_all %>% dplyr::select(Tier, Type)) %>%
+  list(
+    unmelted = sv_unmelted %>% dplyr::select(Tier = TierTop, Type),
+    melted = sv_all %>% dplyr::select(Tier, Type)
+  ) %>%
   dplyr::bind_rows(.id = "group") %>%
   dplyr::mutate(group = factor(group, levels = c("unmelted", "melted"))) %>%
   dplyr::group_by(group) %>%
@@ -1028,15 +1066,18 @@ d <-
 d %>%
   gt::gt(
     groupname_col = "group",
-    rowname_col = "Tier") %>%
+    rowname_col = "Tier"
+  ) %>%
   gt::tab_header(
     title = "SV type counts by tier",
     subtitle = "(TopTier used for melted variants)"
   ) %>%
   gt::tab_stubhead(label = "Tier") %>%
-  gt::summary_rows(groups = TRUE,
-                   fns = list(tot = ~sum(., na.rm = TRUE)),
-                   drop_trailing_zeros = TRUE) %>%
+  gt::summary_rows(
+    groups = TRUE,
+    fns = list(tot = ~ sum(., na.rm = TRUE)),
+    drop_trailing_zeros = TRUE
+  ) %>%
   gt::fmt_missing(columns = dplyr::everything()) %>%
   gt::tab_style(
     style = list(
@@ -1060,12 +1101,15 @@ svtab_raw <- sv_unmelted %>%
   dplyr::arrange(TierTop, vcfnum)
 
 svtab_rawdt <- svtab_raw %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                options = list(
-                  scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
-                  buttons = c('csv', 'excel'), dom = 'Blfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+    options = list(
+      scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
+      buttons = c("csv", "excel"), dom = "Blfrtip"
+    )
+  )
 ```
 
 ```{r svtab_raw_details, eval=!no_sv_found}
@@ -1082,15 +1126,19 @@ blank_lines(2)
 ```{r svtab_BND, eval=!no_sv_found}
 sv_BND <- sv_all %>%
   dplyr::filter(Type == "BND") %>%
-  dplyr::mutate(nrow = dplyr::row_number(),
-                nrow = sprintf(glue::glue("%0{nchar(nrow(.))}d"), nrow)) %>%
+  dplyr::mutate(
+    nrow = dplyr::row_number(),
+    nrow = sprintf(glue::glue("%0{nchar(nrow(.))}d"), nrow)
+  ) %>%
   dplyr::select(nrow, dplyr::everything())
 
 
 sv_BND_main <- sv_BND %>%
-  dplyr::select(nrow, vcfnum, `Tier (Top)`, Start, End,
-                BND_ID, BND_mate,
-                Genes, Effect, Detail, SR_alt, PR_alt, SR_PR_sum, Ploidy, AF_PURPLE)
+  dplyr::select(
+    nrow, vcfnum, `Tier (Top)`, Start, End,
+    BND_ID, BND_mate,
+    Genes, Effect, Detail, SR_alt, PR_alt, SR_PR_sum, Ploidy, AF_PURPLE
+  )
 
 sv_BND_other <- sv_BND %>%
   dplyr::select(nrow, AF_BPI, CNC, CN, SR_PR_ref, SScore, ntrx, Transcript)
@@ -1101,33 +1149,43 @@ sv_BND_purple <- sv_all %>%
 
 gpgr::write_tsvjsongz(
   dplyr::bind_cols(sv_BND_main, sv_BND_other %>% dplyr::select(-nrow)),
-  glue("sv/{bnm}-03_sv_BND_main"), result_outdir)
+  glue("sv/{bnm}-03_sv_BND_main"), result_outdir
+)
 gpgr::write_tsvjsongz(sv_BND_purple, glue("sv/{bnm}-04_sv_BND_purpleinf"), result_outdir)
 
 sv_BND_maindt <- sv_BND_main %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                options = list(
-                  scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
-                  buttons = c('csv', 'excel'), dom = 'Blfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+    options = list(
+      scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = FALSE, keys = TRUE,
+      buttons = c("csv", "excel"), dom = "Blfrtip"
+    )
+  )
 
 sv_BND_otherdt <- sv_BND_other %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                options = list(
-                  scroller = TRUE, scrollY = 400, scrollX = TRUE, keys = TRUE, autoWidth = FALSE,
-                  buttons = c('csv', 'excel'), dom = 'Blfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+    options = list(
+      scroller = TRUE, scrollY = 400, scrollX = TRUE, keys = TRUE, autoWidth = FALSE,
+      buttons = c("csv", "excel"), dom = "Blfrtip"
+    )
+  )
 
 sv_BND_purpledt <- sv_BND_purple %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                options = list(
-                  scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE,
-                  buttons = c('csv', 'excel'),
-                  dom = 'Blfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+    options = list(
+      scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE,
+      buttons = c("csv", "excel"),
+      dom = "Blfrtip"
+    )
+  )
 ```
 
 #### Main Columns
@@ -1160,23 +1218,31 @@ sv_BND_purpledt
 ```{r svtab_noBND, eval=!no_sv_found}
 sv_noBND <- sv_all %>%
   dplyr::filter(!Type %in% c("BND", "PURPLE_inf")) %>%
-  dplyr::mutate(nrow = dplyr::row_number(),
-                nrow = sprintf(glue::glue("%0{nchar(nrow(.))}d"), nrow),
-                Genes_original = Genes,
-                Transcript_original = Transcript)
+  dplyr::mutate(
+    nrow = dplyr::row_number(),
+    nrow = sprintf(glue::glue("%0{nchar(nrow(.))}d"), nrow),
+    Genes_original = Genes,
+    Transcript_original = Transcript
+  )
 
 max_genes <- 2
 max_transcripts <- 2
 
 sv_noBND_main <- sv_noBND %>%
-  dplyr::mutate(Genes = ifelse(ngen > max_genes,
-                               glue::glue("Many Genes ({ngen})"),
-                               Genes),
-                Transcript = ifelse(ntrx > max_transcripts,
-                                    glue::glue("Many Transcripts ({ntrx})"),
-                                    Transcript)) %>%
-  dplyr::select(nrow, vcfnum, `Tier (Top)`, Type, Start, End, Effect,
-                Genes, Transcript, Detail, SR_alt, PR_alt, SR_PR_sum, AF_PURPLE)
+  dplyr::mutate(
+    Genes = ifelse(ngen > max_genes,
+      glue::glue("Many Genes ({ngen})"),
+      Genes
+    ),
+    Transcript = ifelse(ntrx > max_transcripts,
+      glue::glue("Many Transcripts ({ntrx})"),
+      Transcript
+    )
+  ) %>%
+  dplyr::select(
+    nrow, vcfnum, `Tier (Top)`, Type, Start, End, Effect,
+    Genes, Transcript, Detail, SR_alt, PR_alt, SR_PR_sum, AF_PURPLE
+  )
 
 gpgr::write_tsvjsongz(sv_noBND_main, glue("sv/{bnm}-05_sv_noBND_main"), result_outdir)
 
@@ -1189,55 +1255,71 @@ gpgr::write_tsvjsongz(sv_noBND_other, glue("sv/{bnm}-06_sv_noBND_other"), result
 sv_noBND_manygenes <- sv_noBND %>%
   dplyr::filter(ngen > max_genes) %>%
   dplyr::select(nrow, vcfnum, `Tier (Top)`, Type, Start, End,
-                Effect, ngen, Genes = Genes_original)
+    Effect, ngen,
+    Genes = Genes_original
+  )
 
 gpgr::write_tsvjsongz(sv_noBND_manygenes, glue("sv/{bnm}-07_sv_noBND_manygenes"), result_outdir)
 
 sv_noBND_manytx <- sv_noBND %>%
   dplyr::filter(ntrx > max_transcripts) %>%
   dplyr::select(nrow, vcfnum, `Tier (Top)`, Type, Start, End,
-                Effect, ntrx, Transcript = Transcript_original)
+    Effect, ntrx,
+    Transcript = Transcript_original
+  )
 
 gpgr::write_tsvjsongz(sv_noBND_manytx, glue("sv/{bnm}-08_sv_noBND_manytranscripts"), result_outdir)
 
 sv_noBND_maindt <- sv_noBND_main %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Buttons"),
-                options = list(
-                  pageLength = 20,
-                  autoWidth = FALSE,
-                  buttons = c('csv', 'excel'), dom = 'Blfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Buttons"),
+    options = list(
+      pageLength = 20,
+      autoWidth = FALSE,
+      buttons = c("csv", "excel"), dom = "Blfrtip"
+    )
+  )
 
 sv_noBND_otherdt <- sv_noBND_other %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Buttons"),
-                options = list(
-                  pageLength = 20,
-                  autoWidth = FALSE,
-                  buttons = c('csv', 'excel'),
-                  dom = 'Blfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Buttons"),
+    options = list(
+      pageLength = 20,
+      autoWidth = FALSE,
+      buttons = c("csv", "excel"),
+      dom = "Blfrtip"
+    )
+  )
 
 sv_noBND_manygenesdt <- sv_noBND_manygenes %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Buttons", "KeyTable"),
-                options = list(
-                  pageLength = 10,
-                  autoWidth = FALSE, keys = TRUE,
-                  buttons = c('csv', 'excel'),
-                  dom = 'Blfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Buttons", "KeyTable"),
+    options = list(
+      pageLength = 10,
+      autoWidth = FALSE, keys = TRUE,
+      buttons = c("csv", "excel"),
+      dom = "Blfrtip"
+    )
+  )
 
 sv_noBND_manytxdt <- sv_noBND_manytx %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Buttons", "KeyTable"),
-                options = list(
-                  pageLength = 10,
-                  autoWidth = FALSE, keys = TRUE,
-                  buttons = c('csv', 'excel'),
-                  dom = 'Blfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Buttons", "KeyTable"),
+    options = list(
+      pageLength = 10,
+      autoWidth = FALSE, keys = TRUE,
+      buttons = c("csv", "excel"),
+      dom = "Blfrtip"
+    )
+  )
 ```
 
 #### Main Columns
@@ -1292,7 +1374,8 @@ is from <https://github.com/hartwigmedical/hmftools/blob/master/purity-ploidy-es
 ```{r purple_gene_cnv_description}
 purple_cnv_som_gene$descr %>%
   dplyr::mutate(
-    Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
+    Column = kableExtra::cell_spec(Column, bold = TRUE)
+  ) %>%
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_paper(c("hover", "striped"), full_width = FALSE, position = "left") %>%
   kableExtra::scroll_box(height = "200px")
@@ -1302,11 +1385,15 @@ purple_cnv_som_gene$descr %>%
 
 ```{r purple_gene_cnv_tab}
 purple_cnv_som_gene$tab %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
-                               buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+    options = list(
+      scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
+      buttons = c("csv", "excel"), dom = "Bfrtip"
+    )
+  ) %>%
   DT::formatCurrency(~ start + end, currency = "", interval = 3, mark = ",", digits = 0) %>%
   DT::formatRound(~ minCN + maxCN, digits = 1)
 ```
@@ -1330,7 +1417,8 @@ is from <https://github.com/hartwigmedical/hmftools/blob/master/purity-ploidy-es
 ```{r purple_seg_description}
 purple_cnv_som$descr %>%
   dplyr::mutate(
-    Column = kableExtra::cell_spec(Column, bold = TRUE)) %>%
+    Column = kableExtra::cell_spec(Column, bold = TRUE)
+  ) %>%
   knitr::kable(escape = FALSE) %>%
   kableExtra::kable_paper(c("hover", "striped"), full_width = FALSE, position = "left") %>%
   kableExtra::scroll_box(height = "200px")
@@ -1340,11 +1428,15 @@ purple_cnv_som$descr %>%
 
 ```{r purple_cnv_som_tab}
 purple_cnv_som$tab %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
-                               buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+    options = list(
+      scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
+      buttons = c("csv", "excel"), dom = "Bfrtip"
+    )
+  ) %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
@@ -1356,11 +1448,15 @@ blank_lines(2)
 
 ```{r purple_cnv_germ_tab}
 purple_cnv_germ$tab %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                class = "cell-border display compact",
-                rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
-                               buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    class = "cell-border display compact",
+    rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+    options = list(
+      scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
+      buttons = c("csv", "excel"), dom = "Bfrtip"
+    )
+  ) %>%
   DT::formatCurrency(~ Start + End, currency = "", interval = 3, mark = ",", digits = 0)
 ```
 
@@ -1377,7 +1473,7 @@ The following 'sunrise' chart shows the range of scores of all examined solution
 purity and ploidy. Crosshairs identify the best purity / ploidy solution.
 
 ```{r purple_plot_purityrange, out.width="40%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.purity.range.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, ".purity.range.png")))
 ```
 
 ```{r, results='asis'}
@@ -1392,8 +1488,10 @@ allele ploidy (MAP) while the minor allele ploidy figure is broken
 down by copy number.
 
 ```{r purple_plot_copynumber, out.width="40%"}
-knitr::include_graphics(c(file.path(img_dir, paste0(bnm, '.copynumber.png')),
-                        file.path(img_dir, paste0(bnm, '.map.png'))))
+knitr::include_graphics(c(
+  file.path(img_dir, paste0(bnm, ".copynumber.png")),
+  file.path(img_dir, paste0(bnm, ".map.png"))
+))
 ```
 
 #### Ploidy by CN
@@ -1401,7 +1499,7 @@ If a somatic variant VCF has been supplied, a figure will be produced
 showing the somatic variant ploidy broken down by copy number.
 
 ```{r purple_plot_somatic, out.width="40%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.somatic.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, ".somatic.png")))
 ```
 
 #### Clonality
@@ -1416,7 +1514,7 @@ We can determine the likelihood of a variant being subclonal at
 any given ploidy as shown in the bottom half of the figure.
 
 ```{r purple_plot_somaticclonality, out.width="50%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.somatic.clonality.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, ".somatic.clonality.png")))
 ```
 
 #### Segment
@@ -1425,7 +1523,7 @@ the following figure. Each segment is divided into its major and minor allele pl
 The area of each circle shows the weight (AMBER baf count) of each segment.
 
 ```{r purple_plot_segment, out.width="40%"}
-knitr::include_graphics(file.path(img_dir, paste0(bnm, '.segment.png')))
+knitr::include_graphics(file.path(img_dir, paste0(bnm, ".segment.png")))
 ```
 
 ## __Oncoviruses__ {.tabset .tabset-fade #oncoviruses}
@@ -1442,22 +1540,30 @@ if (!is.na(breakpoints_tsv) && breakpoints_tsv != "" && file.exists(breakpoints_
   breakpoints <- readr::read_tsv(breakpoints_tsv, col_names = T, col_types = "cciicicccc")
   breakpoints %>%
     dplyr::mutate(Coord = ifelse(is.na(end), start, str_c(start, "-", end))) %>%
-    dplyr::select(Contig = contig, Coord, `Read support` = PAIR_COUNT,
-                  `Disrupted genes` = DisruptedGenes, `Upstream genes` = UpstreamGenes,
-                  `SV type` = svtype, ID, MATEID) %>%
-    DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                  class = "cell-border display compact",
-                  rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
-                  options = list(scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
-                                 buttons = c('csv', 'excel'), dom = 'Bfrtip')) %>%
-    DT::formatCurrency(~ Coord, currency = "", interval = 3, mark = ",", digits = 0)
+    dplyr::select(
+      Contig = contig, Coord, `Read support` = PAIR_COUNT,
+      `Disrupted genes` = DisruptedGenes, `Upstream genes` = UpstreamGenes,
+      `SV type` = svtype, ID, MATEID
+    ) %>%
+    DT::datatable(
+      filter = list(position = "top", clear = FALSE, plain = TRUE),
+      class = "cell-border display compact",
+      rownames = FALSE, extensions = c("Scroller", "Buttons", "KeyTable"),
+      options = list(
+        scroller = TRUE, scrollY = 400, scrollX = TRUE, autoWidth = TRUE, keys = TRUE,
+        buttons = c("csv", "excel"), dom = "Bfrtip"
+      )
+    ) %>%
+    DT::formatCurrency(~Coord, currency = "", interval = 3, mark = ",", digits = 0)
 } else {
   if (!is.na(present_viruses) && present_viruses != "" && file.exists(present_viruses)) {
     viruses <- readr::read_file(present_viruses)
     if (str_length(viruses) > 0) {
-      cat(str_c("Detected significant traces of content of the following viruses: ",
-                viruses,
-                ", however no evidence of viral integration into the host genome is observed."))
+      cat(str_c(
+        "Detected significant traces of content of the following viruses: ",
+        viruses,
+        ", however no evidence of viral integration into the host genome is observed."
+      ))
     } else {
       cat("No oncoviral content detected in this sample.")
     }
@@ -1480,11 +1586,14 @@ blank_lines(1)
 ```{r conda_list_main}
 conda_pkgs <-
   readr::read_table2(params$conda_list,
-                     col_names = c("env", "name", "version", "build", "channel"),
-                     col_types = "ccccc") %>%
-  dplyr::mutate(channel = ifelse(is.na(channel), "MISSING", channel),
-                env = sub("env", "umccrise", env),
-                env = sub("^umccrise_", "", env)) %>%
+    col_names = c("env", "name", "version", "build", "channel"),
+    col_types = "ccccc"
+  ) %>%
+  dplyr::mutate(
+    channel = ifelse(is.na(channel), "MISSING", channel),
+    env = sub("env", "umccrise", env),
+    env = sub("^umccrise_", "", env)
+  ) %>%
   dplyr::arrange(name) %>%
   dplyr::group_by(name, version, build, channel) %>%
   dplyr::summarise(envs = paste(env, collapse = ", "), .groups = "drop_last") %>%
@@ -1525,8 +1634,12 @@ report_inputs %>%
 
 ```{r conda_list_all}
 conda_pkgs %>%
-  DT::datatable(filter = list(position = "top", clear = FALSE, plain = TRUE),
-                rownames = FALSE, extensions = c("Scroller", "Buttons"),
-                options = list(scroller = TRUE, scrollX = TRUE, scrollY = 400,
-                               buttons = c('csv'), dom = 'Bfrtip'))
+  DT::datatable(
+    filter = list(position = "top", clear = FALSE, plain = TRUE),
+    rownames = FALSE, extensions = c("Scroller", "Buttons"),
+    options = list(
+      scroller = TRUE, scrollX = TRUE, scrollY = 400,
+      buttons = c("csv"), dom = "Bfrtip"
+    )
+  )
 ```
