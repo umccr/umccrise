@@ -121,7 +121,7 @@ rule run_cancer_report:
         af_global           = lambda wc, input: abspath(input.af_global),
         af_keygenes         = lambda wc, input: abspath(input.af_keygenes),
         somatic_snv_vcf     = lambda wc, input: abspath(input.somatic_snv_vcf),
-        somatic_sv_tsv      = lambda wc, input: abspath(input.somatic_sv) if input.somatic_sv else 'NA',
+        somatic_sv_tsv      = lambda wc, input: abspath(input.somatic_sv_tsv) if input.somatic_sv_tsv else 'NA',
         somatic_sv_vcf      = lambda wc, input: abspath(input.somatic_sv_vcf) if input.somatic_sv_vcf else 'NA',
         purple_som_snv_vcf  = lambda wc, input: abspath(input.purple_som_snv_vcf),
         purple_som_cnv      = lambda wc, input: abspath(input.purple_som_cnv),
@@ -130,9 +130,10 @@ rule run_cancer_report:
         purple_purity       = lambda wc, input: abspath(input.purple_purity),
         purple_qc           = lambda wc, input: abspath(input.purple_qc),
         conda_list          = lambda wc, input: abspath(input.conda_list),
+        img_dir_abs         = lambda wc, output: abspath(output.img_dir),
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
-        tmp_img_dir = directory('work/{batch}/cancer_report/img'),
+        img_dir = directory('work/{batch}/cancer_report/img'),
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
     run:
@@ -150,9 +151,9 @@ rule run_cancer_report:
             )
 
         # copy BAF circos + PURPLE plots to img dir
-        shell('mkdir -p {output.tmp_img_dir}')
-        shell('cp {input.purple_baf_png} {output.tmp_img_dir}')
-        shell('cp $(dirname {input.purple_circos_png})/* {output.tmp_img_dir}')
+        shell('mkdir -p {output.img_dir}')
+        shell('cp {input.purple_baf_png} {output.img_dir}')
+        shell('cp $(dirname {input.purple_circos_png})/* {output.img_dir}')
 
         shell(conda_cmd.format('cancer_report') + """
 gpgr.R canrep \
@@ -160,7 +161,7 @@ gpgr.R canrep \
   --af_keygenes '{params.af_keygenes}' \
   --batch_name '{wildcards.batch}' \
   --conda_list '{params.conda_list}' \
-  --img_dir '{output.tmp_img_dir}' \
+  --img_dir '{params.img_dir_abs}' \
   --key_genes '{input.key_genes}' \
   --somatic_snv_vcf '{params.somatic_snv_vcf}' \
   --somatic_sv_tsv '{params.somatic_sv_tsv}' \
@@ -174,8 +175,7 @@ gpgr.R canrep \
   {ov_cmdl} \
   --out_file '{params.output_file}' \
   --result_outdir '{params.result_outdir}' \
-  --tumor_name '{params.tumor_name}' \
-)" ; \
+  --tumor_name '{params.tumor_name}'
 """)
 
 
