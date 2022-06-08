@@ -11,7 +11,7 @@ from umccrise import package_path
 localrules: cancer_report, conda_list
 
 
-# Subset to GiaB confident intervals
+# Subset final SNVs to GiaB confident intervals
 rule subset_to_giab:
     input:
         vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
@@ -23,7 +23,7 @@ rule subset_to_giab:
     shell:
         'bcftools view {input.vcf} -T <(gunzip -c {params.regions}) -Oz -o {output}'
 
-# Split multiallelics to avoid R parsing issues
+# Keep INFO/TUMOR_AF and split multiallelics (to avoid R parsing issues)
 rule split_multiallelic:
     input:
         vcf = 'work/{batch}/cancer_report/afs/somatic-confident.vcf.gz',
@@ -33,10 +33,11 @@ rule split_multiallelic:
     group: "rmd_prep"
     shell:
         'bcftools annotate -x ^INFO/TUMOR_AF {input.vcf} -Ob | '
-        'bcftools norm -m \'-\' -f {input.ref_fa} -Ob | ' 
+        'bcftools norm -m \'-\' -f {input.ref_fa} -Ob | '
         'bcftools sort -Oz -o {output} '
         '&& tabix -p vcf {output}'
 
+# Extract just INFO/TUMOR_AF
 rule afs:
     input:
         'work/{batch}/cancer_report/afs/somatic-confident-singleallelic.vcf.gz'
@@ -50,6 +51,7 @@ rule afs:
         '(printf "af\n"; bcftools query -f "%INFO/TUMOR_AF\\n") > {output} '
         '&& test -e {output}'
 
+# Subset to just key genes
 rule afs_keygenes:
     input:
         vcf = 'work/{batch}/cancer_report/afs/somatic-confident-singleallelic.vcf.gz',
@@ -65,7 +67,7 @@ rule afs_keygenes:
         ' | (printf "chrom\\tpos\\tid\\tref\\talt\\taf\\n" ; bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\n")'
         ' > {output} && test -e {output}'
 
-
+# List all conda pkgs per env
 rule conda_list:
     output:
         txt = 'work/{batch}/conda_pkg_list.txt'
@@ -80,12 +82,11 @@ rule conda_list:
 
 rule run_cancer_report:
     input:
-        rmd_files_dir        = join(package_path(), 'rmd_files'),
         key_genes            = get_key_genes(),
         af_global            = rules.afs.output[0],
         af_keygenes          = rules.afs_keygenes.output[0],
-        somatic_snv          = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
-        somatic_sv           = lambda wc: rules.prep_sv_tsv.output[0]
+        somatic_snv_vcf      = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
+        somatic_sv_tsv       = lambda wc: rules.prep_sv_tsv.output[0]
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
         somatic_sv_vcf       = lambda wc: '{batch}/structural/{batch}-manta.vcf.gz'
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
@@ -114,30 +115,27 @@ rule run_cancer_report:
         conda_list           = rules.conda_list.output.txt,
 
     params:
-        report_rmd = 'cancer_report.Rmd',
-        tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
-        work_dir = os.getcwd(),
-        result_outdir   = lambda wc, output: join(os.getcwd(), dirname(output[0]), 'cancer_report_tables'),
-        output_file     = lambda wc, output: join(os.getcwd(), output[0]),
-        rmd_genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else run.genome_build,
-        af_global       = lambda wc, input: abspath(input.af_global),
-        af_keygenes     = lambda wc, input: abspath(input.af_keygenes),
-        somatic_snv     = lambda wc, input: abspath(input.somatic_snv),
-        somatic_sv      = lambda wc, input: abspath(input.somatic_sv) if input.somatic_sv else 'NA',
-        somatic_sv_vcf  = lambda wc, input: abspath(input.somatic_sv_vcf) if input.somatic_sv_vcf else 'NA',
-        purple_som_snv_vcf = lambda wc, input: abspath(input.purple_som_snv_vcf),
-        purple_som_cnv  = lambda wc, input: abspath(input.purple_som_cnv),
+        tumor_name          = lambda wc: batch_by_name[wc.batch].tumors[0].rgid,
+        result_outdir       = lambda wc, output: join(os.getcwd(), dirname(output[0]), 'cancer_report_tables'),
+        output_file         = lambda wc, output: join(os.getcwd(), output[0]),
+        af_global           = lambda wc, input: abspath(input.af_global),
+        af_keygenes         = lambda wc, input: abspath(input.af_keygenes),
+        somatic_snv_vcf     = lambda wc, input: abspath(input.somatic_snv_vcf),
+        somatic_sv_tsv      = lambda wc, input: abspath(input.somatic_sv_tsv) if input.somatic_sv_tsv else 'NA',
+        somatic_sv_vcf      = lambda wc, input: abspath(input.somatic_sv_vcf) if input.somatic_sv_vcf else 'NA',
+        purple_som_snv_vcf  = lambda wc, input: abspath(input.purple_som_snv_vcf),
+        purple_som_cnv      = lambda wc, input: abspath(input.purple_som_cnv),
         purple_som_gene_cnv = lambda wc, input: abspath(input.purple_som_gene_cnv),
-        purple_germ_cnv = lambda wc, input: abspath(input.purple_germ_cnv),
-        purple_purity   = lambda wc, input: abspath(input.purple_purity),
-        purple_qc       = lambda wc, input: abspath(input.purple_qc),
-        conda_list      = lambda wc, input: abspath(input.conda_list),
+        purple_germ_cnv     = lambda wc, input: abspath(input.purple_germ_cnv),
+        purple_purity       = lambda wc, input: abspath(input.purple_purity),
+        purple_qc           = lambda wc, input: abspath(input.purple_qc),
+        conda_list          = lambda wc, input: abspath(input.conda_list),
+        img_dir_abs         = lambda wc, output: abspath(output.img_dir),
     output:
         report_html = '{batch}/{batch}_cancer_report.html',
-        rmd_tmp_dir = directory('work/{batch}/cancer_report/rmd_files'),
+        img_dir = directory('work/{batch}/cancer_report/img'),
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 10000
-        # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 5G
     run:
         ov_cmdl = ''
         if 'oncoviruses' in stages:
@@ -148,47 +146,37 @@ rule run_cancer_report:
                     oncoviral_breakpoints_tsv = \
                         abspath(f'work/{wildcards.batch}/oncoviruses/oncoviral_breakpoints.tsv')
             ov_cmdl = (
-                f"oncoviral_present_viruses='{oncoviral_present_viruses}', "
-                f"oncoviral_breakpoints_tsv='{oncoviral_breakpoints_tsv}', "
+                f"--oncoviral_present_viruses '{oncoviral_present_viruses}' "
+                f"--oncoviral_breakpoints_tsv '{oncoviral_breakpoints_tsv}'"
             )
 
-        shell('cp -r {input.rmd_files_dir} {output.rmd_tmp_dir}')
-        shell('mkdir -p {output.rmd_tmp_dir}/img')
-        # copy BAF circos + other plots to tmp dir
-        shell('cp {input.purple_baf_png} {output.rmd_tmp_dir}/img/')
-        shell('cp $(dirname {input.purple_circos_png})/* {output.rmd_tmp_dir}/img/')
-        shell(conda_cmd.format('cancer_report') + """
-cd {output.rmd_tmp_dir} && \
-Rscript -e "rmarkdown::render('{params.report_rmd}', \
-output_file='{params.output_file}', \
-params=list( \
-result_outdir='{params.result_outdir}', \
-tumor_name='{params.tumor_name}', \
-batch_name='{wildcards.batch}', \
-genome_build='{params.rmd_genome_build}', \
-key_genes='{input.key_genes}', \
-af_global='{params.af_global}', \
-af_keygenes='{params.af_keygenes}', \
-somatic_snv='{params.somatic_snv}', \
-somatic_sv='{params.somatic_sv}', \
-somatic_sv_vcf='{params.somatic_sv_vcf}', \
-purple_som_snv_vcf='{params.purple_som_snv_vcf}', \
-purple_som_gene_cnv='{params.purple_som_gene_cnv}', \
-purple_som_cnv='{params.purple_som_cnv}', \
-purple_germ_cnv='{params.purple_germ_cnv}', \
-purple_purity='{params.purple_purity}', \
-purple_qc='{params.purple_qc}', \
-{ov_cmdl} \
-conda_list='{params.conda_list}' \
-))" ; \
-cd {params.work_dir} ; \
-rm {output.rmd_tmp_dir}/vccc_small.jpg
-rm {output.rmd_tmp_dir}/style.css
-rm {output.rmd_tmp_dir}/_navbar.html
-""")
+        # copy BAF circos + PURPLE plots to img dir
+        shell('mkdir -p {output.img_dir}')
+        shell('cp {input.purple_baf_png} {output.img_dir}')
+        shell('cp $(dirname {input.purple_circos_png})/* {output.img_dir}')
 
-        shutil.rmtree(f"{output.rmd_tmp_dir}/img")
-        shutil.rmtree(f"{output.rmd_tmp_dir}/misc")
+        shell(conda_cmd.format('cancer_report') + """
+gpgr.R canrep \
+  --af_global '{params.af_global}' \
+  --af_keygenes '{params.af_keygenes}' \
+  --batch_name '{wildcards.batch}' \
+  --conda_list '{params.conda_list}' \
+  --img_dir '{params.img_dir_abs}' \
+  --key_genes '{input.key_genes}' \
+  --somatic_snv_vcf '{params.somatic_snv_vcf}' \
+  --somatic_sv_tsv '{params.somatic_sv_tsv}' \
+  --somatic_sv_vcf '{params.somatic_sv_vcf}' \
+  --purple_som_gene_cnv '{params.purple_som_gene_cnv}' \
+  --purple_som_cnv '{params.purple_som_cnv}' \
+  --purple_germ_cnv '{params.purple_germ_cnv}' \
+  --purple_purity '{params.purple_purity}' \
+  --purple_qc '{params.purple_qc}' \
+  --purple_som_snv_vcf '{params.purple_som_snv_vcf}' \
+  {ov_cmdl} \
+  --out_file '{params.output_file}' \
+  --result_outdir '{params.result_outdir}' \
+  --tumor_name '{params.tumor_name}'
+""")
 
 
 #############

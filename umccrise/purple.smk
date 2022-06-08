@@ -190,26 +190,26 @@ rule purple_run:
             f'-circos circos 2>&1 | tee {log} '
         )
 
-# generate custom circos from PURPLE templates (BAF points on outside, CNVs/SVs inside)
+# generate custom circos from PURPLE templates (BAF points on outside, CNVs/SVs inside), where
+# gaps are from https://github.com/hartwigmedical/hmftools/blob/4b427a/purple/src/main/resources/circos/gaps.38.txt
 rule purple_circos_baf:
     input:
         baf  = 'work/{batch}/purple/circos/{batch}.baf.circos',
         cnv  = 'work/{batch}/purple/circos/{batch}.cnv.circos',
         map  = 'work/{batch}/purple/circos/{batch}.map.circos',
         link = 'work/{batch}/purple/circos/{batch}.link.circos',
-        circos_baf_conf = package_path() + '/rmd_files/misc/circos/circos_baf.conf',
+        circos_baf_conf = package_path() + '/minidata/circos/circos_baf.conf',
+        gaps = package_path() + '/minidata/circos/gaps.txt',
     output:
         png = 'work/{batch}/purple/circos_baf/{batch}.circos_baf.png'
     group: 'purple_main'
     params:
-        out_dir = 'work/{batch}/purple/circos_baf',
-        gaps_txt_prefix = package_path() + '/rmd_files/misc/circos/gaps',
-        genome_build = 'hg19' if run.genome_build in ['GRCh37', 'hg19'] else 'hg38',
+        out_dir = 'work/{batch}/purple/circos_baf'
     run:
         shell('mkdir -p {params.out_dir}')
-        shell('cp {params.gaps_txt_prefix}_{params.genome_build}.txt {params.out_dir}/gaps.txt')
+        shell('cp {input.gaps} {params.out_dir}')
         out_conf = join(params.out_dir, basename(input.circos_baf_conf))
-        shell('sed -e s/SAMPLE/{wildcards.batch}/ -e s/HG_ASSEMBLY/{params.genome_build}/ {input.circos_baf_conf} > ' + out_conf)
+        shell('sed -e s/SAMPLE/{wildcards.batch}/ {input.circos_baf_conf} > ' + out_conf)
         shell('cp {input.baf} {params.out_dir}')
         shell('cp {input.cnv} {params.out_dir}')
         shell('cp {input.map} {params.out_dir}')
