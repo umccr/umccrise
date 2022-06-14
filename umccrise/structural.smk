@@ -232,10 +232,10 @@ rule sv_bpi_maybe:
         'log/structural/{batch}/{batch}-bpi_stats.txt'
     params:
         xms = 1000,
-        xmx = 16000,
+        xmx = 30000,
         tmp_dir = '{batch}/structural/maybe_bpi/tmp_dir'
     resources:
-        mem_mb = 16000
+        mem_mb = 30000
     run:
         if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):  # already BPI'ed
             shell('cp {input.vcf} {output.vcf}')
