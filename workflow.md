@@ -625,16 +625,17 @@ The result is a list of 1248 genes.
 ### `pcgr.smk`
 
 1. `run_pcgr`
-
-- run PCGR with purity and ploidy as inferred by PURPLE
-- input:
-  - `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz`
-  - PCGR reference data (`pcgr_data`)
-  - `work/{batch}/purple/{batch}.purple.purity.tsv`
-- output:
-  - HTML: `work/{batch}/pcgr/{batch}-somatic.pcgr.html`
-  - VCF: `work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz`
-  - TSV: `work/{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
+  - run PCGR with purity and ploidy as inferred by PURPLE
+    - uses the `scripts/pcgr` wrapper
+    - raw PCGR outputs get renamed to remove the `_acmg.hg38` suffix
+  - input:
+    - `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz`
+    - PCGR reference data (`pcgr_data`)
+    - `work/{batch}/purple/{batch}.purple.purity.tsv`
+  - output:
+    - HTML: `work/{batch}/pcgr/{batch}-somatic.pcgr.html`
+    - VCF: `work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz`
+    - TSV: `work/{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
 
 2. `pcgr_copy_report`
 
@@ -643,3 +644,46 @@ The result is a list of 1248 genes.
 - output:
   - `{batch}/{batch}-somatic.pcgr.html`
   - `{batch}/small_variants/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
+
+### `structural.smk`
+
+1. `sv_keep_pass`
+  - Reset INFO (`SIMPLE_ANN`, `SV_HIGHEST_TIER`) and
+    FILTER (`Intergenic`, `MissingAnn`, `REJECT`) fields.
+    Keep only __PASS__ variants.
+  - input: final Manta VCF from DRAGEN tumor/normal workflow
+  - output: `work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz`
+
+2. `sv_snpeff_maybe`
+  - Run snpEff __if__ there is __not__ an `INFO/ANN` annotation.
+    - use `-hgvs`, `-cancer`, `-csvStats`, `-s`, `-dataDir` options
+    - __else__, just copy input to output
+  - input:
+    - above output VCF
+    - snpEff database
+  - output: `work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz`
+
+3. `sv_vep`
+  - Run VEP on final Manta VCF
+  - input:
+    - final Manta VCF from DRAGEN tumor/normal workflow
+    - PCGR data directory (for the VEP reference data)
+      - FASTA file: `grch38/.vep/homo_sapiens/105_GRCh38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz`
+  - output: `work/{batch}/structural/vep/{batch}-sv-vep.vcf.gz`
+
+4. `fix_snpeff`
+  - Replace the wrongly capitalised ALT fields with lowercase to avoid downstream bugs
+    - TODO: turn the multiple `sed` commands into a single one with `-e`.
+  - input: snpEff output VCF
+  - output: `work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz`
+
+4. `sv_prioritize`
+  - Run <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv>
+  - input: above fixed snpEff VCF
+  - output: `work/{batch}/structural/prioritize/{batch}-sv-eff-prio.vcf.gz`
+
+5. `sv_subsample_if_too_many`
+  - If > 50,000 SVs, remove unprioritized SVs. Also removing older very cluttered ANN field.
+    - TODO: compress output VCF
+  - input: above sv prioritised VCF
+  - output: `work/{batch}/structural/sv_subsample_if_too_many/{batch}-manta.vcf`
