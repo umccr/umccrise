@@ -677,13 +677,79 @@ The result is a list of 1248 genes.
   - input: snpEff output VCF
   - output: `work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz`
 
-4. `sv_prioritize`
+5. `sv_prioritize`
   - Run <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv>
   - input: above fixed snpEff VCF
   - output: `work/{batch}/structural/prioritize/{batch}-sv-eff-prio.vcf.gz`
 
-5. `sv_subsample_if_too_many`
-  - If > 50,000 SVs, remove unprioritized SVs. Also removing older very cluttered ANN field.
-    - TODO: compress output VCF
+6. `sv_subsample_if_too_many`
+  - If >= 50,000 SVs, progressively remove TIER 4/3/2 SVs (in that order).
+    - __TODO__: compress output VCF
   - input: above sv prioritised VCF
   - output: `work/{batch}/structural/sv_subsample_if_too_many/{batch}-manta.vcf`
+
+7. `sv_bpi_maybe`
+  - Run BPI on above output VCF
+  - input: above output VCF, T/N BAMs
+  - output: `work/{batch}/structural/maybe_bpi/{batch}-manta.vcf`
+
+8. `filter_sv_vcf`
+  - Filters in sequence:
+    - keep PASS FILTER
+    - dump BNDs where `SR > PR`
+    - dump TIER 3/4 where `SR < 5 & PR < 5`
+    - dump TIER 3/4 where `SR < 10 & PR < 10 & (AF0 < 0.1 | AF1 < 0.1)`
+    - __TODO__: reorg this
+  - input: above BPI output VCF
+  - output: `work/{batch}/structural/filt/{batch}-manta.vcf.gz`
+    - This is fed to PURPLE.
+
+9. `reprioritize_rescued_svs`
+  - Run <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv>
+    after PURPLE. Also remove `INFO/ANN` annotation.
+  - input:
+    - purple SVs: `work/{batch}/purple/{batch}.purple.sv.vcf.gz`
+  - output: `work/{batch}/structural/sv_after_purple/{batch}-manta.vcf.gz`
+
+10. `copy_sv_vcf_ffpe_mode`
+  - Copy either the filtered or the purple prioritised to the final output
+  - input: filtered or purple prioritised VCF
+  - output: `{batch}/structural/{batch}-manta.vcf.gz`
+
+11. `prep_sv_tsv`
+  - input: above final VCF
+  - output: `{batch}/structural/{batch}-manta.tsv`
+  - Parse info from the VCF and export to TSV
+    - give non-tiered variants an `INFO/SV_TOP_TIER` of `4`.
+    - set `simple_ann = INFO/SIMPLE_ANN`, and `PURPLE_status = ''`
+      - for purple inferred variants:
+        - `simple_ann = {INFO/SVTYPE}||||From_CNV|{tier}`
+        - `PURPLE_status = 'INFERRED'`
+      - for purple recovered variants:
+        - `PURPLE_status = 'RECOVERED'`
+    - there are 23 columns:
+      - `caller = 'manta'`, `sample = tumor name`, `chrom = CHROM`,
+        `start = POS`, `end = INFO/END`
+      - `svtype = INFO/SVTYPE`
+      - `split_read_support, paired_support_PE/PR  = FORMAT/SR-PE-PR for tumor`
+      - `AF_BPI = INFO/BPI_AF`, `somaticscore = INFO/SOMATICSCORE`
+      - `tier = INFO/SV_TOP_TIER` (or `4` if missing)
+      - `annotation = INFO/SIMPLE_ANN`
+      - `PURPLE_`: `AF`, `CN`, `CN_CHANGE`, `PLOIDY`, `STATUS` (`INFERRED` or `RECOVERED`)
+      - `START/END_BPI = BPI_START/END`
+      - `ID = ID`
+      - `MATEID = INFO/MATEID`
+      - `ALT = ALT[0]`
+
+12. `ribbon*`
+  - There are four `ribbon`-related steps, which were implemented in Jan2018 and might not be
+    needed any more:
+    - `ribbon_filter_manta`: generate unzipped VCF for Ribbon
+    - `ribbon_filter_vcfbedtope_starts`: vcf2bedpe, grab columns 1-3 from BEDPE, add slop 5K
+    - `ribbon_filter_vcfbedtope_ends`: vcf2bedpe, grab columns 4-6 from BEDPE, add slop 5K
+    - `ribbon`: sort and merge two BEDs
+
+13. `bedpe`
+  - Run `vendor/vcfToBedpe` to generate BEDPE and keep columns 1-7.
+  - input: `{batch}/structural/{batch}-manta.vcf.gz`
+  - output: `{batch}/structural/{batch}-manta.bedpe`

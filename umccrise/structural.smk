@@ -19,7 +19,7 @@ MAX_SVS = 50000
 localrules: structural, structural_batch, copy_sv_vcf_ffpe_mode
 
 
-# Keep PASSed variants from final Manta, and reset (some) INFO & FILTER annotations
+# Keep PASSed variants from raw Manta, and reset (some) INFO & FILTER annotations
 rule sv_keep_pass:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
@@ -78,7 +78,7 @@ rule sv_snpeff_maybe:
                   '| bgzip --threads {threads} -c > {output.vcf} && tabix -p vcf {output.vcf}')
             verify_file(output.vcf, is_critical=True)
 
-# Run VEP on final Manta
+# Run VEP on raw Manta
 rule sv_vep:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
@@ -146,6 +146,7 @@ rule fix_snpeff:
         '| bgzip -c > {output.vcf} '
         '&& tabix -p vcf {output.vcf}'
 
+# Run sv_prioritise
 rule sv_prioritize:
     input:
         vcf = rules.fix_snpeff.output.vcf
@@ -161,8 +162,7 @@ rule sv_prioritize:
         after = count_vars(output.vcf)
         assert before == after, (before, after)
 
-# If there are too many SV calls (FFPE?), also remove unprioritized SVs
-# Also removing older very cluttered ANN field
+# If more than XXK SVs, prioritise TIER 3/2/1
 rule sv_subsample_if_too_many:
     input:
         vcf = rules.sv_prioritize.output.vcf
@@ -173,16 +173,19 @@ rule sv_subsample_if_too_many:
         if count_vars(input.vcf) < MAX_SVS:
             shell(f'bcftools view {input.vcf} -o {output.vcf}')
         else:
+            # if < XXK TIER 1/2/3, just keep those
             if count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 4"') < MAX_SVS:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 4" {input.vcf}'
+            # else if < XXK TIER 1/2, just keep those
             elif count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 3"') < MAX_SVS:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 3" {input.vcf}'
+            # else just keep TIER 1
             else:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 2" {input.vcf}'
             cmd += f' -o {output.vcf}'
             shell(cmd)
 
-# if BPI was disabled in bcbio
+# Run BPI
 rule sv_bpi_maybe:
     input:
         vcf = rules.sv_subsample_if_too_many.output.vcf,
@@ -202,10 +205,10 @@ rule sv_bpi_maybe:
     resources:
         mem_mb = 30000
     run:
-        if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):  # already BPI'ed
+        if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
+            # already BPI'ed so just copy
             shell('cp {input.vcf} {output.vcf}')
         else:
-            # if not is_ffpe:  # running BPI only for non-FFPE samples
             safe_mkdir(params.tmp_dir)
             shell(
                 'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
@@ -216,13 +219,9 @@ rule sv_bpi_maybe:
                 '-output_vcf {output.vcf} '
                 '> {log}'
             )
-            # else:  # fake BPI_AF from the original AF
-            #     def func(rec, vcf):
-            #         rec.INFO['BPI_AF'] = rec.INFO['AF']
-            #         return rec
-            #     iter_vcf(input.vcf, output.vcf, func)
 
-# Keep all with read support above 10x; or allele frequency above 10%, but only if read support is above 5x
+# Filter based on SVTYPE, SV_TOP_TIER, SR/PR, BPI_AF.
+# This output is fed to PURPLE.
 rule filter_sv_vcf:
     input:
         vcf = rules.sv_bpi_maybe.output.vcf
@@ -235,7 +234,6 @@ rule filter_sv_vcf:
         vcf_samples = VCF(input.vcf).samples
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.vcf}, available: {vcf_samples}"
         tumor_id = vcf_samples.index(t_name)
-        # tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
         shell('''
 bcftools view -f.,PASS {input.vcf} |
@@ -246,6 +244,7 @@ bcftools view -s {t_name} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}
 
 ''')
 
+# Run sv_prioritise again on PURPLE SV output
 rule reprioritize_rescued_svs:
     input:
         dummy = lambda wc: 'work/{batch}/purple/{batch}.purple.purity.tsv' \
@@ -270,6 +269,7 @@ rule reprioritize_rescued_svs:
         assert before == after, (before, after)
 
 
+# Copy filtered or purple SVs to 'final' VCF
 rule copy_sv_vcf_ffpe_mode:
     input:
         vcf = lambda wc: rules.filter_sv_vcf.output.vcf \
@@ -312,9 +312,10 @@ rule prep_sv_tsv:
         tumor_id = VCF(input.vcf).samples.index(rgid)
         with open(output[0], 'w') as out:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
-                      "split_read_support", "paired_support_PE", "paired_support_PR", "AF_BPI", "somaticscore",
-                      "tier", "annotation",
-                      "AF_PURPLE", "CN_PURPLE", "CN_change_PURPLE", "Ploidy_PURPLE", "PURPLE_status", "START_BPI", "END_BPI", "ID", "MATEID", "ALT"]
+                      "split_read_support", "paired_support_PE", "paired_support_PR",
+                      "AF_BPI", "somaticscore", "tier", "annotation",
+                      "AF_PURPLE", "CN_PURPLE", "CN_change_PURPLE", "Ploidy_PURPLE",
+                      "PURPLE_status", "START_BPI", "END_BPI", "ID", "MATEID", "ALT"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 tier = parse_info_field(rec, 'SV_TOP_TIER')
@@ -357,7 +358,7 @@ rule prep_sv_tsv:
                 out.write('\t'.join(map(str, data)) + '\n')
 
 
-# At least for the most conservative manta calls, generate a file for viewing in Ribbon
+# Generate unzipped VCF for Ribbon viewing
 rule ribbon_filter_manta:
     input:
         manta_vcf = '{batch}/structural/{batch}-manta.vcf.gz',
@@ -367,6 +368,7 @@ rule ribbon_filter_manta:
     shell:
         'bcftools view {input.manta_vcf} > {output}'
 
+# Grab BEDPE columns 1-3 and add slop
 rule ribbon_filter_vcfbedtope_starts:
     input:
         bed = rules.ribbon_filter_manta.output[0],
@@ -382,6 +384,7 @@ rule ribbon_filter_vcfbedtope_starts:
         ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
         ' > {output}'
 
+# Grab BEDPE columns 4-6 and add slop
 rule ribbon_filter_vcfbedtope_ends:
     input:
         bed = rules.ribbon_filter_manta.output[0],
@@ -398,6 +401,7 @@ rule ribbon_filter_vcfbedtope_ends:
         ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
         ' > {output}'
 
+# Generate merged BED with above columns
 rule ribbon:
     input:
         starts = rules.ribbon_filter_vcfbedtope_starts.output[0],
@@ -411,7 +415,7 @@ rule ribbon:
         'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
 
 
-#### Convert matna VCF to bedpe ####
+# Convert 'final' manta VCF to BEDPE
 rule bedpe:
     input:
         manta_vcf = '{batch}/structural/{batch}-manta.vcf.gz',
