@@ -14,6 +14,7 @@
   - [Snakemake Rules](#snakemake-rules)
     - [`somatic.smk`](#somaticsmk)
     - [`pcgr.smk`](#pcgrsmk)
+    - [`structural.smk`](#structuralsmk)
 
 umccrise post-processess outputs of cancer variant calling analysis pipelines
 from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) or
@@ -446,9 +447,12 @@ The result is a list of 1248 genes.
 4. `somatic_vcf_sage1`
 
    - Runs `sage v1.0`
-     - sage script: <https://github.com/umccr/vcf_stuff/blob/master/scripts/sage>
-     - sage Snakemake subworkflow: <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage.smk>
-     - jar: <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage-1.0.jar>)
+     - sage script:
+       <https://github.com/umccr/vcf_stuff/blob/master/scripts/sage>
+     - sage Snakemake subworkflow:
+       <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage.smk>
+     - jar:
+       <https://github.com/umccr/vcf_stuff/blob/master/vcf_stuff/filtering/sage-1.0.jar>
    - input: above output (noalt) VCF, BAMs (T/N)
    - output:
      - `work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz`
@@ -462,12 +466,14 @@ The result is a list of 1248 genes.
          - output: `work/rename_anno/{SAMPLE}-sage.vcf.gz`
        - `sage_reorder_samples`
          - reorder samples, tumor first
-         - output: `work/sage_reorder_samples/{SAMPLE}-sage.vcf.gz` (**final Sage VCF**)
+         - output: `work/sage_reorder_samples/{SAMPLE}-sage.vcf.gz` (**final
+           Sage VCF**)
        - `sage_pass`
          - keep PASS
          - output: `work/sage_pass/{SAMPLE}-sage.vcf.gz`
        - `sage_pass_novel`
-         - intersect Sage PASS VCF with noalt VCF, keep only those 'novel' variants found in Sage
+         - intersect Sage PASS VCF with noalt VCF, keep only those 'novel'
+           variants found in Sage
          - output: `work/sage_pass_novel/{SAMPLE}-sage.vcf.gz`
        - `add_novel_sage_calls`
          - concatenate above 'novel' with noalt VCF
@@ -478,11 +484,18 @@ The result is a list of 1248 genes.
        - `annotate_from_sage`
          - input: above output VCF 'vcf' and final Sage VCF ('sage')
          - output: `work/annotate_from_sage/{SAMPLE}.vcf.gz`
-         - iterate through 'sage' variants and create a `sage_calls` dict with chr/pos/ref/alt keys and the cyvcf2 record as values, then for 'vcf' variants that are PASSed, annotate 'SAGE\_HOTSPOT' and use a 'PASS' FILTER, else use the 'SAGE\_lowconf' FILTER tag. Then set the `FORMAT/DP` and `FORMAT/AD` based on the 'sage' call. Something like that.
+         - iterate through 'sage' variants and create a `sage_calls` dict with
+           chr/pos/ref/alt keys and the cyvcf2 record as values, then for 'vcf'
+           variants that are PASSed, annotate 'SAGE_HOTSPOT' and use a 'PASS'
+           FILTER, else use the 'SAGE_lowconf' FILTER tag. Then set the
+           `FORMAT/DP` and `FORMAT/AD` based on the 'sage' call. Something like
+           that.
        - `copy_result`
-         - copy above output VCF to `work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz`
+         - copy above output VCF to
+           `work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz`
        - `sage`
-         - copy `work/call/{SAMPLE}-sage.vcf.gz` to `{batch}/small_variants/sage1/{batch}-sage.vcf.gz`
+         - copy `work/call/{SAMPLE}-sage.vcf.gz` to
+           `{batch}/small_variants/sage1/{batch}-sage.vcf.gz`
 
 5. `somatic_vcf_annotate`
 
@@ -615,31 +628,143 @@ The result is a list of 1248 genes.
    - input: above output VCF
    - output: `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz`
 
-- The `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz` VCF is also passed as
-  input to:
-  - `Pierian`
-  - `vcf2maf.pl`
-  - `bcftools stats`
-  - `PCGR`
+   - The `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz` VCF is also passed
+     as input to:
+     - `Pierian`
+     - `vcf2maf.pl`
+     - `bcftools stats`
+     - `PCGR`
 
 ### `pcgr.smk`
 
 1. `run_pcgr`
 
-- run PCGR with purity and ploidy as inferred by PURPLE
-- input:
-  - `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz`
-  - PCGR reference data (`pcgr_data`)
-  - `work/{batch}/purple/{batch}.purple.purity.tsv`
-- output:
-  - HTML: `work/{batch}/pcgr/{batch}-somatic.pcgr.html`
-  - VCF: `work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz`
-  - TSV: `work/{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
+   - run PCGR with purity and ploidy as inferred by PURPLE
+     - uses the `scripts/pcgr` wrapper
+     - raw PCGR outputs get renamed to remove the `_acmg.hg38` suffix
+   - input:
+     - `{batch}/small_variants/{batch}-somatic-PASS.vcf.gz`
+     - PCGR reference data (`pcgr_data`)
+     - `work/{batch}/purple/{batch}.purple.purity.tsv`
+   - output:
+     - HTML: `work/{batch}/pcgr/{batch}-somatic.pcgr.html`
+     - VCF: `work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz`
+     - TSV: `work/{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
 
 2. `pcgr_copy_report`
 
-- copy HTML and TSV (not VCF) into final `umccrised/{batch}/` directory
-- input: above HTML and TSV outputs
-- output:
-  - `{batch}/{batch}-somatic.pcgr.html`
-  - `{batch}/small_variants/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
+   - copy HTML and TSV (not VCF) into final `umccrised/{batch}/` directory
+   - input: above HTML and TSV outputs
+   - output:
+     - `{batch}/{batch}-somatic.pcgr.html`
+     - `{batch}/small_variants/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
+
+### `structural.smk`
+
+1. `sv_keep_pass`
+
+   - Reset INFO (`SIMPLE_ANN`, `SV_HIGHEST_TIER`) and FILTER (`Intergenic`,
+     `MissingAnn`, `REJECT`) fields. Keep only **PASS** variants.
+   - input: final Manta VCF from DRAGEN tumor/normal workflow
+   - output: `work/{batch}/structural/keep_pass/{batch}-manta.vcf.gz`
+
+2. `sv_snpeff_maybe`
+
+   - Run snpEff **if** there is **not** an `INFO/ANN` annotation.
+     - use `-hgvs`, `-cancer`, `-csvStats`, `-s`, `-dataDir` options
+     - **else**, just copy input to output
+   - input:
+     - above output VCF
+     - snpEff database
+   - output: `work/{batch}/structural/snpeff/{batch}-sv-snpeff.vcf.gz`
+
+3. `sv_vep`
+
+   - Run VEP on final Manta VCF
+   - input:
+     - final Manta VCF from DRAGEN tumor/normal workflow
+     - PCGR data directory (for the VEP reference data)
+       - FASTA file:
+         `grch38/.vep/homo_sapiens/105_GRCh38/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz`
+   - output: `work/{batch}/structural/vep/{batch}-sv-vep.vcf.gz`
+
+4. `fix_snpeff`
+
+   - Replace the wrongly capitalised ALT fields with lowercase to avoid
+     downstream bugs
+     - TODO: turn the multiple `sed` commands into a single one with `-e`.
+   - input: snpEff output VCF
+   - output: `work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz`
+
+5. `sv_prioritize`
+
+   - Run <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv>
+   - input: above fixed snpEff VCF
+   - output: `work/{batch}/structural/prioritize/{batch}-sv-eff-prio.vcf.gz`
+
+6. `sv_subsample_if_too_many`
+
+   - If >= 50,000 SVs, progressively remove TIER 4/3/2 SVs (in that order).
+     - **TODO**: compress output VCF
+   - input: above sv prioritised VCF
+   - output:
+     `work/{batch}/structural/sv_subsample_if_too_many/{batch}-manta.vcf`
+
+7. `sv_bpi_maybe`
+
+   - Run BPI on above output VCF
+   - input: above output VCF, T/N BAMs
+   - output: `work/{batch}/structural/maybe_bpi/{batch}-manta.vcf`
+
+8. `filter_sv_vcf`
+
+   - Filters in sequence:
+     - keep PASS FILTER
+     - dump BNDs where `SR > PR`
+     - dump TIER 3/4 where `SR < 5 & PR < 5`
+     - dump TIER 3/4 where `SR < 10 & PR < 10 & (AF0 < 0.1 | AF1 < 0.1)`
+     - **TODO**: reorg this
+   - input: above BPI output VCF
+   - output: `work/{batch}/structural/filt/{batch}-manta.vcf.gz`
+     - This is fed to PURPLE.
+
+9. `reprioritize_rescued_svs`
+
+   - Run <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv>
+     after PURPLE. Also remove `INFO/ANN` annotation.
+   - input:
+     - purple SVs: `work/{batch}/purple/{batch}.purple.sv.vcf.gz`
+   - output: `work/{batch}/structural/sv_after_purple/{batch}-manta.vcf.gz`
+
+10. `copy_sv_vcf_ffpe_mode`
+
+    - Copy either the filtered or the purple prioritised to the final output
+    - input: filtered or purple prioritised VCF
+    - output: `{batch}/structural/{batch}-manta.vcf.gz`
+
+11. `prep_sv_tsv`
+
+    - input: above final VCF
+    - output: `{batch}/structural/{batch}-manta.tsv`
+    - Parse info from the VCF and export to TSV
+      - give non-tiered variants an `INFO/SV_TOP_TIER` of `4`.
+      - set `simple_ann = INFO/SIMPLE_ANN`, and `PURPLE_status = ''`
+        - for purple inferred variants:
+          - `simple_ann = {INFO/SVTYPE}||||From_CNV|{tier}`
+          - `PURPLE_status = 'INFERRED'`
+        - for purple recovered variants:
+          - `PURPLE_status = 'RECOVERED'`
+      - there are 23 columns:
+        - `caller = 'manta'`, `sample = tumor name`, `chrom = CHROM`,
+          `start = POS`, `end = INFO/END`
+        - `svtype = INFO/SVTYPE`
+        - `split_read_support, paired_support_PE/PR = FORMAT/SR-PE-PR for tumor`
+        - `AF_BPI = INFO/BPI_AF`, `somaticscore = INFO/SOMATICSCORE`
+        - `tier = INFO/SV_TOP_TIER` (or `4` if missing)
+        - `annotation = INFO/SIMPLE_ANN`
+        - `PURPLE_`: `AF`, `CN`, `CN_CHANGE`, `PLOIDY`, `STATUS` (`INFERRED` or
+          `RECOVERED`)
+        - `START/END_BPI = BPI_START/END`
+        - `ID = ID`
+        - `MATEID = INFO/MATEID`
+        - `ALT = ALT[0]`

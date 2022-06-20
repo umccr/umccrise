@@ -19,7 +19,7 @@ MAX_SVS = 50000
 localrules: structural, structural_batch, copy_sv_vcf_ffpe_mode
 
 
-# Keep passed variants.
+# Keep PASSed variants from raw Manta, and reset (some) INFO & FILTER annotations
 rule sv_keep_pass:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
@@ -38,7 +38,7 @@ rule sv_keep_pass:
         cmd += ' | bcftools view -f.,PASS -Oz -o {output.vcf} && tabix -p vcf {output.vcf}'
         shell(cmd)
 
-
+# Run snpEff if no INFO/ANN
 rule sv_snpeff_maybe:
     input:
         vcf = rules.sv_keep_pass.output.vcf,
@@ -78,6 +78,7 @@ rule sv_snpeff_maybe:
                   '| bgzip --threads {threads} -c > {output.vcf} && tabix -p vcf {output.vcf}')
             verify_file(output.vcf, is_critical=True)
 
+# Run VEP on raw Manta
 rule sv_vep:
     input:
         vcf = lambda wc: batch_by_name[wc.batch].sv_vcf,
@@ -102,63 +103,26 @@ rule sv_vep:
         ref_fa = ref_found[0]
         vep_version = basename(dirname(ref_fa)).split('_')[0]  # homo_sapiens/{vep_version}_{vep_genome}/Homo_sapiens.{vep_genome}.dna.primary_assembly.fa.gz
 
+        # see https://asia.ensembl.org/info/docs/tools/vep/script/vep_options.html
         opts = [
-            '--hgvs',               # Add HGVS nomenclature based on Ensembl stable identifiers to the output.
-                                    # Both coding and protein sequence names are added where appropriate.
-                                    # HGVS notations given on Ensembl identifiers are versioned.
-            '--af_gnomad',          # Include allele frequency from Genome Aggregation Database (gnomAD)
-                                    # exome populations. Note only data from the gnomAD exomes are included; to
-                                    # retrieve data from the additional genomes data set, see this guide.
-                                    # Must be used with --cache
-            '--variant_class',      # Output the Sequence Ontology
-                                    # [variant class](https://asia.ensembl.org/info/genome/variation/prediction/classification.html#classes)
-            '--symbol',             # Adds the gene symbol (e.g. HGNC) (where available) to the output
-            '--ccds',               # Adds the CCDS transcript identifer (where available) to the output
-            '--appris',             # Adds the [APPRIS](https://asia.ensembl.org/Help/Glossary?id=521)
-                                    # isoform annotation for this transcript to the output
-            '--biotype',            # Adds the biotype of the transcript or regulatory feature
-            '--canonical',          # Adds a flag indicating if the transcript is the canonical transcript for the gene
-            '--gencode_basic',      # Limit your analysis to transcripts belonging to the GENCODE basic set.
-                                    # This set has fragmented or problematic transcripts removed
-            '--cache',              # Enables use of the cache. Add --refseq or --merged to use the refseq or merged cache
-            '--numbers',            # Adds affected exon and intron numbering to to output. Format is Number/Total.
-            '--total_length',       # Give cDNA, CDS and protein positions as Position/Length
-            '--allele_number',      # dentify allele number from VCF input, where 1 = first ALT allele,
-                                    # 2 = second ALT allele etc. Useful when using --minimal
-            '--no_escape',          # Don't URI escape HGVS strings
-            '--xref_refseq',        # Output aligned RefSeq mRNA identifier for transcript
-            '--vcf',                # Writes output in VCF format. Consequences are added in the INFO field of
-                                    # the VCF file, using the key "CSQ". Data fields are encoded separated by "|";
-                                    # the order of fields is written in the VCF header. Output fields in the "CSQ"
-                                    # INFO field can be selected by using --fields.
-            '--check_ref',          # Force VEP to check the supplied reference allele against the sequence stored in
-                                    # the Ensembl Core database or supplied FASTA file. Lines that do not match are
-                                    # skipped
-            '--dont_skip',          # Don't skip input variants that fail validation, e.g. those that fall on
-                                    # unrecognised sequences. Combining --check_ref with --dont_skip will add a
-                                    # CHECK_REF output field when the given reference does not match the underlying
-                                    # reference sequence.
-            '--flag_pick_allele_gene',  # As per --pick_allele_gene, but adds the PICK flag to the chosen block of
-                                        # consequence data and retains others
+            '--af_gnomad', '--allele_number', '--appris', f'--assembly {vep_genome}',
+            '--biotype', '--cache', f'--cache_version {vep_version}', '--canonical',
+            '--ccds', '--check_ref', f'--dir {vep_dir}', '--dont_skip',
+            '--flag_pick_allele_gene', f'--fasta {ref_fa}', '--force_overwrite',
+            f'--fork {threads}', '--format vcf', '--gencode_basic',
+            '--hgvs', '--no_escape', '--numbers', '--offline',
             '--pick_order rank,appris,biotype,tsl,ccds,canonical,length,mane',
-            '--force_overwrite',
-            '--species homo_sapiens',
-            f'--assembly {vep_genome}',
-            '--offline',
-            f'--fork {threads}',
-            f'--dir {vep_dir}',
-            f'--cache_version {vep_version}',
-            f'--fasta {ref_fa}',
-            '--format vcf'          # By default, VEP auto-detects the input file format. However it fails
-                                    # to autodetect with SVs in VCF. So specifying explicitly as VCF
+            '--species homo_sapiens', '--symbol', '--total_length',
+            '--variant_class', '--vcf', '--xref_refseq',
         ]
         opts_line = ' '.join(opts)
         out_ungz, out_gz = get_ungz_gz(output.vcf)
+        # use VEP through PCGR's conda env
         shell(conda_cmd.format('pcgr') +
             'vep --input_file {input.vcf} --output_file {out_ungz} {opts_line}')
         shell('bgzip {out_ungz} && tabix {out_gz}')
 
-# Handle SnpEff capitalising ALT (see https://github.com/pcingola/SnpEff/issues/237).
+# Handle SnpEff capitalising ALT - see https://github.com/pcingola/SnpEff/issues/237
 # BPI and bedtools>=2.29.2 will crash if left as is.
 rule fix_snpeff:
     input:
@@ -167,6 +131,7 @@ rule fix_snpeff:
         vcf = 'work/{batch}/structural/snpeff/{batch}-sv-snpeff-fix.vcf.gz',
     group: "sv_vcf"
     shell:
+        # TODO: swap my monstrosity with 'sed -e pat1 -e pat2...'
         'gunzip -c {input.vcf} '
         '| sed "s/CHR/chr/" '
         '| sed "s/chrOM/CHROM/" '
@@ -181,6 +146,7 @@ rule fix_snpeff:
         '| bgzip -c > {output.vcf} '
         '&& tabix -p vcf {output.vcf}'
 
+# Run sv_prioritise
 rule sv_prioritize:
     input:
         vcf = rules.fix_snpeff.output.vcf
@@ -196,8 +162,7 @@ rule sv_prioritize:
         after = count_vars(output.vcf)
         assert before == after, (before, after)
 
-# If there are too many SV calls (FFPE?), also remove unprioritized SVs
-# Also removing older very cluttered ANN field
+# If more than XXK SVs, prioritise TIER 3/2/1
 rule sv_subsample_if_too_many:
     input:
         vcf = rules.sv_prioritize.output.vcf
@@ -208,16 +173,19 @@ rule sv_subsample_if_too_many:
         if count_vars(input.vcf) < MAX_SVS:
             shell(f'bcftools view {input.vcf} -o {output.vcf}')
         else:
+            # if < XXK TIER 1/2/3, just keep those
             if count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 4"') < MAX_SVS:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 4" {input.vcf}'
+            # else if < XXK TIER 1/2, just keep those
             elif count_vars(input.vcf, bcftools_filter_expr='-i "SV_TOP_TIER < 3"') < MAX_SVS:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 3" {input.vcf}'
+            # else just keep TIER 1
             else:
                 cmd = f'bcftools filter -i "SV_TOP_TIER < 2" {input.vcf}'
             cmd += f' -o {output.vcf}'
             shell(cmd)
 
-# if BPI was disabled in bcbio
+# Run BPI
 rule sv_bpi_maybe:
     input:
         vcf = rules.sv_subsample_if_too_many.output.vcf,
@@ -237,10 +205,10 @@ rule sv_bpi_maybe:
     resources:
         mem_mb = 30000
     run:
-        if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):  # already BPI'ed
+        if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
+            # already BPI'ed so just copy
             shell('cp {input.vcf} {output.vcf}')
         else:
-            # if not is_ffpe:  # running BPI only for non-FFPE samples
             safe_mkdir(params.tmp_dir)
             shell(
                 'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
@@ -251,13 +219,9 @@ rule sv_bpi_maybe:
                 '-output_vcf {output.vcf} '
                 '> {log}'
             )
-            # else:  # fake BPI_AF from the original AF
-            #     def func(rec, vcf):
-            #         rec.INFO['BPI_AF'] = rec.INFO['AF']
-            #         return rec
-            #     iter_vcf(input.vcf, output.vcf, func)
 
-# Keep all with read support above 10x; or allele frequency above 10%, but only if read support is above 5x
+# Filter based on SVTYPE, SV_TOP_TIER, SR/PR, BPI_AF.
+# This output is fed to PURPLE.
 rule filter_sv_vcf:
     input:
         vcf = rules.sv_bpi_maybe.output.vcf
@@ -270,7 +234,6 @@ rule filter_sv_vcf:
         vcf_samples = VCF(input.vcf).samples
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.vcf}, available: {vcf_samples}"
         tumor_id = vcf_samples.index(t_name)
-        # tumor_id = VCF(input.vcf).samples.index(batch_by_name[wildcards.batch].tumor.name)
         print(f'Derived tumor VCF index: {tumor_id}')
         shell('''
 bcftools view -f.,PASS {input.vcf} |
@@ -281,6 +244,7 @@ bcftools view -s {t_name} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}
 
 ''')
 
+# Run sv_prioritise again on PURPLE SV output
 rule reprioritize_rescued_svs:
     input:
         dummy = lambda wc: 'work/{batch}/purple/{batch}.purple.purity.tsv' \
@@ -305,6 +269,7 @@ rule reprioritize_rescued_svs:
         assert before == after, (before, after)
 
 
+# Copy filtered or purple SVs to 'final' VCF
 rule copy_sv_vcf_ffpe_mode:
     input:
         vcf = lambda wc: rules.filter_sv_vcf.output.vcf \
@@ -347,9 +312,10 @@ rule prep_sv_tsv:
         tumor_id = VCF(input.vcf).samples.index(rgid)
         with open(output[0], 'w') as out:
             header = ["caller", "sample", "chrom", "start", "end", "svtype",
-                      "split_read_support", "paired_support_PE", "paired_support_PR", "AF_BPI", "somaticscore",
-                      "tier", "annotation",
-                      "AF_PURPLE", "CN_PURPLE", "CN_change_PURPLE", "Ploidy_PURPLE", "PURPLE_status", "START_BPI", "END_BPI", "ID", "MATEID", "ALT"]
+                      "split_read_support", "paired_support_PE", "paired_support_PR",
+                      "AF_BPI", "somaticscore", "tier", "annotation",
+                      "AF_PURPLE", "CN_PURPLE", "CN_change_PURPLE", "Ploidy_PURPLE",
+                      "PURPLE_status", "START_BPI", "END_BPI", "ID", "MATEID", "ALT"]
             out.write('\t'.join(header) + '\n')
             for rec in VCF(input.vcf):
                 tier = parse_info_field(rec, 'SV_TOP_TIER')
@@ -392,7 +358,7 @@ rule prep_sv_tsv:
                 out.write('\t'.join(map(str, data)) + '\n')
 
 
-# At least for the most conservative manta calls, generate a file for viewing in Ribbon
+# Generate unzipped VCF for Ribbon viewing
 rule ribbon_filter_manta:
     input:
         manta_vcf = '{batch}/structural/{batch}-manta.vcf.gz',
@@ -402,6 +368,7 @@ rule ribbon_filter_manta:
     shell:
         'bcftools view {input.manta_vcf} > {output}'
 
+# Grab BEDPE columns 1-3 and add slop
 rule ribbon_filter_vcfbedtope_starts:
     input:
         bed = rules.ribbon_filter_manta.output[0],
@@ -417,6 +384,7 @@ rule ribbon_filter_vcfbedtope_starts:
         ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
         ' > {output}'
 
+# Grab BEDPE columns 4-6 and add slop
 rule ribbon_filter_vcfbedtope_ends:
     input:
         bed = rules.ribbon_filter_manta.output[0],
@@ -433,6 +401,7 @@ rule ribbon_filter_vcfbedtope_ends:
         ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
         ' > {output}'
 
+# Generate merged BED with above columns
 rule ribbon:
     input:
         starts = rules.ribbon_filter_vcfbedtope_starts.output[0],
@@ -446,7 +415,7 @@ rule ribbon:
         'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
 
 
-#### Convert matna VCF to bedpe ####
+# Convert 'final' manta VCF to BEDPE
 rule bedpe:
     input:
         manta_vcf = '{batch}/structural/{batch}-manta.vcf.gz',
