@@ -548,6 +548,7 @@ The result is a list of 1248 genes.
            - Remove `ANN` and `TRICKY_*` INFO fields from variants, but join the
              `TRICKY_*` fields into a single pipe separated field under
              `INFO/TRICKY`.
+           - This basically reduces the VCF size substantially.
        - `somatic_vcf_prep`
          - input: above output cleaned VCF
          - output: `somatic_anno/prep/{SAMPLE}-somatic.vcf.gz`
@@ -658,6 +659,18 @@ The result is a list of 1248 genes.
    - output:
      - `{batch}/{batch}-somatic.pcgr.html`
      - `{batch}/small_variants/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
+
+3. `PCGR` notes:
+
+- Ignore intergenic variants (`--vep_no_intergenic`)
+- Step 0: Validate input data and options
+- Step 1: VEP annotation
+- Step 2: vcfanno precision oncology
+  - `pcgr_vcfanno.py`
+- Step 3: Cancer gene annotations with pcgr-summarise
+  - `pcgr_summarise.py`
+  - `vcf2tsv.py`
+- Step 4: Generation of outputs/reports
 
 ### `structural.smk`
 
