@@ -13,7 +13,11 @@ from reference_data import api as refdata
 from umccrise import get_purity, get_ploidy
 
 
-# run PCGR given final prioritised SNVs. Use the PURPLE-inferred purity & ploidy if run.
+# Run PCGR given final prioritised SNVs. Use the PURPLE-inferred purity & ploidy if run.
+# In the case of hypermutated samples, the first PCGR run
+# (from vcf_stuff/filtering/annotate_somatic_vcf.smk) makes
+# sure the intergenic variants are skipped via VEP, which also reduces
+# the workload for this run.
 rule run_pcgr:
     input:
         vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
