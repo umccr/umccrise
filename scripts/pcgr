@@ -210,7 +210,7 @@ def check_cpsr_version():
 def toml_with_vep_no_intergenic(pcgr_toml):
     # Read the pcgr_toml and modify the vep_skip_intergenic option.
     # Output new toml to temp file, and return its path.
-    fd, path = tempfile.mkstemp()
+    fd, path = tempfile.mkstemp(suffix=".toml")
     x = toml.load(pcgr_toml)
     x["other"]["vep_skip_intergenic"] = True
     with os.fdopen(fd, "w") as tmp:
