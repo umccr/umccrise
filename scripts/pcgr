@@ -8,6 +8,8 @@ from os import rename
 from os.path import isfile, join, dirname, abspath, basename, exists
 import click
 import subprocess
+import toml
+import tempfile
 from distutils.version import LooseVersion
 
 from ngs_utils.call_process import run_simple
@@ -29,12 +31,12 @@ from umccrise import package_path
               help='Path to PCGR data directory (defaults are known for spartan and raijin, '
                    'or if --genomes-dir is provided)')
 @click.option('--genomes-dir', 'genomes_dir')
-@click.option('--puriry', 'puriry', type=click.FLOAT)
+@click.option('--purity', 'purity', type=click.FLOAT)
 @click.option('--ploidy', 'ploidy', type=click.FLOAT)
 @click.option('--predispose-genes', 'predispose_genes', type=click.Path(exists=True))
-@click.option('--pcgr_toml_override', 'pcgr_toml_override', type=click.Path(exists=True))
+@click.option('--vep_no_intergenic', is_flag=True)
 def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, germline=False, use_docker=None,
-         pcgr_data=None, genomes_dir=None, puriry=None, ploidy=None, predispose_genes=None, pcgr_toml_override=None):
+         pcgr_data=None, genomes_dir=None, purity=None, ploidy=None, predispose_genes=None, vep_no_intergenic=None):
 
     if not pcgr_data:
         from reference_data import api as refdata
@@ -59,8 +61,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
 
     pcgr_toml = join(package_path(), 'pcgr', 'pcgr.toml')
     cpsr_toml = join(package_path(), 'pcgr', 'cpsr.toml')
-    if pcgr_toml_override:
-        pcgr_toml = pcgr_toml_override
+    if vep_no_intergenic:
+        pcgr_toml = toml_with_vep_no_intergenic(pcgr_toml)
     sample = sample or splitext_plus(basename(vcf_path))[0]
     sample_cropped = sample[:35]  # pcgr requires sample names shorter than 35
     if genome is None:
@@ -145,7 +147,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                    f' {" --docker-uid root" if use_docker else " --no-docker"}'
                    f' --force_overwrite'
                    f' --no_vcf_validate' +
-                  (f' --tumor_purity {puriry}' if puriry else '') +
+                  (f' --tumor_purity {purity}' if purity else '') +
                   (f' --tumor_ploidy {ploidy}' if ploidy else '') +
                    f' --debug')
         else:
@@ -160,7 +162,7 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                    f' {" --docker-uid root" if use_docker else " --no-docker"}'
                    f' --force_overwrite'
                    f' --no_vcf_validate' +
-                  (f' --tumor_purity {puriry}' if puriry else '') +
+                  (f' --tumor_purity {purity}' if purity else '') +
                   (f' --tumor_ploidy {ploidy}' if ploidy else '') +
                    f' --debug ' +
                    f' --estimate_tmb ' +
@@ -195,7 +197,6 @@ def check_pcgr_version():
         info(f'PCGR version {v} is older than 0.9.0, so using the old syntax')
     return is_old
 
-
 def check_cpsr_version():
     res = subprocess.check_output('cpsr.py --version', shell=True)
     if not isinstance(res, str):
@@ -206,6 +207,15 @@ def check_cpsr_version():
         info(f'CPSR version {v} is older than 0.6.0, so using the old syntax')
     return is_old
 
+def toml_with_vep_no_intergenic(pcgr_toml):
+    # Read the pcgr_toml and modify the vep_skip_intergenic option.
+    # Output new toml to temp file, and return its path.
+    fd, path = tempfile.mkstemp()
+    x = toml.load(pcgr_toml)
+    x["other"]["vep_skip_intergenic"] = True
+    with os.fdopen(fd, "w") as tmp:
+        foo = toml.dump(x, tmp)
+    return path
 
 if __name__ == '__main__':
     main()
