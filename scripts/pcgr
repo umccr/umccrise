@@ -167,7 +167,6 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
                    f' --debug ' +
                    f' --estimate_tmb ' +
                    f' --estimate_msi_status ' +
-                   f' --estimate_signatures ' +
                    f' --include_trials ' +
                    f' --assay WGS '
                )
