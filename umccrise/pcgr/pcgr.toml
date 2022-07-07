@@ -40,31 +40,9 @@ tmb_low_limit = 5
 tmb_intermediate_limit = 20
 ## tmb_high = tmb > tmb_intermediate_limit
 
-[cna]
-## log ratio thresholds for determination of copy number gains and homozygous deletions
-logR_gain = 0.8
-logR_homdel = -0.8
-
-## mean percent overlap between copy number segment and gene transcripts for reporting of gains/losses in tumor suppressor genes/oncogenes
-cna_overlap_pct = 50
-
 [msi]
 ## Predict microsatellite instability
 msi = true
-
-[mutational_signatures]
-## Identify relative contribution of 30 known mutational signatures (COSMIC) through the deconstructSigs framework
-mutsignatures = false
-## deconstructSigs option: number of mutational signatures to limit the search to ('signatures.limit' in whichSignatures)
-mutsignatures_signature_limit = 6
-## deconstructSigs option: type of trimer count normalization for inference of known mutational signatures, see explanation at https://github.com/raerose01/deconstructSigs"
-## options = 'default', 'exome', 'genome', 'exome2genome'
-## NOTE: If your data (VCF) is from exome sequencing, 'default' or 'exome2genome' should be used. See https://github.com/raerose01/deconstructSigs/issues/2
-mutsignatures_normalization = "genome"
-## Require a minimum number of mutations for signature estimation
-mutsignatures_mutation_limit = 100
-## deconstructSigs option: discard any signature contributions with a weight less than this amount
-mutsignatures_cutoff = 0.06
 
 [visual]
 ## Choose visual theme of report, any of: "default", "cerulean", "journal", "flatly", "readable", "spacelab", "united", "cosmo", "lumen", "paper", "sandstone", "simplex", or "yeti" (https://bootswatch.com/)
