@@ -44,7 +44,7 @@ rule run_pcgr:
         if input.purple_file:
             purity = get_purity(input.purple_file)
             ploidy = get_ploidy(input.purple_file)
-            cmd += ' --puriry {purity} --ploidy {ploidy}'
+            cmd += ' --purity {purity} --ploidy {ploidy}'
         shell(cmd)
 
 # copy PCGR html and tsv outputs to <um>/<batch>/ directory
