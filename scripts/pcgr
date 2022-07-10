@@ -35,8 +35,9 @@ from umccrise import package_path
 @click.option('--ploidy', 'ploidy', type=click.FLOAT)
 @click.option('--predispose-genes', 'predispose_genes', type=click.Path(exists=True))
 @click.option('--vep_no_intergenic', is_flag=True)
+@click.option('--vep_coding_only', is_flag=True)
 def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, germline=False, use_docker=None,
-         pcgr_data=None, genomes_dir=None, purity=None, ploidy=None, predispose_genes=None, vep_no_intergenic=None):
+         pcgr_data=None, genomes_dir=None, purity=None, ploidy=None, predispose_genes=None, vep_no_intergenic=None, vep_coding_only=None):
 
     if not pcgr_data:
         from reference_data import api as refdata
@@ -63,6 +64,8 @@ def main(vcf_path, purple_tsv=None, output_dir=None, genome=None, sample=None, g
     cpsr_toml = join(package_path(), 'pcgr', 'cpsr.toml')
     if vep_no_intergenic:
         pcgr_toml = toml_with_vep_no_intergenic(pcgr_toml)
+    if vep_coding_only:
+        pcgr_toml = toml_with_vep_coding_only(pcgr_toml)
     sample = sample or splitext_plus(basename(vcf_path))[0]
     sample_cropped = sample[:35]  # pcgr requires sample names shorter than 35
     if genome is None:
@@ -212,6 +215,19 @@ def toml_with_vep_no_intergenic(pcgr_toml):
     fd, path = tempfile.mkstemp(suffix=".toml")
     x = toml.load(pcgr_toml)
     x["other"]["vep_skip_intergenic"] = True
+    with os.fdopen(fd, "w") as tmp:
+        foo = toml.dump(x, tmp)
+    return path
+
+def toml_with_vep_coding_only(pcgr_toml):
+    # Read the pcgr_toml and modify the other.vep_pick_order option.
+    # This is a hack to get PCGR-VEP to annotate only coding variants.
+    # Output new toml to temp file, and return its path.
+    # This will only work with PCGR < v1, since it doesn't use the
+    # vep_pick_order in pcgr.R to cause parsing issues.
+    fd, path = tempfile.mkstemp(suffix=".toml")
+    x = toml.load(pcgr_toml)
+    x["other"]["vep_pick_order"] = "biotype,rank,appris,tsl,ccds,canonical,length,mane, --coding_only"
     with os.fdopen(fd, "w") as tmp:
         foo = toml.dump(x, tmp)
     return path
