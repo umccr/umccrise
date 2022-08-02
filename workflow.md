@@ -660,17 +660,25 @@ The result is a list of 1248 genes.
      - `{batch}/{batch}-somatic.pcgr.html`
      - `{batch}/small_variants/{batch}-somatic.pcgr.snvs_indels.tiers.tsv`
 
-3. `PCGR` notes:
+3. PCGR notes
 
-- Ignore intergenic variants (`--vep_no_intergenic`)
 - Step 0: Validate input data and options
+  - Runs `scripts/pcgr_validate_input.py`
+  - input: raw VCF input to PCGR
+  - output: `pcgr_ready.vcf.gz` decomposed with no FORMAT or sample columns
 - Step 1: VEP annotation
+  - Runs `vep` with lots of options
+  - input: `pcgr_ready.vcf.gz`
+  - output: `pcgr_ready.vep.vcf.gz`
 - Step 2: vcfanno precision oncology
-  - `pcgr_vcfanno.py`
+  - Runs `pcgr_vcfanno.py`
+  - input: `pcgr_ready.vep.vcf.gz`
+  - output: `pcgr_ready.vep.vcfanno.vcf.gz`
 - Step 3: Cancer gene annotations with pcgr-summarise
   - `pcgr_summarise.py`
   - `vcf2tsv.py`
 - Step 4: Generation of outputs/reports
+  - Uses `pcgrr` functions via the `pcgrr.R` CLI
 
 ### `structural.smk`
 
