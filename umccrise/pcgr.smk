@@ -1,7 +1,7 @@
 """
 PCGR
 -------------
-Prepare somatic, germline variant files, and configuration TOMLs for PCGR; tarball and upload to the AWS instance
+Prepare somatic, germline variant files, and configuration TOMLs for PCGR
 """
 localrules: pcgr, cpsr, cpsr_batch
 
@@ -16,7 +16,7 @@ from umccrise import get_purity, get_ploidy
 # Run PCGR given final prioritised SNVs. Use the PURPLE-inferred purity & ploidy if run.
 # In the case of hypermutated samples, the first PCGR run
 # (from vcf_stuff/filtering/annotate_somatic_vcf.smk) makes
-# sure the intergenic variants are skipped via VEP, which also reduces
+# sure the non-coding variants are skipped via VEP, which also reduces
 # the workload for this run.
 rule run_pcgr:
     input:
