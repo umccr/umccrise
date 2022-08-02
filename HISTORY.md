@@ -1,3 +1,15 @@
+## 2.1.0 (xx Aug 2022)
+
+- General cleanup of codebase (remove GRIDSS, GPL wrappers, submodules, circos configs etc.)
+- PCGR:
+  - Disable mutational signature estimation ([commitbf0605](https://github.com/umccr/umccrise/commit/bf0605f3d74e815be487b2b6858a8dad1076927e)).
+  - Add option to keep only coding in VEP ([commit08ebff](https://github.com/umccr/umccrise/commit/08ebff7e0b33f357587adfbd13aa76b0e2f13518)).
+- Update [`vcf_stuff`](https://github.com/umccr/vcf_stuff) to the conda-based 0.6.0 version (instead of pipping the master directly) ([commit3b4afd](https://github.com/umccr/umccrise/commit/3b4afd2d3962b52f538c6275adb8aae145e4cf9c)).
+  - This version enables VEP in PCGR to annotate only those variants within coding regions when there are > 500K variants (hypermutated samples). The variants without VEP annotation get filtered out in PCGR.
+- Cancer report relocation to [gpgr](https://github.com/umccr/gpgr/tree/main/inst/rmd/umccrise) ([pr105](https://github.com/umccr/umccrise/pull/105), [issue](https://github.com/umccr/umccrise/issues/96)).
+- Increase max mem for BPI ([pr107](https://github.com/umccr/umccrise/pull/107), [issue88](https://github.com/umccr/umccrise/issues/88)).
+- Add documentation for SNV, SV, and PCGR workflows ([pr102](https://github.com/umccr/umccrise/pull/102), [pr109](https://github.com/umccr/umccrise/pull/109)).
+
 ## 2.0.2 (22 Apr 2022)
 
 - Use `FORMAT/SQ` value as `QUAL` for DRAGEN somatic variants when generating BCFtools stats
