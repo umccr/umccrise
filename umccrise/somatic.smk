@@ -9,13 +9,14 @@ import shutil
 from ngs_utils.file_utils import get_ungz_gz
 from ngs_utils.reference_data import get_predispose_genes_bed
 from ngs_utils.logger import critical
-from ngs_utils.vcf_utils import iter_vcf
+from ngs_utils.vcf_utils import count_vars
 from reference_data import api as refdata
 from umccrise import package_path, cnt_vars
 
 
 localrules: somatic, germline, germline_batch, pierian
 
+MAX_SNVS_PIERIAN = 50000
 
 # rule somatic_vcf_reheader  # change RGIDs to tumor and normal names?
 
@@ -317,6 +318,7 @@ rule pierian:
         sv = '{batch}/structural/{batch}-manta.vcf.gz',
         svtbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
         cnv = '{batch}/purple/{batch}.purple.cnv.somatic.tsv',
+        coding_bed = package_path() + '/minidata/bed/hg38_refseq_gencode_all_genes_v1.bed.gz',
     output:
         snv_renamed = '{batch}/pierian/{batch}.somatic-PASS-single.grch38.vcf.gz',
         sv_renamed = '{batch}/pierian/{batch}-manta.single.vcf.gz',
@@ -329,11 +331,17 @@ rule pierian:
         # CNV: handle PURPLE renamed column
         shell("sed 's/AlleleCopyNumber/AllelePloidy/g' {input.cnv} > {output.cnv_renamed}")
 
-        # SNV: grab tumor column from snv vcf
+        # SNV: grab tumor column from snv vcf, and
+        # subset to coding regions if > 50K vars
         t_name = batch_by_name[wildcards.batch].tumors[0].rgid
         vcf_samples = cyvcf2.VCF(input.snv).samples
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.snv}, available: {vcf_samples}"
-        shell("bcftools view {input.snv} -s {t_name} -Oz -o {output.snv_renamed} && tabix -p vcf {output.snv_renamed}")
+        bcftools_opts = f'-s {t_name}'
+        if count_vars(input.snv) < MAX_SNVS_PIERIAN:
+            bcftools_opts = bcftools_opts
+        else:
+            bcftools_opts += f' -R {input.coding_bed}'
+        shell("bcftools view {bcftools_opts} {input.snv} -Oz -o {output.snv_renamed} && tabix -p vcf {output.snv_renamed}")
 
 
 #############
