@@ -341,7 +341,7 @@ rule pierian:
             bcftools_opts = bcftools_opts
         else:
             bcftools_opts += f' -R {input.coding_bed}'
-        shell("bcftools view {bcftools_opts} {input.snv} -Oz -o {output.snv_renamed} && tabix -p vcf {output.snv_renamed}")
+        shell("bcftools view {bcftools_opts} {input.snv} -Oz -o {output.snv_renamed}")
 
 
 #############
