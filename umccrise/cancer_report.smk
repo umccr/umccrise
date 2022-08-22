@@ -90,6 +90,7 @@ rule run_cancer_report:
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
         somatic_sv_vcf       = lambda wc: '{batch}/structural/{batch}-manta.vcf.gz'
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
+        subset_stats_yaml    = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml',
         purple_som_snv_vcf   = 'work/{batch}/purple/{batch}.purple.somatic.vcf.gz',
         purple_som_cnv       = 'work/{batch}/purple/{batch}.purple.cnv.somatic.tsv',
         purple_som_gene_cnv  = 'work/{batch}/purple/{batch}.purple.cnv.gene.tsv',
@@ -123,6 +124,7 @@ rule run_cancer_report:
         somatic_snv_vcf     = lambda wc, input: abspath(input.somatic_snv_vcf),
         somatic_sv_tsv      = lambda wc, input: abspath(input.somatic_sv_tsv) if input.somatic_sv_tsv else 'NA',
         somatic_sv_vcf      = lambda wc, input: abspath(input.somatic_sv_vcf) if input.somatic_sv_vcf else 'NA',
+        subset_stats_yaml   = lambda wc, input: abspath(input.subset_stats_yaml),
         purple_som_snv_vcf  = lambda wc, input: abspath(input.purple_som_snv_vcf),
         purple_som_cnv      = lambda wc, input: abspath(input.purple_som_cnv),
         purple_som_gene_cnv = lambda wc, input: abspath(input.purple_som_gene_cnv),
@@ -166,6 +168,7 @@ gpgr.R canrep \
   --somatic_snv_vcf '{params.somatic_snv_vcf}' \
   --somatic_sv_tsv '{params.somatic_sv_tsv}' \
   --somatic_sv_vcf '{params.somatic_sv_vcf}' \
+  --subset_stats_yaml '{params.subset_stats_yaml}' \
   --purple_som_gene_cnv '{params.purple_som_gene_cnv}' \
   --purple_som_cnv '{params.purple_som_cnv}' \
   --purple_germ_cnv '{params.purple_germ_cnv}' \
