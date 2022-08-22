@@ -200,10 +200,11 @@ rule sv_bpi_maybe:
         'log/structural/{batch}/{batch}-bpi_stats.txt'
     params:
         xms = 1000,
-        xmx = 30000,
+        xmx = 64000,
         tmp_dir = '{batch}/structural/maybe_bpi/tmp_dir'
     resources:
-        mem_mb = 30000
+        # allocate 64G in 2nd attempt
+        mem_mb = lambda wildcards, attempt: attempt * 32000
     run:
         if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
             # already BPI'ed so just copy
