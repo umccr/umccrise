@@ -1,8 +1,10 @@
 import shutil
+import yaml
 from os.path import join, abspath, dirname
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
+from ngs_utils.vcf_utils import count_vars
 from reference_data import api as refdata
 
 from umccrise import package_path
@@ -78,6 +80,35 @@ rule conda_list:
         "for e in {params.env}; do conda list -p {env_path}$e "
         "| grep -v ^# "
         "| awk -v var=env$e '{{ print var, $0 }}' >> {output} ; done"
+
+rule somatic_snv_summary:
+    input:
+        raw = lambda wc: batch_by_name[wc.batch].somatic_vcf,
+        raw_pass = 'work/{batch}/small_variants/pass_sort/{batch}-somatic.vcf.gz',
+        noalt = 'work/{batch}/small_variants/noalt/{batch}-somatic.vcf.gz',
+        sage = 'work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz',
+        subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml', # this has sage + gnomad counts
+        anno = 'work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz',
+        filt = '{batch}/small_variants/{batch}-somatic.vcf.gz',
+        filt_pass = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
+        giab = 'work/{batch}/cancer_report/afs/somatic-confident.vcf.gz'
+    output:
+        yaml = 'work/{batch}/cancer_report/somatic_snv_summary.yaml'
+    run:
+        stats = dict(
+          raw = count_vars(input.raw),
+          raw_pass = count_vars(input.raw_pass),
+          noalt = count_vars(input.noalt),
+          sage = count_vars(input.sage),
+          anno = count_vars(input.anno),
+          filt = count_vars(input.filt),
+          filt_pass = count_vars(input.filt_pass),
+          giab = count_vars(input.giab)
+        )
+
+        with open(output.yaml, 'w') as out:
+            yaml.dump(stats, out, default_flow_style=False)
+
 
 
 rule run_cancer_report:
