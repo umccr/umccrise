@@ -1,5 +1,6 @@
 import shutil
 import yaml
+import json
 from os.path import join, abspath, dirname
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
@@ -81,6 +82,7 @@ rule conda_list:
         "| grep -v ^# "
         "| awk -v var=env$e '{{ print var, $0 }}' >> {output} ; done"
 
+# Get counts per somatic SNV VCF
 rule somatic_snv_summary:
     input:
         raw = lambda wc: batch_by_name[wc.batch].somatic_vcf,
@@ -93,30 +95,35 @@ rule somatic_snv_summary:
         filt_pass = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
         giab = 'work/{batch}/cancer_report/afs/somatic-confident.vcf.gz'
     output:
-        yaml = 'work/{batch}/cancer_report/somatic_snv_summary.yaml'
+        json = 'work/{batch}/cancer_report/somatic_snv_summary.json'
     run:
-        stats = dict(
+        with open(input.subset_highly_mutated_stats) as inp:
+            hyper_stats = yaml.safe_load(inp)
+            hyper_total_vars = hyper_stats['total_vars']
+            hyper_no_gnomad_vars = hyper_stats.get('vars_no_gnomad')
+
+        stats_all = dict(
           raw = count_vars(input.raw),
           raw_pass = count_vars(input.raw_pass),
           noalt = count_vars(input.noalt),
           sage = count_vars(input.sage),
+          pregnomad = hyper_total_vars,
+          gnomad = hyper_no_gnomad_vars,
           anno = count_vars(input.anno),
           filt = count_vars(input.filt),
           filt_pass = count_vars(input.filt_pass),
           giab = count_vars(input.giab)
         )
 
-        with open(output.yaml, 'w') as out:
-            yaml.dump(stats, out, default_flow_style=False)
-
-
+        with open(output.json, 'w') as out:
+            json.dump(stats_all, out, sort_keys=False, indent=2)
 
 rule run_cancer_report:
     input:
         key_genes            = get_key_genes(),
         af_global            = rules.afs.output[0],
         af_keygenes          = rules.afs_keygenes.output[0],
-        somatic_snv_summary  = rules.somatic_snv_summary.output.yaml,
+        somatic_snv_summary  = rules.somatic_snv_summary.output.json,
         somatic_snv_vcf      = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
         somatic_sv_tsv       = lambda wc: rules.prep_sv_tsv.output[0]
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
