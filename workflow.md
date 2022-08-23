@@ -17,18 +17,17 @@
     - [`structural.smk`](#structuralsmk)
 
 umccrise post-processess outputs of cancer variant calling analysis pipelines
-from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) or
-[Illumina Dragen](https://sapac.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html),
-and generates reports helpful for researchers and curators at UMCCR.
+from [Illumina DRAGEN](https://sapac.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
+and generates reports for researchers and curators at UMCCR.
 
 It takes as input results from a Tumor/Normal (T/N) variant calling workflow:
 
-- BAM files from both samples
-- somatic small variant calls
-- germline small variant calls
-- somatic structural variant calls performed by Manta
+- BAM files from both samples (DRAGEN aligner)
+- somatic small variant calls (DRAGEN caller)
+- germline small variant calls (DRAGEN caller)
+- somatic structural variant calls (DRAGEN-Manta caller)
 
-## SNPs and small indels (Somatic)
+## Small variants (SNVs/Indels) (Somatic)
 
 This part of the workflow filters and prioritises small somatic variant calls.
 The idea of filtering is to remove most of the artefacts and germline leakage,
@@ -37,45 +36,27 @@ even if the variants are of low quality.
 
 ### Summary
 
-1. Call candidate variants (2/3 mutect2/strelka2/vardict) with a cut-off AF>=1%.
-2. Keep a candidate variant if either:
-   1. AF>=10%, it's not in PoN and not common in gnomAD
-   2. The variant is potentially known, where one of the following applies:
-      - PCGR TIER 1 or 2
-      - IntOGen driver mutation
-      - cancerhotspots.org hotspot
-      - ClinVar pathogenic or uncertain (to include mixed evidence)
-      - COSMIC count >=10
-      - TCGA pancancer count >=5
-      - ICGC PCAWG count >= 3.
-3. Additionally, we run SAGE on a list of hotspot sites (from CGI, CIViC,
-   OncoKB - curated by HMF). The difference between the above point 2.2 is that
-   we are not restricted to the candidate variants from
-   mutect2/strelka2/vardict, but rather to the hotspot sites.
+1. **Call** candidate variants using DRAGEN.
+2. **Keep** variants that pass DRAGEN's default quality control thresholds.
+3. **Keep** variants that are in the auto/sex/mito chromosomes (1-22, X, Y, M).
+4. **Rescue** variants that are in hotspot sites according to SAGE.
+5. **Annotate** variants with info from databases/files such as GA4GH, LCR, segdup,
+   gnomAD, HMF hotspots/GIAB/PoN, ENCODE blocklist
+6. If the sample is **hypermutated** (i.e. has > 500K variants):
+   - **remove** non-hotspot variants with `gnomad_AF >= 0.01`
+   - **remove** variants not overlapping coding regions (specified in a BED file) (**TODO** for next release)
+7. **Filter** variants based on certain thresholds. Main ones are (for more details view the detailed filters further down this doc):
+   - **Keep** PCGR **Tiers 1/2**, known **hotspots**
+   - **Dump** **low AF** (`TUMOR_AF < 0.1`)
+   - **Dump** with **low read support**, **high PoN count**
+   - **Dump** indels in **homopolymers**
 
 ### Details
-
-The [bcbio](https://github.com/umccr/workflows/tree/master/bcbio) `variant2` T/N
-variant calling workflow is used in either of two modes, depending on the type
-of sample (Fresh Frozen or FFPE):
-
-1. "ensemble" mode, where the final VCF `<batch>-ensemble-annotated.vcf.gz`
-   contains variants supported by at least 2 of the 3 following callers:
-
-   - [Strelka2](https://github.com/Illumina/strelka)
-   - [VarDict](https://github.com/AstraZeneca-NGS/VarDict)
-   - [Mutect2](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)
-
-2. "strelka2" mode, where the final VCF `<batch>-strelka2-annotated.vcf.gz`
-   contains variants called by Strelka2. We use this mode at UMCCR to process
-   WGS FFPE samples to avoid performance issues with other callers. We also call
-   variants at AF>1% (`min_allele_fraction: 1` setting in bcbio config), however
-   that's not essential.
 
 Steps are:
 
 1. Extract passing calls (with `PASS` in FILTER)
-2. Extract calls on main chromosomes (chr1-chr22, chrX, chrY)
+2. Extract calls on main chromosomes (chr1-chr22, chrX, chrY, chrM)
 3. Run
    [SAGE v1.0](https://github.com/hartwigmedical/hmftools/tree/sage-v1.0/sage)
    and add the result to the VCF. SAGE is a low-frequency variant caller with a
@@ -533,10 +514,6 @@ The result is a list of 1248 genes.
              - grab the `INFO/gnomad_AF` field
                - if that exists, is `>= 0.01`, and is not a HMF/SAGE HOTSPOT,
                  discard it
-               - now count the remaining vars, and if `< 500K`, copy those to
-                 the next step
-               - if `>= 500K` though, let's go back to the start and try to
-                 discard only variants that overlap the cancer gene list
          - Write the count stats into the yaml output
        - `somatic_vcf_clean_info`
          - input: above output subset VCF
