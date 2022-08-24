@@ -17,18 +17,17 @@
     - [`structural.smk`](#structuralsmk)
 
 umccrise post-processess outputs of cancer variant calling analysis pipelines
-from [bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) or
-[Illumina Dragen](https://sapac.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html),
-and generates reports helpful for researchers and curators at UMCCR.
+from [Illumina DRAGEN](https://sapac.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
+and generates reports for researchers and curators at UMCCR.
 
-It takes as input results from a Tumor/Normal (T/N) variant calling workflow:
+It takes as input results from the UMCCR DRAGEN Tumor/Normal and DRAGEN Germline variant calling workflows:
 
 - BAM files from both samples
 - somatic small variant calls
 - germline small variant calls
-- somatic structural variant calls performed by Manta
+- somatic structural variant calls
 
-## SNPs and small indels (Somatic)
+## Small variants (SNVs/Indels) (Somatic)
 
 This part of the workflow filters and prioritises small somatic variant calls.
 The idea of filtering is to remove most of the artefacts and germline leakage,
@@ -37,45 +36,24 @@ even if the variants are of low quality.
 
 ### Summary
 
-1. Call candidate variants (2/3 mutect2/strelka2/vardict) with a cut-off AF>=1%.
-2. Keep a candidate variant if either:
-   1. AF>=10%, it's not in PoN and not common in gnomAD
-   2. The variant is potentially known, where one of the following applies:
-      - PCGR TIER 1 or 2
-      - IntOGen driver mutation
-      - cancerhotspots.org hotspot
-      - ClinVar pathogenic or uncertain (to include mixed evidence)
-      - COSMIC count >=10
-      - TCGA pancancer count >=5
-      - ICGC PCAWG count >= 3.
-3. Additionally, we run SAGE on a list of hotspot sites (from CGI, CIViC,
-   OncoKB - curated by HMF). The difference between the above point 2.2 is that
-   we are not restricted to the candidate variants from
-   mutect2/strelka2/vardict, but rather to the hotspot sites.
+1. **Call** candidate variants using DRAGEN.
+2. **Keep** variants that pass DRAGEN's default quality control thresholds.
+3. **Keep** variants that are in the auto/sex/mito chromosomes (1-22, X, Y, M).
+4. **Rescue** variants that are in hotspot sites according to SAGE.
+5. **Annotate** variants with info from databases/files.
+6. If the sample is **hypermutated** (i.e. has > 500K variants):
+   - **remove** non-hotspot variants with `gnomad_AF >= 0.01`
+   - **remove** variants not overlapping gene regions (specified in a BED file)
+7. **Filter** variants based on certain thresholds, for example:
+   - **Keep** those with PCGR **Tiers 1/2**, known **hotspots**
+   - **Dump** those with **low AF** (`TUMOR_AF < 0.1`)
 
 ### Details
-
-The [bcbio](https://github.com/umccr/workflows/tree/master/bcbio) `variant2` T/N
-variant calling workflow is used in either of two modes, depending on the type
-of sample (Fresh Frozen or FFPE):
-
-1. "ensemble" mode, where the final VCF `<batch>-ensemble-annotated.vcf.gz`
-   contains variants supported by at least 2 of the 3 following callers:
-
-   - [Strelka2](https://github.com/Illumina/strelka)
-   - [VarDict](https://github.com/AstraZeneca-NGS/VarDict)
-   - [Mutect2](https://software.broadinstitute.org/gatk/documentation/tooldocs/4.beta.4/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php)
-
-2. "strelka2" mode, where the final VCF `<batch>-strelka2-annotated.vcf.gz`
-   contains variants called by Strelka2. We use this mode at UMCCR to process
-   WGS FFPE samples to avoid performance issues with other callers. We also call
-   variants at AF>1% (`min_allele_fraction: 1` setting in bcbio config), however
-   that's not essential.
 
 Steps are:
 
 1. Extract passing calls (with `PASS` in FILTER)
-2. Extract calls on main chromosomes (chr1-chr22, chrX, chrY)
+2. Extract calls on main chromosomes (chr1-chr22, chrX, chrY, chrM)
 3. Run
    [SAGE v1.0](https://github.com/hartwigmedical/hmftools/tree/sage-v1.0/sage)
    and add the result to the VCF. SAGE is a low-frequency variant caller with a
@@ -116,7 +94,7 @@ Steps are:
 5. If after removing non-hotspot GnomAD variants there are still > 500k somatic
    variants left flag the sample as highly mutated (or FFPE) and limit all calls
    to to cancer genes only (to avoid downstream R performance problems).
-6. Standardize the VCF fields: add new `INFO` fields `TUMOR_AF`, `NORMAL_AF`,
+6. Standardise the VCF fields: add new `INFO` fields `TUMOR_AF`, `NORMAL_AF`,
    `TUMOR_DP`, `NORMAL_DP`, `TUMOR_VD`, `NORMAL_VD` (for use with PCGR), and
    `AD FORMAT` field (for use with PURPLE).
 7. Run [PCGR](https://github.com/sigven/pcgr) to annotate VCF against the
@@ -206,7 +184,7 @@ The idea is to simply bring germline variants in cancer predisposition genes:
    variants and GnomAD rare variants. It also ranks variants according
    pathogenicity score by ACMG and cancer-specific criteria. When a variant is
    annotated as having multiple functional depending on a context of a gene and
-   a trascript, a higher impact events are prioritized, and if all things equal,
+   a trascript, a higher impact events are prioritised, and if all things equal,
    [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/) are
    preferred. In any case, one event per variant is reported. Events are
    reported in 4 tiers according to their significance:
@@ -228,33 +206,17 @@ The idea is to simply bring germline variants in cancer predisposition genes:
 ## Structural variants
 
 The idea is to report gene fusions, exon deletions, high impact and LoF events
-in tumor suppressors, and prioritize events in cancer genes.
+in tumor suppressors, and prioritise events in cancer genes.
 
-1. Start with the somatic SV VCF from
-   [bcbio](https://github.com/umccr/workflows/tree/master/bcbio) called by
-   [Manta](https://github.com/illumina/manta) SV caller.
-2. Refine SVs using Hartwig
-   [break-point-inspector](https://bioconda.github.io/recipes/break-point-inspector/README.html),
-   which locally re-assembles SV loci to get more accurate breakpoint positions
-   and AF estimates.
-3. Filter low-quality calls:
-   - require split or paired reads support at least 5x,
-   - for low frequency variants (<10% at both breakpoints), require read support
-     10x,
-   - require paired reads support to be higher than split read support for BND
-     events
-4. Annotate variants impact using
-   [SnpEff](http://snpeff.sourceforge.net/SnpEff_manual.html) according to the
-   Ensembl gene model and [Sequence ontology](http://www.sequenceontology.org)
-   terminology.
-5. Subset annotations to
-   [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/), keeping one
-   main isoform per gene.
-6. Use variants as a guidance for PURPLE CNV calling (see below). PURPLE will
-   adjust and recover breakpoints at copy number transitions, and adjust AF
-   based on copy number, purity and ploidy.
-7. Prioritize variants with
-   [simple_sv_annotation](https://github.com/vladsaveliev/simple_sv_annotation)
+1. Start with the somatic SV VCF from DRAGEN (called internally by a private
+   [Manta](https://github.com/illumina/manta) version). Keep only PASS variants.
+2. Annotate variants:
+   - with [SnpEff](https://github.com/pcingola/SnpEff).
+   - with [VEP](https://github.com/Ensembl/ensembl-vep)
+   - Use the Ensembl gene model and [Sequence ontology](http://www.sequenceontology.org) terminology.
+   - Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/), keeping one
+     main isoform per gene.
+3. Prioritise variants with <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv>.
    on a 4 tier system - 1 (high) - 2 (moderate) - 3 (low) - 4 (no interest):
    - exon loss
      - on cancer gene list (1)
@@ -282,14 +244,20 @@ in tumor suppressors, and prioritize events in cancer genes.
      - on cancer gene list (2)
      - other TS gene (3)
    - other (4)
-8. If the number of events is over 10k (e.g. FFPE), keep only tiers 1-2-3
-9. For tiers 3-4: a. require split or paired reads support of at least 5x, b.
-   for low frequency variants (<10% at both breakpoints), require read support
-   of at least 10x, c. require paired reads support to be higher than split read
-   support for BND events
-10. Unless FFPE, feed the variants into PURPLE to recover SVs from copy number
-    transitions
-11. Report tiered variants in the UMCCR cancer report.
+4. If the number of events is over 50K (e.g. FFPE), progressively remove TIER 4/3/2 SVs (in that order).
+5. Refine SVs using Hartwig's
+   [break-point-inspector](https://github.com/hartwigmedical/hmftools/tree/bpi-v1.5/break-point-inspector),
+   which locally re-assembles SV loci to get more accurate breakpoint positions
+   and AF estimates.
+6. Filter low-quality calls:
+     - keep PASS FILTER
+     - dump TIER 3/4 where `SR < 5 & PR < 5`
+     - dump TIER 3/4 where `SR < 10 & PR < 10 & (AF0 < 0.1 | AF1 < 0.1)`
+7. Use filtered variants as a guidance for PURPLE CNV calling (see below).
+   PURPLE will adjust and recover breakpoints at copy number transitions,
+   and adjust AF based on copy number, purity and ploidy.
+8. Run <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv> on the PURPLE output SVs.
+9. Report tiered variants in the UMCCR cancer report.
 
 ## Copy Number Variants
 
@@ -307,7 +275,7 @@ workflow in this step. The PURPLE pipeline outlines as follows:
   guidance),
 - Estimate the purity and copy number profile (uses somatic variants for better
   fitting),
-- Plot a circos plot that visualizes the CN/ploidy profile, as well as somatic
+- Plot a circos plot that visualises the CN/ploidy profile, as well as somatic
   variants, SVs, and BAFs,
 - Rescue structural variants in copy number transitions and filter single
   breakends,
@@ -533,10 +501,6 @@ The result is a list of 1248 genes.
              - grab the `INFO/gnomad_AF` field
                - if that exists, is `>= 0.01`, and is not a HMF/SAGE HOTSPOT,
                  discard it
-               - now count the remaining vars, and if `< 500K`, copy those to
-                 the next step
-               - if `>= 500K` though, let's go back to the start and try to
-                 discard only variants that overlap the cancer gene list
          - Write the count stats into the yaml output
        - `somatic_vcf_clean_info`
          - input: above output subset VCF
@@ -741,7 +705,6 @@ The result is a list of 1248 genes.
 
    - Filters in sequence:
      - keep PASS FILTER
-     - dump BNDs where `SR > PR`
      - dump TIER 3/4 where `SR < 5 & PR < 5`
      - dump TIER 3/4 where `SR < 10 & PR < 10 & (AF0 < 0.1 | AF1 < 0.1)`
      - **TODO**: reorg this

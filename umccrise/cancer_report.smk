@@ -1,8 +1,11 @@
 import shutil
+import yaml
+import json
 from os.path import join, abspath, dirname
 from ngs_utils.logger import warn
 from ngs_utils.reference_data import get_key_genes, get_key_genes_bed
 from ngs_utils.file_utils import safe_mkdir
+from ngs_utils.vcf_utils import count_vars
 from reference_data import api as refdata
 
 from umccrise import package_path
@@ -79,12 +82,48 @@ rule conda_list:
         "| grep -v ^# "
         "| awk -v var=env$e '{{ print var, $0 }}' >> {output} ; done"
 
+# Get counts per somatic SNV VCF
+rule somatic_snv_summary:
+    input:
+        raw = lambda wc: batch_by_name[wc.batch].somatic_vcf,
+        raw_pass = 'work/{batch}/small_variants/pass_sort/{batch}-somatic.vcf.gz',
+        noalt = 'work/{batch}/small_variants/noalt/{batch}-somatic.vcf.gz',
+        sage = 'work/{batch}/small_variants/sage1/{batch}-somatic.vcf.gz',
+        subset_highly_mutated_stats = 'work/{batch}/small_variants/somatic_anno/subset_highly_mutated_stats.yaml', # this has sage + gnomad counts
+        anno = 'work/{batch}/small_variants/annotate/{batch}-somatic.vcf.gz',
+        filt = '{batch}/small_variants/{batch}-somatic.vcf.gz',
+        filt_pass = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
+        giab = 'work/{batch}/cancer_report/afs/somatic-confident.vcf.gz'
+    output:
+        json = 'work/{batch}/cancer_report/somatic_snv_summary.json'
+    run:
+        with open(input.subset_highly_mutated_stats) as inp:
+            hyper_stats = yaml.safe_load(inp)
+            hyper_total_vars = hyper_stats['total_vars']
+            hyper_no_gnomad_vars = hyper_stats.get('vars_no_gnomad')
+
+        stats_all = dict(
+          raw = count_vars(input.raw),
+          raw_pass = count_vars(input.raw_pass),
+          noalt = count_vars(input.noalt),
+          sage = count_vars(input.sage),
+          pregnomad = hyper_total_vars,
+          gnomad = hyper_no_gnomad_vars,
+          anno = count_vars(input.anno),
+          filt = count_vars(input.filt),
+          filt_pass = count_vars(input.filt_pass),
+          giab = count_vars(input.giab)
+        )
+
+        with open(output.json, 'w') as out:
+            json.dump(stats_all, out, sort_keys=False, indent=2)
 
 rule run_cancer_report:
     input:
         key_genes            = get_key_genes(),
         af_global            = rules.afs.output[0],
         af_keygenes          = rules.afs_keygenes.output[0],
+        somatic_snv_summary  = rules.somatic_snv_summary.output.json,
         somatic_snv_vcf      = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
         somatic_sv_tsv       = lambda wc: rules.prep_sv_tsv.output[0]
                                if (batch_by_name[wc.batch].sv_vcf and 'structural' in stages) else [],
@@ -120,6 +159,7 @@ rule run_cancer_report:
         output_file         = lambda wc, output: join(os.getcwd(), output[0]),
         af_global           = lambda wc, input: abspath(input.af_global),
         af_keygenes         = lambda wc, input: abspath(input.af_keygenes),
+        somatic_snv_summary = lambda wc, input: abspath(input.somatic_snv_summary),
         somatic_snv_vcf     = lambda wc, input: abspath(input.somatic_snv_vcf),
         somatic_sv_tsv      = lambda wc, input: abspath(input.somatic_sv_tsv) if input.somatic_sv_tsv else 'NA',
         somatic_sv_vcf      = lambda wc, input: abspath(input.somatic_sv_vcf) if input.somatic_sv_vcf else 'NA',
@@ -163,6 +203,7 @@ gpgr.R canrep \
   --conda_list '{params.conda_list}' \
   --img_dir '{params.img_dir_abs}' \
   --key_genes '{input.key_genes}' \
+  --somatic_snv_summary '{params.somatic_snv_summary}' \
   --somatic_snv_vcf '{params.somatic_snv_vcf}' \
   --somatic_sv_tsv '{params.somatic_sv_tsv}' \
   --somatic_sv_vcf '{params.somatic_sv_vcf}' \
