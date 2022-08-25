@@ -7,6 +7,8 @@
 - Summarise SNV counts throughout workflow ([pr115](https://github.com/umccr/umccrise/pull/115), [issue92](https://github.com/umccr/umccrise/issues/92)).
 - Improve Pierian input prep ([issue112](https://github.com/umccr/umccrise/issues/112), [pr113](https://github.com/umccr/umccrise/pull/113)).
   - If >50K SNVs, filter to gene BED
+- Bump gpgr 1.2.5 -> 1.3.2
+  - adds a SNV count summary to main QC table via [gpgr pr53](https://github.com/umccr/gpgr/pull/53)
 
 
 ## 2.1.1 (15 Aug 2022)
