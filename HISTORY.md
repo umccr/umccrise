@@ -5,6 +5,8 @@
 - SV filter: remove SR < PR BND requirement ([issue114](https://github.com/umccr/umccrise/issues/114), [issue100](https://github.com/umccr/umccrise/issues/100), [pr115](https://github.com/umccr/umccrise/pull/115)).
 - BPI: bump memory again ([pr115](https://github.com/umccr/umccrise/pull/115), [issue88](https://github.com/umccr/umccrise/issues/88)).
 - Summarise SNV counts throughout workflow ([pr115](https://github.com/umccr/umccrise/pull/115), [issue92](https://github.com/umccr/umccrise/issues/92)).
+- Improve Pierian input prep ([issue112](https://github.com/umccr/umccrise/issues/112), [pr113](https://github.com/umccr/umccrise/pull/113)).
+  - If >50K SNVs, filter to gene BED
 
 
 ## 2.1.1 (15 Aug 2022)
