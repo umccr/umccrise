@@ -7,7 +7,7 @@ import cyvcf2
 import yaml
 import shutil
 from ngs_utils.file_utils import get_ungz_gz
-from ngs_utils.reference_data import get_predispose_genes_bed
+from ngs_utils.reference_data import get_all_genes_bed
 from ngs_utils.logger import critical
 from ngs_utils.vcf_utils import count_vars
 from reference_data import api as refdata
@@ -251,7 +251,7 @@ rule somatic_stats_report:
             stats = yaml.safe_load(inp)
             total_vars = stats['total_vars']
             vars_no_gnomad = stats.get('vars_no_gnomad') # unused...
-            vars_cancer_genes = stats.get('vars_cancer_genes')
+            vars_cancer_genes = stats.get('vars_cancer_genes') # this has been removed as of Aug2022
             if vars_cancer_genes is not None:
                 # In this case, "all_snps", "all_indels", "all_others" correspond to pre-cancer-gene subset variants
                 # Thus we can't compare it with out final cancer-gene-subset PASSing variants.
@@ -310,6 +310,46 @@ rule somatic_vcf2maf:
         '--ncbi-build {params.ncbi_build} 2> >(grep -v "Use of uninitialized value" >&2)'
         '&& rm {params.uncompressed_tmp_vcf}'
 
+def pierian_subset_snvs_cmd(input_vcf, MAX=MAX_SNVS_PIERIAN):
+    print("Preparing Pierian SNV subset (if required)")
+    def _count_vars(vcf_path, bcftools_filter_expr=None, bed_regions=None):
+        cmd = f'bcftools view {vcf_path} '
+        if bed_regions:
+            cmd += f'-R {bed_regions} '
+        if bcftools_filter_expr:
+            cmd += f' | bcftools filter {bcftools_filter_expr} '
+        cmd += ' | bcftools view -H | wc -l'
+        ret = int(subprocess.check_output(cmd, shell=True).strip())
+        print(f'Number of vars: {ret}')
+        return ret
+
+    cmd = ''
+    bed = get_all_genes_bed()
+    if _count_vars(input_vcf) < MAX:
+        print("No Pierian SNV subsetting required!")
+        return(f'bcftools view {input_vcf}')
+    else:
+        # subset to gene regions
+        cmd = f'bcftools view -R {bed} {input_vcf} | '
+
+    if _count_vars(input_vcf, bed_regions=bed) < MAX:
+        print("just subsetting to gene regions")
+        cmd += f'bcftools view'
+    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr='-e "PCGR_TIER == \'NONCODING\' && PCGR_CONSEQUENCE == \'intergenic_variant\'"') < MAX:
+        print("do not include noncoding intergenic")
+        cmd += f'bcftools filter -e "PCGR_TIER == \'NONCODING\' && PCGR_CONSEQUENCE == \'intergenic_variant\'"'
+    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr='-e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\')"') < MAX:
+        print("do not include noncoding intergenic/intronic")
+        cmd += f'bcftools filter -e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\')"'
+    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr='-e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\' || PCGR_CONSEQUENCE == \'intron_variant|_non_coding_transcript_variant\')"') < MAX:
+        print("do not include noncoding intergenic/intronic/_non_coding_transcript_variant")
+        cmd += f'bcftools filter -e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\' || PCGR_CONSEQUENCE == \'intron_variant|_non_coding_transcript_variant\')"'
+    else:
+        print("just filter out all noncoding")
+        # just filter out all noncoding
+        cmd += f'bcftools filter -e "PCGR_TIER == \'NONCODING\'"'
+    return(cmd)
+
 
 # Prepare variant files for Pierian
 rule pierian:
@@ -318,7 +358,7 @@ rule pierian:
         sv = '{batch}/structural/{batch}-manta.vcf.gz',
         svtbi = '{batch}/structural/{batch}-manta.vcf.gz.tbi',
         cnv = '{batch}/purple/{batch}.purple.cnv.somatic.tsv',
-        coding_bed = package_path() + '/minidata/bed/hg38_refseq_gencode_all_genes_v1.bed.gz',
+        all_genes_bed = get_all_genes_bed(),
     output:
         snv_renamed = '{batch}/pierian/{batch}.somatic-PASS-single.grch38.vcf.gz',
         sv_renamed = '{batch}/pierian/{batch}-manta.single.vcf.gz',
@@ -331,17 +371,14 @@ rule pierian:
         # CNV: handle PURPLE renamed column
         shell("sed 's/AlleleCopyNumber/AllelePloidy/g' {input.cnv} > {output.cnv_renamed}")
 
-        # SNV: grab tumor column from snv vcf, and
-        # subset to coding regions if > 50K vars
+        # SNV: grab tumor column from snv vcf, and:
+        # if >50K, dynamically filter
         t_name = batch_by_name[wildcards.batch].tumors[0].rgid
         vcf_samples = cyvcf2.VCF(input.snv).samples
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.snv}, available: {vcf_samples}"
-        bcftools_opts = f'-s {t_name}'
-        if count_vars(input.snv) < MAX_SNVS_PIERIAN:
-            bcftools_opts = bcftools_opts
-        else:
-            bcftools_opts += f' -R {input.coding_bed}'
-        shell("bcftools view {bcftools_opts} {input.snv} -Oz -o {output.snv_renamed}")
+        bcftools_grab_tumor = f'bcftools view -s {t_name}'
+        bcftools_subset = pierian_subset_snvs_cmd(input.snv, MAX_SNVS_PIERIAN)
+        shell(f"{bcftools_subset} | {bcftools_grab_tumor} -Oz -o {output.snv_renamed}")
 
 
 #############
