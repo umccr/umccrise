@@ -11,12 +11,11 @@ from ngs_utils.reference_data import get_all_genes_bed
 from ngs_utils.logger import critical
 from ngs_utils.vcf_utils import count_vars
 from reference_data import api as refdata
-from umccrise import package_path, cnt_vars
-
+from umccrise import package_path, cnt_vars, pierian_subset_snvs_cmd
 
 localrules: somatic, germline, germline_batch, pierian
 
-MAX_SNVS_PIERIAN = 50000
+MAX_SNVS_PIERIAN = 50_000
 
 # rule somatic_vcf_reheader  # change RGIDs to tumor and normal names?
 
@@ -310,45 +309,6 @@ rule somatic_vcf2maf:
         '--ncbi-build {params.ncbi_build} 2> >(grep -v "Use of uninitialized value" >&2)'
         '&& rm {params.uncompressed_tmp_vcf}'
 
-def pierian_subset_snvs_cmd(input_vcf, MAX=MAX_SNVS_PIERIAN):
-    print("Preparing Pierian SNV subset (if required)")
-    def _count_vars(vcf_path, bcftools_filter_expr=None, bed_regions=None):
-        cmd = f'bcftools view {vcf_path} '
-        if bed_regions:
-            cmd += f'-R {bed_regions} '
-        if bcftools_filter_expr:
-            cmd += f' | bcftools filter {bcftools_filter_expr} '
-        cmd += ' | bcftools view -H | wc -l'
-        ret = int(subprocess.check_output(cmd, shell=True).strip())
-        print(f'Number of vars: {ret}')
-        return ret
-
-    cmd = ''
-    bed = get_all_genes_bed()
-    if _count_vars(input_vcf) < MAX:
-        print("No Pierian SNV subsetting required!")
-        return(f'bcftools view {input_vcf}')
-    else:
-        # subset to gene regions
-        cmd = f'bcftools view -R {bed} {input_vcf} | '
-
-    if _count_vars(input_vcf, bed_regions=bed) < MAX:
-        print("just subsetting to gene regions")
-        cmd += f'bcftools view'
-    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr='-e "PCGR_TIER == \'NONCODING\' && PCGR_CONSEQUENCE == \'intergenic_variant\'"') < MAX:
-        print("do not include noncoding intergenic")
-        cmd += f'bcftools filter -e "PCGR_TIER == \'NONCODING\' && PCGR_CONSEQUENCE == \'intergenic_variant\'"'
-    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr='-e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\')"') < MAX:
-        print("do not include noncoding intergenic/intronic")
-        cmd += f'bcftools filter -e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\')"'
-    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr='-e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\' || PCGR_CONSEQUENCE == \'intron_variant|_non_coding_transcript_variant\')"') < MAX:
-        print("do not include noncoding intergenic/intronic/_non_coding_transcript_variant")
-        cmd += f'bcftools filter -e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\' || PCGR_CONSEQUENCE == \'intron_variant|_non_coding_transcript_variant\')"'
-    else:
-        print("just filter out all noncoding")
-        # just filter out all noncoding
-        cmd += f'bcftools filter -e "PCGR_TIER == \'NONCODING\'"'
-    return(cmd)
 
 
 # Prepare variant files for Pierian
@@ -372,12 +332,12 @@ rule pierian:
         shell("sed 's/AlleleCopyNumber/AllelePloidy/g' {input.cnv} > {output.cnv_renamed}")
 
         # SNV: grab tumor column from snv vcf, and:
-        # if >50K, dynamically filter
+        # if >50K variants, use a dynamic filter
         t_name = batch_by_name[wildcards.batch].tumors[0].rgid
         vcf_samples = cyvcf2.VCF(input.snv).samples
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.snv}, available: {vcf_samples}"
         bcftools_grab_tumor = f'bcftools view -s {t_name}'
-        bcftools_subset = pierian_subset_snvs_cmd(input.snv, MAX_SNVS_PIERIAN)
+        bcftools_subset = pierian_subset_snvs_cmd(input.snv, MAX_SNVS_PIERIAN)['cmd']
         shell(f"{bcftools_subset} | {bcftools_grab_tumor} -Oz -o {output.snv_renamed}")
 
 
