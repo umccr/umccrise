@@ -1,3 +1,4 @@
+import subprocess
 import glob
 import math
 import os
@@ -750,3 +751,59 @@ def cnt_vars(vcf_path, passed=False):
         else:
             others += 1
     return snps, indels, others
+
+def pierian_subset_snvs_cmd(input_vcf, MAX=50_000):
+    print("Preparing Pierian SNV subset (if required)")
+    def _count_vars(vcf_path, bcftools_filter_expr=None, bed_regions=None, msg=None):
+        cmd = f'bcftools view {vcf_path} '
+        if bed_regions:
+            cmd += f'-R {bed_regions} '
+        if bcftools_filter_expr:
+            cmd += f' | bcftools filter {bcftools_filter_expr} '
+        cmd += ' | bcftools view -H | wc -l'
+        ret = int(subprocess.check_output(cmd, shell=True).strip())
+        print(f'{msg}{ret}')
+        return ret
+
+    expr = {
+            'e1': {
+                'exp': '-e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\')"',
+                'msg': 'dump NONCODING, intergenic_variant: '
+                },
+            'e2': {
+                'exp': '-e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\')"',
+                'msg':  'dump NONCODING, intergenic_variant or intron_variant: '
+                },
+            'e3': {
+                'exp': '-e "(PCGR_TIER == \'NONCODING\') && (PCGR_CONSEQUENCE == \'intergenic_variant\' || PCGR_CONSEQUENCE == \'intron_variant\' || PCGR_CONSEQUENCE == \'intron_variant|_non_coding_transcript_variant\')"',
+                'msg':  'dump NONCODING, intergenic_variant or intron_variant or intron_variant|_non_coding_transcript_variant: '
+                }
+            }
+
+    cmd = ''
+    msg = ''
+    #bed = get_all_genes_bed()
+    if _count_vars(input_vcf, msg='Total: ') < MAX:
+        msg = "No Pierian SNV subsetting required!"
+        cmd = f'bcftools view {input_vcf}'
+        return({'msg': msg, 'cmd': cmd})
+    else:
+        # subset to gene regions
+        cmd = f'bcftools view -R {bed} {input_vcf} | '
+
+    if _count_vars(input_vcf, bed_regions=bed, msg='Total in gene regions: ') < MAX:
+        msg = "just subsetting to gene regions"
+        cmd += f'bcftools view'
+    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr=expr["e1"]["exp"], msg=expr["e1"]["msg"]) < MAX:
+        msg = "do not include noncoding intergenic"
+        cmd += f'bcftools filter {expr["e1"]["exp"]}'
+    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr=expr["e2"]["exp"], msg=expr["e2"]["msg"]) < MAX:
+        msg = "do not include noncoding intergenic/intronic"
+        cmd += f'bcftools filter {expr["e2"]["exp"]}'
+    elif _count_vars(input_vcf, bed_regions=bed, bcftools_filter_expr=expr["e3"]["exp"], msg=expr["e3"]["msg"]) < MAX:
+        msg = "do not include noncoding intergenic/intronic/_non_coding_transcript_variant"
+        cmd += f'bcftools filter {expr["e3"]["exp"]}'
+    else:
+        msg = "just filter out all noncoding"
+        cmd += f'bcftools filter -e "PCGR_TIER == \'NONCODING\'"'
+    return({'msg': msg, 'cmd': cmd})
