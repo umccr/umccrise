@@ -331,8 +331,8 @@ rule pierian:
         # CNV: handle PURPLE renamed column
         shell("sed 's/AlleleCopyNumber/AllelePloidy/g' {input.cnv} > {output.cnv_renamed}")
 
-        # SNV: grab tumor column from snv vcf, and:
-        # if >50K variants, use a dynamic filter
+        # SNV: grab tumor column from snv vcf.
+        # If >50K variants, use a dynamic filter (see __init__.py)
         t_name = batch_by_name[wildcards.batch].tumors[0].rgid
         vcf_samples = cyvcf2.VCF(input.snv).samples
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.snv}, available: {vcf_samples}"
