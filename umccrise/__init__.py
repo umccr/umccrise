@@ -24,6 +24,7 @@ from ngs_utils import vcf_utils
 from ngs_utils.utils import set_locale; set_locale()
 from ngs_utils.file_utils import verify_file, verify_obj_by_path
 from reference_data import api as refdata
+from ngs_utils.reference_data import get_all_genes_bed
 
 
 def package_path():
@@ -782,7 +783,7 @@ def pierian_subset_snvs_cmd(input_vcf, MAX=50_000):
 
     cmd = ''
     msg = ''
-    #bed = get_all_genes_bed()
+    bed = get_all_genes_bed()
     if _count_vars(input_vcf, msg='Total: ') < MAX:
         msg = "No Pierian SNV subsetting required!"
         cmd = f'bcftools view {input_vcf}'
