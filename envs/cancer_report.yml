@@ -9,7 +9,7 @@ dependencies:
   - pandoc
   - r-base >=4.1
   # umccr pkgs
-  - r-gpgr ==1.3.2
+  - r-gpgr ==1.3.3
   - r-sigrap ==0.0.4
   # refdata pkgs
   - bioconductor-bsgenome.hsapiens.ucsc.hg38 ==1.4.3
