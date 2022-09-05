@@ -200,17 +200,17 @@ rule sv_bpi_maybe:
         'log/structural/{batch}/{batch}-bpi_stats.txt'
     params:
         xms = 1000,
-        xmx = 64000,
+        xmx = 30000,
         tmp_dir = '{batch}/structural/maybe_bpi/tmp_dir'
     resources:
-        # allocate 64G in 2nd attempt
-        mem_mb = lambda wildcards, attempt: attempt * 32000
+        mem_mb = 30000
     run:
         if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
             # already BPI'ed so just copy
             shell('cp {input.vcf} {output.vcf}')
         else:
             safe_mkdir(params.tmp_dir)
+            #shell('echo "boo" > {log} && false || cp {input.vcf} {output.vcf}')
             shell(
                 'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
                 '-Djava.io.tmpdir={params.tmp_dir} '
@@ -218,7 +218,7 @@ rule sv_bpi_maybe:
                 '-ref {input.normal_bam} '
                 '-tumor {input.tumor_bam} '
                 '-output_vcf {output.vcf} '
-                '> {log}'
+                '> {log} || cp {input.vcf} {output.vcf}'
             )
 
 # Filter based on SVTYPE, SV_TOP_TIER, SR/PR, BPI_AF.
@@ -236,13 +236,22 @@ rule filter_sv_vcf:
         assert t_name in vcf_samples, f"Tumor name {t_name} not in VCF {input.vcf}, available: {vcf_samples}"
         tumor_id = vcf_samples.index(t_name)
         print(f'Derived tumor VCF index: {tumor_id}')
-        shell('''
-bcftools view -f.,PASS {input.vcf} |
-bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" |
-bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" |
-bcftools view -s {t_name} -Oz -o {output.vcf} && tabix -p vcf {output.vcf}
+        if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
+            # use standard filters
+            shell(
+                'bcftools view -f.,PASS {input.vcf} | '
+                'bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" | '
+                'bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<10 & FORMAT/PR[{tumor_id}:1]<10 & (BPI_AF[0] < 0.1 | BPI_AF[1] < 0.1)" | '
+                'bcftools view -s {t_name} -Oz -o {output.vcf} && tabix -p vcf {output.vcf} '
+                )
+        else:
+            # do not use the BPI_AF filter
+            shell(
+                'bcftools view -f.,PASS {input.vcf} | '
+                'bcftools filter -e "SV_TOP_TIER > 2 & FORMAT/SR[{tumor_id}:1]<5  & FORMAT/PR[{tumor_id}:1]<5" | '
+                'bcftools view -s {t_name} -Oz -o {output.vcf} && tabix -p vcf {output.vcf} '
+                )
 
-''')
 
 # Run sv_prioritise again on PURPLE SV output
 rule reprioritize_rescued_svs:
