@@ -2,6 +2,7 @@ import glob
 from ngs_utils.utils import update_dict
 from umccrise.multiqc.prep_data import make_report_metadata, multiqc_prep_data
 import yaml
+import os
 from os.path import abspath, join, dirname, basename
 from ngs_utils.file_utils import verify_file
 from ngs_utils.bcbio import BcbioProject, BcbioBatch
@@ -95,6 +96,8 @@ rule prep_multiqc_data:
         genome_build            = run.genome_build,
     group: 'multiqc'
     run:
+        if not os.path.exists(output.renamed_file_dir):
+            os.makedirs(output.renamed_file_dir)
         batch = batch_by_name[wildcards.batch]
         report_base_path = dirname(abspath(f'{wildcards.batch}/{wildcards.batch}-multiqc_report.html'))
 
