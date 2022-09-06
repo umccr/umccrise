@@ -3,17 +3,19 @@
 [2.1.1 - 2.1.2 diff](https://github.com/umccr/umccrise/compare/2.1.1..2.1.2)
 
 - SV filter: remove SR < PR BND requirement ([issue114](https://github.com/umccr/umccrise/issues/114), [issue100](https://github.com/umccr/umccrise/issues/100), [pr115](https://github.com/umccr/umccrise/pull/115)).
-- BPI: bump memory again ([pr115](https://github.com/umccr/umccrise/pull/115), [issue88](https://github.com/umccr/umccrise/issues/88)).
-  - gets dynamically adjusted after failure
+- BPI: deal with OOM issue by skipping it altogether upon error ([issue88](https://github.com/umccr/umccrise/issues/88), [gpgr pr55](https://github.com/umccr/gpgr/pull/55)).
+  - if sample fails BPI, the SV filters get adjusted by removing the `BPI_AF`-specific filter. The SV tables in the cancer report will also not display any AF information.
 - Summarise SNV counts throughout workflow ([pr115](https://github.com/umccr/umccrise/pull/115), [issue92](https://github.com/umccr/umccrise/issues/92)).
 - Pierian: Improve input prep ([issue112](https://github.com/umccr/umccrise/issues/112), [pr113](https://github.com/umccr/umccrise/pull/113), [pr116](https://github.com/umccr/umccrise/pull/116)).
   - If >50K SNVs, filter to gene BED, then sequentially remove noncoding intergenic/intronic until the threshold is achieved.
-- Bump `gpgr` `1.2.5 -> 1.3.2`:
+- Bump `gpgr` `1.2.5 -> 1.3.3`:
   - adds a SNV count summary to top cancer report QC table via [gpgr pr53](https://github.com/umccr/gpgr/pull/53).
-- Bump `vcf_stuff` `0.6.0 -> 0.6.1`:
-  - for hypermutated samples (>500K SNVs) we now simply filter to only gene regions ([vcf\_stuff pr5](https://github.com/umccr/vcf_stuff/pull/5)).
-- Bump `ngs_utils` `2.9.2 -> 2.10.1`:
+  - deals with missing BPI columns in case BPI errored out (e.g. due to OOM) ([gpgr pr55](https://github.com/umccr/gpgr/pull/55)).
+- Bump `vcf_stuff` `0.6.0 -> 0.6.2`:
+  - for hypermutated samples (>500K SNVs) we now simply filter to only __cancer__ gene regions ([vcf\_stuff pr5](https://github.com/umccr/vcf_stuff/pull/5), then changed in [commit 3e011b](https://github.com/umccr/vcf_stuff/commit/3e011b)).
+- Bump `ngs_utils` `2.9.2 -> 2.10.2`:
   - Adding the all-genes BED file for subsetting hypermutated samples (>500K SNVs) and for Pierian (when still >50K SNVs) ([ngs\_utils pr4](https://github.com/umccr/NGS_Utils/pull/4)).
+  - Adding the cancer-genes BED file for subsetting hypermutated samples (>500K SNVs) ([ngs\_utils pr5](https://github.com/umccr/NGS_Utils/pull/5)).
 
 ## 2.1.1 (15 Aug 2022)
 
