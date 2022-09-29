@@ -49,7 +49,6 @@ include: "conpair.smk"
 include: "structural.smk"
 include: "somatic.smk"
 include: "germline.smk"
-include: "peddy.smk"
 include: "purple.smk"
 include: "coverage.smk"
 include: "pcgr.smk"
@@ -100,7 +99,6 @@ rule umccrise:
         rules.conpair.output          if 'conpair'          in stages else [],
         rules.structural.output       if 'structural'       in stages else [],
         rules.somatic.output          if 'somatic'          in stages else [],
-        rules.peddy.output            if 'peddy'            in stages else [],
         rules.maf.output              if 'maf'              in stages else [],
         rules.germline.output         if 'germline'         in stages else [],
         rules.purple.output           if 'purple'           in stages else [],

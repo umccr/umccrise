@@ -56,7 +56,7 @@ def find_bcbio_qc_files(batch: BcbioBatch, dst_dir):
             '.*.html',
             '.*verifybamid.*',
             '.*gdc-viral-completeness.txt',
-        ] + (['.*peddy.*'] if 'peddy' in stages else []),
+        ],
         include_files=[
             f'.*{batch.name}.*',
             f'.*{batch.tumors[0].name}.*',
@@ -85,8 +85,6 @@ rule prep_multiqc_data:
         samtools_stats_n        = '{batch}/coverage/{batch}-normal.samtools_stats.txt' if 'samtools_stats' in stages else [],
         mosdepth_t              = '{batch}/coverage/{batch}-tumor.mosdepth.global.dist.txt'  if 'mosdepth' in stages else [],
         mosdepth_n              = '{batch}/coverage/{batch}-normal.mosdepth.global.dist.txt' if 'mosdepth' in stages else [],
-        peddy_dirs              = expand(rules.run_peddy.output.dir.replace('{batch}', '{{batch}}'),
-                                         phenotype=['normal']) if 'peddy' in stages else [],
     output:
         filelist                = 'work/{batch}/multiqc_data/filelist.txt',
         generated_conf_yaml     = 'work/{batch}/multiqc_data/generated_conf.yaml',
@@ -178,14 +176,6 @@ rule prep_multiqc_data:
                 input.mosdepth_t,
                 input.mosdepth_n,
             ])
-        if 'peddy' in stages and not isinstance(run, BcbioProject):
-            peddy_files = []
-            for d in input.peddy_dirs:
-                peddy_files.extend(glob.glob(join(d, '*.peddy.ped')))
-                peddy_files.extend(glob.glob(join(d, '*.het_check.csv')))
-                peddy_files.extend(glob.glob(join(d, '*.ped_check.csv')))
-                peddy_files.extend(glob.glob(join(d, '*.sex_check.csv')))
-            qc_files.extend(peddy_files)
 
         if isinstance(batch, BcbioBatch):
             qc_files.extend(find_bcbio_qc_files(batch, params.data_dir))

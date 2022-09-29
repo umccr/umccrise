@@ -449,7 +449,6 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
     default_disabled = {
         'microbiome',
         'neoantigens',
-        'peddy',
         'haplotype_caller',
     }
     # if not all(b.germline_vcf for b in run.batch_by_name.values()):

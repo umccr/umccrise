@@ -69,13 +69,6 @@ table_columns_visible:
         variations_het: True
         number_of_MNPs: True
         number_of_others: True
-    Peddy:
-        family_id: False
-        ancestry-prediction: True
-        ancestry-prob_het_check: False
-        sex_het_ratio: False
-        error_sex_check: False
-        error: False
     VerifyBAMID:
         Contam: False
     mosdepth:
@@ -134,7 +127,6 @@ module_order:
     - bcbio
     - samtools
     - goleft_indexcov
-    - peddy
     - custom_content
     - bcftools:
         info: Bcftools stats for somatic variant calls.
