@@ -16,6 +16,12 @@
 - Bump `ngs_utils` `2.9.2 -> 2.10.2`:
   - Adding the all-genes BED file for subsetting hypermutated samples (>500K SNVs) and for Pierian (when still >50K SNVs) ([ngs\_utils pr4](https://github.com/umccr/NGS_Utils/pull/4)).
   - Adding the cancer-genes BED file for subsetting hypermutated samples (>500K SNVs) ([ngs\_utils pr5](https://github.com/umccr/NGS_Utils/pull/5)).
+- General cleanup of codebase, including:
+  - peddy-related code + MultiQC files
+  - MultiQC conda build recipes
+  - ribbon-related code
+  - legacy (4yr) deployment ansible/vagrant code
+
 
 ## 2.1.1 (15 Aug 2022)
 
