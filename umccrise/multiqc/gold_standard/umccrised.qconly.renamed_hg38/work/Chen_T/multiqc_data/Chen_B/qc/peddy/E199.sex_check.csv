@@ -1,3 +1,0 @@
-error,het_count,het_ratio,hom_alt_count,hom_ref_count,ped_sex,predicted_sex,sample_id
-True,1852,0.251,7379,642,unknown,male,Chen_T
-True,1911,0.2602,7345,345,unknown,male,Chen_B

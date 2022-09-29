@@ -1,2 +1,0 @@
-sample_id,depth_outlier,het_count,het_ratio,idr_baf,mean_depth,median_depth,p10,p90,sampled_sites,call_rate,PC1,PC2,PC3,PC4,ancestry-prediction,ancestry-prob
-Bob_B,False,3827,0.6692,0.2268,43.43,43,0.3684,0.5952,5681,1,-0.7623,-1.535,0.8493,-0.6667,EUR,0.9973

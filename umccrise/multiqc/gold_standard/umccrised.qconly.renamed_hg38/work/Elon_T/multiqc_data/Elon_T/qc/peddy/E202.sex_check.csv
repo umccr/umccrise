@@ -1,3 +1,0 @@
-error,het_count,het_ratio,hom_alt_count,hom_ref_count,ped_sex,predicted_sex,sample_id
-True,1892,0.2536,7460,518,unknown,male,Elon_T
-True,1845,0.2494,7398,380,unknown,male,Elon_B
