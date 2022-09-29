@@ -21,6 +21,7 @@
   - MultiQC conda build recipes
   - ribbon-related code
   - legacy (4yr) deployment ansible/vagrant code
+  - dockerfiles/ directory
 
 
 ## 2.1.1 (15 Aug 2022)

@@ -11,7 +11,7 @@ setup(
     version=version,
     author='Vlad Saveliev',
     author_email='vladislav.sav@gmail.com',
-    description='UMCCRisation of DRAGEN/bcbio analysis results',
+    description='UMCCRisation of DRAGEN analysis results',
     keywords='bioinformatics',
     url='https://github.com/umccr/umccrise',
     license='GPLv3',
@@ -20,7 +20,6 @@ setup(
     },
     packages=find_packages(),
     scripts=[
-        'vendor/vcfToBedpe',
         'scripts/umccrise',
         'scripts/pcgr',
         'scripts/conpair',

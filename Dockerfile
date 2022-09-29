@@ -24,10 +24,10 @@ RUN apt-get install -y \
 
 # Install required base packages
 RUN apt-get install -y \
-	      git \
-	      unzip \
-	      wget \
-        curl
+      git \
+      unzip \
+      wget \
+      curl
 
 # Accept the Microsoft TrueType core fonts license and then install non-interactively
 # Required for pandas/rmarkdown
