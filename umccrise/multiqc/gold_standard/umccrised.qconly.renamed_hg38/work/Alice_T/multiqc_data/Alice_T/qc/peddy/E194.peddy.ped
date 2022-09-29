@@ -1,3 +1,0 @@
-#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	Ethnicity	duplicates	het_call_rate	het_ratio	het_mean_depth	het_idr_baf	ancestry-prediction	PC1	PC2	PC3	sex_het_ratio	sex_fixed
-E194	Alice_T	-9	-9	0	2	-9	Alice_B	1	0.6674698795180722	74.42908777969019	0.2933638443935927	EUR	-0.7476153566874009	-1.6156003958202725	-0.5735500143826576	2.8548065416832866	True
-E194	Alice_B	-9	-9	0	1	-9	Alice_T	1	0.6714285714285714	34.971256454388985	0.2525030525030525	EUR	-0.7311397490339046	-1.6139796167623797	-0.5485663265596845	2.8344	True

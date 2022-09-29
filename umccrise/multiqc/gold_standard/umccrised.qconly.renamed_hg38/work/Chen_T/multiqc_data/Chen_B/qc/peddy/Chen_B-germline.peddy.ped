@@ -1,2 +1,0 @@
-#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	Ethnicity	het_call_rate	het_ratio	het_mean_depth	het_idr_baf	ancestry-prediction	PC1	PC2	PC3	sex_het_ratio	sex_fixed
-E199	Chen_B	-9	-9	0	0	-9	1	0.6023489932885906	41.81618195376585	0.23865248226950353	EAS	-1.427724262007505	1.8499810672430383	-0.1521587907276745	0.25839793281653745	True

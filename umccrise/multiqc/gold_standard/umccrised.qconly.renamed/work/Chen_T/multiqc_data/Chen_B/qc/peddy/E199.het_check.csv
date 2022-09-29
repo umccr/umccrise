@@ -1,3 +1,0 @@
-sample_id,depth_outlier,het_count,het_ratio,idr_baf,mean_depth,median_depth,p10,p90,sampled_sites,call_rate,PC1,PC2,PC3,PC4,ancestry-prediction,ancestry-prob
-Chen_T,False,3242,0.6005,0.2038,81.69,82,0.3768,0.5806,5378,1,-1.43,1.852,-0.1491,-0.2796,EAS,0.9933
-Chen_B,False,3242,0.6005,0.2389,41.77,41,0.3611,0.6,5362,1,-1.43,1.856,-0.1489,-0.2812,EAS,0.9933

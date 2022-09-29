@@ -1,2 +1,0 @@
-sample_id,depth_outlier,het_count,het_ratio,idr_baf,mean_depth,median_depth,p10,p90,sampled_sites,call_rate,PC1,PC2,PC3,PC4,ancestry-prediction,ancestry-prob
-Dakota_B,False,3888,0.6783,0.2544,33.1,32,0.3529,0.6073,5687,1,-0.6026,-0.8153,1.449,0.7,AMR,0.9968
