@@ -10,9 +10,6 @@ from ngs_utils.logger import critical
 from ngs_utils.vcf_utils import count_vars, vcf_contains_field, iter_vcf
 from reference_data import api as refdata
 
-
-vcftobedpe = 'vcfToBedpe'
-
 MAX_SVS = 50000
 
 
@@ -366,86 +363,10 @@ rule prep_sv_tsv:
                         ]
                 out.write('\t'.join(map(str, data)) + '\n')
 
-
-# Generate unzipped VCF for Ribbon viewing
-rule ribbon_filter_manta:
-    input:
-        manta_vcf = '{batch}/structural/{batch}-manta.vcf.gz',
-    output:
-        'work/{batch}/structural/ribbon/manta.vcf'
-    group: "sv_after_purple"
-    shell:
-        'bcftools view {input.manta_vcf} > {output}'
-
-# Grab BEDPE columns 1-3 and add slop
-rule ribbon_filter_vcfbedtope_starts:
-    input:
-        bed = rules.ribbon_filter_manta.output[0],
-        fai = refdata.get_ref_file(run.genome_build, key='fa') + '.fai'
-    output:
-        'work/{batch}/structural/ribbon/manta-starts.bed'
-    params:
-        vcftobedpe = vcftobedpe
-    group: "sv_after_purple"
-    shell:
-        'cat {input.bed} | {params.vcftobedpe}'
-        ' | cut -f 1-3'
-        ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
-        ' > {output}'
-
-# Grab BEDPE columns 4-6 and add slop
-rule ribbon_filter_vcfbedtope_ends:
-    input:
-        bed = rules.ribbon_filter_manta.output[0],
-        fai = refdata.get_ref_file(run.genome_build, key='fa') + '.fai'
-    output:
-        'work/{batch}/structural/ribbon/manta-ends.bed'
-    params:
-        vcftobedpe = vcftobedpe
-    group: "sv_after_purple"
-    shell:
-        'cat {input.bed} | {params.vcftobedpe}'
-        ' | cut -f 4-6'
-        ' | grep -v \'CHROM\''
-        ' | bedtools slop -b 5000 -i stdin -g {input.fai}'
-        ' > {output}'
-
-# Generate merged BED with above columns
-rule ribbon:
-    input:
-        starts = rules.ribbon_filter_vcfbedtope_starts.output[0],
-        ends = rules.ribbon_filter_vcfbedtope_ends.output[0]
-    output:
-        '{batch}/structural/{batch}-manta.ribbon.bed'
-    params:
-        vcftobedpe = vcftobedpe
-    group: "sv_after_purple"
-    shell:
-        'cat {input.starts} {input.ends} | bedtools sort -i stdin | bedtools merge -i stdin > {output}'
-
-
-# Convert 'final' manta VCF to BEDPE
-rule bedpe:
-    input:
-        manta_vcf = '{batch}/structural/{batch}-manta.vcf.gz',
-    output:
-        '{batch}/structural/{batch}-manta.bedpe'
-    params:
-        vcftobedpe = vcftobedpe
-    group: "sv_after_purple"
-    shell:
-        'bcftools view {input.manta_vcf}'
-        ' | {params.vcftobedpe}'
-        ' | cut -f 1-7'
-        ' > {output}'
-
-
 #############
 
 rule structural_batch:
     input:
-        lambda wc: rules.bedpe.output       if batch_by_name[wc.batch].sv_vcf else [],
-        lambda wc: rules.ribbon.output      if batch_by_name[wc.batch].sv_vcf else [],
         lambda wc: rules.prep_sv_tsv.output if batch_by_name[wc.batch].sv_vcf else [],
     output:
         temp(touch('log/structural_{batch}.done'))
