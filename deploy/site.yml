@@ -1,9 +1,0 @@
----
-- hosts: all
-  user: ubuntu
-  become: yes
-  gather_facts: yes
-  
-  roles:
-    - andrewrothstein.miniconda
-    - brainstorm.umccrise

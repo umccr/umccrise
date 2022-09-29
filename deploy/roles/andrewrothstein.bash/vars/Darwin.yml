@@ -1,3 +1,0 @@
----
-bash_privilege_escalation: False
-bash_completion_d: /usr/local/etc/bash_completion.d

@@ -1,6 +1,0 @@
-.vagrant/
-*.retry
-tests/roles
-ansible.cfg
-*.sw?
-*.log
