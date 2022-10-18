@@ -202,22 +202,22 @@ rule sv_bpi_maybe:
     resources:
         mem_mb = 30000
     run:
-        # shell('cp {input.vcf} {output.vcf}')
-        if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
-            # already BPI'ed so just copy
-            shell('cp {input.vcf} {output.vcf}')
-        else:
-            safe_mkdir(params.tmp_dir)
-            # shell('echo "boo" > {log} && false || cp {input.vcf} {output.vcf}')
-            shell(
-                'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
-                '-Djava.io.tmpdir={params.tmp_dir} '
-                '-vcf {input.vcf} '
-                '-ref {input.normal_bam} '
-                '-tumor {input.tumor_bam} '
-                '-output_vcf {output.vcf} '
-                '> {log} || cp {input.vcf} {output.vcf}'
-            )
+        shell('cp {input.vcf} {output.vcf}') # just skip
+#       if vcf_contains_field(input.vcf, 'BPI_AF', 'INFO'):
+#           # already BPI'ed so just copy
+#           shell('cp {input.vcf} {output.vcf}')
+#       else:
+#           safe_mkdir(params.tmp_dir)
+#           # shell('echo "boo" > {log} && false || cp {input.vcf} {output.vcf}')
+#           shell(
+#               'break-point-inspector -Xms{params.xms}m -Xmx{params.xmx}m '
+#               '-Djava.io.tmpdir={params.tmp_dir} '
+#               '-vcf {input.vcf} '
+#               '-ref {input.normal_bam} '
+#               '-tumor {input.tumor_bam} '
+#               '-output_vcf {output.vcf} '
+#               '> {log} || cp {input.vcf} {output.vcf}'
+#           )
 
 # Filter based on SVTYPE, SV_TOP_TIER, SR/PR, BPI_AF.
 # This output is fed to PURPLE.
