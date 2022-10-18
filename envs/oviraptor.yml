@@ -8,6 +8,6 @@ channels:
   - anaconda
 
 dependencies:
-  - oviraptor ==1.1.20
+  - oviraptor ==1.2.0
   - reference_data ==1.0.10
   - bwa ==0.7.17
