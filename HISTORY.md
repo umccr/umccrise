@@ -1,3 +1,7 @@
+## 2.3.0 (XX yyy 2022)
+
+- Re-enable BPI
+
 ## 2.2.1 (18 Oct 2022)
 
 - Skip BPI completely. This release differs from `v2.2.0` in that it completely skips BPI.
