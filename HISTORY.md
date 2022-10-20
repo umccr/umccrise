@@ -11,7 +11,7 @@
 
 ## 2.2.0 (18 Oct 2022)
 
-[2.1.1 - 2.2.0 diff](https://github.com/umccr/umccrise/compare/2.1.1..2.2.0)
+[2.1.1 - 2.2.0 diff](https://github.com/umccr/umccrise/compare/2.1.1...2.2.0)
 
 - SV filter: remove SR < PR BND requirement ([issue114](https://github.com/umccr/umccrise/issues/114), [issue100](https://github.com/umccr/umccrise/issues/100), [pr115](https://github.com/umccr/umccrise/pull/115)).
 - BPI: deal with OOM issue by skipping it altogether upon error ([issue88](https://github.com/umccr/umccrise/issues/88), [gpgr pr55](https://github.com/umccr/gpgr/pull/55)).
@@ -38,7 +38,7 @@
 
 ## 2.1.1 (15 Aug 2022)
 
-[2.0.2 - 2.1.1 diff](https://github.com/umccr/umccrise/compare/2.0.2..2.1.1)
+[2.0.2 - 2.1.1 diff](https://github.com/umccr/umccrise/compare/2.0.2...2.1.1)
 
 - General cleanup of codebase (remove GRIDSS, GPL wrappers, submodules, circos configs etc.).
 - PCGR:
@@ -52,7 +52,7 @@
 
 ## 2.0.2 (22 Apr 2022)
 
-[2.0.1 - 2.0.2 diff](https://github.com/umccr/umccrise/compare/2.0.1..2.0.2)
+[2.0.1 - 2.0.2 diff](https://github.com/umccr/umccrise/compare/2.0.1...2.0.2)
 
 - Use `FORMAT/SQ` value as `QUAL` for DRAGEN somatic variants when generating BCFtools stats
 - Update MultiQC reference data to align with above change
@@ -65,13 +65,13 @@
 
 ## 2.0.1 (15 Feb 2022)
 
-[2.0.0 - 2.0.1 diff](https://github.com/umccr/umccrise/compare/2.0.0..2.0.1)
+[2.0.0 - 2.0.1 diff](https://github.com/umccr/umccrise/compare/2.0.0...2.0.1)
 
 - Handle multiple '@RG SM' BAM header fields ([#83](https://github.com/umccr/umccrise/pull/83))
 
 ## 2.0.0 (30 Nov 2021)
 
-[1.2.4 - 2.0.0 diff](https://github.com/umccr/umccrise/compare/1.2.4..2.0.0)
+[1.2.4 - 2.0.0 diff](https://github.com/umccr/umccrise/compare/1.2.4...2.0.0)
 
 - Overhaul automatic detection for DRAGEN inputs
 - Allow inputs to be provided via named arguments
@@ -89,7 +89,7 @@
 
 ## 1.2.4 (18 Nov 2021)
 
-[1.2.3 - 1.2.4 diff](https://github.com/umccr/umccrise/compare/1.2.3..1.2.4)
+[1.2.3 - 1.2.4 diff](https://github.com/umccr/umccrise/compare/1.2.3...1.2.4)
 
 - Simplify MultiQC installation ([pr75](https://github.com/umccr/umccrise/pull/75))
     - install `MultiQC` as conda package
@@ -105,14 +105,14 @@
 
 ## 1.2.3 (31 Aug 2021)
 
-[1.2.2 - 1.2.3 diff](https://github.com/umccr/umccrise/compare/1.2.2..1.2.3)
+[1.2.2 - 1.2.3 diff](https://github.com/umccr/umccrise/compare/1.2.2...1.2.3)
 
 - Update Dockerfile and install.sh to resolve Snakemake warnings regarding input filepaths containing double slashes '//'
 - Replace root user in Docker container with non-root user
 
 ## 1.2.2 (16 Aug 2021)
 
-[1.2.1 - 1.2.2 diff](https://github.com/umccr/umccrise/compare/1.2.1..1.2.2)
+[1.2.1 - 1.2.2 diff](https://github.com/umccr/umccrise/compare/1.2.1...1.2.2)
 
 - Update NGS\_utils to allow custom TSV input (see https://github.com/umccr/NGS_Utils/commit/07e72b4)
 - Pin version of all appropriate Conda packages
@@ -123,7 +123,7 @@
 
 ## 1.2.1 (16 Dec 2020)
 
-[1.1.3 - 1.2.1 diff](https://github.com/umccr/umccrise/compare/1.1.3..1.2.1)
+[1.1.3 - 1.2.1 diff](https://github.com/umccr/umccrise/compare/1.1.3...1.2.1)
 
 - Decrease number of predisposition genes to 78 (see https://github.com/vladsaveliev/NGS_Utils/issues/3)
   - Should see a ~60-70% decrease in CPSR variants
@@ -160,7 +160,7 @@
 
 ## 1.1.3 (17 Nov 2020)
 
-[1.1.2 - 1.1.3 diff](https://github.com/umccr/umccrise/compare/1.1.2..1.1.3)
+[1.1.2 - 1.1.3 diff](https://github.com/umccr/umccrise/compare/1.1.2...1.1.3)
 
 Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr):
 
@@ -206,20 +206,20 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 
 ## 1.1.2 (9 Oct 2020)
 
-[1.1.1 - 1.1.2 diff](https://github.com/umccr/umccrise/compare/1.1.1..1.1.2)
+[1.1.1 - 1.1.2 diff](https://github.com/umccr/umccrise/compare/1.1.1...1.1.2)
 
 - Added [gpgr dependency](https://umccr.github.io/gpgr/) to handle R-related enhancements more efficiently
 - Include HRD results from HRDetect and CHORD into the cancer report
 
 ## 1.1.1 (9 Oct 2020)
 
-[1.1.0 - 1.1.1 diff](https://github.com/umccr/umccrise/compare/1.1.0..1.1.1)
+[1.1.0 - 1.1.1 diff](https://github.com/umccr/umccrise/compare/1.1.0...1.1.1)
 
 - Update PCGR to 0.9.0, CPSR to 0.6.0. Includes cosmetic changes and database updates. CPSR counts intronic variants in the "Other variants" summary, as the number there will be high compared to the previous version, however they don't go into any TIER down the report.
 
 ## 1.1.0 (8 Oct 2020)
 
-[1.0.9 - 1.1.0 diff](https://github.com/umccr/umccrise/compare/1.0.9..1.1.0)
+[1.0.9 - 1.1.0 diff](https://github.com/umccr/umccrise/compare/1.0.9...1.1.0)
 
 - Use HMF PoN for annotating/filtering small variants
   (see [vcf_stuff](https://github.com/umccr/vcf_stuff) changes).
@@ -244,7 +244,7 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 
 ## 1.0.9 (16 Jul 2020)
 
-[1.0.4 - 1.0.9 diff](https://github.com/umccr/umccrise/compare/1.0.4..1.0.9)
+[1.0.4 - 1.0.9 diff](https://github.com/umccr/umccrise/compare/1.0.4...1.0.9)
 
 - Oncoviruses: decreased the significance threshold to report candidate viruses
 - MultiQC: fix missing variant substitutions plots
@@ -252,7 +252,7 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 
 ## 1.0.4 (1 Jul 2020)
 
-[1.0.0 - 1.0.4 diff](https://github.com/umccr/umccrise/compare/1.0.0..1.0.4)
+[1.0.0 - 1.0.4 diff](https://github.com/umccr/umccrise/compare/1.0.0...1.0.4)
 
 - Minor fixes:
     - Fix showing conda package versions
@@ -267,7 +267,7 @@ Mostly moving functionality from the Rmd to gpgr (https://github.com/umccr/gpgr)
 
 ## 1.0.0 (14 Jun 2020):
 
-[0.17.12 - 1.0.0 diff](https://github.com/umccr/umccrise/compare/0.17.12..1.0.0)
+[0.17.12 - 1.0.0 diff](https://github.com/umccr/umccrise/compare/0.17.12...1.0.0)
 
 - Integrated [oncoviruses](https://github.com/umccr/oncoviruses). It detects oncoviral content and possible integration sites, as well as genes affected by integration. Reported viral strains in MultiQC and integration sites and affected genes in the cancer report.
 - More DRAGEN input options:
