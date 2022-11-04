@@ -21,7 +21,7 @@ setup(
     packages=find_packages(),
     scripts=[
         'scripts/umccrise',
-        'scripts/pcgr',
+        'scripts/pcgr_wrap',
         'scripts/conpair',
         'scripts/umccrise_refdata_pull',
     ],
