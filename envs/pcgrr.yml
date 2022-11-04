@@ -1,0 +1,14 @@
+name: umccrise_pcgrr
+
+channels:
+  - pcgr
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python
+  - r-pcgrr ==1.1.0
+  - r-cpsr
+  - r-argparse
+  - bioconductor-bsgenome.hsapiens.ucsc.hg38
