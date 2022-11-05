@@ -1,36 +1,85 @@
-umccrise
---------
-
-UMCCR cancer reporting
-
-[![Build Status](https://travis-ci.org/umccr/umccrise.svg?branch=master)](https://travis-ci.org/umccr/umccrise)
+UMCCR WGS tumor/normal reporting
 
 umccrise is a [Snakemake](https://github.com/snakemake/snakemake) workflow that
-can post-process cancer variant calling results from
-[bcbio-nextgen](https://github.com/chapmanb/bcbio-nextgen) and
-[Illumina DRAGEN](https://sapac.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html).
-It also generates HTML reports helpful for researchers and curators at UMCCR.
+post-processes results from the
+[Illumina DRAGEN](https://sapac.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
+WGS tumor/normal pipeline and generates HTML reports helpful for researchers and
+curators at UMCCR.
+
+- [Summary](#summary)
+- [Detailed Workflow](#detailed-workflow)
+- [History](#history)
+- [Example Reports](#example-reports)
+- [Usage](#usage)
+- [Installation](#installation)
+- [Reference data](#reference-data)
+  - [Versioning](#versioning)
+  - [Syncing with Spartan](#syncing-with-spartan)
+  - [Syncing with AWS S3](#syncing-with-aws-s3)
+- [Testing](#testing)
+- [AWS](#aws)
+- [HPC (NCI Gadi)](#hpc-nci-gadi)
+- [Advanced usage](#advanced-usage)
+  - [Inputs with named arguments](#inputs-with-named-arguments)
+  - [Controlling the number of CPUs](#controlling-the-number-of-cpus)
+  - [Running selected stages](#running-selected-stages)
+  - [Custom input](#custom-input)
+  - [Running on selected samples](#running-on-selected-samples)
+- [Updating](#updating)
+- [Development](#development)
+- [Docker](#docker)
+- [Building reference data](#building-reference-data)
+    - [PURPLE](#purple)
+    - [GNOMAD](#gnomad)
+    - [PCGR](#pcgr)
+    - [Problem regions](#problem-regions)
+    - [Coding regions (SAGE)](#coding-regions-sage)
+    - [Ensembl annotation](#ensembl-annotation)
+    - [Hotspots](#hotspots)
+    - [Other HMF files](#other-hmf-files)
+    - [Fusions](#fusions)
+    - [SnpEff](#snpeff)
+  - [DVC](#dvc)
+- [GRIDSS and LINX](#gridss-and-linx)
+
+## Summary
 
 In summary, umccrise can:
 
-- Filter artefacts and germline leakage from somatic variant calls;
-- Run [PCGR](https://github.com/sigven/pcgr) to annotate, prioritize and report somatic variants;
-- Run [CPSR](https://github.com/sigven/cpsr) to annotate, prioritize and report germline variants;
-- Filter, annotate, prioritize and report structural variants (SVs) from [Manta](https://github.com/Illumina/manta);
-- Run [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) to call copy number variants (CNVs),
-  recover SVs, and infer tumor purity & ploidy;
-- Generate a [MultiQC](https://github.com/umccr/MultiQC) report that summarizes quality control statistics in context of background "gold standard" samples;
-- Generate a cancer report with mutational signatures, circos plots, prioritized copy number and structural variant calls;
-- Run [CACAO](https://github.com/sigven/cacao) to calculate coverage in common hotspots, as well as [goleft indexcov](https://github.com/brentp/goleft/tree/master/indexcov)
-  to estimate coverage problems;
-- Run [Conpair](https://github.com/nygenome/Conpair) to estimate tumor/normal concordance and sample contamination;
-- Run [oncoviruses](https://github.com/umccr/oncoviruses) to detect viral integration sites and affected genes;
+- Filter artefacts and germline leakage from somatic variant calls
+- Run [PCGR](https://github.com/sigven/pcgr) to annotate, prioritize and report
+  somatic variants
+- Run [CPSR](https://github.com/sigven/cpsr) to annotate, prioritize and report
+  germline variants
+- Filter, annotate, prioritize and report structural variants (SVs) from
+  [Manta](https://github.com/Illumina/manta)
+- Run [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purple) to
+  call copy number variants (CNVs), recover SVs, and infer tumor purity & ploidy
+- Generate a [MultiQC](https://github.com/ewels/MultiQC) report that summarizes
+  quality control statistics in context of background "gold standard" samples
+- Generate a cancer report with mutational signatures, inferred HRD status,
+  circos plots, prioritized copy number and structural variant calls
+- Run [CACAO](https://github.com/sigven/cacao) to calculate coverage in common
+  hotspots, as well as
+  [goleft indexcov](https://github.com/brentp/goleft/tree/master/indexcov) to
+  estimate coverage problems
+- Run [Conpair](https://github.com/nygenome/Conpair) to estimate tumor/normal
+  concordance and sample contamination
+- Run [oviraptor](https://github.com/umccr/oviraptor) to detect viral
+  integration sites and affected genes
+
+## Detailed Workflow
 
 See [workflow.md](workflow.md) for a detailed description of the workflow.
 
+## History
+
 See [HISTORY.md](HISTORY.md) for the version history.
 
-Below the examples of the reports for a HCC1395/HCC1395BL cell line tumor/normal pair [sequenced and validated by the SEQC-II consortium](https://sites.google.com/view/seqc2/home/data-analysis/high-confidence-somatic-snv-and-indel-v1-1).
+## Example Reports
+
+Below are example reports for a HCC1395/HCC1395BL cell line tumor/normal pair
+[sequenced and validated by the SEQC-II consortium](https://sites.google.com/view/seqc2/home/data-analysis/high-confidence-somatic-snv-and-indel-v1-1).
 
 [1. MultiQC (quality control metrics and plots) ![MultiQC](docs/multiqc.png)](https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-multiqc_report.html)
 
@@ -46,51 +95,16 @@ Below the examples of the reports for a HCC1395/HCC1395BL cell line tumor/normal
 
 [4. PCGR (somatic variants) ![PCGR](docs/pcgr.png)](https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-somatic.pcgr.html)
 
-5. CACAO (coverage reports)
+<br>
 
-<a href="https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html"><img src="docs/cacao_tumor.png" alt="cacao_tumor" width="400"/> <a href="https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-normal.cacao.html"><img src="docs/cacao_normal.png" alt="cacao_normal" width="400"/>
+[5. CACAO (coverage reports) ![CACAO](docs/cacao_tumor.png)](https://umccr.github.io/umccrise/SEQC-II-50pc__SEQC-II_Tumor_50pc-tumor.cacao.html)
 
 <br>
 
-Contents:
-- [umccrise](#umccrise)
-- [Usage](#usage)
-- [Installation](#installation)
-- [Reference data](#reference-data)
-    + [Versioning](#versioning)
-    + [Syncing with Spartan](#syncing-with-spartan)
-    + [Syncing with s3](#syncing-with-aws-s3)
-- [Testing](#testing)
-- [AWS](#aws)
-- [HPC (NCI Gadi)](#hpc-nci-gadi)
-- [Advanced usage](#advanced-usage)
-    + [Inputs with named arguments](#inputs-with-named-arguments)
-    + [Controlling the number of CPUs](#controlling-the-number-of-cpus)
-    + [Running selected stages](#running-selected-stages)
-    + [Custom input](#custom-input)
-    + [Running on selected samples](#running-on-selected-samples)
-- [Updating](#updating)
-- [Development](#development)
-- [Docker](#docker)
-- [Building reference data](#building-reference-data)
-    + [PURPLE](#purple)
-    + [GNOMAD](#gnomad)
-    + [PCGR](#pcgr)
-    + [Problem regions](#problem-regions)
-    + [Coding regions (SAGE)](#coding-regions-sage)
-    + [Ensembl annotation](#ensembl-annotation)
-    + [Hotspots](#hotspots)
-    + [Other HMF files](#other-hmf-files)
-    + [Fusions](#fusions)
-- [GRIDSS and LINX](#gridss-and-linx)
-
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
-
 ## Usage
 
-Given input data from bcbio-nextgen (`final` folder), DRAGEN (`somatic` and `germline` output folders), or a custom set of
-BAM or VCF files, umccrise can be run with:
+Given input data from DRAGEN `somatic` and `germline` output folders, or a
+custom set of BAM or VCF files, umccrise can be run with:
 
 ```
 umccrise <input-data ...> -o umccrised
@@ -100,8 +114,9 @@ For more options, see [Advanced usage](#advanced-usage).
 
 ## Installation
 
-Create a `umccrise` directory and install the umccrise GitHub repo along with the required
-[conda](https://docs.conda.io/projects/conda/en/latest/index.html) environments with the following:
+Create a `umccrise` directory and install the umccrise GitHub repo along with
+the required [conda](https://docs.conda.io/projects/conda/en/latest/index.html)
+environments with the following:
 
 ```shell
 mkdir umccrise
@@ -110,7 +125,8 @@ git clone https://github.com/umccr/umccrise umccrise.git
 bash umccrise.git/install.sh
 ```
 
-The above will generate a `load_umccrise.sh` script that can be sourced to load the umccrise conda environment on demand:
+The above will generate a `load_umccrise.sh` script that can be sourced to load
+the umccrise conda environment on demand:
 
 ```shell
 source load_umccrise.sh
@@ -118,7 +134,8 @@ source load_umccrise.sh
 
 ## Reference data
 
-Umccrise needs a 64G bundle of reference data to run. In UMCCR environemnt, sign in to AWS, and run `umccrise_refdata_pull`
+umccrise needs a 64G bundle of reference data to run. In UMCCR AWS environment, sign
+in to AWS, and run `umccrise_refdata_pull`
 
 ```shell
 aws sso login --profile sso-dev-admin
@@ -126,48 +143,45 @@ umccrise_refdata_pull
 export UMCCRISE_GENOMES=${PWD}/refdata/genomes
 ```
 
-On HPC like [UniMelb Spartan](https://dashboard.hpc.unimelb.edu.au/)
-or [NCI Gadi](https://nci.org.au/our-systems/hpc-systems), umccrise automatically finds the reference data.
+Alternatively, you can specify a custom path with `--genomes <path>`. The path
+can be a tarball and will be automatically extracted.
 
-Alternatively, you can specify a custom path with `--genomes <path>`. The path can be a tarball and will be automatically extracted.
-
-The path can also be a location on S3 or GDS, prefixed with `s3://` or `gds://`. E.g.:
+The path can also be a location on S3 or GDS, prefixed with `s3://` or `gds://`.
+E.g.:
 
 ```shell
 umccrise /input --genomes s3://umccr-refdata-dev/genomes
 ```
 
-Versioned locations would also be checked. For the case above, umccrise will check the following locations in the order specified:
+Versioned locations would also be checked. For the case above, umccrise will
+check the following locations in the order specified:
 
-* `s3://umccr-refdata-dev/genomes_102`
-* `s3://umccr-refdata-dev/genomes_10`, and
-* `s3://umccr-refdata-dev/genomes`, assuming that the [reference_data](https://github.com/umccr/reference_data) package version is `1.0.2`.
+- `s3://umccr-refdata-dev/genomes_102`
+- `s3://umccr-refdata-dev/genomes_10`, and
+- `s3://umccr-refdata-dev/genomes`, assuming that the
+  [reference_data](https://github.com/umccr/reference_data) package version is
+  `1.0.2`.
 
-umccrise will sync the reference data locally into a `~/umccrise_genomes` directory.
-You can symlink any other path to that path if you want a different location. If the data is already downloaded,
-umccrise will only attempt to update the changed files or upload new ones.
-To avoid attempts to check S3/GDS again at all, specify the downloaded location directly: `--genomes ~/umccrise_genomes`
+umccrise will sync the reference data locally into a `~/umccrise_genomes`
+directory. You can symlink any other path to that path if you want a different
+location. If the data is already downloaded, umccrise will only attempt to
+update the changed files or upload new ones. To avoid attempts to check S3/GDS
+again at all, specify the downloaded location directly:
+`--genomes ~/umccrise_genomes`
 
-Another option to specify the reference data is through an environment variable `$UMCCRISE_GENOMES`
+Another option to specify the reference data is through an environment variable
+`$UMCCRISE_GENOMES`
 
-If you have access to UMCCR's AWS account, you can sync the reference data from `s3://umccr-refdata-dev`.
-If you have access to UMCCR's NCI Gadi account, you can sync the data from `/g/data3/gx8/extras/umccrise/genomes`.
-Otherwise, you can build the bundle from scratch following the [details below](#building-reference-data).
-
+If you have access to UMCCR's AWS account, you can sync the reference data from
+`s3://umccr-refdata-dev`. If you have access to UMCCR's NCI Gadi account, you
+can sync the data from `/g/data3/gx8/extras/umccrise/genomes`. Otherwise, you
+can build the bundle from scratch following the
+[details below](#building-reference-data).
 
 ### Versioning
 
-The reference data is versioned as a python package at <https://github.com/umccr/reference_data>
-
-
-### Syncing with Spartan
-
-If you want to sync the reference data with Spartan, use:
-
-```shell
-cd /g/data3/gx8/extras/umccrise
-rsync -rv --size-only genomes/ spa:/data/cephfs/punim0010/extras/umccrise/genomes
-```
+The reference data is versioned as a python package at
+<https://github.com/umccr/reference_data>
 
 ### Syncing with AWS S3
 
@@ -177,10 +191,10 @@ aws s3 sync hg38 s3://umccr-refdata-dev/genomes_${ref_data_version//./}/hg38
 aws s3 sync hg38-manifest.txt s3://umccr-refdata-dev/genomes_${ref_data_version//./}/hg38-manifest.txt
 ```
 
-
 ## Testing
 
-Load the umccrise environment, clone the repo with toy test data, and run nosetests: 
+Load the umccrise environment, clone the repo with toy test data, and run
+nosetests:
 
 ```shell
 source load_umccrise.sh
@@ -188,46 +202,26 @@ git clone https://github.com/umccr/umccrise_test_data
 TEST_OPTS="-c -j2" nosetests -s umccrise_test_data/test.py
 ```
 
-
 ## AWS
 
-umccrise on AWS is run via AWS Batch in a defined compute environment.
-This is set up and maintained via the [umccrise Terraform Stack](https://github.com/umccr/infrastructure/tree/master/terraform/stacks/umccrise).
-This stack also defines the version of umccrise that is used within AWS and how umccrise jobs are triggered.
-
-
-## HPC (NCI Gadi)
-
-The production version can be loaded by sourcing the following:
-
-```shell
-source /g/data3/gx8/extras/umccrise/load_umccrise.sh
-```
-
-There are also installations for each somewhat major releases available in `/g/data3/gx8/extras`.
-For instance, with the following you can load version 0.17, released in January 2020:
-
-```shell
-source /g/data/gx8/extras/umccrise_017_2020_Jan/load_umccrise.sh
-```
-
-To parallelize the tool using the cluster scheduler, you can use `--cluster-auto` (`-c`) option:
-
-```
-umccrise <input-folder> -j30 -c
-```
+umccrise on AWS is run via AWS Batch in a defined compute environment. This is
+set up and maintained via the
+[umccrise Terraform Stack](https://github.com/umccr/infrastructure/tree/master/terraform/stacks/umccrise).
+This stack also defines the version of umccrise that is used within AWS and how
+umccrise jobs are triggered.
 
 ## Advanced usage
+
 ### Inputs with named arguments
-Inputs can be provided to umccrise as a positional argument (see [Usage](#usage)) or alternatively as named arguments (see
-examples below). This is useful when dealing with DRAGEN input, which have two paired input directories (somatic and
-germline). The patient and sample identifiers can also be explicitly set for DRAGEN data - in some instances this is
-required as these identifiers cannot be automatically inferred.
+
+Inputs can be provided to umccrise as a positional argument (see
+[Usage](#usage)) or alternatively as named arguments (see examples below). This
+is useful when dealing with DRAGEN input, which have two paired input
+directories (somatic and germline). The patient and sample identifiers can also
+be explicitly set for DRAGEN data - in some instances this is required as these
+identifiers cannot be automatically inferred.
 
 ```bash
-# bcbio input with named arguments
-umccrise --bcbio_dir PATH -o umccrised/
-
 # DRAGEN input with named arguments
 umccrise --dragen_somatic_dir PATH --dragen_germline_dir PATH -o umccrised/
 
@@ -245,24 +239,24 @@ umccrise <input-folder> -j30
 
 ### Running selected stages
 
-The umccrise workflow includes multiple processing stages, that can optionally be run in isolation.
-The following stages are run by default:
+The umccrise workflow includes multiple processing stages, that can optionally
+be run in isolation. The following stages are run by default:
 
-* `conpair`
-* `structural`
-* `somatic`, `germline` (part of `small_variants`)
-* `pcgr`
-* `cpsr`
-* `purple`
-* `mosdepth`, `goleft`, `cacao` (part of `coverage`)
-* `oncoviruses`
-* `cancer_report`
-* `multiqc`
+- `conpair`
+- `structural`
+- `somatic`, `germline` (part of `small_variants`)
+- `pcgr`
+- `cpsr`
+- `purple`
+- `mosdepth`, `goleft`, `cacao` (part of `coverage`)
+- `oncoviruses`
+- `cancer_report`
+- `multiqc`
 
 The following stages are optionally available and can be enabled with `-T`:
 
-* `microbiome`
-* `immuno`
+- `microbiome`
+- `immuno`
 
 Example:
 
@@ -280,31 +274,38 @@ umccrise /bcbio/final/ -E conpair
 
 ### Custom input
 
-umccrise supports bcbio-nextgen and DRAGEN projects as input. However, you can also feed custom files as multiple positional arguments. VCF and BAM files are supported.
-The sample name will be extracted from VCF and BAM headers.
-For now, the VCF file is assumed to contain T/N somatic small variant calls, and the BAM file is assumed to be from the tumor.
+umccrise supports bcbio-nextgen and DRAGEN projects as input. However, you can
+also feed custom files as multiple positional arguments. VCF and BAM files are
+supported. The sample name will be extracted from VCF and BAM headers. For now,
+the VCF file is assumed to contain T/N somatic small variant calls, and the BAM
+file is assumed to be from the tumor.
 
 ```shell
 umccrise sample1.bam sample2.bam sample1.vcf.gz sample3.vcf.gz -o umccrised -j10
 ```
 
-You can also provide a TSV file as input. If any input file has an extention `.tsv` (e.g. `umccrise input.tsv`) the file is assumed as a TSV file with a header, and any of the following columns in arbitrary order:
-  - `sample`
-  - `wgs` (WGS tumor BAM, required)
-  - `normal` (WGS normal BAM, required)
-  - `exome` (optional tumor BAM)
-  - `exome_normal` (optional normal BAM)
-  - `rna` (optional WTS BAM, however required for neoantigens)
-  - `rna_bcbio` (optional path to RNAseq bcbio workflow, required for neoantigens)
-  - `rna_sample` (sample name in the RNAseq bcbio workflow above, required for neoantigens)
-  - `somatic_vcf` (tumor/normal somatic VCF calls, optional. If not provided, SAGE will be run)
-  - `germline_vcf` (germline variant calls, optional)
-  - `sv_vcf` (SV calls, optional)
+You can also provide a TSV file as input. If any input file has an extention
+`.tsv` (e.g. `umccrise input.tsv`) the file is assumed as a TSV file with a
+header, and any of the following columns in arbitrary order:
 
+- `sample`
+- `wgs` (WGS tumor BAM, required)
+- `normal` (WGS normal BAM, required)
+- `exome` (optional tumor BAM)
+- `exome_normal` (optional normal BAM)
+- `rna` (optional WTS BAM, however required for neoantigens)
+- `rna_bcbio` (optional path to RNAseq bcbio workflow, required for neoantigens)
+- `rna_sample` (sample name in the RNAseq bcbio workflow above, required for
+  neoantigens)
+- `somatic_vcf` (tumor/normal somatic VCF calls, optional. If not provided, SAGE
+  will be run)
+- `germline_vcf` (germline variant calls, optional)
+- `sv_vcf` (SV calls, optional)
 
 ### Running on selected samples
 
-By default, umccrise will process all batches in the run in parallel. You can submit only certain samples/batches using `-s`/`--sample` arguments, e.g.:
+By default, umccrise will process all batches in the run in parallel. You can
+submit only certain samples/batches using `-s`/`--sample` arguments, e.g.:
 
 ```shell
 # of all samples in a project, takes only sample1 and sample3, plus all corresponding normal/tumor matches:
@@ -337,7 +338,10 @@ conda env update -f umccrise/envs/hmf.yml -p miniconda/envs/umccrise_hmf
 
 ## Development
 
-Changes pulled in `umccrise` repository clone folder will affect immidiately due to use of the `-e` option in `pip install -e`. To do the same for other related packages, you can clone them as well (or move already cloned repos from `./umccrise/envs/src`, and run `pip install -e` on them as well:
+Changes pulled in `umccrise` repository clone folder will affect immidiately due
+to use of the `-e` option in `pip install -e`. To do the same for other related
+packages, you can clone them as well (or move already cloned repos from
+`./umccrise/envs/src`, and run `pip install -e` on them as well:
 
 ```
 source load_umccrise.sh
@@ -354,7 +358,8 @@ You can pull the ready-to-run docker image from DockerHub:
 docker pull umccr/umccrise:latest
 ```
 
-An example command to run umccrise on docker could be (although <abbr title="Your Mileage May Vary">YMMV</abbr>):
+An example command to run umccrise on docker could be (although
+<abbr title="Your Mileage May Vary">YMMV</abbr>):
 
 ```shell
 docker run -t --cpus 4 \
@@ -366,25 +371,31 @@ docker run -t --cpus 4 \
 
 This example assumes that:
 
-1. You are running this umccrise container against the [umccrise_test_data](https://github.com/umccr/umccrise_test_data)
-2. You have figured out the genome data files and directory hierarchy for `/work/genomes`. See the [building reference data section](#building-reference-data) below.
+1. You are running this umccrise container against the
+   [umccrise_test_data](https://github.com/umccr/umccrise_test_data)
+2. You have figured out the genome data files and directory hierarchy for
+   `/work/genomes`. See the
+   [building reference data section](#building-reference-data) below.
 
 ## Building reference data
 
-To build the bundle from scratch, follow instructions for each kind of data below.
+To build the bundle from scratch, follow instructions for each kind of data
+below.
 
 #### PURPLE
 
-* Download hg19 and hg38 versions of the likely heterozygous sites for AMBER from the HMF website at
-<https://resources.hartwigmedicalfoundation.nl/> `->` HMFTools-Resources `->` Amber3 (link valid as of May 2020)
+- Download hg19 and hg38 versions of the likely heterozygous sites for AMBER
+  from the HMF website at <https://resources.hartwigmedicalfoundation.nl/> `->`
+  HMFTools-Resources `->` Amber3 (link valid as of May 2020)
 
 ```shell
 mv GermlineHetPon.hg19.vcf.gz genomes/GRCh37/hmf
 mv GermlineHetPon.hg38.vcf.gz genomes/hg38/hmf
 ```
 
-* Download hg19 and hg38 versions of GC profile for COBALT from the HMF website at
-<https://resources.hartwigmedicalfoundation.nl/> `->` HMFTools-Resources `->` Cobalt (link valid as of May 2020)
+- Download hg19 and hg38 versions of GC profile for COBALT from the HMF website
+  at <https://resources.hartwigmedicalfoundation.nl/> `->` HMFTools-Resources
+  `->` Cobalt (link valid as of May 2020)
 
 ```shell
 mv GC_profile.hg19.1000bp.cnp.gz genomes/GRCh37/hmf
@@ -404,14 +415,15 @@ wget -c https://storage.googleapis.com/gnomad-public/release/2.1/vcf/genomes/gno
 tabix -p vcf gnomad_genome.r2.1.common_pass_clean.vcf.gz
 ```
 
-Normalise (see https://github.com/chapmanb/cloudbiolinux/pull/279, however after all just 5 indels will be changed, so not a big deal):
+Normalise (see https://github.com/chapmanb/cloudbiolinux/pull/279, however after
+all just 5 indels will be changed, so not a big deal):
 
 ```shell
 ref=GRCh37.fa
 norm_vcf gnomad_genome.r2.1.common_pass_clean.vcf.gz -o gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz --ref-fasta $ref
 ```
 
-Counts: 
+Counts:
 
 ```
 $ bcftools view gnomad_genome.r2.1.common_pass_clean.vcf.gz -H | wc    # with lcr&segdup&decoy
@@ -432,7 +444,9 @@ tabix -p vcf gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
 
 #### PCGR
 
-The PCGR data bundle gets refreshed every release, so please select the appropriate one from [PCGR's README](https://github.com/sigven/pcgr#step-2-download-pcgr-and-data-bundle)!
+The PCGR data bundle gets refreshed every release, so please select the
+appropriate one from
+[PCGR's README](https://github.com/sigven/pcgr)!
 
 ```shell
 # Download the data bundles
@@ -444,50 +458,6 @@ gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - 
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/GRCh37/PCGR/pcgr.databundle.grch37.YYYMMDD.tgz
 gdown https://drive.google.com/uc?id=<GDOCS_ID_SEE_PCGR_DATABUNDLE_README> -O - | aws s3 cp - s3://umccr-umccrise-refdata-dev/Hsapiens/hg38/PCGR/pcgr.databundle.grch38.YYYMMDD.tgz
 ```
-
-Updating PCGR packages:
-
-```shell
-pcgr_version=0.9.0.2
-cpsr_version=0.6.0.2
-
-# Locally:
-cd pcgr
-git tag v$pcgr_version
-git push origin v$pcgr_version
-
-cd ../cpsr
-git tag v$cpsr_version
-git push origin v$cpsr_version
-
-dir=/g/data/gx8/extras/umccrise_2020_Sep
-
-source $dir/load_umccrise.sh
-export PATH=$dir/miniconda/envs/umccrise_pcgr/bin:$PATH
-# mamba install conda-build anaconda
-
-cd $dir/pcgr.git
-git pull --rebase
-cd install_no_docker
-export VERSION=$pcgr_version
-conda build conda_pkg/pcgr
-conda build conda_pkg/pcgr_dockerized
-conda convert --platform osx-64 \
-    $dir/miniconda/envs/umccrise_pcgr/conda-bld/linux-64/pcgr_dockerized-$VERSION-*.tar.bz2 \
-    --output-dir $dir/miniconda/envs/umccrise_pcgr/conda-bld/
-anaconda upload --force -u pcgr $dir/miniconda/envs/umccrise_pcgr/conda-bld/*/*-$VERSION-*.tar.bz2
-
-cd $dir/cpsr.git
-git pull --rebase
-export VERSION=$cpsr_version
-conda build conda_pkg/cpsr
-conda build conda_pkg/cpsr_dockerized
-conda convert --platform osx-64 \
-    $dir/miniconda/envs/umccrise_pcgr/conda-bld/linux-64/cpsr_dockerized-$VERSION-*.tar.bz2 \
-    --output-dir $dir/miniconda/envs/umccrise_pcgr/conda-bld/
-anaconda upload --force -u pcgr $dir/miniconda/envs/umccrise_pcgr/conda-bld/*/*-$VERSION-*.tar.bz2
-```
-
 
 #### Problem regions
 
@@ -518,7 +488,8 @@ tabix -p bed hg38/problem_regions/ENCODE/encode4_unified_blacklist.bed.gz
 rm ENCFF356LFX.bed.gz
 ```
 
-Generate the regions for variant calling: hg38-noalt chromosomes excluding the ENCODE blacklist
+Generate the regions for variant calling: hg38-noalt chromosomes excluding the
+ENCODE blacklist
 
 ```shell
 bedtools subtract -a hg38_noalt.bed -b problem_regions/ENCODE/encode4_unified_blacklist.bed.gz > hg38_noalt_noBlacklist.bed
@@ -570,7 +541,6 @@ CrossMap.py bed /g/data3/gx8/extras/hg19ToHg38.over.chain.gz sv_repeat_telomere_
 bedtools sort -i sv_repeat_telomere_centromere.bed_unsorted | > sv_repeat_telomere_centromere.bed
 ```
 
-
 #### Coding regions (SAGE)
 
 ```shell
@@ -579,7 +549,7 @@ generate_bed.py -g GRCh37 \
    --principal --key-genes --features CDS | sort -k1,1V -k2,2n | grep -v ^MT | grep -v ^GL \
    | bedtools merge -c 4 -o collapse -i - > coding_regions.bed
 
-cd hg38/hmf   
+cd hg38/hmf
 generate_bed.py -g hg38 \
    --principal --key-genes --features CDS | sort -k1,1V -k2,2n | grep -v ^chrM \
    | bedtools merge -c 4 -o collapse -i - \
@@ -600,14 +570,13 @@ if [ ! -d $PYENSEMBL_CACHE_DIR/pyensembl ] ; then
 fi
 ```
 
-
 #### Hotspots
 
 Combining Hartwig's and PCGR hotspots. Stats:
 
-* Hartwig's: 10211 changes in 3650 locations, 
-* PCGR: 10627 changes in 2494 locations.
-* Overlap: 2960 changes in 968 locations.
+- Hartwig's: 10211 changes in 3650 locations,
+- PCGR: 10627 changes in 2494 locations.
+- Overlap: 2960 changes in 968 locations.
 
 The overlap is small, so we better merge sources into a single VCF.
 
@@ -665,8 +634,11 @@ tabix -p vcf merged.vcf.gz
 
 #### Other HMF files
 
-Download `NA12878_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_ALLCHROM_v3.2.2_highconf.bed.gz` and `out_150_hg19.mappability.bed.gz`
-from <https://resources.hartwigmedicalfoundation.nl/> `->` HMFTools-Resources `->` Sage (link valid as of May 2020)
+Download
+`NA12878_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_ALLCHROM_v3.2.2_highconf.bed.gz`
+and `out_150_hg19.mappability.bed.gz` from
+<https://resources.hartwigmedicalfoundation.nl/> `->` HMFTools-Resources `->`
+Sage (link valid as of May 2020)
 
 To hg38:
 
@@ -677,8 +649,10 @@ convert ../../GRCh37/hmf/out_150_hg19.mappability.bed.gz
 
 #### Fusions
 
-We use [HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd?path=%2FHMF-Pipeline-Resources)
-for SV prioritization. See `NGS_Utils/ngs_utils/refernece_data/__init__.py` for details.
+We use
+[HMF fusions](https://nc.hartwigmedicalfoundation.nl/index.php/s/a8lgLsUrZI5gndd?path=%2FHMF-Pipeline-Resources)
+for SV prioritization. See `NGS_Utils/ngs_utils/refernece_data/__init__.py` for
+details.
 
 #### SnpEff
 
@@ -700,7 +674,8 @@ rm *.zip
 
 ### DVC
 
-We use [DVC](https://dvc.org/doc) to track reference data in the [reference_data](https://github.com/umccr/reference_data) repo
+We use [DVC](https://dvc.org/doc) to track reference data in the
+[reference_data](https://github.com/umccr/reference_data) repo
 
 ```
 git clone git@github.com:umccr/reference_data.git reference_data.git
@@ -723,75 +698,4 @@ rsync -trv /g/data/gx8/extras/umccrise_genomes/hg38 genomes/
 dvc add genomes/hg38
 git add genomes/.gitignore genomes/hg38.dvc
 dvc push
-``` 
-
-
-## GRIDSS and LINX
-
-[GRIDSS+PURPLE+LINX](https://github.com/hartwigmedical/gridss-purple-linx) is a chain of tools developed by the Hartwig Medical Foundation:
-
-- [GRIDSS](https://github.com/PapenfussLab/gridss) a structural variant caller;
-- [PURPLE](https://github.com/hartwigmedical/hmftools/tree/master/purity-ploidy-estimator) a copy number profile, ploidy and purity estimator;
-- [LINX](https://github.com/hartwigmedical/hmftools/tree/master/sv-linx) a tool for annotation, interpretation and visualisation of structural variants;
-
-We have a Docker-free wrapper for this chain of tools, which can be run on NCI HPC cluster. To use the wrapper, first load Umccrise with:
-
-```shell
-source /g/data/gx8/extras/umccrise_017_2020_Jan/load_umccrise.sh
- ```
-
-Then run the `gpl` command:
-
 ```
-gpl -N <normal bam> \
-    -T <tumor bam> \
-    -S <small somatic variants vcf> \
-    -s <tumor sample name in the vcf above> \
-    -o <output dir> \
-    -t<threads> 
-```
-
-For instance, to process this sample with known HPV viral integration:
-
-```shell
-gpl -N /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174_MDX190157_L1900839-ready.bam \
-    -T /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174_MDX190158_L1900840-ready.bam \
-    -S /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/SBJ00174__SBJ00174_MDX190158_L1900840-somatic-ensemble-PASS.vcf.gz \
-    -s SFRC01189 \
-    -o /g/data3/gx8/projects/Saveliev_Viral/All_WGS_SBJ00174/GRIDSS \
-    -t10 
-```
-
-The wrapper loads the [conda environment](blob/master/envs/hmf.yml) that has all the dependencies for the HMF tools
-(the environment is installed on Gadi at `/g/data/gx8/extras/umccrise_017_2020_Jan_dev/miniconda/envs/umccrise_hmf`),
-runs the `gridss-purple-linx.sh` script from [our fork of gridss-purple-linx](https://github.com/vladsaveliev/gridss-purple-linx),
-pointing it to the data bundle `/g/data3/gx8/extras/umccrise_017_2020_Jan_dev/genomes/GRCh37/hmf/gridss`.
-
-Note that we are using forks of GRIDSS and gridss-purple-linx
-where we have some amendments of `gridss.sh` and `gridss-purple-linx.sh` scripts to make it work with an HPC installation:
-
-- GRIDSS: <https://github.com/vladsaveliev/gridss>
-- gridss-purple-linx: <https://github.com/vladsaveliev/gridss-purple-linx>
-
-Eventually we want to synchronise them with the original repos.
-
-There are a few drawbacks that prevent us from integrating the pipeline in production.
-The pipeline is currently unstable (GRIDSS might occasianlly crash on certain of our samples, plus it is quite slow and resource demanding
-(although things have improved with recent 2020 releases),
-so your cluster node might expire before it completes).
-Also it [supports only GRCh37](https://github.com/hartwigmedical/gridss-purple-linx/issues/3) - even
-though GRIDSS itself and PURPLE are genome-agnostic, annotations needed for LINX are put up only for GRCh37 at the
-moment --- see <https://github.com/hartwigmedical/gridss-purple-linx/issues/3> to keep track of hg38 support.
-
-The idea is to eventually complement or even subsitute the
-[structural variants](https://github.com/umccr/umccrise/blob/master/workflow.md#structural-variants) workflow in umccrise,
-including prioritization and the section in the cancer report.
-In addition, we hope to use it as the viral integration tool instead of the current
-[semi-manual workflow](https://github.com/umccr/oncoviruses). The downsides of that are:
-
-- No hg38 support for LINX
-- GRIDSS is very slow
-- GRIDSS is not very stable
-- HMF tools are not adapted to FFPE data
-- LINX doesn't annotate events that don't affect particular gene sequence, but rather downstream or upstream
- 

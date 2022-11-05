@@ -717,8 +717,8 @@ def get_purple_metric(purple_file, metric='purity'):
     # #Purity  NormFactor  Score   DiploidProportion  Ploidy  Gender  Status  PolyclonalProportion  MinPurity  MaxPurity  MinPloidy  MaxPloidy  MinDiploidProportion  MaxDiploidProportion  Version  SomaticDeviation
     # 0.7200   1.0400      0.3027  0.8413             1.8611  FEMALE  NORMAL  0.0000                0.6600     0.7700     1.8508     1.8765     0.8241                0.8558                2.17     0.0006
     data = dict(zip(header.strip('#').split('\t'), values.split('\t')))
-    purity = float(data[metric])
-    return purity
+    met = float(data[metric])
+    return met
 
 
 def get_purity(purple_file, phenotype='tumor'):
