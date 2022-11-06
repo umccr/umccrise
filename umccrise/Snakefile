@@ -53,8 +53,6 @@ include: "purple.smk"
 include: "coverage.smk"
 include: "pcgr.smk"
 include: "oncoviruses.smk"
-include: "microbiome.smk"
-include: "neoantigens.smk"
 include: "cancer_report.smk"
 include: "multiqc.smk"
 
@@ -109,8 +107,6 @@ rule umccrise:
         rules.pcgr.output             if 'pcgr'             in stages else [],
         rules.cpsr.output             if 'cpsr'             in stages else [],
         rules.oncoviruses.output      if 'oncoviruses'      in stages else [],
-        rules.microbiome.output       if 'microbiome'       in stages else [],
-        rules.neoantigens.output      if 'neoantigens'      in stages else [],
         rules.cancer_report.output    if 'cancer_report'    in stages else [],
         rules.multiqc.output          if 'multiqc'          in stages else [],
     output:

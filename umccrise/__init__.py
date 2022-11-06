@@ -30,14 +30,6 @@ from ngs_utils.reference_data import get_all_genes_bed
 def package_path():
     return dirname(abspath(__file__))
 
-
-def get_sig_rmd_file():
-    """ Returns path to sig.Rmd file - R-markdown source for mutational signature analysys.
-        The file must be located at the same directory as the Snakefile and the patient_analysis module.
-    """
-    return verify_file(join(package_path(), 'rmd_files', 'sig.Rmd'), is_critical=True)
-
-
 class CustomSample(BaseSample):
     def __init__(self, assay=None, **kwargs):
         BaseSample.__init__(self, **kwargs)  # name, dirpath, work_dir, bam, vcf, phenotype, normal_match
@@ -447,16 +439,8 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
         'combined_multiqc',
     }
     default_disabled = {
-        'microbiome',
-        'neoantigens',
         'haplotype_caller',
     }
-    # if not all(b.germline_vcf for b in run.batch_by_name.values()):
-    #     default_disabled |= {'germline'}
-    # if not all(b.somatic_vcf for b in run.batch_by_name.values()):
-    #     default_disabled |= {'somatic'}
-    # if not all(b.sv_vcf for b in run.batch_by_name.values()):
-    #     default_disabled |= {'structural'}
 
     # For non-bcbio runs we want to run BCFtools and SAMtools stats on input BAMs by default
     if not isinstance(run, BcbioProject):
@@ -485,8 +469,6 @@ def prep_stages(run, include_stages=None, exclude_stages=None):
                 fixed_stages |= {'somatic', 'pcgr'}
             elif s in {'oncoviral', 'oviraptor', 'oncoviruses', 'viruses', 'viral'}:
                 fixed_stages |= {'oncoviruses'}
-            elif s in {'nag', 'immuno', 'neoantigens'}:
-                fixed_stages |= {'neoantigens'}
             elif s == 'multiqc':
                 fixed_stages |= {'multiqc', 'purple', 'conpair', 'somatic', 'germline',
                                  'oncoviruses', 'mosdepth'}

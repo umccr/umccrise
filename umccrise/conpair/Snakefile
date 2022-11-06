@@ -68,32 +68,3 @@ rule pileup:
     shell:
         'run_gatk_pileup_for_sample.py -B {input} -O {output} -g {params.genome} '
         '--reference {input.ref_fa} && test -s {output}'
-
-
-# rule for_multiqc:
-#     input:
-#         concor = samples['tumor'] + '_' + samples['normal'] + '_concordance.txt',
-#         contam = samples['tumor'] + '_' + samples['normal'] + '_contamination.txt'
-#     output:
-#         concor =
-#         contam_t = samples['tumor']
-#         contam_n =
-#
-#
-# def prep_conpair(contam, concor, data_dir, t_name, n_name):
-#     contam_dir = safe_mkdir(join(data_dir, 'conpair', 'contamination'))
-#     concor_dir = safe_mkdir(join(data_dir, 'conpair', 'concordance'))
-#     contam_t = join(contam_dir, t_name + '.txt')
-#     contam_n = join(contam_dir, n_name + '.txt')
-#
-#     with open(contam) as c, open(contam_t, 'w') as ct, open(contam_n, 'w') as cn:
-#         for l in c:
-#             if l.startswith('Tumor sample contamination level'):
-#                 ct.write(l.replace('Tumor sample', 'Sample'))
-#             if l.startswith('Normal sample contamination level'):
-#                 cn.write(l.replace('Normal sample', 'Sample'))
-#
-#     concor_t = join(concor_dir, t_name + '.txt')
-#     shell(f"cp {concor} {concor_t}")
-#
-#     return contam_t, contam_n, concor_t
