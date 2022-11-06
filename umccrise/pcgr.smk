@@ -21,7 +21,6 @@ from umccrise import get_purity, get_ploidy
 rule run_pcgr:
     input:
         vcf = '{batch}/small_variants/{batch}-somatic-PASS.vcf.gz',
-        # cns = '{batch}/purple/{batch}.purple.cnv',
         pcgr_data = refdata.get_ref_file(genome=run.genome_build, key='pcgr_data'),
         purple_file = 'work/{batch}/purple/{batch}.purple.purity.tsv' if 'purple' in stages else [],
     output:
@@ -29,9 +28,7 @@ rule run_pcgr:
         vcf = 'work/{batch}/pcgr/{batch}-somatic.pcgr.pass.vcf.gz',
         tsv = 'work/{batch}/pcgr/{batch}-somatic.pcgr.snvs_indels.tiers.tsv',
     params:
-        genome = run.genome_build,
         sample_name = '{batch}-somatic',
-        opt = '--no-docker' if not which('docker') else ''
     resources:
         mem_mb = lambda wildcards, attempt: attempt * 20000
         # TODO: memory based on the mutation number. E.g. over 455k tumor mutations need over 10G
@@ -39,8 +36,8 @@ rule run_pcgr:
     run:
         output_dir = dirname(output[0])
         cmd = (conda_cmd.format('pcgr') +
-            'pcgr {input.vcf} -g {params.genome} -o {output_dir} -s {params.sample_name} '
-            '{params.opt} --pcgr-data {input.pcgr_data}')
+            'pcgr_wrap {input.vcf} -o {output_dir} -s {params.sample_name} '
+            '--pcgr-data {input.pcgr_data} ')
         if input.purple_file:
             purity = get_purity(input.purple_file)
             ploidy = get_ploidy(input.purple_file)
