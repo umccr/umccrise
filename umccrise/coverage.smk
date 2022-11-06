@@ -144,20 +144,6 @@ rule run_samtools_stats:
         'samtools stats {input.bam} > {output.stats}'
 
 
-rule run_igv_count:
-    input:
-        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
-        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam + '.bai',
-    output:
-        tdf = '{batch}/coverage/{batch}-{phenotype}.tdf'
-    resources:
-        mem_mb = lambda wildcards, attempt: attempt * 4000
-    params:
-        genome = run.genome_build
-    shell:
-        'igvtools count {input.bam} {output.tdf} {params.genome}'
-
-
 rule cacao:
     input:
         expand(rules.cacao_symlink.output[0], batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
@@ -186,13 +172,6 @@ rule samtools_stats:
         temp(touch('log/samtools_stats.done'))
 
 
-rule igv_count:
-    input:
-        expand(rules.run_igv_count.output[0], batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
-    output:
-        temp(touch('log/igv_count.done'))
-
-
 rule coverage:
     input:
         'log/coverage.done',
@@ -201,5 +180,3 @@ rule coverage:
         'log/samtools_stats.done',
     output:
         temp(touch('log/coverage.done'))
-
-

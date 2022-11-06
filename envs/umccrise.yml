@@ -46,8 +46,6 @@ dependencies:
   - versionpy ==0.4.11
   - bed_annotation ==1.1.6
   - natsort ==7.1.0  # for bcbio.py in ngs_utils
-  - igvtools ==2.5.3
-  - openjdk ==11.0.8  # for igvtools
   - vcf2maf ==1.6.19
   - dvc ==1.11.6
   - dvc-s3 ==1.11.6

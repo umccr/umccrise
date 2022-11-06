@@ -105,7 +105,6 @@ rule umccrise:
         rules.cacao.output            if 'cacao'            in stages else [],
         rules.mosdepth.output         if 'mosdepth'         in stages else [],
         rules.samtools_stats.output   if 'samtools_stats'   in stages else [],
-        rules.igv_count.output        if 'igv_count'        in stages else [],
         rules.goleft.output           if 'goleft'           in stages else [],
         rules.pcgr.output             if 'pcgr'             in stages else [],
         rules.cpsr.output             if 'cpsr'             in stages else [],
