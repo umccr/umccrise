@@ -18,9 +18,7 @@ from ngs_utils.utils import set_locale; set_locale()
 @click.argument('vcf_path', type=click.Path(exists=True))
 @click.option('-o', 'output_dir', required=True, type=click.Path())
 @click.option('-s', 'sample')
-@click.option('--pcgr-data', type=click.Path(exists=True),
-              help='Path to PCGR data directory (defaults are known for spartan and raijin, '
-                   'or if --genomes-dir is provided)')
+@click.option('--pcgr-data', type=click.Path(exists=True), help='Path to PCGR data directory')
 @click.option('--genomes-dir', 'genomes_dir')
 @click.option('--purity', 'purity', type=click.FLOAT)
 @click.option('--ploidy', 'ploidy', type=click.FLOAT)
@@ -75,6 +73,7 @@ def main(vcf_path, output_dir, sample=None, pcgrr_conda="pcgrr",
            f'--report_theme "default" '
            f'--vep_buffer_size 5000 '
            f'--vep_pick_order "biotype,rank,appris,tsl,ccds,canonical,length,mane" '
+           f'--show_noncoding '
            f'--pcgrr_conda {pcgrr_conda} '
        )
     print(cmd)

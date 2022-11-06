@@ -8,5 +8,5 @@ else
     PLATFORM="linux"
 fi
 
-mamba create --file ${PCGR_REPO}/pcgr-${PLATFORM}-64.lock --prefix ${PREF}/pcgr
-mamba create --file ${PCGR_REPO}/pcgrr-${PLATFORM}-64.lock --prefix ${PREF}/pcgrr
+mamba create --file ${PCGR_REPO}/pcgr-${PLATFORM}-64.lock --prefix ${PREF}/umccrise_pcgr
+mamba create --file ${PCGR_REPO}/pcgrr-${PLATFORM}-64.lock --prefix ${PREF}/umccrise_pcgrr
