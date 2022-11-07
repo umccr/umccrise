@@ -22,6 +22,7 @@ from ngs_utils.utils import set_locale; set_locale()
 @click.option('--genomes-dir', 'genomes_dir')
 @click.option('--purity', 'purity', type=click.FLOAT)
 @click.option('--ploidy', 'ploidy', type=click.FLOAT)
+@click.option('--pcgrr-conda', 'pcgrr_conda')
 def main(vcf_path, output_dir, sample=None, pcgrr_conda="pcgrr",
          pcgr_data=None, genomes_dir=None, purity=None, ploidy=None):
 
@@ -76,8 +77,6 @@ def main(vcf_path, output_dir, sample=None, pcgrr_conda="pcgrr",
            f'--show_noncoding '
            f'--pcgrr_conda {pcgrr_conda} '
        )
-    print(cmd)
-    return
     try:
         run_simple(cmd)
     except subprocess.SubprocessError:

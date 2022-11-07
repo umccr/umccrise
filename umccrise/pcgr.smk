@@ -37,7 +37,7 @@ rule run_pcgr:
         output_dir = dirname(output[0])
         cmd = (conda_cmd.format('pcgr') +
             'pcgr_wrap {input.vcf} -o {output_dir} -s {params.sample_name} '
-            '--pcgr-data {input.pcgr_data} --pcgrr_conda "umccrise_pcgrr"')
+            '--pcgr-data {input.pcgr_data} --pcgrr-conda "umccrise_pcgrr"')
         if input.purple_file:
             purity = get_purity(input.purple_file)
             ploidy = get_ploidy(input.purple_file)
