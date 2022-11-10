@@ -1,4 +1,4 @@
-UMCCR WGS tumor/normal reporting
+**UMCCR WGS tumor/normal reporting**
 
 umccrise is a [Snakemake](https://github.com/snakemake/snakemake) workflow that
 post-processes results from the
@@ -134,7 +134,7 @@ source load_umccrise.sh
 
 ## Reference data
 
-umccrise needs a 64G bundle of reference data to run. In UMCCR AWS environment, sign
+umccrise needs a 64G bundle of reference data to run. From within the UMCCR AWS setup, sign
 in to AWS, and run `umccrise_refdata_pull`
 
 ```shell
