@@ -62,8 +62,6 @@ def main(vcf_path, output_dir, sample=None, pcgr_data=None, predispose_genes=Non
            f'--output_dir {output_dir} '
            f'--genome_assembly {genome["pcgr"]} '
            f'--pop_gnomad "global" '
-           f'--gwas_findings '
-           f'--secondary_findings '
            f'--vep_buffer_size 5000 '
            f'--vep_pick_order "biotype,rank,appris,tsl,ccds,canonical,length,mane" '
            f'--report_theme "default" '
