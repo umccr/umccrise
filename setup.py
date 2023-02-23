@@ -22,6 +22,7 @@ setup(
     scripts=[
         'scripts/umccrise',
         'scripts/pcgr_wrap',
+        'scripts/cpsr_wrap',
         'scripts/conpair',
         'scripts/umccrise_refdata_pull',
     ],

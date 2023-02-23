@@ -68,7 +68,6 @@ def main(vcf_path, output_dir, sample=None, pcgr_data=None, predispose_genes=Non
            f'--pcgrr_conda {pcgrr_conda} '
            f'--force_overwrite '
            f'{panel_param} '
-           f'--debug '
        )
     try:
         run_simple(cmd)

@@ -14,11 +14,9 @@ curators at UMCCR.
 - [Installation](#installation)
 - [Reference data](#reference-data)
   - [Versioning](#versioning)
-  - [Syncing with Spartan](#syncing-with-spartan)
   - [Syncing with AWS S3](#syncing-with-aws-s3)
 - [Testing](#testing)
 - [AWS](#aws)
-- [HPC (NCI Gadi)](#hpc-nci-gadi)
 - [Advanced usage](#advanced-usage)
   - [Inputs with named arguments](#inputs-with-named-arguments)
   - [Controlling the number of CPUs](#controlling-the-number-of-cpus)
@@ -40,7 +38,6 @@ curators at UMCCR.
     - [Fusions](#fusions)
     - [SnpEff](#snpeff)
   - [DVC](#dvc)
-- [GRIDSS and LINX](#gridss-and-linx)
 
 ## Summary
 
@@ -134,8 +131,8 @@ source load_umccrise.sh
 
 ## Reference data
 
-umccrise needs a 64G bundle of reference data to run. From within the UMCCR AWS setup, sign
-in to AWS, and run `umccrise_refdata_pull`
+umccrise needs a 64G bundle of reference data to run. From within the UMCCR AWS
+setup, sign in to AWS, and run `umccrise_refdata_pull`
 
 ```shell
 aws sso login --profile sso-dev-admin
@@ -445,8 +442,7 @@ tabix -p vcf gnomad_genome.r2.1.common_pass_clean.norm.vcf.gz
 #### PCGR
 
 The PCGR data bundle gets refreshed every release, so please select the
-appropriate one from
-[PCGR's README](https://github.com/sigven/pcgr)!
+appropriate one from [PCGR's README](https://github.com/sigven/pcgr)!
 
 ```shell
 # Download the data bundles
