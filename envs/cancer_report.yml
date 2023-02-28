@@ -12,6 +12,6 @@ dependencies:
   - r-gpgr ==1.4.1
   - r-sigrap ==0.0.4
   # refdata pkgs
-  - bioconductor-bsgenome.hsapiens.ucsc.hg38=1.4.4=r41hdfd78af_1
-  - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene=3.14.0=r41hdfd78af_1
-  - bioconductor-genomeinfodbdata=1.2.7=r41hdfd78af_2
+  - bioconductor-bsgenome.hsapiens.ucsc.hg38=1.4.4
+  - bioconductor-txdb.hsapiens.ucsc.hg38.knowngene=3.14.0
+  - bioconductor-genomeinfodbdata=1.2.7
