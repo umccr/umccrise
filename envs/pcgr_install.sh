@@ -1,4 +1,4 @@
-PCGR_VERSION="1.3.0"
+PCGR_VERSION="1.4.0"
 PCGR_REPO="https://raw.githubusercontent.com/sigven/pcgr/v${PCGR_VERSION}/conda/env/lock"
 PREF=$1 # prefix to install both conda envs
 
