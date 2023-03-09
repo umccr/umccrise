@@ -1,0 +1,12 @@
+name: umccrise_cacao
+
+channels:
+  - pcgr
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - r-base ==4.0.3
+  - python >=3.7.3
+  - pcgr::cacao ==0.2.1.3

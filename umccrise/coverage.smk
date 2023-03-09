@@ -115,7 +115,7 @@ rule run_cacao:
         low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)
         cutoffs = f'0:{low_cov}:{high_cov}'
         shell(
-            conda_cmd.format('pcgr') +
+            conda_cmd.format('cacao') +
             f'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' +
             f' {params.mode} {params.sample_id} --no-docker --threads {threads}'
             f' --callability_levels_{params.levels} {cutoffs} --ref-fasta {input.ref_fa}'

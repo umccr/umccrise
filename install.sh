@@ -25,6 +25,7 @@ ENV_NAME=umccrise
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME} --file ${GIT_DIR}/envs/umccrise.yml
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_hmf --file ${GIT_DIR}/envs/hmf.yml
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_cancer_report --file ${GIT_DIR}/envs/cancer_report.yml
+mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_cacao --file ${GIT_DIR}/envs/cacao.yml
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_gatk4 --file ${GIT_DIR}/envs/gatk4.yml
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_oviraptor --file ${GIT_DIR}/envs/oviraptor.yml
 # PCGR: use conda-locks
