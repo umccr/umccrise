@@ -17,7 +17,7 @@ dependencies:
   - samtools ==1.10
   - vcfanno ==0.3.2
   - vcflib ==1.0.1  # for VCF normalisation
-  - vcf_stuff ==0.6.3
+  - vcf_stuff ==0.6.4
   - bedops ==2.4.39
   - mosdepth ==0.2.9
   - kiwisolver ==1.2.0  # specific version required by multiqc
