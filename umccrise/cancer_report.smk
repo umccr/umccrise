@@ -70,12 +70,12 @@ rule afs_keygenes:
         ' | (printf "chrom\\tpos\\tid\\tref\\talt\\taf\\n" ; bcftools query -f "%CHROM\\t%POS\\t%ID\\t%REF\\t%ALT\\t%INFO/TUMOR_AF\\n")'
         ' > {output} && test -e {output}'
 
-# List all conda pkgs per env
+# List all conda pkgs per env - env_path comes from Snakefile
 rule conda_list:
     output:
         txt = 'work/{batch}/conda_pkg_list.txt'
     params:
-        env = ['""', '_pcgr', '_hmf', '_cancer_report'],
+        env = ['""', '_pcgr', '_pcgrr', '_cacao', '_hmf', '_cancer_report', '_gatk4', '_oviraptor'],
     group: "rmd_prep"
     shell:
         "for e in {params.env}; do conda list -p {env_path}$e "
