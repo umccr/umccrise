@@ -53,7 +53,7 @@ def main(vcf_path, output_dir, sample=None, pcgr_data=None, predispose_genes=Non
     renamed_file_base = join(output_dir, f'{sample}.cpsr')
     panel_param = '--panel_id 0'
     if predispose_genes:
-        panel_param = f'--custom_list {predispose_genes}'
+        panel_param = f'--custom_list {predispose_genes} --custom_list_name "umccr_predisposition_panel"'
 
     cmd = (f'cpsr '
            f'--input_vcf {abspath(vcf_path)} '

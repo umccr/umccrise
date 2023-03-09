@@ -35,7 +35,7 @@ rule run_pcgr:
     group: 'pcgr'
     run:
         output_dir = dirname(output[0])
-        cmd = (conda_cmd.format('pcgr') +
+        cmd = (conda_cmd_pcgr +
             'pcgr_wrap {input.vcf} -o {output_dir} -s {params.sample_name} '
             '--pcgr-data {input.pcgr_data} --pcgrr-conda "umccrise_pcgrr"')
         if input.purple_file:
@@ -68,18 +68,16 @@ rule run_cpsr:
     output:
         'work/{batch}/cpsr/{batch}-normal.cpsr.html'
     params:
-        genome_build = run.genome_build,
         sample_name = '{batch}-normal',
-        opt = '--no-docker' if not which('docker') else ''
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 20000
     group: 'cpsr'
     run:
         output_dir = dirname(output[0])
-        shell(conda_cmd.format('pcgr') +
-            'pcgr {input.vcf} -g {params.genome_build} -o {output_dir} -s {params.sample_name} '
-            '--germline {params.opt} --pcgr-data {input.pcgr_data} '
-            '--predispose-genes {input.predispose_genes_txt}')
+        shell(conda_cmd_pcgr +
+            'cpsr_wrap {input.vcf} -o {output_dir} -s {params.sample_name} '
+            '--pcgr-data {input.pcgr_data} '
+            '--predispose-genes {input.predispose_genes_txt} --pcgrr-conda "umccrise_pcgrr"')
 
 # copy CPSR html report to <um>/<batch>/
 rule cpsr_copy_report:

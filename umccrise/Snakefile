@@ -18,6 +18,7 @@ config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster s
 py_path = sys.executable  # /miniconda/envs/umccrise/bin/python
 env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
 conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
+conda_cmd_pcgr = f'export PATH={env_path}_pcgr/bin:$PATH; export CONDA_PREFIX={env_path}_pcgr; '
 
 run, batch_by_name = prep_inputs(config, silent=within_sub_workflow)
 threads_per_batch = config['threads_per_batch']
