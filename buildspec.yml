@@ -24,9 +24,7 @@ phases:
       - if [ -z $UMCCRISE_GIT_TAG ]; then export UMCCRISE_GIT_TAG='NOTAG'; fi
       - export CONTAINER_VERSION=$UMCCRISE_GIT_TAG-$SHORT_COMMIT_HASH
       - echo $CONTAINER_VERSION
-      - echo docker info
-      - docker info
-      - $(aws ecr get-login-password | docker login --username AWS --password-stdin 843407916570.dkr.ecr.ap-southeast-2.amazonaws.com)
+      - aws ecr get-login-password | docker login --username AWS --password-stdin 843407916570.dkr.ecr.ap-southeast-2.amazonaws.com
       # Build and tag (-t) image
       - docker build -t $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION .
       - docker images
