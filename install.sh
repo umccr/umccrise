@@ -4,7 +4,7 @@
 unset PYTHONPATH
 unset CONDA_PREFIX
 
-GIT_DIR=$(basename $(dirname $(readlink -e $0)))
+GIT_DIR=$(basename $(dirname $(realpath -e $0)))
 INSTALL_BASE_DIR=$(realpath $(pwd -P)/miniconda)
 
 ### Install conda
@@ -25,14 +25,11 @@ ENV_NAME=umccrise
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME} --file ${GIT_DIR}/envs/umccrise.yml
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_hmf --file ${GIT_DIR}/envs/hmf.yml
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_cancer_report --file ${GIT_DIR}/envs/cancer_report.yml
+mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_cacao --file ${GIT_DIR}/envs/cacao.yml
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_gatk4 --file ${GIT_DIR}/envs/gatk4.yml
-mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_neoantigens --file ${GIT_DIR}/envs/neoantigens.yml
 mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_oviraptor --file ${GIT_DIR}/envs/oviraptor.yml
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_pcgr --file ${GIT_DIR}/envs/pcgr_macos.yml
-else
-    mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_pcgr --file ${GIT_DIR}/envs/pcgr_linux.yml
-fi
+# PCGR: use conda-locks
+bash ${GIT_DIR}/envs/pcgr_install.sh ${INSTALL_BASE_DIR}/envs
 
 # Instead of `conda activate ${INSTALL_BASE_DIR}/envs/${ENV_NAME}`:
 ENV_NAME=umccrise
@@ -53,5 +50,3 @@ EOT
 
 # Clean up
 conda clean --yes --tarballs
-
-# TODO: clone vladsaveliev/pVACtools and do `pip install /g/data/gx8/extras/umccrise_2020_Sep/pVACtools`

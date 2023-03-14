@@ -18,6 +18,7 @@ config['within_sub_workflow'] = 'yes'  # to avoid redundant logging in cluster s
 py_path = sys.executable  # /miniconda/envs/umccrise/bin/python
 env_path = dirname(dirname(py_path))  # /miniconda/envs/umccrise
 conda_cmd = 'export PATH=' + env_path + '_{}/bin:$PATH; '
+conda_cmd_pcgr = f'export PATH={env_path}_pcgr/bin:$PATH; export CONDA_PREFIX={env_path}_pcgr; '
 
 run, batch_by_name = prep_inputs(config, silent=within_sub_workflow)
 threads_per_batch = config['threads_per_batch']
@@ -53,8 +54,6 @@ include: "purple.smk"
 include: "coverage.smk"
 include: "pcgr.smk"
 include: "oncoviruses.smk"
-include: "microbiome.smk"
-include: "neoantigens.smk"
 include: "cancer_report.smk"
 include: "multiqc.smk"
 
@@ -105,13 +104,10 @@ rule umccrise:
         rules.cacao.output            if 'cacao'            in stages else [],
         rules.mosdepth.output         if 'mosdepth'         in stages else [],
         rules.samtools_stats.output   if 'samtools_stats'   in stages else [],
-        rules.igv_count.output        if 'igv_count'        in stages else [],
         rules.goleft.output           if 'goleft'           in stages else [],
         rules.pcgr.output             if 'pcgr'             in stages else [],
         rules.cpsr.output             if 'cpsr'             in stages else [],
         rules.oncoviruses.output      if 'oncoviruses'      in stages else [],
-        rules.microbiome.output       if 'microbiome'       in stages else [],
-        rules.neoantigens.output      if 'neoantigens'      in stages else [],
         rules.cancer_report.output    if 'cancer_report'    in stages else [],
         rules.multiqc.output          if 'multiqc'          in stages else [],
     output:

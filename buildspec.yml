@@ -33,31 +33,31 @@ phases:
   post_build:
     commands:
       # Pull Umccrise reference data
-      - git clone https://github.com/umccr/reference_data reference_data &&
-        cd reference_data &&
-        dvc config cache.type reflink,hardlink,copy &&
-        dvc version &&
-        dvc remote list &&
-        dvc pull &&
-        cd ..
-      - du -sh reference_data/genomes
-      - tree -L 1 reference_data/genomes
-      - df -h
-      # Run minimal test with downsized sample data
-      # Clone sample data repo
-      - git clone --depth 1 https://github.com/umccr/umccrise_test_data umccrise_test_data
-      # Create output directory and set permissions for Docker container user
-      - mkdir -p umccrise_test_data/results/dragen_test_project_docker/ &&
-        chgrp -R 1000 umccrise_test_data/results/ &&
-        chmod -R g+w umccrise_test_data/results/
-      # DRAGEN test run
-      - tree -L 1 umccrise_test_data/data/dragen_test_project
-      - docker run -t --cpus 1
-        -v=$PWD/umccrise_test_data/results/dragen_test_project_docker:/output_dir
-        -v=$PWD/umccrise_test_data/data/dragen_test_project:/dragen_project
-        -v=$PWD/reference_data/genomes:/work/genomes
-        $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
-        umccrise /dragen_project -o /output_dir --genomes /work/genomes -j1
-      # Push Docker image to ECR
+      #- git clone https://github.com/umccr/reference_data reference_data &&
+      #  cd reference_data &&
+      #  dvc config cache.type reflink,hardlink,copy &&
+      #  dvc version &&
+      #  dvc remote list &&
+      #  dvc pull &&
+      #  cd ..
+      #- du -sh reference_data/genomes
+      #- tree -L 1 reference_data/genomes
+      #- df -h
+      ## Run minimal test with downsized sample data
+      ## Clone sample data repo
+      #- git clone --depth 1 https://github.com/umccr/umccrise_test_data umccrise_test_data
+      ## Create output directory and set permissions for Docker container user
+      #- mkdir -p umccrise_test_data/results/dragen_test_project_docker/ &&
+      #  chgrp -R 1000 umccrise_test_data/results/ &&
+      #  chmod -R g+w umccrise_test_data/results/
+      ## DRAGEN test run
+      #- tree -L 1 umccrise_test_data/data/dragen_test_project
+      #- docker run -t --cpus 1
+      #  -v=$PWD/umccrise_test_data/results/dragen_test_project_docker:/output_dir
+      #  -v=$PWD/umccrise_test_data/data/dragen_test_project:/dragen_project
+      #  -v=$PWD/reference_data/genomes:/work/genomes
+      #  $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION
+      #  umccrise /dragen_project -o /output_dir --genomes /work/genomes -j1
+      ## Push Docker image to ECR
       - $(aws ecr get-login --no-include-email --region ap-southeast-2)
       - docker push $CONTAINER_REPO/$CONTAINER_NAME:$CONTAINER_VERSION

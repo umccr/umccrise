@@ -17,7 +17,7 @@ dependencies:
   - samtools ==1.10
   - vcfanno ==0.3.2
   - vcflib ==1.0.1  # for VCF normalisation
-  - vcf_stuff ==0.6.2
+  - vcf_stuff ==0.6.4
   - bedops ==2.4.39
   - mosdepth ==0.2.9
   - kiwisolver ==1.2.0  # specific version required by multiqc
@@ -42,12 +42,10 @@ dependencies:
   - snpeff ==4.3.1t  # pre 4.5covid19 release
   - optitype ==1.3.5
   - tsvtools ==0.2.0
-  - ngs_utils ==2.10.2
+  - ngs_utils ==2.11.0
   - versionpy ==0.4.11
   - bed_annotation ==1.1.6
   - natsort ==7.1.0  # for bcbio.py in ngs_utils
-  - igvtools ==2.5.3
-  - openjdk ==11.0.8  # for igvtools
   - vcf2maf ==1.6.19
   - dvc ==1.11.6
   - dvc-s3 ==1.11.6

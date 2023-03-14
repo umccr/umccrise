@@ -115,7 +115,7 @@ rule run_cacao:
         low_cov, high_cov = _get_low_high_covs(wildcards.phenotype, input.purple_file)
         cutoffs = f'0:{low_cov}:{high_cov}'
         shell(
-            conda_cmd.format('pcgr') +
+            conda_cmd.format('cacao') +
             f'cacao_wflow.py {input.bam} {params.cacao_data} {params.output_dir} {pcgr_genome}' +
             f' {params.mode} {params.sample_id} --no-docker --threads {threads}'
             f' --callability_levels_{params.levels} {cutoffs} --ref-fasta {input.ref_fa}'
@@ -142,20 +142,6 @@ rule run_samtools_stats:
         mem_mb = lambda wildcards, attempt: attempt * 4000
     shell:
         'samtools stats {input.bam} > {output.stats}'
-
-
-rule run_igv_count:
-    input:
-        bam = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam,
-        bai = lambda wc: getattr(batch_by_name[wc.batch], wc.phenotype + 's')[0].bam + '.bai',
-    output:
-        tdf = '{batch}/coverage/{batch}-{phenotype}.tdf'
-    resources:
-        mem_mb = lambda wildcards, attempt: attempt * 4000
-    params:
-        genome = run.genome_build
-    shell:
-        'igvtools count {input.bam} {output.tdf} {params.genome}'
 
 
 rule cacao:
@@ -186,13 +172,6 @@ rule samtools_stats:
         temp(touch('log/samtools_stats.done'))
 
 
-rule igv_count:
-    input:
-        expand(rules.run_igv_count.output[0], batch=batch_by_name.keys(), phenotype=['tumor', 'normal'])
-    output:
-        temp(touch('log/igv_count.done'))
-
-
 rule coverage:
     input:
         'log/coverage.done',
@@ -201,5 +180,3 @@ rule coverage:
         'log/samtools_stats.done',
     output:
         temp(touch('log/coverage.done'))
-
-

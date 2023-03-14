@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+
+import os
+import platform
+import sys
+import glob
+from os.path import isfile, join, dirname, abspath, basename, exists
+import click
+import subprocess
+
+from ngs_utils.call_process import run_simple
+from ngs_utils.file_utils import verify_file, safe_mkdir, splitext_plus
+from ngs_utils import logger
+from ngs_utils.logger import info, critical, err
+from ngs_utils.utils import set_locale; set_locale()
+
+@click.command()
+@click.argument('vcf_path', type=click.Path(exists=True))
+@click.option('-o', 'output_dir', required=True, type=click.Path())
+@click.option('-s', 'sample')
+@click.option('--pcgr-data', type=click.Path(exists=True), help='Path to PCGR data directory')
+@click.option('--genomes-dir', 'genomes_dir')
+@click.option('--purity', 'purity', type=click.FLOAT)
+@click.option('--ploidy', 'ploidy', type=click.FLOAT)
+@click.option('--pcgrr-conda', 'pcgrr_conda')
+def main(vcf_path, output_dir, sample=None, pcgrr_conda="pcgrr",
+         pcgr_data=None, genomes_dir=None, purity=None, ploidy=None):
+
+    genome = {'pcgr': 'grch38', 'refdata': 'hg38'}
+    if not pcgr_data:
+        from reference_data import api as refdata
+        if genomes_dir:
+            refdata.find_genomes_dir(genomes_dir)
+        pcgr_data = refdata.get_ref_file(genome=genome['refdata'], key='pcgr_data')
+        if not pcgr_data:
+            logger.critical(f'PCGR data is not found on the system "{refdata.name}".'
+                            f' Please, provide the path to PCGR data with --pcgr-data.')
+
+    # compress and index input vcf
+    if vcf_path.endswith('.vcf'):
+        run_simple(f'bgzip {vcf_path}')
+        vcf_path = vcf_path + '.gz'
+    if not isfile(vcf_path + '.tbi'):
+        run_simple(f'tabix -p vcf {vcf_path}')
+
+    output_dir = abspath(output_dir)
+    safe_mkdir(output_dir)
+    logger.init(log_fpath_=join(output_dir, 'um_log.txt'), save_previous=True)
+
+    sample = sample or splitext_plus(basename(vcf_path))[0]
+    sample_cropped = sample[:35]  # pcgr requires sample names shorter than 35
+
+    expected_file_base = join(output_dir, f'{sample_cropped}.pcgr_acmg.{genome["pcgr"]}')
+    renamed_file_base = join(output_dir, f'{sample}.pcgr')
+
+    cmd = (f'pcgr '
+           f'--input_vcf {abspath(vcf_path)} '
+           f'--pcgr_dir {dirname(pcgr_data)} '
+           f'--output_dir {output_dir} '
+           f'--genome_assembly {genome["pcgr"]} '
+           f'--sample_id {sample_cropped} '
+           f'--control_dp_tag "NORMAL_DP" '
+           f'--control_af_tag "NORMAL_AF" '
+           f'--tumor_dp_tag "TUMOR_DP" '
+           f'--tumor_af_tag "TUMOR_AF" '
+           f'--force_overwrite ' +
+          (f'--tumor_purity {purity} ' if purity else '') +
+          (f'--tumor_ploidy {ploidy} ' if ploidy else '') +
+           f'--debug '
+           f'--estimate_tmb '
+           f'--estimate_msi_status '
+           f'--include_trials '
+           f'--assay WGS '
+           f'--report_theme "default" '
+           f'--vep_buffer_size 5000 '
+           f'--vep_pick_order "biotype,rank,appris,tsl,ccds,canonical,length,mane" '
+           f'--show_noncoding '
+           f'--pcgrr_conda {pcgrr_conda} '
+       )
+    try:
+        run_simple(cmd)
+    except subprocess.SubprocessError:
+        err('--------\n')
+        err('ERROR running PCGR.\n')
+        raise
+
+    err('Finished PCGR.\n')
+    for expected_fpath in glob.glob(f'{expected_file_base}*'):
+        if isfile(expected_fpath):
+            renamed_fpath = expected_fpath.replace(expected_file_base, renamed_file_base)
+            os.rename(expected_fpath, renamed_fpath)
+            if renamed_fpath.endswith('.html'):
+                info(f'PCGR report: {renamed_fpath}')
+
+
+if __name__ == '__main__':
+    main()
