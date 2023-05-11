@@ -303,10 +303,9 @@ rule somatic_vcf2maf:
         '--input-vcf {params.uncompressed_tmp_vcf} '
         '--output-maf {output.maf} '
         '--ref-fasta {input.fa} '
-        '--filter-vcf 0 '
         '--tumor-id {params.tname} '
         '--normal-id {params.nname} '
-        '--ncbi-build {params.ncbi_build} 2> >(grep -v "Use of uninitialized value" >&2)'
+        '--ncbi-build {params.ncbi_build} 2> >(grep -v "Use of uninitialized value" >&2) '
         '&& rm {params.uncompressed_tmp_vcf}'
 
 
