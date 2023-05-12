@@ -46,7 +46,7 @@ dependencies:
   - versionpy ==0.4.11
   - bed_annotation ==1.1.6
   - natsort ==7.1.0  # for bcbio.py in ngs_utils
-  - vcf2maf ==1.6.19
+  - umccr::vcf2maf ==1.6.21.20230511
   - dvc ==1.11.6
   - dvc-s3 ==1.11.6
   - pathspec ==0.9.0
