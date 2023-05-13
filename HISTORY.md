@@ -1,6 +1,16 @@
 ## 2.3.0 (XX yyy 2022)
 
+- `PCGR`: major update to v1.4.1 (from v0.9)
+  - <https://github.com/umccr/umccrise/pull/123>
+  - `CPSR`: major update to v1.0.1 (from v0.6)
+  - complete refactor of PCGR/CPSR installation and wrapper
+  - `vcf_stuff`: bump v0.6.2 -> 0.6.4 (to adjust for PCGR changes)
+  - `ngs_utils`: 2.10.2 -> 2.11.0 (for cpsr genes ensembl update)
+  - `cacao`: separate conda env
+- vcf2maf: use umccr conda fork of latest main branch
 - Re-enable BPI
+- Removed conda envs and support for neoantigens, microbiome, crossmap
+- Buildspec: ignore DVC integration test
 
 ## 2.2.1 (18 Oct 2022)
 
