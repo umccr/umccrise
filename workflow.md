@@ -1,7 +1,7 @@
 # umccrise workflow
 
 - [umccrise workflow](#umccrise-workflow)
-  - [SNPs and small indels (Somatic)](#snps-and-small-indels-somatic)
+  - [Small variants (SNVs/Indels) (Somatic)](#small-variants-snvsindels-somatic)
     - [Summary](#summary)
     - [Details](#details)
   - [SNPs and small indels (Germline)](#snps-and-small-indels-germline)
@@ -15,12 +15,16 @@
     - [`somatic.smk`](#somaticsmk)
     - [`pcgr.smk`](#pcgrsmk)
     - [`structural.smk`](#structuralsmk)
+    - [`oncoviruses.smk`](#oncovirusessmk)
+      - [oviraptor - https://github.com/umccr/oviraptor](#oviraptor---httpsgithubcomumccroviraptor)
 
 umccrise post-processess outputs of cancer variant calling analysis pipelines
-from [Illumina DRAGEN](https://sapac.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
+from
+[Illumina DRAGEN](https://sapac.illumina.com/products/by-type/informatics-products/dragen-bio-it-platform.html)
 and generates reports for researchers and curators at UMCCR.
 
-It takes as input results from the UMCCR DRAGEN Tumor/Normal and DRAGEN Germline variant calling workflows:
+It takes as input results from the UMCCR DRAGEN Tumor/Normal and DRAGEN Germline
+variant calling workflows:
 
 - BAM files from both samples
 - somatic small variant calls
@@ -213,11 +217,14 @@ in tumor suppressors, and prioritise events in cancer genes.
 2. Annotate variants:
    - with [SnpEff](https://github.com/pcingola/SnpEff).
    - with [VEP](https://github.com/Ensembl/ensembl-vep)
-   - Use the Ensembl gene model and [Sequence ontology](http://www.sequenceontology.org) terminology.
-   - Subset annotations to [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/), keeping one
-     main isoform per gene.
-3. Prioritise variants with <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv>.
-   on a 4 tier system - 1 (high) - 2 (moderate) - 3 (low) - 4 (no interest):
+   - Use the Ensembl gene model and
+     [Sequence ontology](http://www.sequenceontology.org) terminology.
+   - Subset annotations to
+     [APPRIS principal transcripts](http://appris.bioinfo.cnio.es/#/), keeping
+     one main isoform per gene.
+3. Prioritise variants with
+   <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv>. on a
+   4 tier system - 1 (high) - 2 (moderate) - 3 (low) - 4 (no interest):
    - exon loss
      - on cancer gene list (1)
      - other (2)
@@ -244,19 +251,21 @@ in tumor suppressors, and prioritise events in cancer genes.
      - on cancer gene list (2)
      - other TS gene (3)
    - other (4)
-4. If the number of events is over 50K (e.g. FFPE), progressively remove TIER 4/3/2 SVs (in that order).
+4. If the number of events is over 50K (e.g. FFPE), progressively remove TIER
+   4/3/2 SVs (in that order).
 5. Refine SVs using Hartwig's
    [break-point-inspector](https://github.com/hartwigmedical/hmftools/tree/bpi-v1.5/break-point-inspector),
    which locally re-assembles SV loci to get more accurate breakpoint positions
    and AF estimates.
 6. Filter low-quality calls:
-     - keep PASS FILTER
-     - dump TIER 3/4 where `SR < 5 & PR < 5`
-     - dump TIER 3/4 where `SR < 10 & PR < 10 & (AF0 < 0.1 | AF1 < 0.1)`
+   - keep PASS FILTER
+   - dump TIER 3/4 where `SR < 5 & PR < 5`
+   - dump TIER 3/4 where `SR < 10 & PR < 10 & (AF0 < 0.1 | AF1 < 0.1)`
 7. Use filtered variants as a guidance for PURPLE CNV calling (see below).
-   PURPLE will adjust and recover breakpoints at copy number transitions,
-   and adjust AF based on copy number, purity and ploidy.
-8. Run <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv> on the PURPLE output SVs.
+   PURPLE will adjust and recover breakpoints at copy number transitions, and
+   adjust AF based on copy number, purity and ploidy.
+8. Run <https://github.com/umccr/vcf_stuff/blob/master/scripts/prioritize_sv> on
+   the PURPLE output SVs.
 9. Report tiered variants in the UMCCR cancer report.
 
 ## Copy Number Variants
@@ -752,3 +761,175 @@ The result is a list of 1248 genes.
         - `ID = ID`
         - `MATEID = INFO/MATEID`
         - `ALT = ALT[0]`
+
+### `oncoviruses.smk`
+
+1. `viral_content`
+   - input:
+     - tumor BAM
+     - refdata
+
+- output1: `prioritized_oncoviruses.tsv`
+
+```
+## Viral sequences (from https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files) found in unmapped reads
+## Sample: MDX230148
+## Minimal completeness: 50.0% at 1x or 1000bp at 5x
+#virus  size    depth   1x      5x      25x     significance
+HPV45   7858    67.1    0.768   0.767   0.767   significant
+HCV-2   9711    33.0    0.012   0.011   0.010   .
+HPV71   8037    20.8    0.011   0.011   0.009   .
+HCV-1   9646    6.3     0.011   0.010   0.010   .
+HPV19   7685    1.9     0.010   0.009   0.009   .
+[...]
+```
+
+- output2: `present_viruses.txt`
+  - grab the `significant` viruses from above
+
+```
+HPV45
+```
+
+- command:
+
+```
+oviraptor \
+  {tumor_bam} \
+  -o {work_dir} \
+  -s {tumor_name} \
+  --genomes-dir {refdata} \
+  --only-detect # just detect without finding integration sites, do that in next step
+```
+
+2. `viral_integration_sites`
+   - input:
+     - tumor BAM
+     - `present_viruses.txt` output from above
+
+- output1:
+  - `{batch}/oncoviruses/oncoviral_breakpoints.vcf`
+
+```
+chr7    19105901        3_1     N       N[HPV45:3062[   .       PASS    SVTYPE=BND;STRANDS=+-:44;EVENT=3;MATEID=3_2;CIPOS=-3,2;CIEND=-10,9;CIPOS95=0,0;CIEND95=0,0;SU=44;PE=34;SR=10;DisruptedGenes=TWIST1;GenesWithin100kb=AC003986.2,AC003986.3,TWIST1,AC003986.1  GT:SU:PE:SR     ./.:44:34:10
+chr7    19105936        4_1     N       ]HPV45:1236]N   .       PASS    SVTYPE=BND;STRANDS=-+:91;EVENT=4;MATEID=4_2;CIPOS=0,0;CIEND=-10,3;CIPOS95=0,1;CIEND95=0,0;IMPRECISE;SU=91;PE=64;SR=27;DisruptedGenes=TWIST1;GenesWithin100kb=AC003986.2,AC003986.3,TWIST1,AC003986.1 GT:SU:PE:SR     ./.:91:64:27
+chr13   98758355        5_1     N       N]HPV45:5033]   .       PASS    SVTYPE=BND;STRANDS=++:5;EVENT=5;MATEID=5_2;CIPOS=-10,9;CIEND=-10,9;CIPOS95=0,0;CIEND95=0,0;SU=5;PE=0;SR=5;GenesWithin100kb=SLC15A1,DOCK9-AS1    GT:SU:PE:SR     ./.:5:0:5
+HPV45   1237    4_2     N       N[chr7:19105935[        .       PASS    SVTYPE=BND;STRANDS=+-:91;SECONDARY;EVENT=4;MATEID=4_1;CIPOS=-10,3;CIEND=0,0;CIPOS95=0,0;CIEND95=0,1;IMPRECISE;SU=91;PE=64;SR=27;DisruptedGenes=TWIST1;GenesWithin100kb=AC003986.2,AC003986.3,TWIST1,AC003986.1       GT:SU:PE:SR     ./.:91:64:27
+HPV45   3063    3_2     N       ]chr7:19105900]N        .       PASS    SVTYPE=BND;STRANDS=-+:44;SECONDARY;EVENT=3;MATEID=3_1;CIPOS=-10,9;CIEND=-3,2;CIPOS95=0,0;CIEND95=0,0;SU=44;PE=34;SR=10;DisruptedGenes=TWIST1;GenesWithin100kb=AC003986.2,AC003986.3,TWIST1,AC003986.1        GT:SU:PE:SR     ./.:44:34:10
+HPV45   5034    5_2     N       N]chr13:98758354]       .       PASS    SVTYPE=BND;STRANDS=++:5;SECONDARY;EVENT=5;MATEID=5_1;CIPOS=-10,9;CIEND=-10,9;CIPOS95=0,0;CIEND95=0,0;SU=5;PE=0;SR=5;GenesWithin100kb=SLC15A1,DOCK9-AS1  GT:SU:PE:SR     ./.:5:0:5
+```
+
+- command:
+
+```
+
+oviraptor \
+  {tumor_bam} \
+  -o {work_dir} \
+  -s {tumor_name} \
+  --genomes-dir {genomes_dir} \
+  -v $(cat present_viruses.txt)
+```
+
+3. `oncoviruses_breakpoints_tsv`
+   - input:
+     - `{batch}/oncoviruses/oncoviral_breakpoints.vcf` output from above
+     - `work/{batch}/oncoviruses/present_viruses.txt` output from above-above
+
+- command:
+  - Parse VCF from above, grab FORMAT PE/SR fields and add to `PAIR_COUNT`
+- output1:
+  - `work/{batch}/oncoviruses/oncoviral_breakpoints.tsv`
+
+```
+# A tibble: 6 × 10
+  sample    contig    start end   svtype PAIR_COUNT DisruptedGenes UpstreamGenes                      ID    MATEID
+  <chr>     <chr>     <dbl> <lgl> <chr>       <dbl> <chr>          <chr>                              <chr> <chr>
+1 MDX230148 chr7   19105901 NA    BND            44 TWIST1         AC003986.2, AC003986.3, AC003986.1 3_1   3_2
+2 MDX230148 chr7   19105936 NA    BND            91 TWIST1         AC003986.2, AC003986.3, AC003986.1 4_1   4_2
+3 MDX230148 chr13  98758355 NA    BND             5 NA             SLC15A1, DOCK9-AS1                 5_1   5_2
+4 MDX230148 HPV45      1237 NA    BND            91 NA             .                                  4_2   4_1
+5 MDX230148 HPV45      3063 NA    BND            44 NA             .                                  3_2   3_1
+6 MDX230148 HPV45      5034 NA    BND             5 NA             .                                  5_2   5_1
+```
+
+#### oviraptor - https://github.com/umccr/oviraptor
+
+1. `extract_unmapped_and_mate_unmapped_reads`
+
+   - input: tumor BAM
+   - output: `step1_host_unmapped_or_mate_unmapped.namesorted.bam`
+   - command:
+     - `sambamba view -F 'unmapped or mate_is_unmapped' ... | samtools sort -n ...`
+
+2. `unmapped_and_mate_unmapped_reads_to_fastq`
+
+   - input: output BAM from above rule
+   - output:
+     - `step2_host_unmapped_or_mate_unmapped.R1.fq`
+     - `step2_host_unmapped_or_mate_unmapped.R2.fq`
+     - `step2_host_unmapped_or_mate_unmapped.single.fq`
+   - command: `samtools fastq input_bam ...`
+
+3. `bwa_unmapped_and_mate_unmapped_reads_to_gdc`
+   - input:
+     - paired FASTQs from above
+     - gds viral FASTA (this is where EBV gets lost; see
+       https://github.com/umccr/umccrise/issues/143)
+   - output:
+     - `detect_viral_reference/host_unmapped_or_mate_unmapped_to_gdc.bam`
+   - command:
+
+```
+minimap2 \
+  -ax sr \
+  -Y \
+  -t{threads} \
+  -R '{params.rg}' \
+  {input.gdc_fa} {input.fq1} {input.fq2} \
+    | samtools sort -@{threads} -Obam -o {output.gdc_bam}
+```
+
+4. `index_virus_bam`
+
+   - Just `samtools index` above output BAM
+
+5. `mosdepth`
+   - Runs mosdepth using the GDS viral FASTA index
+
+- output1: `thresholds.bed.gz`
+
+```
+#chrom	start	end	region	1X	5X	25X
+CMV	0	235646	unknown	27	0	0
+HBV	0	3215	unknown	0	0	0
+HCV-1	0	9646	unknown	104	98	94
+HCV-2	0	9711	unknown	116	104	98
+HIV-1	0	9181	unknown	0	0	0
+HIV-2	0	10359	unknown	0	0	0
+KSHV	0	137969	unknown	28	27	0
+HTLV-1	0	8507	unknown	0	0	0
+MCV	0	5387	unknown	0	0	0
+[...]
+```
+
+- output2: `regions.bed.gz`
+
+```
+CMV	0	235646	0.00
+HBV	0	3215	0.00
+HCV-1	0	9646	6.28
+HCV-2	0	9711	33.05
+HIV-1	0	9181	0.00
+HIV-2	0	10359	0.00
+KSHV	0	137969	0.00
+HTLV-1	0	8507	0.00
+MCV	0	5387	0.00
+SV40	0	5243	0.00
+[...]
+```
+
+6. `prioritize_viruses`
+
+- input: above mosdepth output files
+- output: `prioritized_oncoviruses.tsv`
