@@ -11,6 +11,9 @@ from reference_data import api as refdata
 
 localrules: oncoviruses, oncoviruses_per_batch
 
+# Ugly hack to grab the FASTA shipped with oviraptor,
+# since the umccrise refdata does not include EBV (see umccrise#143)
+oviraptor_viral_fasta = f'{env_path}_oviraptor/lib/python3.8/site-packages/oviraptor/data/gdc-viral.fa'
 
 checkpoint viral_content:
     input:
@@ -21,6 +24,7 @@ checkpoint viral_content:
         present_viruses = 'work/{batch}/oncoviruses/present_viruses.txt',
     params:
         genomes_dir = refdata.genomes_dir,
+        viral_fa = oviraptor_viral_fasta,
         work_dir = 'work/{batch}/oncoviruses',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
@@ -36,6 +40,7 @@ checkpoint viral_content:
             conda_cmd.format('oviraptor') + \
             'oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
             '--genomes-dir {params.genomes_dir} {params.unlock_opt} '
+            '--viruses-fa {params.viral_fa} '
             '--cores {threads} --only-detect'
         )
         # if verify_file(join(params.work_dir, 'breakpoints.vcf')):
@@ -62,6 +67,7 @@ rule viral_integration_sites:
         breakpoints_vcf = '{batch}/oncoviruses/oncoviral_breakpoints.vcf',
     params:
         genomes_dir = refdata.genomes_dir,
+        viral_fa = oviraptor_viral_fasta,
         work_dir = 'work/{batch}/oncoviruses',
         unlock_opt = ' --unlock' if config.get('unlock', 'no') == 'yes' else '',
         tumor_name = lambda wc: batch_by_name[wc.batch].tumors[0].name,
@@ -76,6 +82,7 @@ rule viral_integration_sites:
         conda_cmd.format('oviraptor') + \
         'oviraptor {input.tumor_bam} -o {params.work_dir} -s {params.tumor_name} '
         '--genomes-dir {params.genomes_dir} {params.unlock_opt} --cores {threads} '
+        '--viruses-fa {params.viral_fa} '
         '-v $(cat {input.significant_viruses})'
         '; cp {params.work_dir}/breakpoints.vcf {output.breakpoints_vcf}'
 
