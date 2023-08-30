@@ -17,10 +17,10 @@ dependencies:
   - samtools ==1.10
   - vcfanno ==0.3.2
   - vcflib ==1.0.1  # for VCF normalisation
-  - vcf_stuff ==0.6.4
+  - umccr::vcf_stuff ==0.6.4
   - bedops ==2.4.39
   - mosdepth ==0.2.9
-  - kiwisolver ==1.2.0  # specific version required by multiqc
+  #  - kiwisolver ==1.2.0  # specific version required by multiqc
   - pythonpy
   - click
   - cyvcf2 ==0.30.1
@@ -29,7 +29,7 @@ dependencies:
   - curl >=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
   - snakemake-minimal
   - pyyaml ==5.4.1  # for multiqc
-  - multiqc ==1.13dev+umccrise.0.0.1
+  - umccr::multiqc ==1.14+umccrise.0.0.14
   - nose
   - pyensembl ==1.9.0
   - break-point-inspector ==1.5
@@ -42,13 +42,13 @@ dependencies:
   - snpeff ==4.3.1t  # pre 4.5covid19 release
   - optitype ==1.3.5
   - tsvtools ==0.2.0
-  - ngs_utils ==2.11.0
-  - versionpy ==0.4.11
-  - bed_annotation ==1.1.6
+  - umccr::ngs_utils ==2.11.0
+  - umccr::versionpy ==0.4.11
+  - umccr::bed_annotation ==1.1.6
   - natsort ==7.1.0  # for bcbio.py in ngs_utils
-  - umccr::vcf2maf ==1.6.21.20230511
-  - dvc ==1.11.6
-  - dvc-s3 ==1.11.6
+  - bioconda::vcf2maf-umccr ==1.6.21.20230511
+  # - dvc ==1.11.6
+  # - dvc-s3 ==1.11.6
   - pathspec ==0.9.0
   - pip:
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
