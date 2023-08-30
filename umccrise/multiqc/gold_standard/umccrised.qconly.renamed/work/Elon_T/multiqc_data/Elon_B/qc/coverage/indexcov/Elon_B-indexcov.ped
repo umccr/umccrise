@@ -1,2 +1,0 @@
-#family_id	sample_id	paternal_id	maternal_id	sex	phenotype	CNX	CNY	bins.out	bins.lo	bins.hi	bins.in	slope	p.out	mapped	unmapped
-unknown	Elon_B	-9	-9	1	-9	1.04	1.09	18370	11784	5128	157756	117.425	0.12	849099117	1451593

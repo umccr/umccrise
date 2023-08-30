@@ -1,8 +1,0 @@
-data:
-  Elon_T:
-    filt_indels: 94.1952506596306
-    filt_others: null
-    filt_snps: 63.1404958677686
-    indels: 44
-    others: null
-    snps: 446
