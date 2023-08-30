@@ -1,4 +1,16 @@
-## 2.3.0 (XX yyy 2022)
+## 2.3.1 (31 Aug 2023)
+
+[2.3.0 - 2.3.1 diff](https://github.com/umccr/umccrise/compare/2.3.0...2.3.1)
+
+- Oviraptor: explicitly use shipped FASTA ([pr146](https://github.com/umccr/umccrise/pull/146), [issue143](https://github.com/umccr/umccrise/issues/143)).
+- MultiQC: remove historical `gold_standard` background refdata
+- MultiQC: bump to `v1.14+umccrise.0.0.14`
+- vcf2maf: use bioconda::vcf2maf-umccr
+- PCGR: remove `--debug` option ([issue144](https://github.com/umccr/umccrise/issues/144)).
+
+## 2.3.0 (13 May 2023)
+
+[2.2.1 - 2.3.0 diff](https://github.com/umccr/umccrise/compare/2.2.1...2.3.0)
 
 - `PCGR`: major update to v1.4.1 (from v0.9)
   - <https://github.com/umccr/umccrise/pull/123>
@@ -13,6 +25,8 @@
 - Buildspec: ignore DVC integration test
 
 ## 2.2.1 (18 Oct 2022)
+
+[2.2.0 - 2.2.1 diff](https://github.com/umccr/umccrise/compare/2.2.0...2.2.1)
 
 - Skip BPI completely. This release differs from `v2.2.0` in that it completely skips BPI.
   - We have had one case running BPI v1.5 which actually timed out (instead of erroring out
