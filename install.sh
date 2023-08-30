@@ -9,25 +9,26 @@ INSTALL_BASE_DIR=$(realpath $(pwd -P)/miniconda)
 
 ### Install conda
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh \
+    wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh \
     -O miniconda.sh && chmod +x miniconda.sh
 else
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+    wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     -O miniconda.sh && chmod +x miniconda.sh
 fi
 bash miniconda.sh -b -p ${INSTALL_BASE_DIR} && rm miniconda.sh
 export PATH=${INSTALL_BASE_DIR}/bin:$PATH
 conda config --set always_yes yes --set changeps1 no
-conda install -c conda-forge mamba # just install latest mamba version
+conda install -n base conda-libmamba-solver
+conda config --set solver libmamba
 
 ### Install environments
 ENV_NAME=umccrise
-mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME} --file ${GIT_DIR}/envs/umccrise.yml
-mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_hmf --file ${GIT_DIR}/envs/hmf.yml
-mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_cancer_report --file ${GIT_DIR}/envs/cancer_report.yml
-mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_cacao --file ${GIT_DIR}/envs/cacao.yml
-mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_gatk4 --file ${GIT_DIR}/envs/gatk4.yml
-mamba env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_oviraptor --file ${GIT_DIR}/envs/oviraptor.yml
+conda env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME} --file ${GIT_DIR}/envs/umccrise.yml
+conda env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_hmf --file ${GIT_DIR}/envs/hmf.yml
+conda env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_cancer_report --file ${GIT_DIR}/envs/cancer_report.yml
+conda env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_cacao --file ${GIT_DIR}/envs/cacao.yml
+conda env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_gatk4 --file ${GIT_DIR}/envs/gatk4.yml
+conda env create -p ${INSTALL_BASE_DIR}/envs/${ENV_NAME}_oviraptor --file ${GIT_DIR}/envs/oviraptor.yml
 # PCGR: use conda-locks
 bash ${GIT_DIR}/envs/pcgr_install.sh ${INSTALL_BASE_DIR}/envs
 

@@ -9,6 +9,6 @@ else
 fi
 
 set -x
-mamba create --file ${PCGR_REPO}/pcgr-${PLATFORM}-64.lock --prefix ${PREF}/umccrise_pcgr
-mamba create --file ${PCGR_REPO}/pcgrr-${PLATFORM}-64.lock --prefix ${PREF}/umccrise_pcgrr
+conda create --file ${PCGR_REPO}/pcgr-${PLATFORM}-64.lock --prefix ${PREF}/umccrise_pcgr
+conda create --file ${PCGR_REPO}/pcgrr-${PLATFORM}-64.lock --prefix ${PREF}/umccrise_pcgrr
 set +x
