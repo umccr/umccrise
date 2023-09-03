@@ -50,6 +50,7 @@ dependencies:
   # - dvc ==1.11.6
   # - dvc-s3 ==1.11.6
   - pathspec ==0.9.0
+  - toml
   - pip:
     - "git+https://github.com/vladsaveliev/snakemake#egg=snakemake"
     - "git+https://github.com/umccr/MultiQC_bcbio#egg=multiqc_bcbio"  # bcbio plugin for MultiQC
