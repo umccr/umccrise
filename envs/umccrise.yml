@@ -27,7 +27,7 @@ dependencies:
   - numpy ==1.19.4
   - pandas ==1.1.5
   - curl >=7.59  # to make sure libcurl.4.dylib>=10.0.0 is installed
-  - snakemake-minimal ==7.30.0 # see https://github.com/snakemake/snakemake/issues/2389
+  - snakemake-minimal
   - pyyaml ==5.4.1  # for multiqc
   - umccr::multiqc ==1.14+umccrise.0.0.14
   - nose
