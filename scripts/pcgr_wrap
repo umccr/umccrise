@@ -66,6 +66,7 @@ def main(vcf_path, output_dir, sample=None, pcgrr_conda="pcgrr",
            f'--force_overwrite ' +
           (f'--tumor_purity {purity} ' if purity else '') +
           (f'--tumor_ploidy {ploidy} ' if ploidy else '') +
+           f'--debug '
            f'--estimate_tmb '
            f'--estimate_msi_status '
            f'--include_trials '
