@@ -6,7 +6,8 @@
 - MultiQC: remove historical `gold_standard` background refdata
 - MultiQC: bump to `v1.14+umccrise.0.0.14`
 - vcf2maf: use bioconda::vcf2maf-umccr
-- PCGR: remove `--debug` option ([issue144](https://github.com/umccr/umccrise/issues/144)).
+- install.sh: use libmamba solver instead of mamba
+- conda: explicitly add toml dependency to ummcrise env
 
 ## 2.3.0 (13 May 2023)
 

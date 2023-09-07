@@ -545,7 +545,7 @@ The result is a list of 1248 genes.
            - `somatic_anno/pcgr_run/{SAMPLE}-somatic.pcgr_ready.vep.vcf.gz`
            - `somatic_anno/pcgr_run/{SAMPLE}-somatic.pcgr.snvs_indels.tiers.tsv`
          - Runs PCGR (first time) via
-           <https://github.com/umccr/umccrise/blob/master/scripts/pcgr>
+           <https://github.com/umccr/umccrise/blob/master/scripts/pcgr_wrap>
        - `somatic_vcf_pcgr_anno`
          - input:
            - above output VCF + tiers files
